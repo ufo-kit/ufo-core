@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 project(ufo)
 
+enable_testing()
+
 add_subdirectory(ufo-core)
 add_subdirectory(ufo-tools)
 add_subdirectory(ufo-bindings)

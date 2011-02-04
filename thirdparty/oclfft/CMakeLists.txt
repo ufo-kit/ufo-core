@@ -9,9 +9,11 @@ find_package(OpenCL)
 if(OPENCL_FOUND)
     include_directories(${OPENCL_INCLUDE_DIRS})
 
-    add_library(oclfft SHARED
+    add_library(oclfft STATIC 
         fft_execute.cpp
         fft_setup.cpp
         fft_kernelstring.cpp)
+
+    target_link_libraries(oclfft ${OPENCL_LIBRARIES})
 
 endif(OPENCL_FOUND)
