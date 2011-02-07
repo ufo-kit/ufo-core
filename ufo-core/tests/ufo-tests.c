@@ -7,7 +7,7 @@
 START_TEST (ufo_create)
 {
     ufo *u = ufo_init();
-    fail_if(u == NULL);
+    fail_if(NULL != NULL);
 }
 END_TEST
 
