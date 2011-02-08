@@ -7,11 +7,9 @@
 #include "clFFT.h"
 
 
-cl_context context;
-cl_command_queue queue;
-
-void setup(void)
+START_TEST (test_ordered_fft)
 {
+    const int EPSILON = 0.000001f;
     cl_platform_id platform;
     cl_int err = clGetPlatformIDs(1, &platform, NULL);
     fail_if(err != CL_SUCCESS);
@@ -20,30 +18,28 @@ void setup(void)
     err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
     fail_if(err != CL_SUCCESS);
 
-    context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
+    cl_context context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
     fail_if(err != CL_SUCCESS);
 
-    queue = clCreateCommandQueue(context, device, 0, &err);
+    cl_command_queue queue = clCreateCommandQueue(context, device, 0, &err);
     fail_if(err != CL_SUCCESS);
-}
 
-void teardown(void)
-{
-    clReleaseCommandQueue(queue);
-    clReleaseContext(context);
-}
-
-START_TEST (test_ordered_fft)
-{
     clFFT_Dim3 dim;
-    cl_int err;
-    for (int size = 8; size < 512; size *= 8) {
-        dim.x = size; dim.y = dim.z = 1;
+
+    for (int size = 8; size <= 4096; size *= 2) {
+        const int buffer_size = 2 * size * sizeof(float);
+        printf("Checking FFT size %i\n", size);
+        dim.x = size; 
+        dim.y = 1;
+        dim.z = 1;
 
         clFFT_Plan fft_plan = clFFT_CreatePlan(context, dim, clFFT_1D, clFFT_InterleavedComplexFormat, &err);
         fail_if(err != CL_SUCCESS);
 
-        float buffer[size*2], reference[size*2];
+        float *buffer = (float *) malloc(buffer_size);
+        float *reference = (float *) malloc(buffer_size);
+        fail_if(buffer == NULL || reference == NULL);
+
         float value = 1.0;
         for (int i = 0; i < size*2; i += 2) {
             buffer[i] = reference[i] = value;
@@ -51,39 +47,48 @@ START_TEST (test_ordered_fft)
             value += 0.5;
         }
 
-        cl_mem d_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, size*2*sizeof(float), NULL, &err);
+        cl_mem d_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_size, NULL, &err);
+        fail_if(err != CL_SUCCESS);
+        err = clEnqueueWriteBuffer(queue, d_buffer, CL_TRUE, 0, buffer_size, buffer, 0, NULL, NULL);
         fail_if(err != CL_SUCCESS);
 
-        err = clEnqueueWriteBuffer(queue, d_buffer, CL_TRUE, 0, size*2*sizeof(float), buffer, 0, NULL, NULL);
+        err = clFFT_ExecuteInterleaved(queue, fft_plan, 1, clFFT_Forward, d_buffer, d_buffer, 0, NULL, NULL);
+        fail_if(err != CL_SUCCESS);
+        err = clFinish(queue);
         fail_if(err != CL_SUCCESS);
 
-        err = clFFT_ExecuteInterleaved(queue, fft_plan, size, clFFT_Forward, d_buffer, d_buffer, 0, NULL, NULL);
+        err = clFFT_ExecuteInterleaved(queue, fft_plan, 1, clFFT_Inverse, d_buffer, d_buffer, 0, NULL, NULL);
+        fail_if(err != CL_SUCCESS);
+        err = clFinish(queue);
         fail_if(err != CL_SUCCESS);
 
-        err = clFFT_ExecuteInterleaved(queue, fft_plan, size, clFFT_Inverse, d_buffer, d_buffer, 0, NULL, NULL);
+        err = clEnqueueReadBuffer(queue, d_buffer, CL_TRUE, 0, buffer_size, buffer, 0, NULL, NULL);
         fail_if(err != CL_SUCCESS);
-
-        err = clEnqueueReadBuffer(queue, d_buffer, CL_TRUE, 0, size*2*sizeof(float), buffer, 0, NULL, NULL);
+        err = clFinish(queue);
         fail_if(err != CL_SUCCESS);
 
         for (int i = 0; i < size*2; i += 2)
-            fail_if((abs(buffer[i]/((float)size)) - abs(reference[i])) > 0.0001);
+            fail_if((abs(buffer[i]/((float)size)) - abs(reference[i])) > EPSILON);
 
+        clFFT_DestroyPlan(fft_plan);
         clReleaseMemObject(d_buffer);
+        free(buffer);
+        free(reference);
     }
+
+    clReleaseCommandQueue(queue);
+    clReleaseContext(context);
 }
 END_TEST
 
 
 int main(int argc, char *argv[])
 {
-    printf("\n=== Using Check for Unit Tests =======================\n");
     /* Create test suite */
     Suite *s = suite_create("OpenCL FFT");
 
     /* Add test cases */
     TCase *tc = tcase_create("OpenCL FFT");
-    tcase_add_checked_fixture(tc, setup, teardown);
     tcase_add_test(tc, test_ordered_fft);
 
     suite_add_tcase(s, tc);
@@ -93,7 +98,6 @@ int main(int argc, char *argv[])
     srunner_run_all(sr, CK_NORMAL);
     int fails = srunner_ntests_failed(sr);
     srunner_free(sr);
-    printf("\n=== Finished Check ===================================\n");
 
     return (fails == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
