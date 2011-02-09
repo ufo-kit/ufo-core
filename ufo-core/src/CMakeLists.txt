@@ -31,3 +31,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DI
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_library(ufocore ${ufocore_SRCS})
 target_link_libraries(ufocore oclfft)
+
+install(TARGETS ufocore 
+    ARCHIVE DESTINATION lib 
+    LIBRARY DESTINATION lib)
+
