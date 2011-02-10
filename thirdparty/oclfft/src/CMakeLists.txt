@@ -16,4 +16,9 @@ if(OPENCL_FOUND)
 
     target_link_libraries(oclfft ${OPENCL_LIBRARIES})
 
+    install(TARGETS oclfft 
+        ARCHIVE DESTINATION lib 
+        LIBRARY DESTINATION lib)
+
+    install(FILES clFFT.h DESTINATION include)
 endif(OPENCL_FOUND)
