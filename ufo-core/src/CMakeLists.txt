@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 2.6)
 
 # --- Set sources -------------------------------------------------------------
-set(ufocore_SRCS ufo.c)
+set(ufocore_SRCS 
+    ufo.c
+    utils.c
+    )
 
 # --- Find packages and libraries ---------------------------------------------
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/ufo-common/cmake/")
