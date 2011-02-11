@@ -13,24 +13,18 @@
 #define EDF_FILE_DT_USHORT          8
 #define EDF_FILE_DT_UINT            16
 #define EDF_FILE_DT_ULONG           32
+#define EDF_FILE_READ_BLOCK_SIZE    4096
 
 typedef struct EdfFile_t {
-    int flags; 
-    int dim[3];
-    char *data;
+    int flags;              /**< Flags describing data block */
+    int dim[3];             /**< Dimensionality of the data */
+    size_t element_size;    /**< Size per element in bytes */
+    size_t total_size;      /**< Size of data. Should be product over all i dim[i] * sizeof(datatype) */
+    char *data;             /**< Flat array of data */
 } EdfFile;
 
-/**
- * \brief Open and read an EDF file
- *
- * \return A pointer to an EdfFile structure
- */
-EdfFile *ufo_read_edf(const char *filename);
-
-/**
- * \brief Free memory of the EdfFile structure
- */
-void ufo_close_edf(EdfFile* f);
+EdfFile *ufo_edf_read(const char *filename);
+void ufo_edf_close(EdfFile* f);
 
 
 #endif
