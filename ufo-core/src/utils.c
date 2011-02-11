@@ -55,7 +55,7 @@ static void ufo_edf_handle_token(EdfFile *edf, const char *token)
             else if (!strcmp(value, "LowByteFirst"))
                 edf->flags |= EDF_FILE_LOW_BYTE_FIRST;
         }
-        if (!strcmp(key, "DataType")) {
+        else if (!strcmp(key, "DataType")) {
             if (!strcmp(value, "Float")) {
                 edf->flags |= EDF_FILE_DT_FLOAT;
                 edf->element_size = sizeof(float);
