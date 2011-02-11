@@ -6,6 +6,11 @@ set(ufocore_SRCS
     utils.c
     )
 
+set(ufocore_HDRS
+    ufo.h
+    utils.h
+    )
+
 # --- Find packages and libraries ---------------------------------------------
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/ufo-common/cmake/")
 
@@ -39,3 +44,4 @@ install(TARGETS ufocore
     ARCHIVE DESTINATION lib 
     LIBRARY DESTINATION lib)
 
+install(FILES ${ufocore_HDRS} DESTINATION include/ufo)
