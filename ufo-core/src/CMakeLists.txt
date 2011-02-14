@@ -49,8 +49,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DI
 
 
 # --- Target ------------------------------------------------------------------
-include_directories()
-
 add_definitions("-std=c99 -Wall -Werror")
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}
