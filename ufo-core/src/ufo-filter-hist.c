@@ -30,9 +30,6 @@ static void ufo_filter_hist_process(UfoFilter *self)
             
             for (int i = 0; i < width*height; i++)
                 priv->bins[(int)data[i]]++;
-
-            for (int i = 0; i < priv->num_bins; i++)
-                g_print("%i\t%i\n", i, priv->bins[i]);
         }
         else
             g_print("buffer data is NULL\n");
