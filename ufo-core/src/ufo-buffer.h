@@ -40,6 +40,8 @@ struct _UfoBufferClass {
 gboolean ufo_buffer_malloc(UfoBuffer *self);
 
 /* non-virtual public methods */
+UfoBuffer *ufo_buffer_new(gint32 width, gint32 height, gint32 bytes_per_pixel);
+
 void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height);
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 void ufo_buffer_set_bytes_per_pixel(UfoBuffer *self, gint32 bytes_per_pixel);

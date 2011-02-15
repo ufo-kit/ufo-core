@@ -21,6 +21,25 @@ struct _UfoBufferPrivate {
  */
 
 /*
+ * \brief Create a new buffer with given dimensions
+ *
+ * \param[in] width Width of the two-dimensional buffer
+ * \param[in] height Height of the two-dimensional buffer
+ * \param[in] bytes_per_pixel Number of bytes per pixel
+ *
+ * \return Buffer with allocated memory
+ */
+UfoBuffer *ufo_buffer_new(gint32 width, gint32 height, gint32 bytes_per_pixel)
+{
+    UfoBuffer *buffer = g_object_new(UFO_TYPE_BUFFER, NULL);
+    ufo_buffer_set_dimensions(buffer, width, height);
+    ufo_buffer_set_bytes_per_pixel(buffer, bytes_per_pixel);
+    if (!ufo_buffer_malloc(buffer))
+        g_print("Couldn't allocate memory\n");
+    return buffer;
+}
+
+/*
  * \brief Set dimension of buffer data in pixels
  *
  * \param[in] width Width of the two-dimensional buffer
@@ -75,7 +94,7 @@ gchar* ufo_buffer_get_raw_bytes(UfoBuffer *self)
 /*
  * \brief Allocate memory for the specified dimensions and bytes per pixel
  *
- * \return TRUE if allocation was successfull else FALSE
+ * \return TRUE if allocation was successful else FALSE
  */
 gboolean ufo_buffer_malloc(UfoBuffer *self)
 {
@@ -89,11 +108,12 @@ gboolean ufo_buffer_malloc(UfoBuffer *self)
 
 static gboolean ufo_buffer_malloc_default(UfoBuffer *self)
 {
-    UfoBufferPrivate *priv = self->priv;
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(self);
     if ((priv->width == -1) || (priv->height == -1) || (priv->bytes_per_pixel == -1))
         return FALSE;
 
     priv->data = g_malloc0(priv->width * priv->height * priv->bytes_per_pixel);
+    g_print("%p\n", priv->data);
     return TRUE;
 }
 
