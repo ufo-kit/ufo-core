@@ -7,6 +7,7 @@ set(ufocore_SRCS
     ufo-filter.c
     ufo-filter-hist.c
     ufo-filter-raw-source.c
+    ufo-plugin.c
     utils.c
     )
 
@@ -16,6 +17,7 @@ set(ufocore_HDRS
     ufo-filter.h
     ufo-filter-hist.h
     ufo-filter-raw-source.h
+    ufo-plugin.h
     utils.h
     )
 
