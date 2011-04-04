@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
 # --- Build static Apple OpenCL FFT library
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/ufo-common/cmake")
 set(CMAKE_CXX_FLAGS "-fPIC")
 
 find_package(OpenCL)

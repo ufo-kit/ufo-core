@@ -23,8 +23,6 @@ set(ufocore_HDRS
 
 
 # --- Find packages and libraries ---------------------------------------------
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/ufo-common/cmake/")
-
 find_package(PkgConfig REQUIRED)
 find_package(OpenCL)
 find_package(FFTW3)

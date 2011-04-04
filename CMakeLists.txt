@@ -3,14 +3,19 @@ project(ufo)
 
 enable_testing()
 
-add_subdirectory(ufo-core)
-add_subdirectory(ufo-tools)
-add_subdirectory(ufo-bindings)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
+
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/core/src")
+
+add_subdirectory(core)
+add_subdirectory(tools)
+add_subdirectory(bindings)
 add_subdirectory(thirdparty)
+
 
 # --- Generate packages -------------------------------------------------------
 set(CPACK_GENERATOR "DEB")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Matthias Vogelgesang <matthias.vogelgesang@ipe.fzk.de>")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Matthias Vogelgesang <matthias.vogelgesang@kit.edu>")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Core libraries and tools of the UFO project")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "Core libraries and tools of the UFO project")
 set(CPACK_DEBIAN_PACKAGE_VERSION "0.0.1")
