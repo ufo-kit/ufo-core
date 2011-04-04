@@ -11,8 +11,9 @@ struct _UfoBufferPrivate {
 
     gint32  width;
     gint32  height;
-    gssize  bytes_per_pixel;
-    gchar   *data;
+
+    float   *cpu_data;
+    float   *gpu_data;
 };
 
 
@@ -33,7 +34,6 @@ UfoBuffer *ufo_buffer_new(gint32 width, gint32 height, gint32 bytes_per_pixel)
 {
     UfoBuffer *buffer = g_object_new(UFO_TYPE_BUFFER, NULL);
     ufo_buffer_set_dimensions(buffer, width, height);
-    ufo_buffer_set_bytes_per_pixel(buffer, bytes_per_pixel);
     if (!ufo_buffer_malloc(buffer))
         g_print("Couldn't allocate memory\n");
     return buffer;
@@ -60,35 +60,15 @@ void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height)
     *height = self->priv->height;
 }
 
-/*
- * \brief Set number of bytes per pixel
- *
- * \param[in] bytes_per_pixel Bytes per pixel of raw data
- */
-void ufo_buffer_set_bytes_per_pixel(UfoBuffer *self, gint32 bytes_per_pixel)
-{
-    g_return_if_fail(UFO_IS_BUFFER(self));
-    self->priv->bytes_per_pixel = bytes_per_pixel;
-}
-
-/*
- * \brief Get number of bytes per pixel
- *
- * \return Bytes per pixel of raw data
- */
-gint32 ufo_buffer_get_bytes_per_pixel(UfoBuffer *self)
-{
-    return self->priv->bytes_per_pixel;
-}
 
 /*
  * \brief Get raw pixel data in a flat array (row-column format)
  *
  * \return Pointer to a character array of raw data bytes
  */
-gchar* ufo_buffer_get_raw_bytes(UfoBuffer *self)
+float* ufo_buffer_get_raw_bytes(UfoBuffer *self)
 {
-    return self->priv->data;
+    return self->priv->cpu_data;
 }
 
 /*
@@ -109,11 +89,11 @@ gboolean ufo_buffer_malloc(UfoBuffer *self)
 static gboolean ufo_buffer_malloc_default(UfoBuffer *self)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(self);
-    if ((priv->width == -1) || (priv->height == -1) || (priv->bytes_per_pixel == -1))
+    if ((priv->width == -1) || (priv->height == -1))
         return FALSE;
 
-    priv->data = g_malloc0(priv->width * priv->height * priv->bytes_per_pixel);
-    g_print("%p\n", priv->data);
+    priv->cpu_data = g_malloc0(priv->width * priv->height * sizeof(float));
+    g_print("%p\n", priv->cpu_data);
     return TRUE;
 }
 
@@ -137,7 +117,7 @@ static void ufo_buffer_dispose(GObject *gobject)
 static void ufo_buffer_finalize(GObject *gobject)
 {
     UfoBuffer *self = UFO_BUFFER(gobject);
-    g_free(self->priv->data);
+    g_free(self->priv->cpu_data);
 
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
@@ -165,6 +145,5 @@ static void ufo_buffer_init(UfoBuffer *self)
     priv->to = NULL;
     priv->width = -1;
     priv->height = -1;
-    priv->bytes_per_pixel = -1;
-    priv->data = NULL;
+    priv->cpu_data = NULL;
 }

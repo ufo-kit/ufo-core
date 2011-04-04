@@ -46,7 +46,7 @@ void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height);
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 void ufo_buffer_set_bytes_per_pixel(UfoBuffer *self, gint32 bytes_per_pixel);
 gint32 ufo_buffer_get_bytes_per_pixel(UfoBuffer *self);
-gchar* ufo_buffer_get_raw_bytes(UfoBuffer *self);
+float* ufo_buffer_get_raw_bytes(UfoBuffer *self);
 
 GType ufo_buffer_get_type(void);
 

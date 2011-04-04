@@ -20,6 +20,15 @@ void ufo_graph_set_root(UfoGraph *self, UfoFilter *filter)
 void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst)
 {
     g_hash_table_replace(self->priv->graph, src, dst);
+    g_hash_table_replace(self->priv->graph, dst, NULL);
+}
+
+void ufo_graph_run(UfoGraph *self)
+{
+    UfoFilter *node = self->priv->root;
+    while (node != NULL) {
+        node = g_hash_table_lookup(self->priv->graph, node);
+    }
 }
 
 static void ufo_graph_dispose(GObject *gobject)
@@ -27,7 +36,7 @@ static void ufo_graph_dispose(GObject *gobject)
     UfoGraph *self = UFO_GRAPH(gobject);
     
     if (self->priv->graph) {
-        g_object_unref(self->priv->graph);
+        g_hash_table_destroy(self->priv->graph);
         self->priv->graph = NULL;
     }
 

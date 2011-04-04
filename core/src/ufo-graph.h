@@ -40,6 +40,7 @@ struct _UfoGraphClass {
 
 void ufo_graph_set_root(UfoGraph *self, UfoFilter *filter);
 void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst);
+void ufo_graph_run(UfoGraph *self);
 
 GType ufo_graph_get_type(void);
 

@@ -21,6 +21,7 @@ struct _UfoFilter {
     GObject parent_instance;
 
     /* public */
+    gboolean is_gpu_enabled;
     gchar *name;
 
     /* private */
@@ -33,21 +34,15 @@ struct _UfoFilterClass {
     /* class members */
 
     /* virtual public methods */
-    void (*process) (UfoFilter *self);
+    void (*process) (UfoFilter *self, UfoBuffer *input, UfoBuffer *output);
 };
 
 /* virtual public methods */
-void ufo_filter_process(UfoFilter *self);
+void ufo_filter_process(UfoFilter *self, UfoBuffer *input, UfoBuffer *output);
 //void ufo_filter_process_default(UfoFilter *self);
 
 /* non-virtual public methods */
 void ufo_filter_set_name(UfoFilter *self, const gchar *name);
-gboolean ufo_filter_set_input(UfoFilter *self, UfoFilter *input);
-gboolean ufo_filter_set_output(UfoFilter *self, UfoFilter *output);
-void ufo_filter_set_input_buffer(UfoFilter *self, UfoBuffer *buffer);
-void ufo_filter_set_output_buffer(UfoFilter *self, UfoBuffer *buffer);
-UfoBuffer *ufo_filter_get_input_buffer(UfoFilter *self);
-UfoBuffer *ufo_filter_get_output_buffer(UfoFilter *self);
 
 GType ufo_filter_get_type(void);
 
