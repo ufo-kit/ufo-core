@@ -3,6 +3,7 @@
 
 #include <glib.h>
 #include <glib-object.h>
+#include "ufo-filter.h"
 
 #define UFO_TYPE_GRAPH             (ufo_graph_get_type())
 #define UFO_GRAPH(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_GRAPH, UfoGraph))
@@ -14,6 +15,7 @@
 typedef struct _UfoGraph           UfoGraph;
 typedef struct _UfoGraphClass      UfoGraphClass;
 typedef struct _UfoGraphPrivate    UfoGraphPrivate;
+
 
 struct _UfoGraph {
     GObject parent_instance;
@@ -35,6 +37,9 @@ struct _UfoGraphClass {
 /* virtual public methods */
 
 /* non-virtual public methods */
+
+void ufo_graph_set_root(UfoGraph *self, UfoFilter *filter);
+void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst);
 
 GType ufo_graph_get_type(void);
 
