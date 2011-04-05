@@ -1,18 +1,24 @@
+#include <string.h>
+#include <CL/cl.h>
 #include "ufo-buffer.h"
 
 G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT);
 
 #define UFO_BUFFER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BUFFER, UfoBufferPrivate))
 
+typedef enum {
+    NO_DATA,
+    CPU_DATA_VALID,
+    GPU_DATA_VALID
+} datastates;
+
 struct _UfoBufferPrivate {
     gint32      width;
     gint32      height;
 
     float       *cpu_data;
-    gboolean    is_cpu_data_valid;
-
-    float       *gpu_data;
-    gboolean    is_gpu_data_valid;
+    cl_mem      gpu_data;
+    datastates  state;
 };
 
 
@@ -57,6 +63,16 @@ void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height)
     *height = self->priv->height;
 }
 
+void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data)
+{
+    const gsize num_bytes = self->priv->width * self->priv->height * sizeof(float);
+    if (self->priv->cpu_data == NULL)
+        self->priv->cpu_data = g_malloc0(num_bytes);
+
+    memcpy(self->priv->cpu_data, data, num_bytes);
+    self->priv->state = CPU_DATA_VALID;
+}
+
 /*
  * \brief Get raw pixel data in a flat array (row-column format)
  *
@@ -64,19 +80,33 @@ void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height)
  */
 float* ufo_buffer_get_cpu_data(UfoBuffer *self)
 {
-    if (self->priv->is_cpu_data_valid)
-        return self->priv->cpu_data;
-    else
-        ; /* TODO: download from gpu */
-    return NULL;
+    switch (self->priv->state) {
+        case CPU_DATA_VALID:
+            break;
+        case GPU_DATA_VALID:
+            /* TODO: download from gpu */
+            self->priv->state = CPU_DATA_VALID;
+            break;
+        case NO_DATA:
+            return NULL;
+    }
+
+    return self->priv->cpu_data;
 }
 
-void ufo_buffer_get_gpu_data(UfoBuffer *self)
+cl_mem ufo_buffer_get_gpu_data(UfoBuffer *self)
 {
-    if (self->priv->is_gpu_data_valid)
-        ; /* TODO: return cl_mem handle */
-    else
-        ; /* TODO: upload data and return cl_mem handle */
+    switch (self->priv->state) {
+        case CPU_DATA_VALID:
+            /* TODO: upload to gpu */
+            self->priv->state = GPU_DATA_VALID;
+            break;
+        case GPU_DATA_VALID:
+            break;
+        case NO_DATA:
+            return NULL;
+    }
+    return self->priv->gpu_data;
 }
 
 /* 
@@ -112,6 +142,5 @@ static void ufo_buffer_init(UfoBuffer *self)
     priv->width = -1;
     priv->height = -1;
     priv->cpu_data = NULL;
-    priv->is_cpu_data_valid = FALSE;
-    priv->is_gpu_data_valid = FALSE;
+    priv->state = NO_DATA;
 }

@@ -12,6 +12,7 @@ set(ufofilter_LIBS
     ${ETHOS_LIBRARIES}
     )
 
+
 # --- Find packages and libraries ---------------------------------------------
 pkg_check_modules(UCA uca)
 
@@ -21,7 +22,6 @@ if (UCA_INCLUDE_DIRS AND UCA_LIBRARIES)
     include_directories(${UCA_INCLUDE_DIRS})
 endif ()
 
-# --- Generate config.h -------------------------------------------------------
 
 # --- Target ------------------------------------------------------------------
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

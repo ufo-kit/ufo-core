@@ -19,16 +19,10 @@ set(ufocore_HDRS
 
 
 # --- Find packages and libraries ---------------------------------------------
-find_package(OpenCL)
 find_package(FFTW3)
 
 
 # --- Generate config.h -------------------------------------------------------
-if (OPENCL_FOUND)
-    set(HAVE_OPENCL TRUE)
-    include_directories(${OPENCL_INCLUDE_DIRS})
-endif(OPENCL_FOUND)
-
 if (FFTW3_FOUND)
     set(HAVE_FFTW TRUE)
 endif(FFTW3_FOUND)

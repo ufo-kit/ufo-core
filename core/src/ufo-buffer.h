@@ -3,6 +3,7 @@
 
 #include <glib.h>
 #include <glib-object.h>
+#include <CL/cl.h>
 
 G_BEGIN_DECLS
 
@@ -44,7 +45,7 @@ void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height);
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 
 float* ufo_buffer_get_cpu_data(UfoBuffer *self);
-void ufo_buffer_get_gpu_data(UfoBuffer *self);
+cl_mem ufo_buffer_get_gpu_data(UfoBuffer *self);
 
 GType ufo_buffer_get_type(void);
 
