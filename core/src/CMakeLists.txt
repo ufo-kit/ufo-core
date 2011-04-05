@@ -21,12 +21,10 @@ set(ufocore_HDRS
 
 
 # --- Find packages and libraries ---------------------------------------------
-find_package(PkgConfig REQUIRED)
 find_package(OpenCL)
 find_package(FFTW3)
 
-pkg_check_modules(GLIB2 glib-2.0)
-pkg_check_modules(GOBJECT2 gobject-2.0)
+pkg_check_modules(ETHOS ethos-1.0)
 
 
 # --- Generate config.h -------------------------------------------------------
@@ -51,16 +49,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DI
 # --- Target ------------------------------------------------------------------
 add_definitions("-std=c99 -Wall -Werror")
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR}
-    ${GLIB2_INCLUDE_DIRS}
-    )
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(ufocore ${ufocore_SRCS})
 
 target_link_libraries(ufocore 
-    oclfft
     ${GLIB2_LIBRARIES} 
     ${GOBJECT2_LIBRARIES}
+    ${ETHOS_LIBRARIES}
     )
 
 install(TARGETS ufocore 

@@ -9,5 +9,4 @@ if(CHECK_FOUND)
     target_link_libraries(ufotest ufocore ${CHECK_LIBRARIES})
 
     add_test(ufocore ufotest)
-
 endif()

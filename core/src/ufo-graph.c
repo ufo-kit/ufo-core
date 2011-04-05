@@ -1,4 +1,5 @@
 #include <glib.h>
+#include <ethos/ethos.h>
 #include "ufo-graph.h"
 #include "ufo-filter.h"
 
@@ -7,8 +8,9 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
 struct _UfoGraphPrivate {
-    UfoFilter  *root;
-    GHashTable *graph;
+    EthosManager    *ethos;
+    UfoFilter       *root;
+    GHashTable      *graph;
 };
 
 void ufo_graph_set_root(UfoGraph *self, UfoFilter *filter)
@@ -29,6 +31,11 @@ void ufo_graph_run(UfoGraph *self)
     while (node != NULL) {
         node = g_hash_table_lookup(self->priv->graph, node);
     }
+}
+
+UfoGraph *ufo_graph_new()
+{
+    return g_object_new(UFO_TYPE_GRAPH, NULL);
 }
 
 static void ufo_graph_dispose(GObject *gobject)
@@ -60,6 +67,13 @@ static void ufo_graph_init(UfoGraph *self)
     /* init private fields */
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
+
+    /* TODO: determine directories in a better way */
+    gchar *plugin_dirs[] = { "/usr/local/lib", ".", NULL };
+
+    priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
+    ethos_manager_initialize(priv->ethos);
+
     priv->graph = g_hash_table_new(NULL, NULL);
 }
 

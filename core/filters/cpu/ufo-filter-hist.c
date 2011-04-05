@@ -15,30 +15,14 @@ struct _UfoFilterHistPrivate {
 /* 
  * virtual methods 
  */
-static void ufo_filter_hist_process(UfoFilter *self)
+static void ufo_filter_hist_process(UfoFilter *self, UfoBuffer *input, UfoBuffer *output)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
-
-    UfoBuffer *buffer = ufo_filter_get_input_buffer(self);
-    if (buffer != NULL) {
-        gchar* data = ufo_buffer_get_raw_bytes(buffer);
-        if (data != NULL) {
-            UfoFilterHistPrivate *priv = UFO_FILTER_HIST_GET_PRIVATE(self);
-            gint32 width, height, bytes_per_pixel;
-            bytes_per_pixel = ufo_buffer_get_bytes_per_pixel(buffer);
-            ufo_buffer_get_dimensions(buffer, &width, &height);
-            
-            for (int i = 0; i < width*height; i++)
-                priv->bins[(int)data[i]]++;
-        }
-        else
-            g_print("buffer data is NULL\n");
-    }
 
     /* call parent */
     UfoFilterHistClass *klass = UFO_FILTER_HIST_GET_CLASS(self);
     UfoFilterClass *parent_class = g_type_class_peek_parent(klass);
-    parent_class->process(UFO_FILTER(self));
+    parent_class->process(UFO_FILTER(self), input, output);
 }
 
 static void ufo_filter_hist_class_init(UfoFilterHistClass *klass)

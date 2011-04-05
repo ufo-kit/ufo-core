@@ -3,6 +3,7 @@
 
 #include <glib.h>
 #include <glib-object.h>
+#include <ethos/ethos.h>
 
 #include "ufo-buffer.h"
 
@@ -18,7 +19,7 @@ typedef struct _UfoFilterClass      UfoFilterClass;
 typedef struct _UfoFilterPrivate    UfoFilterPrivate;
 
 struct _UfoFilter {
-    GObject parent_instance;
+    EthosPlugin parent;
 
     /* public */
     gboolean is_gpu_enabled;
@@ -28,7 +29,7 @@ struct _UfoFilter {
 };
 
 struct _UfoFilterClass {
-    GObjectClass parent_class;
+    EthosPluginClass parent_class;
 
     /* class members */
 

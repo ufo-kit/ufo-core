@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <check.h>
-#include "ufo.h"
-#include "utils.h"
+#include "ufo-graph.h"
 
 START_TEST (ufo_create)
 {
-    ufo *u = ufo_init();
-    fail_if(NULL != NULL);
+    g_type_init();
+    UfoGraph *graph = ufo_graph_new();
+    fail_if(graph == NULL);
 }
 END_TEST
 

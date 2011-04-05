@@ -1,7 +1,8 @@
+#include <gmodule.h>
 #include "ufo-filter.h"
 #include "ufo-buffer.h"
 
-G_DEFINE_TYPE(UfoFilter, ufo_filter, G_TYPE_OBJECT);
+G_DEFINE_TYPE(UfoFilter, ufo_filter, ETHOS_TYPE_PLUGIN);
 
 #define UFO_FILTER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER, UfoFilterPrivate))
 
@@ -108,4 +109,12 @@ static void ufo_filter_init(UfoFilter *self)
     self->priv = priv = UFO_FILTER_GET_PRIVATE(self);
 }
 
+EthosPlugin *ufo_filter_new()
+{
+    return g_object_new(UFO_TYPE_FILTER, NULL);
+}
 
+G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
+{
+    return ufo_filter_new();
+}
