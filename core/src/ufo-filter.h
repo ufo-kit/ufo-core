@@ -22,7 +22,6 @@ struct _UfoFilter {
 
     /* public */
     gboolean is_gpu_enabled;
-    gchar *name;
 
     /* private */
     UfoFilterPrivate *priv;
@@ -39,10 +38,8 @@ struct _UfoFilterClass {
 
 /* virtual public methods */
 void ufo_filter_process(UfoFilter *self, UfoBuffer *input, UfoBuffer *output);
-//void ufo_filter_process_default(UfoFilter *self);
 
 /* non-virtual public methods */
-void ufo_filter_set_name(UfoFilter *self, const gchar *name);
 
 GType ufo_filter_get_type(void);
 
