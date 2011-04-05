@@ -3,15 +3,28 @@
 #include "ufo-filter.h"
 #include "ufo-buffer.h"
 
-/* Inherit from UFO_TYPE_FILTER */
-G_DEFINE_TYPE(UfoFilterHist, ufo_filter_hist, UFO_TYPE_FILTER);
-
-#define UFO_FILTER_HIST_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_HIST, UfoFilterHistPrivate))
 
 struct _UfoFilterHistPrivate {
     guint32 num_bins;
     guint32 *bins;
 };
+
+GType ufo_filter_hist_get_type(void) G_GNUC_CONST;
+
+/* Inherit from UFO_TYPE_FILTER */
+G_DEFINE_TYPE(UfoFilterHist, ufo_filter_hist, UFO_TYPE_FILTER);
+
+#define UFO_FILTER_HIST_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_HIST, UfoFilterHistPrivate))
+
+static void activated(EthosPlugin *plugin)
+{
+    g_message("Hist plugin activated");
+}
+
+static void deactivated(EthosPlugin *plugin)
+{
+    g_message("Hist plugin deactivated");
+}
 
 /* 
  * virtual methods 
@@ -19,6 +32,7 @@ struct _UfoFilterHistPrivate {
 static void ufo_filter_hist_process(UfoFilter *self, UfoBuffer *input, UfoBuffer *output)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
+    g_message("processing data");
 
     /* call parent */
     UfoFilterHistClass *klass = UFO_FILTER_HIST_GET_CLASS(self);
@@ -29,12 +43,15 @@ static void ufo_filter_hist_process(UfoFilter *self, UfoBuffer *input, UfoBuffer
 static void ufo_filter_hist_class_init(UfoFilterHistClass *klass)
 {
     UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
-    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+    EthosPluginClass *plugin_class = ETHOS_PLUGIN_CLASS(klass);
+    GObjectClass *object_class = G_OBJECT_CLASS(klass);
 
     filter_class->process = ufo_filter_hist_process;
+    plugin_class->activated = activated;
+    plugin_class->deactivated = deactivated;
 
     /* install private data */
-    g_type_class_add_private(gobject_class, sizeof(UfoFilterHistPrivate));
+    g_type_class_add_private(object_class, sizeof(UfoFilterHistPrivate));
 }
 
 static void ufo_filter_hist_init(UfoFilterHist *self)

@@ -11,12 +11,23 @@ struct _UfoGraphPrivate {
     EthosManager    *ethos;
     UfoFilter       *root;
     GHashTable      *graph;
+    GHashTable      *plugins;
 };
 
-void ufo_graph_set_root(UfoGraph *self, UfoFilter *filter)
+GList *ufo_graph_get_filter_names(UfoGraph *self)
 {
-    self->priv->root = filter;
-    g_hash_table_insert(self->priv->graph, filter, NULL);
+    return g_hash_table_get_keys(self->priv->plugins);
+}
+
+UfoFilter *ufo_graph_create_node(UfoGraph *self, guchar *filter_name)
+{
+    EthosPlugin *plugin = g_hash_table_lookup(self->priv->plugins, filter_name);
+    /* TODO: When we move to libpeas we have to instantiate new objects each
+     * time a user requests a new stateful node. */
+    if (plugin != NULL) {
+        return (UfoFilter *) plugin;
+    }
+    return NULL;
 }
 
 void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst)
@@ -60,11 +71,14 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
     g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
 }
 
-static void ufo_graph_show_plugin(gpointer data, gpointer user_data)
+static void ufo_graph_add_plugin(gpointer data, gpointer user_data)
 {
     EthosPluginInfo *info = (EthosPluginInfo *) data;
-    g_message("Plugin Name: %s\n", ethos_plugin_info_get_name(info));
-    g_message("Description: %s\n", ethos_plugin_info_get_description(info));
+    UfoGraphPrivate *priv = (UfoGraphPrivate *) user_data;
+
+    g_hash_table_insert(priv->plugins, 
+        (gpointer) ethos_plugin_info_get_name(info),
+        ethos_manager_get_plugin(priv->ethos, info));
 }
 
 static void ufo_graph_init(UfoGraph *self)
@@ -81,8 +95,10 @@ static void ufo_graph_init(UfoGraph *self)
     priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
     ethos_manager_initialize(priv->ethos);
 
+    priv->plugins = g_hash_table_new(g_str_hash, g_str_equal);
     GList *plugin_info = ethos_manager_get_plugin_info(priv->ethos);
-    g_list_foreach(plugin_info, &ufo_graph_show_plugin, NULL);
+
+    g_list_foreach(plugin_info, &ufo_graph_add_plugin, priv);
     g_list_free(plugin_info);
 
     priv->graph = g_hash_table_new(NULL, NULL);

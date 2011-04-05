@@ -38,7 +38,8 @@ struct _UfoGraphClass {
 
 /* non-virtual public methods */
 
-void ufo_graph_set_root(UfoGraph *self, UfoFilter *filter);
+GList *ufo_graph_get_filter_names(UfoGraph *self);
+UfoFilter *ufo_graph_create_node(UfoGraph *self, guchar *filter_name);
 void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst);
 void ufo_graph_run(UfoGraph *self);
 

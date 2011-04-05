@@ -3,11 +3,15 @@
 #include <stdlib.h>
 #include <check.h>
 #include "ufo-graph.h"
+#include "ufo-filter.h"
 
 START_TEST (ufo_create)
 {
     g_type_init();
     UfoGraph *graph = ufo_graph_new();
+    UfoFilter *filter = ufo_graph_create_node(graph, (guchar *) "uca");
+    ufo_filter_process(filter, NULL, NULL);
+    g_object_unref(graph);
     fail_if(graph == NULL);
 }
 END_TEST
