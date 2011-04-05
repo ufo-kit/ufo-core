@@ -60,6 +60,13 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
     g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
 }
 
+static void ufo_graph_show_plugin(gpointer data, gpointer user_data)
+{
+    EthosPluginInfo *info = (EthosPluginInfo *) data;
+    g_message("Plugin Name: %s\n", ethos_plugin_info_get_name(info));
+    g_message("Description: %s\n", ethos_plugin_info_get_description(info));
+}
+
 static void ufo_graph_init(UfoGraph *self)
 {
     /* init public fields */
@@ -69,10 +76,14 @@ static void ufo_graph_init(UfoGraph *self)
     self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
 
     /* TODO: determine directories in a better way */
-    gchar *plugin_dirs[] = { "/usr/local/lib", ".", NULL };
+    gchar *plugin_dirs[] = { "/usr/local/lib", "../filters", NULL };
 
     priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
     ethos_manager_initialize(priv->ethos);
+
+    GList *plugin_info = ethos_manager_get_plugin_info(priv->ethos);
+    g_list_foreach(plugin_info, &ufo_graph_show_plugin, NULL);
+    g_list_free(plugin_info);
 
     priv->graph = g_hash_table_new(NULL, NULL);
 }

@@ -6,7 +6,6 @@ set(ufocore_SRCS
     ufo-graph.c
     ufo-buffer.c
     ufo-filter.c
-    ufo-plugin.c
     utils.c
     )
 
@@ -15,7 +14,6 @@ set(ufocore_HDRS
     ufo-graph.h
     ufo-buffer.h
     ufo-filter.h
-    ufo-plugin.h
     utils.h
     )
 
@@ -23,8 +21,6 @@ set(ufocore_HDRS
 # --- Find packages and libraries ---------------------------------------------
 find_package(OpenCL)
 find_package(FFTW3)
-
-pkg_check_modules(ETHOS ethos-1.0)
 
 
 # --- Generate config.h -------------------------------------------------------
@@ -37,18 +33,10 @@ if (FFTW3_FOUND)
     set(HAVE_FFTW TRUE)
 endif(FFTW3_FOUND)
 
-find_path(OCLFFT_INCLUDE_DIR clFFT.h ${PROJECT_SOURCE_DIR}/thirdparty/oclfft)
-if (OCLFFT_INCLUDE_DIR)
-    set(HAVE_OCLFFT TRUE)
-    include_directories(${OCLFFT_INCLUDE_DIR})
-endif(OCLFFT_INCLUDE_DIR)
-
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 
 # --- Target ------------------------------------------------------------------
-add_definitions("-std=c99 -Wall -Werror")
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(ufocore ${ufocore_SRCS})

@@ -10,18 +10,25 @@ set(ufofilter_SRCS
 # --- Generate config.h -------------------------------------------------------
 
 # --- Target ------------------------------------------------------------------
-add_definitions("-std=c99 -Wall -Werror")
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 foreach(_src ${ufofilter_SRCS})
-    string(REGEX REPLACE "cpu/ufo-filter-([^ \\.]+).*" "\\1" result "${_src}")
-    add_library(${result} SHARED ${_src})
+    # find plugin suffix
+    string(REGEX REPLACE "cpu/ufo-filter-([^ \\.]+).*" "\\1" _name "${_src}")
 
-    target_link_libraries(${result}
+    # build single shared library per filter
+    add_library(${_name} SHARED ${_src})
+
+    target_link_libraries(${_name}
         ${GLIB2_LIBRARIES} 
         ${GOBJECT2_LIBRARIES}
         ${ETHOS_LIBRARIES}
+        ufocore
         )
+
+    # configure the ethos plugin description
+    set(UFO_PLUGIN_LIBRARY "lib${_name}")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cpu/${_name}.ufo-plugin.in
+        ${CMAKE_CURRENT_BINARY_DIR}/${_name}.ufo-plugin)
 endforeach()
 

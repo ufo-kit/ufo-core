@@ -109,12 +109,3 @@ static void ufo_filter_init(UfoFilter *self)
     self->priv = priv = UFO_FILTER_GET_PRIVATE(self);
 }
 
-EthosPlugin *ufo_filter_new()
-{
-    return g_object_new(UFO_TYPE_FILTER, NULL);
-}
-
-G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
-{
-    return ufo_filter_new();
-}

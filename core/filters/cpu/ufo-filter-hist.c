@@ -1,3 +1,4 @@
+#include <gmodule.h>
 #include "ufo-filter-hist.h"
 #include "ufo-filter.h"
 #include "ufo-buffer.h"
@@ -48,3 +49,7 @@ static void ufo_filter_hist_init(UfoFilterHist *self)
         priv->bins[i] = 0;
 }
 
+G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
+{
+    return g_object_new(UFO_TYPE_FILTER_HIST, NULL);
+}
