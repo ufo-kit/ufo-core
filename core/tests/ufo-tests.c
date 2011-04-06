@@ -9,10 +9,13 @@ START_TEST (ufo_create)
 {
     g_type_init();
     UfoGraph *graph = ufo_graph_new();
-    UfoFilter *filter = ufo_graph_create_node(graph, (guchar *) "uca");
-    ufo_filter_process(filter, NULL, NULL);
-    g_object_unref(graph);
     fail_if(graph == NULL);
+    UfoFilter *uca_reader = ufo_graph_create_node(graph, "uca");
+    UfoFilter *histogram = ufo_graph_create_node(graph, "histogram");
+    ufo_graph_connect(graph, uca_reader, histogram);
+    ufo_graph_run(graph);
+
+    g_object_unref(graph);
 }
 END_TEST
 

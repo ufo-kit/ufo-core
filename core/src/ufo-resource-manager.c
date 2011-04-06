@@ -1,4 +1,5 @@
 #include <glib.h>
+#include <CL/cl.h>
 #include "ufo-resource-manager.h"
 
 G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT);

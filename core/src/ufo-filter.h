@@ -34,13 +34,17 @@ struct _UfoFilterClass {
     /* class members */
 
     /* virtual public methods */
-    void (*process) (UfoFilter *self, UfoBuffer *input, UfoBuffer *output);
+    void (*process) (UfoFilter *self);
 };
 
 /* virtual public methods */
-void ufo_filter_process(UfoFilter *self, UfoBuffer *input, UfoBuffer *output);
+void ufo_filter_process(UfoFilter *self);
 
 /* non-virtual public methods */
+void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *input_queue);
+void ufo_filter_set_output_queue(UfoFilter *self, GAsyncQueue *output_queue);
+GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *self);
+GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *self);
 
 GType ufo_filter_get_type(void);
 

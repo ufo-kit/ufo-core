@@ -1,3 +1,4 @@
+#include <glib.h>
 #include <gmodule.h>
 #include "ufo-filter.h"
 #include "ufo-buffer.h"
@@ -13,8 +14,35 @@ enum {
 };
 
 struct _UfoFilterPrivate {
-    gchar *name;
+    GAsyncQueue *input_queue;
+    GAsyncQueue *output_queue;
+    gchar       *name;
 };
+
+/*
+ * public non-virtual methods
+ */
+void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *input_queue)
+{
+    g_async_queue_ref(input_queue);
+    self->priv->input_queue = input_queue;
+}
+
+void ufo_filter_set_output_queue(UfoFilter *self, GAsyncQueue *output_queue)
+{
+    g_async_queue_ref(output_queue);
+    self->priv->output_queue = output_queue;
+}
+
+GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *self)
+{
+    return self->priv->input_queue;
+}
+
+GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *self)
+{
+    return self->priv->output_queue;
+}
 
 /* 
  * private methods
@@ -59,19 +87,23 @@ static void ufo_filter_get_property(GObject *object,
 /* 
  * virtual methods
  */
-void ufo_filter_process(UfoFilter *self, 
-    UfoBuffer *input, 
-    UfoBuffer *output)
+void ufo_filter_process(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
-    UFO_FILTER_GET_CLASS(self)->process(self, input, output);
+    UFO_FILTER_GET_CLASS(self)->process(self);
 }
 
-static void ufo_filter_process_default(UfoFilter *self, 
-    UfoBuffer *input, 
-    UfoBuffer *output)
+static void ufo_filter_process_default(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
+}
+
+static void ufo_filter_dispose(GObject *object)
+{
+    UfoFilter *self = UFO_FILTER(object);
+    g_async_queue_unref(self->priv->input_queue);
+    g_async_queue_unref(self->priv->output_queue);
+    G_OBJECT_CLASS(ufo_filter_parent_class)->dispose(object);
 }
 
 /*
@@ -84,6 +116,7 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
 
     gobject_class->set_property = ufo_filter_set_property;
     gobject_class->get_property = ufo_filter_get_property;
+    gobject_class->dispose = ufo_filter_dispose;
 
     /* install properties */
     GParamSpec *pspec;
@@ -107,5 +140,7 @@ static void ufo_filter_init(UfoFilter *self)
     /* init private fields */
     UfoFilterPrivate *priv;
     self->priv = priv = UFO_FILTER_GET_PRIVATE(self);
+    priv->input_queue = NULL;
+    priv->output_queue = NULL;
 }
 

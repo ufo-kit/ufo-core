@@ -28,17 +28,18 @@ static void deactivated(EthosPlugin *plugin)
 /* 
  * virtual methods 
  */
-static void ufo_filter_uca_process(UfoFilter *self, UfoBuffer *input, UfoBuffer *output)
+static void ufo_filter_uca_process(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
     g_message("libuca: processing data");
 
     /* TODO: grab a frame and update output */
+    g_async_queue_push(ufo_filter_get_output_queue(self), NULL);
 
     /* call parent */
     UfoFilterUCAClass *klass = UFO_FILTER_UCA_GET_CLASS(self);
     UfoFilterClass *parent_class = g_type_class_peek_parent(klass);
-    parent_class->process(UFO_FILTER(self), input, output);
+    parent_class->process(UFO_FILTER(self));
 }
 
 static void ufo_filter_uca_class_init(UfoFilterUCAClass *klass)

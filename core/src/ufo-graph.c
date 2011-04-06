@@ -2,6 +2,7 @@
 #include <ethos/ethos.h>
 #include "ufo-graph.h"
 #include "ufo-filter.h"
+#include "ufo-connection.h"
 
 G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 
@@ -10,7 +11,7 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 struct _UfoGraphPrivate {
     EthosManager    *ethos;
     UfoFilter       *root;
-    GHashTable      *graph;
+    GList           *graph;
     GHashTable      *plugins;
 };
 
@@ -19,7 +20,7 @@ GList *ufo_graph_get_filter_names(UfoGraph *self)
     return g_hash_table_get_keys(self->priv->plugins);
 }
 
-UfoFilter *ufo_graph_create_node(UfoGraph *self, guchar *filter_name)
+UfoFilter *ufo_graph_create_node(UfoGraph *self, gchar *filter_name)
 {
     EthosPlugin *plugin = g_hash_table_lookup(self->priv->plugins, filter_name);
     /* TODO: When we move to libpeas we have to instantiate new objects each
@@ -32,16 +33,16 @@ UfoFilter *ufo_graph_create_node(UfoGraph *self, guchar *filter_name)
 
 void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst)
 {
-    g_hash_table_replace(self->priv->graph, src, dst);
-    g_hash_table_replace(self->priv->graph, dst, NULL);
+    UfoConnection *connection = ufo_connection_new();
+    ufo_connection_set_filters(connection, src, dst);
+
+    GAsyncQueue *queue = ufo_connection_get_queue(connection);
+    ufo_filter_set_output_queue(src, queue);
+    ufo_filter_set_input_queue(dst, queue);
 }
 
 void ufo_graph_run(UfoGraph *self)
 {
-    UfoFilter *node = self->priv->root;
-    while (node != NULL) {
-        node = g_hash_table_lookup(self->priv->graph, node);
-    }
 }
 
 UfoGraph *ufo_graph_new()
@@ -54,7 +55,7 @@ static void ufo_graph_dispose(GObject *gobject)
     UfoGraph *self = UFO_GRAPH(gobject);
     
     if (self->priv->graph) {
-        g_hash_table_destroy(self->priv->graph);
+        g_list_free(self->priv->graph);
         self->priv->graph = NULL;
     }
 
@@ -101,7 +102,7 @@ static void ufo_graph_init(UfoGraph *self)
     g_list_foreach(plugin_info, &ufo_graph_add_plugin, priv);
     g_list_free(plugin_info);
 
-    priv->graph = g_hash_table_new(NULL, NULL);
+    priv->graph = NULL;
 }
 
 

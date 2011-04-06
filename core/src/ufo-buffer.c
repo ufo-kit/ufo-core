@@ -112,7 +112,6 @@ cl_mem ufo_buffer_get_gpu_data(UfoBuffer *self)
 /* 
  * virtual methods 
  */
-
 static void ufo_buffer_finalize(GObject *gobject)
 {
     UfoBuffer *self = UFO_BUFFER(gobject);

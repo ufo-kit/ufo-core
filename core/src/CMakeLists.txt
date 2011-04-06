@@ -5,14 +5,14 @@ set(ufocore_SRCS
     ufo-graph.c
     ufo-buffer.c
     ufo-filter.c
-    ufo-resource-manager.c
+    ufo-connection.c
     )
 
 set(ufocore_HDRS
     ufo-graph.h
     ufo-buffer.h
     ufo-filter.h
-    ufo-resource-manager.h
+    ufo-connection.h
     )
 
 
