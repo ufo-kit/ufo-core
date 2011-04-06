@@ -1,11 +1,10 @@
 #ifndef __UFO_FILTER_H
 #define __UFO_FILTER_H
 
-#include <glib.h>
 #include <glib-object.h>
 #include <ethos/ethos.h>
 
-#include "ufo-buffer.h"
+#include "ufo-resource-manager.h"
 
 #define UFO_TYPE_FILTER             (ufo_filter_get_type())
 #define UFO_FILTER(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_FILTER, UfoFilter))
@@ -41,6 +40,8 @@ struct _UfoFilterClass {
 void ufo_filter_process(UfoFilter *self);
 
 /* non-virtual public methods */
+void ufo_filter_set_resource_manager(UfoFilter *self, UfoResourceManager *resource_manager);
+UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self);
 void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *input_queue);
 void ufo_filter_set_output_queue(UfoFilter *self, GAsyncQueue *output_queue);
 GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *self);

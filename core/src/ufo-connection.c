@@ -22,6 +22,11 @@ GAsyncQueue *ufo_connection_get_queue(UfoConnection *self)
     return self->priv->queue;
 }
 
+UfoFilter *ufo_connection_get_destination(UfoConnection *self)
+{
+    return self->priv->destination_filter;
+}
+
 void ufo_connection_set_filters(UfoConnection *self, UfoFilter *src, UfoFilter *dst)
 {
     self->priv->source_filter = src;

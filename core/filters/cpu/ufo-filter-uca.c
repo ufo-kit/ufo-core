@@ -1,8 +1,10 @@
 #include <gmodule.h>
 #include <uca/uca.h>
+
 #include "ufo-filter-uca.h"
 #include "ufo-filter.h"
 #include "ufo-buffer.h"
+#include "ufo-resource-manager.h"
 
 
 struct _UfoFilterUCAPrivate {
@@ -34,7 +36,10 @@ static void ufo_filter_uca_process(UfoFilter *self)
     g_message("libuca: processing data");
 
     /* TODO: grab a frame and update output */
-    g_async_queue_push(ufo_filter_get_output_queue(self), NULL);
+    UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
+    UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 640, 480);
+
+    g_async_queue_push(ufo_filter_get_output_queue(self), buffer);
 
     /* call parent */
     UfoFilterUCAClass *klass = UFO_FILTER_UCA_GET_CLASS(self);

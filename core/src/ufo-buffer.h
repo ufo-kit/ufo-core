@@ -1,7 +1,6 @@
 #ifndef __UFO_BUFFER_H
 #define __UFO_BUFFER_H
 
-#include <glib.h>
 #include <glib-object.h>
 #include <CL/cl.h>
 
@@ -39,7 +38,7 @@ struct _UfoBufferClass {
 /* virtual public methods */
 
 /* non-virtual public methods */
-UfoBuffer *ufo_buffer_new(gint32 width, gint32 height, gint32 bytes_per_pixel);
+UfoBuffer *ufo_buffer_new(gint32 width, gint32 height);
 
 void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height);
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);

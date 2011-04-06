@@ -1,8 +1,9 @@
 #ifndef __UFO_RESOURCE_MANAGER_H
 #define __UFO_RESOURCE_MANAGER_H
 
-#include <glib.h>
 #include <glib-object.h>
+
+#include "ufo-buffer.h"
 
 #define UFO_TYPE_RESOURCE_MANAGER             (ufo_resource_manager_get_type())
 #define UFO_RESOURCE_MANAGER(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_RESOURCE_MANAGER, UfoResourceManager))
@@ -38,6 +39,8 @@ struct _UfoResourceManagerClass {
 /* non-virtual public methods */
 
 UfoResourceManager *ufo_resource_manager_new();
+UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32 width, guint32 height);
+void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *buffer);
 
 GType ufo_resource_manager_get_type(void);
 

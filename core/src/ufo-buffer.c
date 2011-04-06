@@ -35,7 +35,7 @@ struct _UfoBufferPrivate {
  *
  * \return Buffer with allocated memory
  */
-UfoBuffer *ufo_buffer_new(gint32 width, gint32 height, gint32 bytes_per_pixel)
+UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
 {
     UfoBuffer *buffer = g_object_new(UFO_TYPE_BUFFER, NULL);
     ufo_buffer_set_dimensions(buffer, width, height);

@@ -1,7 +1,7 @@
 #include <glib.h>
 #include <ethos/ethos.h>
+
 #include "ufo-graph.h"
-#include "ufo-filter.h"
 #include "ufo-connection.h"
 
 G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
@@ -11,8 +11,8 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 struct _UfoGraphPrivate {
     EthosManager    *ethos;
     UfoFilter       *root;
-    GList           *graph;
-    GHashTable      *plugins;
+    GHashTable      *graph;     /**< maps from UfoFilter* to UfoConnection* */
+    GHashTable      *plugins;   /**< maps from gchar* to EthosPlugin* */
 };
 
 GList *ufo_graph_get_filter_names(UfoGraph *self)
@@ -31,6 +31,11 @@ UfoFilter *ufo_graph_create_node(UfoGraph *self, gchar *filter_name)
     return NULL;
 }
 
+void ufo_graph_set_root(UfoGraph *self, UfoFilter *root)
+{
+    self->priv->root = root;
+}
+
 void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst)
 {
     UfoConnection *connection = ufo_connection_new();
@@ -39,10 +44,23 @@ void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst)
     GAsyncQueue *queue = ufo_connection_get_queue(connection);
     ufo_filter_set_output_queue(src, queue);
     ufo_filter_set_input_queue(dst, queue);
+
+    g_hash_table_replace(self->priv->graph, src, connection);
+    g_hash_table_replace(self->priv->graph, dst, NULL);
 }
 
 void ufo_graph_run(UfoGraph *self)
 {
+    UfoFilter *src = self->priv->root;
+
+    /* TODO: Let run as long as root produces data */
+    while (src != NULL) {
+        /* TODO: start filters as CPU threads */
+        ufo_filter_process(src);
+        UfoConnection *connection = g_hash_table_lookup(self->priv->graph, src);
+
+        src = ufo_connection_get_destination(connection);
+    }
 }
 
 UfoGraph *ufo_graph_new()
@@ -55,8 +73,13 @@ static void ufo_graph_dispose(GObject *gobject)
     UfoGraph *self = UFO_GRAPH(gobject);
     
     if (self->priv->graph) {
-        g_list_free(self->priv->graph);
+        g_hash_table_destroy(self->priv->graph);
         self->priv->graph = NULL;
+    }
+
+    if (self->priv->plugins) {
+        g_hash_table_destroy(self->priv->plugins);
+        self->priv->plugins = NULL;
     }
 
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(gobject);
@@ -76,6 +99,8 @@ static void ufo_graph_add_plugin(gpointer data, gpointer user_data)
 {
     EthosPluginInfo *info = (EthosPluginInfo *) data;
     UfoGraphPrivate *priv = (UfoGraphPrivate *) user_data;
+
+    g_message("Load filter: %s", ethos_plugin_info_get_name(info));
 
     g_hash_table_insert(priv->plugins, 
         (gpointer) ethos_plugin_info_get_name(info),
@@ -102,7 +127,8 @@ static void ufo_graph_init(UfoGraph *self)
     g_list_foreach(plugin_info, &ufo_graph_add_plugin, priv);
     g_list_free(plugin_info);
 
-    priv->graph = NULL;
+    priv->graph = g_hash_table_new(NULL, NULL);
+    priv->root = NULL;
 }
 
 

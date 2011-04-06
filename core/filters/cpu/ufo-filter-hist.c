@@ -1,7 +1,9 @@
 #include <gmodule.h>
+
 #include "ufo-filter-hist.h"
 #include "ufo-filter.h"
 #include "ufo-buffer.h"
+#include "ufo-resource-manager.h"
 
 
 struct _UfoFilterHistPrivate {
@@ -36,6 +38,9 @@ static void ufo_filter_hist_process(UfoFilter *self)
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(ufo_filter_get_input_queue(self));
     g_message("input = %p", input);
+
+    UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
+    ufo_resource_manager_release_buffer(manager, input);
 
     /* call parent */
     UfoFilterHistClass *klass = UFO_FILTER_HIST_GET_CLASS(self);

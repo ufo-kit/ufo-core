@@ -1,5 +1,6 @@
 #include <glib.h>
 #include <CL/cl.h>
+
 #include "ufo-resource-manager.h"
 
 G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT);
@@ -13,6 +14,19 @@ UfoResourceManager *ufo_resource_manager_new()
 {
     return g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL);
 }
+
+UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32 width, guint32 height)
+{
+    /* TODO: manage memory pool to avoid recreation of (expensive) buffers */
+    UfoBuffer *buffer = ufo_buffer_new(width, height);
+    return buffer;
+}
+
+void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *buffer)
+{
+    /* TODO: put back into memory pool */
+}
+
 
 static void ufo_resource_manager_dispose(GObject *gobject)
 {

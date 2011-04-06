@@ -1,7 +1,8 @@
 #include <glib.h>
 #include <gmodule.h>
+
 #include "ufo-filter.h"
-#include "ufo-buffer.h"
+#include "ufo-graph.h"
 
 G_DEFINE_TYPE(UfoFilter, ufo_filter, ETHOS_TYPE_PLUGIN);
 
@@ -14,14 +15,31 @@ enum {
 };
 
 struct _UfoFilterPrivate {
-    GAsyncQueue *input_queue;
-    GAsyncQueue *output_queue;
-    gchar       *name;
+    GAsyncQueue         *input_queue;
+    GAsyncQueue         *output_queue;
+    UfoGraph            *graph;
+    UfoResourceManager  *resource_manager;
+    gchar               *name;
 };
 
 /*
  * public non-virtual methods
  */
+void ufo_filter_set_graph(UfoFilter *self, UfoGraph *graph)
+{
+    self->priv->graph = graph;    
+}
+
+void ufo_filter_set_resource_manager(UfoFilter *self, UfoResourceManager *resource_manager)
+{
+    self->priv->resource_manager = resource_manager;
+}
+
+UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self)
+{
+    return self->priv->resource_manager;
+}
+
 void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *input_queue)
 {
     g_async_queue_ref(input_queue);

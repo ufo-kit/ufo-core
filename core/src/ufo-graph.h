@@ -1,8 +1,9 @@
 #ifndef __UFO_GRAPH_H
 #define __UFO_GRAPH_H
 
-#include <glib.h>
 #include <glib-object.h>
+
+#include "ufo-buffer.h"
 #include "ufo-filter.h"
 
 #define UFO_TYPE_GRAPH             (ufo_graph_get_type())
@@ -37,9 +38,9 @@ struct _UfoGraphClass {
 /* virtual public methods */
 
 /* non-virtual public methods */
-
 GList *ufo_graph_get_filter_names(UfoGraph *self);
 UfoFilter *ufo_graph_create_node(UfoGraph *self, gchar *filter_name);
+void ufo_graph_set_root(UfoGraph *self, UfoFilter *root);
 void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst);
 void ufo_graph_run(UfoGraph *self);
 

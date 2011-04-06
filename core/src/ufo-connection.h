@@ -39,6 +39,7 @@ struct _UfoConnectionClass {
 /* non-virtual public methods */
 UfoConnection *ufo_connection_new();
 GAsyncQueue *ufo_connection_get_queue(UfoConnection *self);
+UfoFilter *ufo_connection_get_destination(UfoConnection *self);
 void ufo_connection_set_filters(UfoConnection *self, UfoFilter *src, UfoFilter *dst);
 
 
