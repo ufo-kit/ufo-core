@@ -74,6 +74,30 @@ void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data)
 }
 
 /*
+ * \brief Spread raw data 
+ *
+ * This method is used to re-interpret the raw data put in with
+ * ufo_buffer_set_cpu_data().
+ */
+void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth)
+{
+    float *dst = self->priv->cpu_data;
+    /* To save a memory allocation and several copies, we process data from back
+     * to front. This is possible if src bit depth is at most half as wide as
+     * the 32-bit target buffer. The processor cache should not be a problem. */
+    if (source_depth == UFO_BUFFER_DEPTH_8) {
+        guint8 *src = (guint8 *) self->priv->cpu_data;
+        for (int index = self->priv->width * self->priv->height; index >= 0; index--)
+            dst[index] = src[index] / 255.0;
+    }
+    else if (source_depth == UFO_BUFFER_DEPTH_16) {
+        guint16 *src = (guint16 *) self->priv->cpu_data;
+        for (int index = self->priv->width * self->priv->height; index >= 0; index--)
+            dst[index] = src[index] / 65535.0;
+    }
+}
+
+/*
  * \brief Get raw pixel data in a flat array (row-column format)
  *
  * \return Pointer to a character array of raw data bytes
@@ -88,7 +112,8 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *self)
             self->priv->state = CPU_DATA_VALID;
             break;
         case NO_DATA:
-            return NULL;
+            self->priv->cpu_data = g_malloc0(self->priv->width * self->priv->height * sizeof(float));
+            break;
     }
 
     return self->priv->cpu_data;

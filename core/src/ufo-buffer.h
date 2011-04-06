@@ -35,11 +35,17 @@ struct _UfoBufferClass {
     /* virtual public methods */
 };
 
+enum {
+    UFO_BUFFER_DEPTH_8,
+    UFO_BUFFER_DEPTH_16
+};
+
 /* virtual public methods */
 
 /* non-virtual public methods */
 UfoBuffer *ufo_buffer_new(gint32 width, gint32 height);
 
+void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth);
 void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height);
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 
