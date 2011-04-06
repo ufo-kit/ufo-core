@@ -20,12 +20,10 @@ G_DEFINE_TYPE(UfoFilterHist, ufo_filter_hist, UFO_TYPE_FILTER);
 
 static void activated(EthosPlugin *plugin)
 {
-    g_message("Hist plugin activated");
 }
 
 static void deactivated(EthosPlugin *plugin)
 {
-    g_message("Hist plugin deactivated");
 }
 
 /* 
@@ -34,18 +32,12 @@ static void deactivated(EthosPlugin *plugin)
 static void ufo_filter_hist_process(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
-    g_message("processing data");
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(ufo_filter_get_input_queue(self));
-    g_message("input = %p", input);
+    g_message("got buffer %p", input);
 
     UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
     ufo_resource_manager_release_buffer(manager, input);
-
-    /* call parent */
-    UfoFilterHistClass *klass = UFO_FILTER_HIST_GET_CLASS(self);
-    UfoFilterClass *parent_class = g_type_class_peek_parent(klass);
-    parent_class->process(UFO_FILTER(self));
 }
 
 static void ufo_filter_hist_class_init(UfoFilterHistClass *klass)

@@ -58,8 +58,7 @@ void ufo_graph_run(UfoGraph *self)
         /* TODO: start filters as CPU threads */
         ufo_filter_process(src);
         UfoConnection *connection = g_hash_table_lookup(self->priv->graph, src);
-
-        src = ufo_connection_get_destination(connection);
+        src = connection == NULL ? NULL : ufo_connection_get_destination(connection);
     }
 }
 

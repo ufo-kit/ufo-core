@@ -30,21 +30,24 @@ static void deactivated(EthosPlugin *plugin)
 /* 
  * virtual methods 
  */
+static void ufo_filter_uca_dispose(GObject *object)
+{
+    UfoFilterUCAPrivate *priv = UFO_FILTER_UCA_GET_PRIVATE(object);
+    uca_destroy(priv->u);
+
+    G_OBJECT_CLASS(ufo_filter_uca_parent_class)->dispose(object);
+}
+
 static void ufo_filter_uca_process(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
-    g_message("libuca: processing data");
 
     /* TODO: grab a frame and update output */
     UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
     UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 640, 480);
+    g_message("send buffer %p", buffer);
 
     g_async_queue_push(ufo_filter_get_output_queue(self), buffer);
-
-    /* call parent */
-    UfoFilterUCAClass *klass = UFO_FILTER_UCA_GET_CLASS(self);
-    UfoFilterClass *parent_class = g_type_class_peek_parent(klass);
-    parent_class->process(UFO_FILTER(self));
 }
 
 static void ufo_filter_uca_class_init(UfoFilterUCAClass *klass)
@@ -53,6 +56,7 @@ static void ufo_filter_uca_class_init(UfoFilterUCAClass *klass)
     EthosPluginClass *plugin_class = ETHOS_PLUGIN_CLASS(klass);
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
 
+    object_class->dispose = ufo_filter_uca_dispose;
     filter_class->process = ufo_filter_uca_process;
     plugin_class->activated = activated;
     plugin_class->deactivated = deactivated;
@@ -69,6 +73,7 @@ static void ufo_filter_uca_init(UfoFilterUCA *self)
     self->priv = UFO_FILTER_UCA_GET_PRIVATE(self);
     self->priv->u = uca_init(NULL);
     self->priv->cam = self->priv->u->cameras;
+    g_message("uca instance = %p", self->priv->u);
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

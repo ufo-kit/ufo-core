@@ -40,16 +40,16 @@ UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self)
     return self->priv->resource_manager;
 }
 
-void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *input_queue)
+void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *queue)
 {
-    g_async_queue_ref(input_queue);
-    self->priv->input_queue = input_queue;
+    g_async_queue_ref(queue);
+    self->priv->input_queue = queue;
 }
 
-void ufo_filter_set_output_queue(UfoFilter *self, GAsyncQueue *output_queue)
+void ufo_filter_set_output_queue(UfoFilter *self, GAsyncQueue *queue)
 {
-    g_async_queue_ref(output_queue);
-    self->priv->output_queue = output_queue;
+    g_async_queue_ref(queue);
+    self->priv->output_queue = queue;
 }
 
 GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *self)
