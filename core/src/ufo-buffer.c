@@ -113,6 +113,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *self)
             break;
         case NO_DATA:
             self->priv->cpu_data = g_malloc0(self->priv->width * self->priv->height * sizeof(float));
+            self->priv->state = CPU_DATA_VALID;
             break;
     }
 
