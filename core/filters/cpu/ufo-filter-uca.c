@@ -20,6 +20,10 @@ G_DEFINE_TYPE(UfoFilterUCA, ufo_filter_uca, UFO_TYPE_FILTER);
 
 #define UFO_FILTER_UCA_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_UCA, UfoFilterUCAPrivate))
 
+
+/* 
+ * virtual methods 
+ */
 static void activated(EthosPlugin *plugin)
 {
 }
@@ -28,9 +32,6 @@ static void deactivated(EthosPlugin *plugin)
 {
 }
 
-/* 
- * virtual methods 
- */
 static void ufo_filter_uca_dispose(GObject *object)
 {
     UfoFilterUCAPrivate *priv = UFO_FILTER_UCA_GET_PRIVATE(object);

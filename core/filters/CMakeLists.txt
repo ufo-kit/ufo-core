@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 # --- Set sources -------------------------------------------------------------
 set(ufofilter_SRCS 
     cpu/ufo-filter-hist.c
+    cpu/ufo-filter-raw.c
     )
 
 set(ufofilter_LIBS

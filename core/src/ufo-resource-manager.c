@@ -43,7 +43,6 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32
         if (buffer == NULL)
             buffer = ufo_buffer_new(width, height);
     }
-    g_message("requesting buffer %p", buffer);
     
     return buffer;
 }
@@ -53,8 +52,6 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *bu
     gint32 width, height;
     ufo_buffer_get_dimensions(buffer, &width, &height);
     const gpointer hash = GINT_TO_POINTER(ufo_resource_manager_hash_dims(width, height));
-
-    g_message("putting buffer %p back", buffer);
 
     GQueue *queue = g_hash_table_lookup(self->priv->buffers, hash);
     if (queue == NULL) { /* should not be the case */

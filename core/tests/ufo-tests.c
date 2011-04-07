@@ -11,9 +11,9 @@ START_TEST (ufo_create)
     UfoGraph *graph = ufo_graph_new();
     fail_if(graph == NULL);
     UfoFilter *uca_reader = ufo_graph_create_node(graph, "uca");
-    UfoFilter *histogram = ufo_graph_create_node(graph, "histogram");
+    UfoFilter *raw_writer = ufo_graph_create_node(graph, "raw");
     ufo_graph_set_root(graph, uca_reader);
-    ufo_graph_connect(graph, uca_reader, histogram);
+    ufo_graph_connect(graph, uca_reader, raw_writer);
     ufo_graph_run(graph);
     g_object_unref(graph);
 }
