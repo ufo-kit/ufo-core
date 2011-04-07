@@ -9,10 +9,11 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
 struct _UfoGraphPrivate {
-    EthosManager    *ethos;
-    UfoFilter       *root;
-    GHashTable      *graph;     /**< maps from UfoFilter* to UfoConnection* */
-    GHashTable      *plugins;   /**< maps from gchar* to EthosPlugin* */
+    EthosManager        *ethos;
+    UfoFilter           *root;
+    UfoResourceManager  *resource_manager;
+    GHashTable          *graph;     /**< maps from UfoFilter* to UfoConnection* */
+    GHashTable          *plugins;   /**< maps from gchar* to EthosPlugin* */
 };
 
 GList *ufo_graph_get_filter_names(UfoGraph *self)
@@ -26,7 +27,9 @@ UfoFilter *ufo_graph_create_node(UfoGraph *self, gchar *filter_name)
     /* TODO: When we move to libpeas we have to instantiate new objects each
      * time a user requests a new stateful node. */
     if (plugin != NULL) {
-        return (UfoFilter *) plugin;
+        UfoFilter *filter = (UfoFilter *) plugin;
+        ufo_filter_set_resource_manager(filter, self->priv->resource_manager);
+        return filter;
     }
     return NULL;
 }
@@ -81,6 +84,11 @@ static void ufo_graph_dispose(GObject *gobject)
         self->priv->plugins = NULL;
     }
 
+    if (self->priv->resource_manager) {
+        g_object_unref(self->priv->resource_manager);
+        self->priv->resource_manager = NULL;
+    }
+
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(gobject);
 }
 
@@ -128,6 +136,7 @@ static void ufo_graph_init(UfoGraph *self)
 
     priv->graph = g_hash_table_new(NULL, NULL);
     priv->root = NULL;
+    priv->resource_manager = ufo_resource_manager_new();
 }
 
 
