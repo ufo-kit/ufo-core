@@ -3,7 +3,7 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include "ufo-filter.h"
+#include "ufo-element.h"
 
 #define UFO_TYPE_CONNECTION             (ufo_connection_get_type())
 #define UFO_CONNECTION(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_CONNECTION, UfoConnection))
@@ -39,8 +39,8 @@ struct _UfoConnectionClass {
 /* non-virtual public methods */
 UfoConnection *ufo_connection_new();
 GAsyncQueue *ufo_connection_get_queue(UfoConnection *self);
-UfoFilter *ufo_connection_get_destination(UfoConnection *self);
-void ufo_connection_set_filters(UfoConnection *self, UfoFilter *src, UfoFilter *dst);
+UfoElement *ufo_connection_get_destination(UfoConnection *self);
+void ufo_connection_set_elements(UfoConnection *self, UfoElement *src, UfoElement *dst);
 
 
 GType ufo_connection_get_type(void);

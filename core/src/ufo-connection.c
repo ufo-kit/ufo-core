@@ -1,5 +1,5 @@
 #include <glib.h>
-#include <CL/cl.h>
+
 #include "ufo-connection.h"
 
 G_DEFINE_TYPE(UfoConnection, ufo_connection, G_TYPE_OBJECT);
@@ -7,8 +7,8 @@ G_DEFINE_TYPE(UfoConnection, ufo_connection, G_TYPE_OBJECT);
 #define UFO_CONNECTION_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_CONNECTION, UfoConnectionPrivate))
 
 struct _UfoConnectionPrivate {
-    UfoFilter   *source_filter;
-    UfoFilter   *destination_filter;
+    UfoElement   *source;
+    UfoElement   *destination;
     GAsyncQueue *queue;
 };
 
@@ -22,15 +22,15 @@ GAsyncQueue *ufo_connection_get_queue(UfoConnection *self)
     return self->priv->queue;
 }
 
-UfoFilter *ufo_connection_get_destination(UfoConnection *self)
+UfoElement *ufo_connection_get_destination(UfoConnection *self)
 {
-    return self->priv->destination_filter;
+    return self->priv->destination;
 }
 
-void ufo_connection_set_filters(UfoConnection *self, UfoFilter *src, UfoFilter *dst)
+void ufo_connection_set_elements(UfoConnection *self, UfoElement *src, UfoElement *dst)
 {
-    self->priv->source_filter = src;
-    self->priv->destination_filter = dst;
+    self->priv->source = src;
+    self->priv->destination = dst;
 }
 
 static void ufo_connection_dispose(GObject *gobject)
@@ -58,8 +58,8 @@ static void ufo_connection_init(UfoConnection *self)
 
     /* init private fields */
     self->priv = UFO_CONNECTION_GET_PRIVATE(self);
-    self->priv->source_filter = NULL;
-    self->priv->destination_filter = NULL;
+    self->priv->source = NULL;
+    self->priv->destination = NULL;
     self->priv->queue = g_async_queue_new();
 }
 

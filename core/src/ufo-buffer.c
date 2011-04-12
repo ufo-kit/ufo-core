@@ -74,7 +74,7 @@ void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data)
 }
 
 /*
- * \brief Spread raw data 
+ * \brief Spread raw data without increasing the contrast
  *
  * This method is used to re-interpret the raw data put in with
  * ufo_buffer_set_cpu_data().
