@@ -18,7 +18,7 @@ typedef struct _UfoFilterClass      UfoFilterClass;
 typedef struct _UfoFilterPrivate    UfoFilterPrivate;
 
 struct _UfoFilter {
-    EthosPlugin parent;
+    EthosPlugin parent_instance;
 
     /* public */
     gboolean is_gpu_enabled;

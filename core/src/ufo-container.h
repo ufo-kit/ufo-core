@@ -18,7 +18,7 @@ typedef struct _UfoContainerClass      UfoContainerClass;
 typedef struct _UfoContainerPrivate    UfoContainerPrivate;
 
 struct _UfoContainer {
-    UfoElement parent;
+    UfoElement parent_instance;
 
     /* public */
 
@@ -38,6 +38,7 @@ struct _UfoContainerClass {
 
 /* non-virtual public methods */
 UfoContainer *ufo_container_new();
+void ufo_container_add_element(UfoContainer *container, UfoElement *element);
 
 GType ufo_container_get_type(void);
 

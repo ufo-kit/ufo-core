@@ -18,7 +18,7 @@ typedef struct _UfoElementClass      UfoElementClass;
 typedef struct _UfoElementPrivate    UfoElementPrivate;
 
 struct _UfoElement {
-    GObject parent;
+    GObject parent_instance;
 
     /* public */
 
@@ -35,6 +35,8 @@ struct _UfoElementClass {
 };
 
 /* non-virtual public methods */
+UfoElement *ufo_element_new();
+
 UfoFilter *ufo_element_get_filter(UfoElement *element);
 void ufo_element_set_filter(UfoElement *element, UfoFilter *filter);
 

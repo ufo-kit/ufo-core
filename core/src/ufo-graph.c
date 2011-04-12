@@ -51,47 +51,65 @@ void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst)
     g_hash_table_replace(self->priv->graph, dst, NULL);
 }
 
-static void ufo_build_graph(UfoGraph *self, JsonNode *node)
+void ufo_graph_build(JsonNode *node, UfoContainer **container)
 {
-    /* We look for a sequence, split or filter node and add those recursively. */    
+    JsonObject *object = json_node_get_object(node);
+    if (json_object_get_member(object, "type")) {
+        const char *type = json_object_get_string_member(object, "type");
 
+        if (g_strcmp0(type, "filter") == 0) {
+            g_message("add filter");
+            /* TODO: pull out plugin-name and parameters and wire it into the
+             * element */
+            ufo_container_add_element(*container, ufo_element_new());
+        }
+        else {
+            UfoContainer *new_container = NULL;
+            if (g_strcmp0(type, "sequence") == 0)
+                new_container = ufo_sequence_new();
+            else if (g_strcmp0(type, "split") == 0)
+                new_container = ufo_split_new();
+
+            /* Neither filter, sequence or split... just return */
+            if (new_container == NULL)
+                return;
+            
+            /* If we have a root container, assign the newly created one */
+            if (*container == NULL)
+                *container = new_container;
+
+            ufo_container_add_element(*container, (UfoElement *) new_container);
+            JsonArray *elements = json_object_get_array_member(object, "elements");
+            for (guint i = 0; i < json_array_get_length(elements); i++) 
+                ufo_graph_build(json_array_get_element(elements, i), &new_container);
+        }
+    }
 }
 
 void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename)
 {
     static const char *config = 
         "{"
-        "  \"properties\" : { \"foo\" : 42 },"
-        "  \"sequence\" : ["
-        "     { \"filter\" : \"file-reader\" },"
-        "     { \"filter\" : \"noise-reduction\" }"
-        "  ]"
+        "   \"type\" : \"sequence\","
+        "   \"elements\" : ["
+        "       { \"type\" : \"filter\", \"plugin\" : \"file-reader\" },"
+        "       { \"type\" : \"sequence\", \"elements\" : ["
+        "           { \"type\" : \"filter\", \"plugin\" : \"noise-reduction\" }"
+        "       ] }"
+        "   ]"
         "}\0";
 
     JsonParser *parser = json_parser_new();
     GError *error = NULL;
     json_parser_load_from_data(parser, config, -1, &error);
     if (error) {
+        g_message("Parse error: %s", error->message);
         g_error_free(error);
         g_object_unref(parser);
         return;
     }
 
-    JsonNode *root = json_parser_get_root(parser);
-
-    JsonObject *object = json_node_get_object(root);
-    GList *children = json_object_get_members(object);
-    for (guint i = 0; i < g_list_length(children); i++) {
-        const char *name = (const char *) g_list_nth_data(children, i);
-        if (g_strcmp0(name, "sequence") == 0) {
-            self->priv->root_container = (UfoContainer *) ufo_sequence_new();
-        }
-        else if (g_strcmp0(name, "split") == 0) {
-            self->priv->root_container = (UfoContainer *) ufo_split_new();
-        }
-    }
-
-    ufo_build_graph(self, root);
+    ufo_graph_build(json_parser_get_root(parser), &self->priv->root_container);
     g_object_unref(parser);
 }
 
@@ -126,16 +144,6 @@ static void ufo_graph_dispose(GObject *gobject)
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(gobject);
 }
 
-static void ufo_graph_class_init(UfoGraphClass *klass)
-{
-    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-
-    gobject_class->dispose = ufo_graph_dispose;
-
-    /* install private data */
-    g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
-}
-
 static void ufo_graph_add_plugin(gpointer data, gpointer user_data)
 {
     EthosPluginInfo *info = (EthosPluginInfo *) data;
@@ -146,6 +154,16 @@ static void ufo_graph_add_plugin(gpointer data, gpointer user_data)
     g_hash_table_insert(priv->plugins, 
         (gpointer) ethos_plugin_info_get_name(info),
         ethos_manager_get_plugin(priv->ethos, info));
+}
+
+static void ufo_graph_class_init(UfoGraphClass *klass)
+{
+    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+
+    gobject_class->dispose = ufo_graph_dispose;
+
+    /* install private data */
+    g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
 }
 
 static void ufo_graph_init(UfoGraph *self)

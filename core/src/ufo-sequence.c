@@ -6,6 +6,7 @@ G_DEFINE_TYPE(UfoSequence, ufo_sequence, UFO_TYPE_CONTAINER);
 
 
 struct _UfoSequencePrivate {
+    int dummy;
 };
 
 
@@ -22,10 +23,9 @@ struct _UfoSequencePrivate {
  *
  * \return Buffer with allocated memory
  */
-UfoSequence *ufo_sequence_new()
+UfoContainer *ufo_sequence_new()
 {
-    UfoSequence *sequence = g_object_new(UFO_TYPE_SEQUENCE, NULL);
-    return sequence;
+    return g_object_new(UFO_TYPE_SEQUENCE, NULL);
 }
 
 /* 

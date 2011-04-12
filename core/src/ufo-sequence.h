@@ -18,7 +18,7 @@ typedef struct _UfoSequenceClass      UfoSequenceClass;
 typedef struct _UfoSequencePrivate    UfoSequencePrivate;
 
 struct _UfoSequence {
-    UfoContainer parent;
+    UfoContainer parent_instance;
 
     /* public */
 
@@ -37,7 +37,7 @@ struct _UfoSequenceClass {
 /* virtual public methods */
 
 /* non-virtual public methods */
-UfoSequence *ufo_sequence_new();
+UfoContainer *ufo_sequence_new();
 
 GType ufo_sequence_get_type(void);
 

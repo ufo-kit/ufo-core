@@ -26,8 +26,7 @@ struct _UfoContainerPrivate {
  */
 UfoContainer *ufo_container_new()
 {
-    UfoContainer *container = g_object_new(UFO_TYPE_CONTAINER, NULL);
-    return container;
+    return g_object_new(UFO_TYPE_CONTAINER, NULL);
 }
 
 void ufo_container_add_element(UfoContainer *container, UfoElement *element)

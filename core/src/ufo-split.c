@@ -6,6 +6,7 @@ G_DEFINE_TYPE(UfoSplit, ufo_split, UFO_TYPE_CONTAINER);
 
 
 struct _UfoSplitPrivate {
+    int dummy;
 };
 
 
@@ -22,10 +23,9 @@ struct _UfoSplitPrivate {
  *
  * \return Buffer with allocated memory
  */
-UfoSplit *ufo_split_new()
+UfoContainer *ufo_split_new()
 {
-    UfoSplit *split = g_object_new(UFO_TYPE_SPLIT, NULL);
-    return split;
+    return g_object_new(UFO_TYPE_SPLIT, NULL);
 }
 
 /* 

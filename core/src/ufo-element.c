@@ -3,7 +3,7 @@
 
 G_DEFINE_TYPE(UfoElement, ufo_element, G_TYPE_OBJECT)
 
-#define UFO_ELEMENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER, UfoElementPrivate))
+#define UFO_ELEMENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_ELEMENT, UfoElementPrivate))
 
 enum {
     PROP_0,
@@ -18,6 +18,11 @@ struct _UfoElementPrivate {
 /*
  * public non-virtual methods
  */
+UfoElement *ufo_element_new()
+{
+    return g_object_new(UFO_TYPE_ELEMENT, NULL);
+}
+
 UfoFilter *ufo_element_get_filter(UfoElement *element)
 {
     return element->priv->filter;
