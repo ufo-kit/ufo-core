@@ -32,6 +32,7 @@ struct _UfoContainerClass {
     /* class members */
 
     /* virtual public methods */
+    void (*add_element) (UfoContainer *container, UfoElement *element); 
 };
 
 /* virtual public methods */

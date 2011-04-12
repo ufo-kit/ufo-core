@@ -3,7 +3,6 @@
 #include <json-glib/json-glib.h>
 
 #include "ufo-graph.h"
-#include "ufo-connection.h"
 #include "ufo-container.h"
 #include "ufo-sequence.h"
 #include "ufo-split.h"
@@ -16,7 +15,6 @@ struct _UfoGraphPrivate {
     EthosManager        *ethos;
     UfoResourceManager  *resource_manager;
     UfoContainer        *root_container;
-    GHashTable          *graph;     /**< maps from UfoFilter* to UfoConnection* */
     GHashTable          *plugins;   /**< maps from gchar* to EthosPlugin* */
 };
 
@@ -38,37 +36,41 @@ UfoFilter *ufo_graph_create_node(UfoGraph *self, gchar *filter_name)
     return NULL;
 }
 
-void ufo_graph_connect(UfoGraph *self, UfoFilter *src, UfoFilter *dst)
+UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name)
 {
-    UfoConnection *connection = ufo_connection_new();
-    /*ufo_connection_set_filters(connection, src, dst);*/
-
-    GAsyncQueue *queue = ufo_connection_get_queue(connection);
-    ufo_filter_set_output_queue(src, queue);
-    ufo_filter_set_input_queue(dst, queue);
-
-    g_hash_table_replace(self->priv->graph, src, connection);
-    g_hash_table_replace(self->priv->graph, dst, NULL);
+    return (UfoFilter *) g_hash_table_lookup(self->priv->plugins, plugin_name);
 }
 
-void ufo_graph_build(JsonNode *node, UfoContainer **container)
+void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
 {
     JsonObject *object = json_node_get_object(node);
     if (json_object_get_member(object, "type")) {
         const char *type = json_object_get_string_member(object, "type");
 
         if (g_strcmp0(type, "filter") == 0) {
-            g_message("add filter");
             /* TODO: pull out plugin-name and parameters and wire it into the
              * element */
-            ufo_container_add_element(*container, ufo_element_new());
+            const gchar *plugin_name = json_object_get_string_member(object, "plugin");
+            g_message("add filter '%s'", plugin_name);
+            UfoFilter *filter = ufo_graph_get_filter(self, plugin_name);
+            if (filter != NULL) {
+                UfoElement *element = ufo_element_new();
+                ufo_element_set_filter(element, filter);
+                ufo_container_add_element(*container, element);
+            }
+            else
+                g_message("Couldn't find plugin '%s'", plugin_name);
         }
         else {
             UfoContainer *new_container = NULL;
-            if (g_strcmp0(type, "sequence") == 0)
+            if (g_strcmp0(type, "sequence") == 0) {
+                g_message("add sequence node");
                 new_container = ufo_sequence_new();
-            else if (g_strcmp0(type, "split") == 0)
+            }
+            else if (g_strcmp0(type, "split") == 0) {
+                g_message("add split node");
                 new_container = ufo_split_new();
+            }
 
             /* Neither filter, sequence or split... just return */
             if (new_container == NULL)
@@ -81,7 +83,7 @@ void ufo_graph_build(JsonNode *node, UfoContainer **container)
             ufo_container_add_element(*container, (UfoElement *) new_container);
             JsonArray *elements = json_object_get_array_member(object, "elements");
             for (guint i = 0; i < json_array_get_length(elements); i++) 
-                ufo_graph_build(json_array_get_element(elements, i), &new_container);
+                ufo_graph_build(self, json_array_get_element(elements, i), &new_container);
         }
     }
 }
@@ -92,9 +94,9 @@ void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename)
         "{"
         "   \"type\" : \"sequence\","
         "   \"elements\" : ["
-        "       { \"type\" : \"filter\", \"plugin\" : \"file-reader\" },"
+        "       { \"type\" : \"filter\", \"plugin\" : \"uca\" },"
         "       { \"type\" : \"sequence\", \"elements\" : ["
-        "           { \"type\" : \"filter\", \"plugin\" : \"noise-reduction\" }"
+        "           { \"type\" : \"filter\", \"plugin\" : \"raw\" }"
         "       ] }"
         "   ]"
         "}\0";
@@ -109,7 +111,7 @@ void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename)
         return;
     }
 
-    ufo_graph_build(json_parser_get_root(parser), &self->priv->root_container);
+    ufo_graph_build(self, json_parser_get_root(parser), &self->priv->root_container);
     g_object_unref(parser);
 }
 
@@ -126,11 +128,6 @@ static void ufo_graph_dispose(GObject *gobject)
 {
     UfoGraph *self = UFO_GRAPH(gobject);
     
-    if (self->priv->graph) {
-        g_hash_table_destroy(self->priv->graph);
-        self->priv->graph = NULL;
-    }
-
     if (self->priv->plugins) {
         g_hash_table_destroy(self->priv->plugins);
         self->priv->plugins = NULL;
@@ -186,7 +183,6 @@ static void ufo_graph_init(UfoGraph *self)
     g_list_foreach(plugin_info, &ufo_graph_add_plugin, priv);
     g_list_free(plugin_info);
 
-    priv->graph = g_hash_table_new(NULL, NULL);
     priv->resource_manager = ufo_resource_manager_new();
     priv->root_container = NULL;
 }

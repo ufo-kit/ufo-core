@@ -14,15 +14,6 @@ struct _UfoSplitPrivate {
  * non-virtual public methods 
  */
 
-/*
- * \brief Create a new buffer with given dimensions
- *
- * \param[in] width Width of the two-dimensional buffer
- * \param[in] height Height of the two-dimensional buffer
- * \param[in] bytes_per_pixel Number of bytes per pixel
- *
- * \return Buffer with allocated memory
- */
 UfoContainer *ufo_split_new()
 {
     return g_object_new(UFO_TYPE_SPLIT, NULL);

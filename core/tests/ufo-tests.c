@@ -10,11 +10,6 @@ START_TEST (ufo_create)
     g_type_init();
     UfoGraph *graph = ufo_graph_new();
     fail_if(graph == NULL);
-    /*UfoFilter *uca_reader = ufo_graph_create_node(graph, "uca");*/
-    /*UfoFilter *raw_writer = ufo_graph_create_node(graph, "raw");*/
-    /*ufo_graph_set_root(graph, uca_reader);*/
-    /*ufo_graph_connect(graph, uca_reader, raw_writer);*/
-    /*ufo_graph_run(graph);*/
     ufo_graph_read_json_configuration(graph, NULL);
     g_object_unref(graph);
 }

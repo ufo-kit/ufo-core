@@ -1,5 +1,6 @@
 #include "ufo-container.h"
 #include "ufo-element.h"
+#include "ufo-connection.h"
 
 G_DEFINE_TYPE(UfoContainer, ufo_container, UFO_TYPE_ELEMENT);
 
@@ -8,6 +9,7 @@ G_DEFINE_TYPE(UfoContainer, ufo_container, UFO_TYPE_ELEMENT);
 
 struct _UfoContainerPrivate {
     GList *elements;
+    GList *connections;
 };
 
 
@@ -15,23 +17,22 @@ struct _UfoContainerPrivate {
  * non-virtual public methods 
  */
 
-/*
- * \brief Create a new buffer with given dimensions
- *
- * \param[in] width Width of the two-dimensional buffer
- * \param[in] height Height of the two-dimensional buffer
- * \param[in] bytes_per_pixel Number of bytes per pixel
- *
- * \return Buffer with allocated memory
- */
 UfoContainer *ufo_container_new()
 {
     return g_object_new(UFO_TYPE_CONTAINER, NULL);
 }
 
-void ufo_container_add_element(UfoContainer *container, UfoElement *element)
+void ufo_container_add_element(UfoContainer *self, UfoElement *element)
 {
-    container->priv->elements = g_list_append(container->priv->elements, element);
+    GList *last = g_list_last(self->priv->elements);
+    /* Add a connection and therefore an asynchronous queue between elements, if
+     * we have at least one */
+    if (last != NULL) {
+        UfoConnection *connection = ufo_connection_new();
+        ufo_connection_set_elements(connection, (UfoElement *) last->data, element);
+        self->priv->connections = g_list_append(self->priv->connections, connection);
+    }
+    self->priv->elements = g_list_append(self->priv->elements, element);
 }
 
 /* 
@@ -40,6 +41,8 @@ void ufo_container_add_element(UfoContainer *container, UfoElement *element)
 static void ufo_container_class_init(UfoContainerClass *klass)
 {
     g_type_class_add_private(klass, sizeof(UfoContainerPrivate));
+
+    klass->add_element = ufo_container_add_element;
 }
 
 static void ufo_container_init(UfoContainer *self)
@@ -50,4 +53,5 @@ static void ufo_container_init(UfoContainer *self)
     UfoContainerPrivate *priv;
     self->priv = priv = UFO_CONTAINER_GET_PRIVATE(self);
     priv->elements = NULL;
+    priv->connections = NULL;
 }
