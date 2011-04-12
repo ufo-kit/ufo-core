@@ -48,11 +48,11 @@ void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
         const char *type = json_object_get_string_member(object, "type");
 
         if (g_strcmp0(type, "filter") == 0) {
-            /* TODO: pull out plugin-name and parameters and wire it into the
-             * element */
             const gchar *plugin_name = json_object_get_string_member(object, "plugin");
-            g_message("add filter '%s'", plugin_name);
             UfoFilter *filter = ufo_graph_get_filter(self, plugin_name);
+            gboolean pipelined;
+            g_object_get(G_OBJECT(filter), "pipelined", &pipelined, NULL);
+            g_message("Pipelined: %i", pipelined);
             if (filter != NULL) {
                 UfoElement *element = ufo_element_new();
                 ufo_element_set_filter(element, filter);
@@ -63,14 +63,10 @@ void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
         }
         else {
             UfoContainer *new_container = NULL;
-            if (g_strcmp0(type, "sequence") == 0) {
-                g_message("add sequence node");
+            if (g_strcmp0(type, "sequence") == 0)
                 new_container = ufo_sequence_new();
-            }
-            else if (g_strcmp0(type, "split") == 0) {
-                g_message("add split node");
+            else if (g_strcmp0(type, "split") == 0)
                 new_container = ufo_split_new();
-            }
 
             /* Neither filter, sequence or split... just return */
             if (new_container == NULL)
