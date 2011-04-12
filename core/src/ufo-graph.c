@@ -50,9 +50,6 @@ void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
         if (g_strcmp0(type, "filter") == 0) {
             const gchar *plugin_name = json_object_get_string_member(object, "plugin");
             UfoFilter *filter = ufo_graph_get_filter(self, plugin_name);
-            gboolean pipelined;
-            g_object_get(G_OBJECT(filter), "pipelined", &pipelined, NULL);
-            g_message("Pipelined: %i", pipelined);
             if (filter != NULL) {
                 UfoElement *element = ufo_element_new();
                 ufo_element_set_filter(element, filter);
@@ -113,6 +110,7 @@ void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename)
 
 void ufo_graph_run(UfoGraph *self)
 {
+    /* TODO: execute as much threads as nodes in the graph. */
 }
 
 UfoGraph *ufo_graph_new()
