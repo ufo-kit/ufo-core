@@ -1,0 +1,91 @@
+
+UFO Pipeline Configuration
+==========================
+
+The configuration of a filter setup is stored in a JSON-encoded [1] text file
+with a `.json` suffix. The root object must at least contain one "type" and one
+"elements" mapping.
+
+
+Node Types
+---------------
+
+A node type is specified by the key "type" in a JSON object:
+ 
+  { "type" : $TYPE }
+
+where $TYPE could be
+
+`sequence`: A sequential chain of filters and containers
+
+  [filter A] --> [sequence S --> [filter X] -> [filter Y]]
+
+`split`: A number of filters and containers working on data in truly parallel
+fashion.
+                          +--> [filter X] --+
+  [filter A] --> [split] -+                 +-->
+                          +--> [filter Y] --+
+
+`filter`: A node that doesn't contain any other containers but specifies the
+kind of computation.
+
+
+Elements
+--------
+
+An element key specifies the children of a container type as an JSON array.
+
+
+Split Containers
+----------------
+
+A split takes an input buffer and distributes it in specified order to its child
+filters or containers.
+
+Properties:
+
+  "order": "random", "round-robin", "copy"
+
+
+Filters
+-------
+
+A filter consists at least of a "plugin" key naming the filter that is going to
+be used. Of course, plugins have to be available as a shared object in UFO's
+path.
+
+Properties:
+
+  "plugin": Name of the associated plugin
+
+An example configuration would look like this:
+{
+    "type" : "sequence",
+    "elements" : [
+        {
+            "type" : "filter",
+            "plugin" : "file-reader",
+            "some-property" : 42
+        },
+        {
+            "type" : "split",
+            "order" : "round-robin",
+            "elements" : [
+                {
+                    "type" : "filter",
+                    "plugin" : "foo"
+                },
+                {
+                    "type" : "filter",
+                    "plugin" : "bar"
+                }
+            ]
+        }
+    ]
+}
+
+[1] http://json.org
+
+TODO
+====
+- how to specify merge in `split`
