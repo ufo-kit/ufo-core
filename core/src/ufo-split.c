@@ -124,6 +124,9 @@ static void ufo_split_process(UfoElement *element)
     while (1) {
         /* TODO: replace this round-robin scheme according to the mode */
         UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
+        if (input == NULL)
+            break;
+
         g_message("relaying buffer %p to queue %p", input, current_queue->data);
         g_async_queue_push((GAsyncQueue *) current_queue->data, input);
 

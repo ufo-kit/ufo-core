@@ -79,11 +79,23 @@ void ufo_element_process(UfoElement *self)
     UFO_ELEMENT_GET_CLASS(self)->process(self);
 }
 
+static gpointer ufo_filter_thread(gpointer data)
+{
+    ufo_filter_process(UFO_FILTER(data));
+    return NULL;
+}
+
 static void ufo_element_process_default(UfoElement *self)
 {
     /* TODO: instead of calling, start as thread */
-    if (self->priv->filter != NULL)
-        ufo_filter_process(self->priv->filter);
+    if (self->priv->filter != NULL) {
+        GError *error = NULL;
+        g_thread_create(ufo_filter_thread, self->priv->filter, FALSE, &error);
+        if (error) {
+            g_message("Error starting thread: %s", error->message);
+            g_error_free(error);
+        }
+    }
 }
 
 void ufo_element_print(UfoElement *self)

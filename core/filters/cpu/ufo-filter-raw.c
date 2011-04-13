@@ -41,8 +41,9 @@ static void ufo_filter_raw_process(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
 
+    g_message("[raw] waiting...");
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(ufo_filter_get_input_queue(self));
-    g_message("received buffer %p at queue %p", input, ufo_filter_get_input_queue(self));
+    g_message("[raw] received buffer %p at queue %p", input, ufo_filter_get_input_queue(self));
 
     gint32 width, height;
     ufo_buffer_get_dimensions(input, &width, &height);

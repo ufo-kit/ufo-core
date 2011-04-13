@@ -50,14 +50,17 @@ static void ufo_filter_uca_process(UfoFilter *self)
 
     cam->start_recording(cam);
     UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
-    UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
-        cam->frame_width, cam->frame_height);
 
-    cam->grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
-    ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8);
+    for (guint i = 0; i < 2; i++) {
+        UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
+            cam->frame_width, cam->frame_height);
 
-    g_message("send buffer %p to queue %p", buffer, ufo_filter_get_output_queue(self));
-    g_async_queue_push(ufo_filter_get_output_queue(self), buffer);
+        cam->grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
+        ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8);
+
+        g_message("[uca] send buffer %p to queue %p", buffer, ufo_filter_get_output_queue(self));
+        g_async_queue_push(ufo_filter_get_output_queue(self), buffer);
+    }
 }
 
 static void ufo_filter_uca_class_init(UfoFilterUCAClass *klass)

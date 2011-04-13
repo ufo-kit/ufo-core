@@ -60,7 +60,6 @@ void ufo_sequence_add_element(UfoContainer *container, UfoElement *element)
 
 static void ufo_sequence_process(UfoElement *element)
 {
-    /*UfoContainer *container = UFO_CONTAINER(element);*/
     UfoSequence *self = UFO_SEQUENCE(element);
     for (guint i = 0; i < g_list_length(self->priv->children); i++) {
         UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));

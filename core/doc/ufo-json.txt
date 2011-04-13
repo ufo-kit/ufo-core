@@ -44,7 +44,8 @@ filters or containers.
 
 Properties:
 
-  "order": "random", "round-robin", "copy"
+"mode": Specifies the mode of operation in which work should be distributed.
+    Possible modes are "random", "round-robin", "copy".
 
 
 Filters
@@ -56,7 +57,7 @@ path.
 
 Properties:
 
-  "plugin": Name of the associated plugin
+"plugin": Name of the associated plugin
 
 An example configuration would look like this:
 {
@@ -64,20 +65,19 @@ An example configuration would look like this:
     "elements" : [
         {
             "type" : "filter",
-            "plugin" : "file-reader",
-            "some-property" : 42
+            "plugin" : "uca"
         },
         {
             "type" : "split",
-            "order" : "round-robin",
+            "mode" : "copy",
             "elements" : [
                 {
                     "type" : "filter",
-                    "plugin" : "foo"
+                    "plugin" : "raw"
                 },
                 {
                     "type" : "filter",
-                    "plugin" : "bar"
+                    "plugin" : "histogram"
                 }
             ]
         }
