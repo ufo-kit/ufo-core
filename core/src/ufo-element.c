@@ -81,6 +81,7 @@ void ufo_element_process(UfoElement *self)
 
 static void ufo_element_process_default(UfoElement *self)
 {
+    /* TODO: instead of calling, start as thread */
     if (self->priv->filter != NULL)
         ufo_filter_process(self->priv->filter);
 }

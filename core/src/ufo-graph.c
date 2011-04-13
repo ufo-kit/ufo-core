@@ -24,10 +24,23 @@ static UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name)
     return UFO_FILTER(g_hash_table_lookup(self->priv->plugins, plugin_name));
 }
 
+static UfoContainer *ufo_graph_build_split(JsonObject *object)
+{
+    UfoSplit *container = UFO_SPLIT(ufo_split_new());
+
+    if (json_object_has_member(object, "mode")) {
+        const char *mode = json_object_get_string_member(object, "mode");
+        g_message("setting mode to %s", mode);
+        g_object_set(container, "mode", mode, NULL);
+    }
+    
+    return UFO_CONTAINER(container);
+}
+
 static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
 {
     JsonObject *object = json_node_get_object(node);
-    if (json_object_get_member(object, "type")) {
+    if (json_object_has_member(object, "type")) {
         const char *type = json_object_get_string_member(object, "type");
 
         if (g_strcmp0(type, "filter") == 0) {
@@ -54,7 +67,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **conta
             if (g_strcmp0(type, "sequence") == 0)
                 new_container = ufo_sequence_new();
             else if (g_strcmp0(type, "split") == 0)
-                new_container = ufo_split_new();
+                new_container = ufo_graph_build_split(object);
 
             /* Neither filter, sequence or split... just return */
             if (new_container == NULL)
@@ -81,22 +94,11 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **conta
 /* 
  * Public Interface
  */
-void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename)
+void ufo_graph_read_json_configuration(UfoGraph *self, const gchar *filename)
 {
-    static const char *config = 
-        "{"
-        "   \"type\" : \"sequence\","
-        "   \"elements\" : ["
-        "       { \"type\" : \"filter\", \"plugin\" : \"uca\" },"
-        "       { \"type\" : \"sequence\", \"elements\" : ["
-        "           { \"type\" : \"filter\", \"plugin\" : \"raw\" }"
-        "       ] }"
-        "   ]"
-        "}\0";
-
     JsonParser *parser = json_parser_new();
     GError *error = NULL;
-    json_parser_load_from_data(parser, config, -1, &error);
+    json_parser_load_from_file(parser, filename, &error);
     if (error) {
         g_message("Parse error: %s", error->message);
         g_error_free(error);
@@ -110,6 +112,7 @@ void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename)
 
 void ufo_graph_run(UfoGraph *self)
 {
+    ufo_element_print(UFO_ELEMENT(self->priv->root_container));
     ufo_element_process(UFO_ELEMENT(self->priv->root_container));
 }
 

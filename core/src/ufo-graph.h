@@ -28,7 +28,7 @@ struct _UfoGraphClass {
 
 UfoGraph *ufo_graph_new();
 
-void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename);
+void ufo_graph_read_json_configuration(UfoGraph *self, const gchar *filename);
 void ufo_graph_run(UfoGraph *self);
 
 GType ufo_graph_get_type(void);

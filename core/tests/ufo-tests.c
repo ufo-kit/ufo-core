@@ -10,7 +10,7 @@ START_TEST (ufo_create)
     g_type_init();
     UfoGraph *graph = ufo_graph_new();
     fail_if(graph == NULL);
-    ufo_graph_read_json_configuration(graph, NULL);
+    ufo_graph_read_json_configuration(graph, "test.json");
     ufo_graph_run(graph);
     g_object_unref(graph);
 }
