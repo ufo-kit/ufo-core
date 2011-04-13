@@ -2,7 +2,6 @@
 #include <gmodule.h>
 
 #include "ufo-filter.h"
-#include "ufo-graph.h"
 
 G_DEFINE_TYPE(UfoFilter, ufo_filter, ETHOS_TYPE_PLUGIN);
 
@@ -15,21 +14,15 @@ enum {
 };
 
 struct _UfoFilterPrivate {
+    UfoResourceManager  *resource_manager;
     GAsyncQueue         *input_queue;
     GAsyncQueue         *output_queue;
-    UfoGraph            *graph;
-    UfoResourceManager  *resource_manager;
     gchar               *name;
 };
 
 /*
  * public non-virtual methods
  */
-void ufo_filter_set_graph(UfoFilter *self, UfoGraph *graph)
-{
-    self->priv->graph = graph;    
-}
-
 void ufo_filter_set_resource_manager(UfoFilter *self, UfoResourceManager *resource_manager)
 {
     self->priv->resource_manager = resource_manager;
@@ -42,13 +35,15 @@ UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self)
 
 void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *queue)
 {
-    g_async_queue_ref(queue);
+    if (queue != NULL)
+        g_async_queue_ref(queue);
     self->priv->input_queue = queue;
 }
 
 void ufo_filter_set_output_queue(UfoFilter *self, GAsyncQueue *queue)
 {
-    g_async_queue_ref(queue);
+    if (queue != NULL)
+        g_async_queue_ref(queue);
     self->priv->output_queue = queue;
 }
 
@@ -135,6 +130,7 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     gobject_class->set_property = ufo_filter_set_property;
     gobject_class->get_property = ufo_filter_get_property;
     gobject_class->dispose = ufo_filter_dispose;
+    klass->process = ufo_filter_process_default;
 
     /* install properties */
     GParamSpec *pspec;
@@ -148,7 +144,6 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoFilterPrivate));
-    klass->process = ufo_filter_process_default;
 }
 
 static void ufo_filter_init(UfoFilter *self)

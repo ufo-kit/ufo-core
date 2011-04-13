@@ -56,8 +56,7 @@ static void ufo_filter_uca_process(UfoFilter *self)
     cam->grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
     ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8);
 
-    g_message("send buffer %p", buffer);
-
+    g_message("send buffer %p to queue %p", buffer, ufo_filter_get_output_queue(self));
     g_async_queue_push(ufo_filter_get_output_queue(self), buffer);
 }
 
@@ -85,7 +84,6 @@ static void ufo_filter_uca_init(UfoFilterUCA *self)
     self->priv->u = uca_init(NULL);
     self->priv->cam = self->priv->u->cameras;
     uca_cam_alloc(self->priv->cam, 10);
-    g_message("uca instance = %p", self->priv->u);
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

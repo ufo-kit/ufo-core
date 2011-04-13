@@ -32,13 +32,23 @@ struct _UfoElementClass {
     /* class members */
 
     /* virtual public methods */
+    void (*process) (UfoElement *self);
+    void (*print) (UfoElement *self);
 };
+
+/* virtual methods */
+void ufo_element_process(UfoElement *self);
+void ufo_element_print(UfoElement *self);
 
 /* non-virtual public methods */
 UfoElement *ufo_element_new();
 
 UfoFilter *ufo_element_get_filter(UfoElement *element);
 void ufo_element_set_filter(UfoElement *element, UfoFilter *filter);
+void ufo_element_set_input_queue(UfoElement *self, GAsyncQueue *queue);
+void ufo_element_set_output_queue(UfoElement *self, GAsyncQueue *queue);
+GAsyncQueue *ufo_element_get_input_queue(UfoElement *self);
+GAsyncQueue *ufo_element_get_output_queue(UfoElement *self);
 
 GType ufo_element_get_type(void);
 

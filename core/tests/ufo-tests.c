@@ -11,6 +11,7 @@ START_TEST (ufo_create)
     UfoGraph *graph = ufo_graph_new();
     fail_if(graph == NULL);
     ufo_graph_read_json_configuration(graph, NULL);
+    ufo_graph_run(graph);
     g_object_unref(graph);
 }
 END_TEST

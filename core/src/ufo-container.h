@@ -27,7 +27,7 @@ struct _UfoContainer {
 };
 
 struct _UfoContainerClass {
-    GObjectClass parent_class;
+    UfoElementClass parent_class;
 
     /* class members */
 

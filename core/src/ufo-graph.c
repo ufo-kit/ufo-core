@@ -23,19 +23,6 @@ GList *ufo_graph_get_filter_names(UfoGraph *self)
     return g_hash_table_get_keys(self->priv->plugins);
 }
 
-UfoFilter *ufo_graph_create_node(UfoGraph *self, gchar *filter_name)
-{
-    EthosPlugin *plugin = g_hash_table_lookup(self->priv->plugins, filter_name);
-    /* TODO: When we move to libpeas we have to instantiate new objects each
-     * time a user requests a new stateful node. */
-    if (plugin != NULL) {
-        UfoFilter *filter = (UfoFilter *) plugin;
-        ufo_filter_set_resource_manager(filter, self->priv->resource_manager);
-        return filter;
-    }
-    return NULL;
-}
-
 UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name)
 {
     return (UfoFilter *) g_hash_table_lookup(self->priv->plugins, plugin_name);
@@ -51,6 +38,11 @@ void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
             const gchar *plugin_name = json_object_get_string_member(object, "plugin");
             UfoFilter *filter = ufo_graph_get_filter(self, plugin_name);
             if (filter != NULL) {
+                /* TODO: ask the plugin how many/what kind of buffers we need,
+                 * for now just reserve a queue for a single output */
+                ufo_filter_set_resource_manager(filter, self->priv->resource_manager);
+
+                /* Create new single filter element and add it to the container */
                 UfoElement *element = ufo_element_new();
                 ufo_element_set_filter(element, filter);
                 ufo_container_add_element(*container, element);
@@ -72,11 +64,17 @@ void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
             /* If we have a root container, assign the newly created one */
             if (*container == NULL)
                 *container = new_container;
+            else
+                ufo_container_add_element(*container, (UfoElement *) new_container);
 
-            ufo_container_add_element(*container, (UfoElement *) new_container);
             JsonArray *elements = json_object_get_array_member(object, "elements");
             for (guint i = 0; i < json_array_get_length(elements); i++) 
                 ufo_graph_build(self, json_array_get_element(elements, i), &new_container);
+
+            /* After adding all sub-childs, we need to get the updated output of
+             * the new container and use it as our own new output */
+            GAsyncQueue *prev = ufo_element_get_output_queue((UfoElement *) new_container);
+            ufo_element_set_output_queue((UfoElement *) *container, prev);
         }
     }
 }
@@ -110,7 +108,7 @@ void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename)
 
 void ufo_graph_run(UfoGraph *self)
 {
-    /* TODO: execute as much threads as nodes in the graph. */
+    ufo_element_process(UFO_ELEMENT(self->priv->root_container));
 }
 
 UfoGraph *ufo_graph_new()
