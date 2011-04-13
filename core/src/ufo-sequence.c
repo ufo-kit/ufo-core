@@ -9,18 +9,16 @@ struct _UfoSequencePrivate {
     int dummy;
 };
 
-
 /* 
- * non-virtual public methods 
+ * Public Interface
  */
-
 UfoContainer *ufo_sequence_new()
 {
-    return g_object_new(UFO_TYPE_SEQUENCE, NULL);
+    return UFO_CONTAINER(g_object_new(UFO_TYPE_SEQUENCE, NULL));
 }
 
-/* 
- * virtual methods 
+/*
+ * Type/Class Initialization
  */
 static void ufo_sequence_class_init(UfoSequenceClass *klass)
 {
@@ -29,8 +27,5 @@ static void ufo_sequence_class_init(UfoSequenceClass *klass)
 
 static void ufo_sequence_init(UfoSequence *self)
 {
-    /* init public fields */
-
-    /* init private fields */
     self->priv = UFO_SEQUENCE_GET_PRIVATE(self);
 }

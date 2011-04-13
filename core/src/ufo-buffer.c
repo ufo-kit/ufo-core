@@ -21,6 +21,10 @@ struct _UfoBufferPrivate {
     datastates  state;
 };
 
+/* 
+ * Public Interface
+ */
+
 /*
  * \brief Set dimension of buffer data in pixels
  *
@@ -35,10 +39,6 @@ static void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 heig
     self->priv->height = height;
 }
 
-/* 
- * non-virtual public methods 
- */
-
 /*
  * \brief Create a new buffer with given dimensions
  *
@@ -50,7 +50,7 @@ static void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 heig
  */
 UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
 {
-    UfoBuffer *buffer = g_object_new(UFO_TYPE_BUFFER, NULL);
+    UfoBuffer *buffer = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
     ufo_buffer_set_dimensions(buffer, width, height);
     return buffer;
 }
@@ -103,63 +103,67 @@ void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth)
  */
 float* ufo_buffer_get_cpu_data(UfoBuffer *self)
 {
-    switch (self->priv->state) {
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(self);
+    switch (priv->state) {
         case CPU_DATA_VALID:
             break;
         case GPU_DATA_VALID:
             /* TODO: download from gpu */
-            self->priv->state = CPU_DATA_VALID;
+            priv->state = CPU_DATA_VALID;
             break;
         case NO_DATA:
-            self->priv->cpu_data = g_malloc0(self->priv->width * self->priv->height * sizeof(float));
-            self->priv->state = CPU_DATA_VALID;
+            priv->cpu_data = g_malloc0(priv->width * priv->height * sizeof(float));
+            priv->state = CPU_DATA_VALID;
             break;
     }
 
-    return self->priv->cpu_data;
+    return priv->cpu_data;
 }
 
 cl_mem ufo_buffer_get_gpu_data(UfoBuffer *self)
 {
-    switch (self->priv->state) {
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(self);
+    switch (priv->state) {
         case CPU_DATA_VALID:
             /* TODO: upload to gpu */
-            self->priv->state = GPU_DATA_VALID;
+            priv->state = GPU_DATA_VALID;
             break;
         case GPU_DATA_VALID:
             break;
         case NO_DATA:
             return NULL;
     }
-    return self->priv->gpu_data;
+    return priv->gpu_data;
 }
 
 /* 
- * virtual methods 
+ * Virtual Methods 
  */
 static void ufo_buffer_finalize(GObject *gobject)
 {
     UfoBuffer *self = UFO_BUFFER(gobject);
-    if (self->priv->cpu_data)
-        g_free(self->priv->cpu_data);
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(self);
+    if (priv->cpu_data)
+        g_free(priv->cpu_data);
 
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
+/*
+ * Type/Class Initialization
+ */
 static void ufo_buffer_class_init(UfoBufferClass *klass)
 {
+    /* override methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-
     gobject_class->finalize = ufo_buffer_finalize;
 
+    /* install private data */
     g_type_class_add_private(klass, sizeof(UfoBufferPrivate));
 }
 
 static void ufo_buffer_init(UfoBuffer *self)
 {
-    /* init public fields */
-
-    /* init private fields */
     UfoBufferPrivate *priv;
     self->priv = priv = UFO_BUFFER_GET_PRIVATE(self);
     priv->width = -1;

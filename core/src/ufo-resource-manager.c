@@ -11,17 +11,20 @@ struct _UfoResourceManagerPrivate {
     GHashTable *buffers; /**< maps from dimension hash to a GTrashStack of buffer instances */
 };
 
-UfoResourceManager *ufo_resource_manager_new()
-{
-    return g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL);
-}
-
 static guint32 ufo_resource_manager_hash_dims(guint32 width, guint32 height)
 {
     guint32 result = 0x345678;
     result ^= width << 12;
     result ^= height;
     return result;
+}
+
+/* 
+ * Public Interface
+ */
+UfoResourceManager *ufo_resource_manager_new()
+{
+    return UFO_RESOURCE_MANAGER(g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL));
 }
 
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32 width, guint32 height)
@@ -62,6 +65,9 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *bu
 }
 
 
+/* 
+ * Virtual Methods
+ */
 static void ufo_resource_manager_dispose(GObject *gobject)
 {
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
@@ -71,10 +77,13 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->dispose(gobject);
 }
 
+/*
+ * Type/Class Initialization
+ */
 static void ufo_resource_manager_class_init(UfoResourceManagerClass *klass)
 {
+    /* override GObject methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-
     gobject_class->dispose = ufo_resource_manager_dispose;
 
     /* install private data */
@@ -83,11 +92,6 @@ static void ufo_resource_manager_class_init(UfoResourceManagerClass *klass)
 
 static void ufo_resource_manager_init(UfoResourceManager *self)
 {
-    /* init public fields */
-
-    /* init private fields */
     self->priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
     self->priv->buffers = g_hash_table_new(NULL, NULL);
 }
-
-

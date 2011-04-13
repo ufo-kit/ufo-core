@@ -17,12 +17,12 @@ struct _UfoElementPrivate {
     UfoFilter *filter;
 };
 
-/*
- * public non-virtual methods
+/* 
+ * Public Interface
  */
 UfoElement *ufo_element_new()
 {
-    return g_object_new(UFO_TYPE_ELEMENT, NULL);
+    return UFO_ELEMENT(g_object_new(UFO_TYPE_ELEMENT, NULL));
 }
 
 UfoFilter *ufo_element_get_filter(UfoElement *element)
@@ -71,11 +71,7 @@ GAsyncQueue *ufo_element_get_output_queue(UfoElement *self)
 }
 
 /* 
- * private methods
- */
-
-/* 
- * virtual methods
+ * Virtual Methods
  */
 void ufo_element_process(UfoElement *self)
 {
@@ -106,7 +102,7 @@ static void ufo_element_print_default(UfoElement *self)
 }
 
 /*
- * class and object initialization
+ * Type/Class Initialization
  */
 static void ufo_element_class_init(UfoElementClass *klass)
 {
@@ -120,9 +116,6 @@ static void ufo_element_class_init(UfoElementClass *klass)
 
 static void ufo_element_init(UfoElement *self)
 {
-    /* init public fields */
-
-    /* init private fields */
     UfoElementPrivate *priv;
     self->priv = priv = UFO_ELEMENT_GET_PRIVATE(self);
     priv->filter = NULL;

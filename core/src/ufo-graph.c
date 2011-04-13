@@ -18,17 +18,13 @@ struct _UfoGraphPrivate {
     GHashTable          *plugins;   /**< maps from gchar* to EthosPlugin* */
 };
 
-GList *ufo_graph_get_filter_names(UfoGraph *self)
+
+static UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name)
 {
-    return g_hash_table_get_keys(self->priv->plugins);
+    return UFO_FILTER(g_hash_table_lookup(self->priv->plugins, plugin_name));
 }
 
-UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name)
-{
-    return (UfoFilter *) g_hash_table_lookup(self->priv->plugins, plugin_name);
-}
-
-void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
+static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
 {
     JsonObject *object = json_node_get_object(node);
     if (json_object_get_member(object, "type")) {
@@ -68,7 +64,7 @@ void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
             if (*container == NULL)
                 *container = new_container;
             else
-                ufo_container_add_element(*container, (UfoElement *) new_container);
+                ufo_container_add_element(*container, UFO_ELEMENT(new_container));
 
             JsonArray *elements = json_object_get_array_member(object, "elements");
             for (guint i = 0; i < json_array_get_length(elements); i++) 
@@ -76,12 +72,15 @@ void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
 
             /* After adding all sub-childs, we need to get the updated output of
              * the new container and use it as our own new output */
-            GAsyncQueue *prev = ufo_element_get_output_queue((UfoElement *) new_container);
-            ufo_element_set_output_queue((UfoElement *) *container, prev);
+            GAsyncQueue *prev = ufo_element_get_output_queue(UFO_ELEMENT(new_container));
+            ufo_element_set_output_queue(UFO_ELEMENT(*container), prev);
         }
     }
 }
 
+/* 
+ * Public Interface
+ */
 void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename)
 {
     static const char *config = 
@@ -119,6 +118,9 @@ UfoGraph *ufo_graph_new()
     return g_object_new(UFO_TYPE_GRAPH, NULL);
 }
 
+/* 
+ * Virtual Methods 
+ */
 static void ufo_graph_dispose(GObject *gobject)
 {
     UfoGraph *self = UFO_GRAPH(gobject);
@@ -148,10 +150,13 @@ static void ufo_graph_add_plugin(gpointer data, gpointer user_data)
         ethos_manager_get_plugin(priv->ethos, info));
 }
 
+/*
+ * Type/Class Initialization
+ */
 static void ufo_graph_class_init(UfoGraphClass *klass)
 {
+    /* override methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-
     gobject_class->dispose = ufo_graph_dispose;
 
     /* install private data */
@@ -160,9 +165,6 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
 
 static void ufo_graph_init(UfoGraph *self)
 {
-    /* init public fields */
-
-    /* init private fields */
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
 

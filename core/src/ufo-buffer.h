@@ -20,18 +20,12 @@ typedef struct _UfoBufferPrivate    UfoBufferPrivate;
 struct _UfoBuffer {
     GObject parent_instance;
 
-    /* public */
-
     /* private */
     UfoBufferPrivate *priv;
 };
 
 struct _UfoBufferClass {
     GObjectClass parent_class;
-
-    /* class members */
-
-    /* virtual public methods */
 };
 
 enum {
@@ -39,9 +33,6 @@ enum {
     UFO_BUFFER_DEPTH_16
 };
 
-/* virtual public methods */
-
-/* non-virtual public methods */
 UfoBuffer *ufo_buffer_new(gint32 width, gint32 height);
 
 void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth);

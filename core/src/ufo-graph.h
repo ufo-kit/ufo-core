@@ -3,9 +3,6 @@
 
 #include <glib-object.h>
 
-#include "ufo-buffer.h"
-#include "ufo-filter.h"
-
 #define UFO_TYPE_GRAPH             (ufo_graph_get_type())
 #define UFO_GRAPH(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_GRAPH, UfoGraph))
 #define UFO_IS_GRAPH(obj)          (G_TYPE_CHECK_INSTANCE_TYPE((obj), UFO_TYPE_GRAPH))
@@ -21,27 +18,18 @@ typedef struct _UfoGraphPrivate    UfoGraphPrivate;
 struct _UfoGraph {
     GObject parent_instance;
 
-    /* public */
-
     /* private */
     UfoGraphPrivate *priv;
 };
 
 struct _UfoGraphClass {
     GObjectClass parent_class;
-
-    /* class members */
-
-    /* virtual public methods */
 };
 
-/* virtual public methods */
+UfoGraph *ufo_graph_new();
 
-/* non-virtual public methods */
 void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename);
 void ufo_graph_run(UfoGraph *self);
-
-UfoGraph *ufo_graph_new();
 
 GType ufo_graph_get_type(void);
 

@@ -20,9 +20,6 @@ typedef struct _UfoFilterPrivate    UfoFilterPrivate;
 struct _UfoFilter {
     EthosPlugin parent_instance;
 
-    /* public */
-    gboolean is_gpu_enabled;
-
     /* private */
     UfoFilterPrivate *priv;
 };
@@ -30,16 +27,11 @@ struct _UfoFilter {
 struct _UfoFilterClass {
     EthosPluginClass parent_class;
 
-    /* class members */
-
-    /* virtual public methods */
     void (*process) (UfoFilter *self);
 };
 
-/* virtual public methods */
 void ufo_filter_process(UfoFilter *self);
 
-/* non-virtual public methods */
 void ufo_filter_set_resource_manager(UfoFilter *self, UfoResourceManager *resource_manager);
 UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self);
 void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *input_queue);

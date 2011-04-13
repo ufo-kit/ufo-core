@@ -20,25 +20,16 @@ typedef struct _UfoResourceManagerPrivate    UfoResourceManagerPrivate;
 struct _UfoResourceManager {
     GObject parent_instance;
 
-    /* public */
-
     /* private */
     UfoResourceManagerPrivate *priv;
 };
 
 struct _UfoResourceManagerClass {
     GObjectClass parent_class;
-
-    /* class members */
-
-    /* virtual public methods */
 };
 
-/* virtual public methods */
-
-/* non-virtual public methods */
-
 UfoResourceManager *ufo_resource_manager_new();
+
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32 width, guint32 height);
 void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *buffer);
 

@@ -20,23 +20,14 @@ typedef struct _UfoSequencePrivate    UfoSequencePrivate;
 struct _UfoSequence {
     UfoContainer parent_instance;
 
-    /* public */
-
     /* private */
     UfoSequencePrivate *priv;
 };
 
 struct _UfoSequenceClass {
     UfoContainerClass parent_class;
-
-    /* class members */
-
-    /* virtual public methods */
 };
 
-/* virtual public methods */
-
-/* non-virtual public methods */
 UfoContainer *ufo_sequence_new();
 
 GType ufo_sequence_get_type(void);

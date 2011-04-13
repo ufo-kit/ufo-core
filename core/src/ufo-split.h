@@ -20,23 +20,14 @@ typedef struct _UfoSplitPrivate    UfoSplitPrivate;
 struct _UfoSplit {
     UfoContainer parent_instance;
 
-    /* public */
-
     /* private */
     UfoSplitPrivate *priv;
 };
 
 struct _UfoSplitClass {
     UfoContainerClass parent_class;
-
-    /* class members */
-
-    /* virtual public methods */
 };
 
-/* virtual public methods */
-
-/* non-virtual public methods */
 UfoContainer *ufo_split_new();
 
 GType ufo_split_get_type(void);

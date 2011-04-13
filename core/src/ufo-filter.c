@@ -20,8 +20,8 @@ struct _UfoFilterPrivate {
     gchar               *name;
 };
 
-/*
- * public non-virtual methods
+/* 
+ * Public Interface
  */
 void ufo_filter_set_resource_manager(UfoFilter *self, UfoResourceManager *resource_manager)
 {
@@ -58,7 +58,7 @@ GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *self)
 }
 
 /* 
- * private methods
+ * Virtual Methods
  */
 static void ufo_filter_set_property(GObject *object,
     guint           property_id,
@@ -97,9 +97,6 @@ static void ufo_filter_get_property(GObject *object,
     }
 }
 
-/* 
- * virtual methods
- */
 void ufo_filter_process(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
@@ -120,7 +117,7 @@ static void ufo_filter_dispose(GObject *object)
 }
 
 /*
- * class and object initialization
+ * Type/Class Initialization
  */
 static void ufo_filter_class_init(UfoFilterClass *klass)
 {
@@ -148,9 +145,6 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
 
 static void ufo_filter_init(UfoFilter *self)
 {
-    /* init public fields */
-
-    /* init private fields */
     UfoFilterPrivate *priv;
     self->priv = priv = UFO_FILTER_GET_PRIVATE(self);
     priv->input_queue = NULL;

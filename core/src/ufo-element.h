@@ -2,7 +2,6 @@
 #define __UFO_ELEMENT_H
 
 #include <glib-object.h>
-#include <ethos/ethos.h>
 
 #include "ufo-filter.h"
 
@@ -20,8 +19,6 @@ typedef struct _UfoElementPrivate    UfoElementPrivate;
 struct _UfoElement {
     GObject parent_instance;
 
-    /* public */
-
     /* private */
     UfoElementPrivate *priv;
 };
@@ -29,19 +26,14 @@ struct _UfoElement {
 struct _UfoElementClass {
     GObjectClass parent_class;
 
-    /* class members */
-
-    /* virtual public methods */
     void (*process) (UfoElement *self);
     void (*print) (UfoElement *self);
 };
 
-/* virtual methods */
+UfoElement *ufo_element_new();
+
 void ufo_element_process(UfoElement *self);
 void ufo_element_print(UfoElement *self);
-
-/* non-virtual public methods */
-UfoElement *ufo_element_new();
 
 UfoFilter *ufo_element_get_filter(UfoElement *element);
 void ufo_element_set_filter(UfoElement *element, UfoFilter *filter);

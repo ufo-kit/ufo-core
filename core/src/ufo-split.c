@@ -29,14 +29,16 @@ struct _UfoSplitPrivate {
 
 
 /* 
- * non-virtual public methods 
+ * Public Interface
  */
-
 UfoContainer *ufo_split_new()
 {
-    return g_object_new(UFO_TYPE_SPLIT, NULL);
+    return UFO_CONTAINER(g_object_new(UFO_TYPE_SPLIT, NULL));
 }
 
+/* 
+ * Virtual Methods 
+ */
 static void ufo_split_set_property(GObject *object,
     guint           property_id,
     const GValue    *value,
@@ -78,13 +80,13 @@ static void ufo_split_get_property(GObject *object,
     }
 }
 
-/* 
- * virtual methods 
- */
 static void ufo_split_process(UfoElement *element)
 {
 }
 
+/*
+ * Type/Class Initialization
+ */
 static void ufo_split_class_init(UfoSplitClass *klass)
 {
     /* override methods */
@@ -100,8 +102,5 @@ static void ufo_split_class_init(UfoSplitClass *klass)
 
 static void ufo_split_init(UfoSplit *self)
 {
-    /* init public fields */
-
-    /* init private fields */
     self->priv = UFO_SPLIT_GET_PRIVATE(self);
 }
