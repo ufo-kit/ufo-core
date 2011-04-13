@@ -42,6 +42,9 @@ void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
                  * for now just reserve a queue for a single output */
                 ufo_filter_set_resource_manager(filter, self->priv->resource_manager);
 
+                /* TODO: set plugin-specific properties as specified in the JSON
+                 * string */
+
                 /* Create new single filter element and add it to the container */
                 UfoElement *element = ufo_element_new();
                 ufo_element_set_filter(element, filter);

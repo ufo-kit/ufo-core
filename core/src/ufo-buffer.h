@@ -21,7 +21,6 @@ struct _UfoBuffer {
     GObject parent_instance;
 
     /* public */
-    gboolean shared;
 
     /* private */
     UfoBufferPrivate *priv;
@@ -46,7 +45,6 @@ enum {
 UfoBuffer *ufo_buffer_new(gint32 width, gint32 height);
 
 void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth);
-void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height);
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 
 float* ufo_buffer_get_cpu_data(UfoBuffer *self);

@@ -38,7 +38,6 @@ struct _UfoGraphClass {
 /* virtual public methods */
 
 /* non-virtual public methods */
-GList *ufo_graph_get_filter_names(UfoGraph *self);
 void ufo_graph_read_json_configuration(UfoGraph *self, GString *filename);
 void ufo_graph_run(UfoGraph *self);
 

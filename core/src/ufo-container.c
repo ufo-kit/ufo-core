@@ -12,7 +12,7 @@ enum {
 };
 
 struct _UfoContainerPrivate {
-    GList *elements;
+    GList *children;
     gboolean pipelined;
 };
 
@@ -40,7 +40,7 @@ void ufo_container_add_element(UfoContainer *self, UfoElement *element)
      * 2. There is an element in the list. Then we try to get that old element's
      * output queue.
      */
-    GList *last = g_list_last(self->priv->elements);
+    GList *last = g_list_last(self->priv->children);
     GAsyncQueue *prev = NULL;
 
     if (last != NULL) {
@@ -50,7 +50,7 @@ void ufo_container_add_element(UfoContainer *self, UfoElement *element)
         prev = ufo_element_get_output_queue(last_element);
     }
     else {
-        /* We have no elements, so use the container's input as the input to the
+        /* We have no children, so use the container's input as the input to the
          * next element */
         prev = ufo_element_get_input_queue((UfoElement *) self);
     }
@@ -63,14 +63,14 @@ void ufo_container_add_element(UfoContainer *self, UfoElement *element)
     GAsyncQueue *next = g_async_queue_new();
     ufo_element_set_output_queue(element, next);
     ufo_element_set_output_queue((UfoElement *) self, next);
-    self->priv->elements = g_list_append(self->priv->elements, element);
+    self->priv->children = g_list_append(self->priv->children, element);
 }
 
 static void ufo_container_process(UfoElement *element)
 {
     UfoContainer *self = (UfoContainer *) element;
-    for (guint i = 0; i < g_list_length(self->priv->elements); i++) {
-        UfoElement *child = (UfoElement *) g_list_nth_data(self->priv->elements, i);
+    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
+        UfoElement *child = (UfoElement *) g_list_nth_data(self->priv->children, i);
         ufo_element_process(child);
     }
 }
@@ -80,8 +80,8 @@ static void ufo_container_print(UfoElement *element)
     UfoContainer *self = (UfoContainer *) element;
     g_message("[node:%p] <%p,%p>", element, ufo_element_get_input_queue(element),
             ufo_element_get_output_queue(element));
-    for (guint i = 0; i < g_list_length(self->priv->elements); i++) {
-        UfoElement *child = (UfoElement *) g_list_nth_data(self->priv->elements, i);
+    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
+        UfoElement *child = (UfoElement *) g_list_nth_data(self->priv->children, i);
         ufo_element_print(child);
     }
     g_message("[/node:%p]", element);
@@ -130,6 +130,7 @@ static void ufo_container_class_init(UfoContainerClass *klass)
     UfoElementClass *element_class = UFO_ELEMENT_CLASS(klass);
 
     /* override methods */
+    /* TODO: add dispose/finalize methods */
     gobject_class->set_property = ufo_container_set_property;
     gobject_class->get_property = ufo_container_get_property;
     element_class->process = ufo_container_process;
@@ -157,6 +158,6 @@ static void ufo_container_init(UfoContainer *self)
     /* init private fields */
     UfoContainerPrivate *priv;
     self->priv = priv = UFO_CONTAINER_GET_PRIVATE(self);
-    priv->elements = NULL;
+    priv->children = NULL;
     priv->pipelined = TRUE;
 }

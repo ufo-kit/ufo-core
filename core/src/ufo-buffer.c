@@ -21,6 +21,19 @@ struct _UfoBufferPrivate {
     datastates  state;
 };
 
+/*
+ * \brief Set dimension of buffer data in pixels
+ *
+ * \param[in] width Width of the two-dimensional buffer
+ * \param[in] height Height of the two-dimensional buffer
+ */
+static void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height)
+{
+    g_return_if_fail(UFO_IS_BUFFER(self));
+    /* FIXME: What to do when buffer already allocated memory? Re-size? */
+    self->priv->width = width;
+    self->priv->height = height;
+}
 
 /* 
  * non-virtual public methods 
@@ -40,20 +53,6 @@ UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
     UfoBuffer *buffer = g_object_new(UFO_TYPE_BUFFER, NULL);
     ufo_buffer_set_dimensions(buffer, width, height);
     return buffer;
-}
-
-/*
- * \brief Set dimension of buffer data in pixels
- *
- * \param[in] width Width of the two-dimensional buffer
- * \param[in] height Height of the two-dimensional buffer
- */
-void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height)
-{
-    g_return_if_fail(UFO_IS_BUFFER(self));
-    /* FIXME: What to do when buffer already allocated memory? Re-size? */
-    self->priv->width = width;
-    self->priv->height = height;
 }
 
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height)
@@ -159,7 +158,6 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
 static void ufo_buffer_init(UfoBuffer *self)
 {
     /* init public fields */
-    self->shared = FALSE;
 
     /* init private fields */
     UfoBufferPrivate *priv;
