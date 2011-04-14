@@ -47,6 +47,7 @@ include_directories(
 add_library(ufocore ${ufocore_SRCS})
 
 target_link_libraries(ufocore 
+    ${OPENCL_LIBRARIES}
     ${GLIB2_LIBRARIES} 
     ${GOBJECT2_LIBRARIES}
     ${ETHOS_LIBRARIES}

@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <check.h>
 #include "ufo-graph.h"
-#include "ufo-filter.h"
 
 START_TEST (ufo_create)
 {

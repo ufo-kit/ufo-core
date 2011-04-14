@@ -2,6 +2,7 @@
 #define __UFO_RESOURCE_MANAGER_H
 
 #include <glib-object.h>
+#include <CL/cl.h>
 
 #include "ufo-buffer.h"
 
@@ -29,6 +30,10 @@ struct _UfoResourceManagerClass {
 };
 
 UfoResourceManager *ufo_resource_manager_new();
+
+gboolean ufo_resource_manager_add_program(UfoResourceManager *self, const gchar *filename, GError **error);
+
+cl_kernel ufo_resource_manager_get_kernel(UfoResourceManager *self, const gchar *kernel, GError **error);
 
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32 width, guint32 height);
 void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *buffer);
