@@ -124,21 +124,28 @@ UfoGraph *ufo_graph_new()
 /* 
  * Virtual Methods 
  */
-static void ufo_graph_dispose(GObject *gobject)
+static void ufo_graph_dispose(GObject *object)
 {
-    UfoGraph *self = UFO_GRAPH(gobject);
-    
+    UfoGraph *self = UFO_GRAPH(object);
+
+    GObject *objects[] = {
+        G_OBJECT(self->priv->resource_manager),
+        G_OBJECT(self->priv->root_container),
+        /*G_OBJECT(self->priv->ethos),*/
+        NULL
+    };
+
+    int i = 0;
+    while (objects[i] != NULL)
+        g_object_unref(objects[i++]);
+
+
     if (self->priv->plugins) {
         g_hash_table_destroy(self->priv->plugins);
         self->priv->plugins = NULL;
     }
 
-    if (self->priv->resource_manager) {
-        g_object_unref(self->priv->resource_manager);
-        self->priv->resource_manager = NULL;
-    }
-
-    G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(gobject);
+    G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);
 }
 
 static void ufo_graph_add_plugin(gpointer data, gpointer user_data)

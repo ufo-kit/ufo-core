@@ -56,6 +56,7 @@ void ufo_sequence_add_element(UfoContainer *container, UfoElement *element)
     ufo_element_set_output_queue(element, next);
     ufo_element_set_output_queue(UFO_ELEMENT(self), next);
     self->priv->children = g_list_append(self->priv->children, element);
+    g_object_ref(element);
 }
 
 static void ufo_sequence_process(UfoElement *element)

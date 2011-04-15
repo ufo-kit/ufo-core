@@ -32,6 +32,7 @@ UfoFilter *ufo_element_get_filter(UfoElement *element)
 
 void ufo_element_set_filter(UfoElement *element, UfoFilter *filter)
 {
+    g_object_ref(filter);
     element->priv->filter = filter;
 }
 
@@ -86,6 +87,8 @@ void ufo_element_dispose(GObject *object)
         g_async_queue_unref(self->priv->input_queue);
     if (self->priv->output_queue)
         g_async_queue_unref(self->priv->output_queue);
+    if (self->priv->filter)
+        g_object_unref(self->priv->filter);
 }
 
 static gpointer ufo_filter_thread(gpointer data)

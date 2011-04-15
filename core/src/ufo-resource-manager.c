@@ -63,6 +63,20 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
     return buffer;
 }
 
+static void *resource_manager_release_kernel(gpointer data, gpointer user_data)
+{
+    cl_kernel kernel = (cl_kernel) data;
+    clReleaseKernel(kernel);
+    return NULL;
+}
+
+static void *resource_manager_release_program(gpointer data, gpointer user_data)
+{
+    cl_program program = (cl_program) data;
+    clReleaseProgram(program);
+    return NULL;
+}
+
 GQuark ufo_resource_manager_error_quark(void)
 {
     return g_quark_from_static_string("ufo-resource-manager-error-quark");
@@ -198,8 +212,13 @@ static void ufo_resource_manager_dispose(GObject *gobject)
 {
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
 
+    GList *kernels = g_hash_table_get_values(self->priv->opencl_kernels);
+    g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
+    g_list_foreach(self->priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
+
     g_hash_table_destroy(self->priv->buffers);
     g_hash_table_destroy(self->priv->opencl_kernels);
+    g_list_free(self->priv->opencl_programs);
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->dispose(gobject);
 }

@@ -121,7 +121,8 @@ static void ufo_split_process(UfoElement *element)
     GList *current_queue = self->priv->queues;
 
     /* TODO: we must finish some time... */
-    while (1) {
+    int i = 0;
+    while (i <= 1) {
         /* TODO: replace this round-robin scheme according to the mode */
         UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
         if (input == NULL)
@@ -134,6 +135,7 @@ static void ufo_split_process(UfoElement *element)
         current_queue = g_list_next(current_queue);
         if (current_queue == NULL)
             current_queue = self->priv->queues;
+        i++;
     }
 }
 
