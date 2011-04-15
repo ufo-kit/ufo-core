@@ -9,6 +9,15 @@ struct _UfoSequencePrivate {
     GList *children;
 };
 
+static void sequence_emit(UfoSequence *self, const gchar *signal_name)
+{
+    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
+        UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
+        ufo_element_process(child);
+        g_signal_emit_by_name(child, signal_name);
+    }
+}
+
 /* 
  * Public Interface
  */
@@ -80,6 +89,11 @@ static void ufo_sequence_print(UfoElement *element)
     g_message("[/seq:%p]", element);
 }
 
+static void ufo_sequence_finished(UfoElement *element)
+{
+    g_message("sequence: received finished");
+    sequence_emit(UFO_SEQUENCE(element), "finished");
+}
 
 /*
  * Type/Class Initialization
@@ -92,6 +106,7 @@ static void ufo_sequence_class_init(UfoSequenceClass *klass)
 
     element_class->process = ufo_sequence_process;
     element_class->print = ufo_sequence_print;
+    element_class->finished = ufo_sequence_finished;
     container_class->add_element = ufo_sequence_add_element;
 
     /* install private data */

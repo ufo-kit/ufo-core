@@ -27,17 +27,17 @@ struct _UfoFilter {
 struct _UfoFilterClass {
     EthosPluginClass parent_class;
 
-    void (*process) (UfoFilter *self);
+    void (*process) (UfoFilter *filter);
 };
 
-void ufo_filter_process(UfoFilter *self);
+void ufo_filter_process(UfoFilter *filter);
 
-void ufo_filter_set_resource_manager(UfoFilter *self, UfoResourceManager *resource_manager);
-UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self);
-void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *input_queue);
-void ufo_filter_set_output_queue(UfoFilter *self, GAsyncQueue *output_queue);
-GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *self);
-GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *self);
+void ufo_filter_set_resource_manager(UfoFilter *filter, UfoResourceManager *resource_manager);
+UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *filter);
+void ufo_filter_set_input_queue(UfoFilter *filter, GAsyncQueue *input_queue);
+void ufo_filter_set_output_queue(UfoFilter *filter, GAsyncQueue *output_queue);
+GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *filter);
+GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *filter);
 
 GType ufo_filter_get_type(void);
 

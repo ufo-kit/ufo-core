@@ -26,21 +26,23 @@ struct _UfoElement {
 struct _UfoElementClass {
     GObjectClass parent_class;
 
-    void (*process) (UfoElement *self);
-    void (*print) (UfoElement *self);
+    void (*finished) (UfoElement *element);
+
+    void (*process) (UfoElement *element);
+    void (*print) (UfoElement *element);
 };
 
 UfoElement *ufo_element_new();
 
-void ufo_element_process(UfoElement *self);
-void ufo_element_print(UfoElement *self);
+void ufo_element_process(UfoElement *element);
+void ufo_element_print(UfoElement *element);
 
 UfoFilter *ufo_element_get_filter(UfoElement *element);
 void ufo_element_set_filter(UfoElement *element, UfoFilter *filter);
-void ufo_element_set_input_queue(UfoElement *self, GAsyncQueue *queue);
-void ufo_element_set_output_queue(UfoElement *self, GAsyncQueue *queue);
-GAsyncQueue *ufo_element_get_input_queue(UfoElement *self);
-GAsyncQueue *ufo_element_get_output_queue(UfoElement *self);
+void ufo_element_set_input_queue(UfoElement *element, GAsyncQueue *queue);
+void ufo_element_set_output_queue(UfoElement *element, GAsyncQueue *queue);
+GAsyncQueue *ufo_element_get_input_queue(UfoElement *element);
+GAsyncQueue *ufo_element_get_output_queue(UfoElement *element);
 
 GType ufo_element_get_type(void);
 

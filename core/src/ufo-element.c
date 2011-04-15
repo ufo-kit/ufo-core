@@ -6,8 +6,12 @@ G_DEFINE_TYPE(UfoElement, ufo_element, G_TYPE_OBJECT)
 #define UFO_ELEMENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_ELEMENT, UfoElementPrivate))
 
 enum {
-    PROP_0,
+    FINISHED,
+    LAST_SIGNAL
+};
 
+enum {
+    PROP_0,
     PROP_NAME
 };
 
@@ -16,6 +20,8 @@ struct _UfoElementPrivate {
     GAsyncQueue *output_queue;
     UfoFilter *filter;
 };
+
+static guint element_signals[LAST_SIGNAL] = { 0 };
 
 /* 
  * Public Interface
@@ -33,6 +39,13 @@ UfoFilter *ufo_element_get_filter(UfoElement *element)
 void ufo_element_set_filter(UfoElement *element, UfoFilter *filter)
 {
     g_object_ref(filter);
+
+    /* Now this is tricky: We are subscribing to the child filters "finished"
+     * signal and relay it to our own class method that handles "finished" */
+    g_message("finished %p", UFO_ELEMENT_GET_CLASS(element)->finished);
+    g_signal_connect(filter, "finished",
+            G_CALLBACK(UFO_ELEMENT_GET_CLASS(element)->finished), element);
+
     element->priv->filter = filter;
 }
 
@@ -70,6 +83,7 @@ GAsyncQueue *ufo_element_get_output_queue(UfoElement *self)
         return ufo_filter_get_output_queue(self->priv->filter);
     return self->priv->output_queue;
 }
+
 
 /* 
  * Virtual Methods
@@ -126,6 +140,7 @@ static void ufo_element_print_default(UfoElement *self)
     }
 }
 
+
 /*
  * Type/Class Initialization
  */
@@ -136,6 +151,17 @@ static void ufo_element_class_init(UfoElementClass *klass)
     gobject_class->dispose = ufo_element_dispose;
     klass->process = ufo_element_process_default;
     klass->print = ufo_element_print_default;
+    klass->finished = NULL;
+
+    /* install signals */
+    element_signals[FINISHED] =
+        g_signal_new("finished",
+                G_TYPE_FROM_CLASS(klass),
+                G_SIGNAL_RUN_FIRST,
+                G_STRUCT_OFFSET(UfoElementClass, finished),
+                NULL, NULL,
+                g_cclosure_marshal_VOID__VOID,
+                G_TYPE_NONE, 0, NULL);
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoElementPrivate));

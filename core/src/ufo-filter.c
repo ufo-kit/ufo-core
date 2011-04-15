@@ -8,8 +8,12 @@ G_DEFINE_TYPE(UfoFilter, ufo_filter, ETHOS_TYPE_PLUGIN);
 #define UFO_FILTER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER, UfoFilterPrivate))
 
 enum {
-    PROP_0,
+    FINISHED,
+    LAST_SIGNAL
+};
 
+enum {
+    PROP_0,
     PROP_NAME
 };
 
@@ -19,6 +23,8 @@ struct _UfoFilterPrivate {
     GAsyncQueue         *output_queue;
     gchar               *name;
 };
+
+static guint filter_signals[LAST_SIGNAL] = { 0 };
 
 /* 
  * Public Interface
@@ -116,6 +122,7 @@ static void ufo_filter_dispose(GObject *object)
     G_OBJECT_CLASS(ufo_filter_parent_class)->dispose(object);
 }
 
+
 /*
  * Type/Class Initialization
  */
@@ -138,6 +145,16 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
         "no-name-set",
         G_PARAM_CONSTRUCT_ONLY | G_PARAM_READABLE);
     g_object_class_install_property(gobject_class, PROP_NAME, pspec);
+
+    /* install signals */
+    filter_signals[FINISHED] =
+        g_signal_newv("finished",
+                G_TYPE_FROM_CLASS(klass),
+                G_SIGNAL_RUN_FIRST,
+                NULL, /* no class closure, elements are connecting to us */
+                NULL, NULL,
+                g_cclosure_marshal_VOID__VOID,
+                G_TYPE_NONE, 0, NULL);
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoFilterPrivate));

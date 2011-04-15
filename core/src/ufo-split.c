@@ -30,7 +30,6 @@ struct _UfoSplitPrivate {
     guint current_node;
 };
 
-
 /* 
  * Public Interface
  */
@@ -152,6 +151,16 @@ static void ufo_split_print(UfoElement *element)
     g_message("[/split:%p]", element);
 }
 
+static void ufo_split_finished(UfoElement *element)
+{
+    UfoSplit *self = UFO_SPLIT(element);
+    g_message("split: received finished");
+    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
+        UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
+        g_signal_emit_by_name(child, "finished");
+    }
+}
+
 /*
  * Type/Class Initialization
  */
@@ -166,6 +175,7 @@ static void ufo_split_class_init(UfoSplitClass *klass)
     gobject_class->get_property = ufo_split_get_property;
     element_class->process = ufo_split_process;
     element_class->print = ufo_split_print;
+    element_class->finished = ufo_split_finished;
     container_class->add_element = ufo_split_add_element;
 
     /* install properties */
