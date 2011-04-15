@@ -16,9 +16,10 @@ struct _UfoBufferPrivate {
     gint32      width;
     gint32      height;
 
+    datastates  state;
     float       *cpu_data;
     cl_mem      gpu_data;
-    datastates  state;
+    cl_command_queue command_queue;
 };
 
 /* 
@@ -60,6 +61,14 @@ void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height)
     g_return_if_fail(UFO_IS_BUFFER(self));
     *width = self->priv->width;
     *height = self->priv->height;
+}
+
+/**
+ * \note This does not copy data from host to device.
+ */
+void ufo_buffer_create_gpu_buffer(UfoBuffer *self, cl_mem mem)
+{
+    self->priv->gpu_data = mem;
 }
 
 void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data)

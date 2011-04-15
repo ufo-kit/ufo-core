@@ -268,8 +268,10 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     }
 
     /* XXX: create context for each platform?! */
-    priv->opencl_context = clCreateContext(NULL, 
-            priv->num_devices[0],
-            priv->opencl_devices[0],
-            NULL, NULL, NULL);
+    if (priv->num_platforms > 0) {
+        priv->opencl_context = clCreateContext(NULL, 
+                priv->num_devices[0],
+                priv->opencl_devices[0],
+                NULL, NULL, NULL);
+    }
 }

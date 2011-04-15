@@ -79,6 +79,15 @@ void ufo_element_process(UfoElement *self)
     UFO_ELEMENT_GET_CLASS(self)->process(self);
 }
 
+void ufo_element_dispose(GObject *object)
+{
+    UfoElement *self = UFO_ELEMENT(object);
+    if (self->priv->input_queue)
+        g_async_queue_unref(self->priv->input_queue);
+    if (self->priv->output_queue)
+        g_async_queue_unref(self->priv->output_queue);
+}
+
 static gpointer ufo_filter_thread(gpointer data)
 {
     ufo_filter_process(UFO_FILTER(data));
@@ -120,6 +129,8 @@ static void ufo_element_print_default(UfoElement *self)
 static void ufo_element_class_init(UfoElementClass *klass)
 {
     /* override methods */
+    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+    gobject_class->dispose = ufo_element_dispose;
     klass->process = ufo_element_process_default;
     klass->print = ufo_element_print_default;
 
