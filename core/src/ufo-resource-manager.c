@@ -57,7 +57,7 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
     size_t buffer_length = fread(buffer, 1, length, fp);
     fclose(fp);
     if (buffer_length != length) {
-        free(buffer);
+        g_free(buffer);
         return NULL;
     }
     return buffer;
