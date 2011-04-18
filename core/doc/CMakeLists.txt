@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
+
+include(ExternalProject)
 
 find_package(Doxygen)
-find_program(SPHINX sphinx-build PATHS /usr/bin)
+find_program(SPHINX sphinx-build PATHS /usr/local/bin /usr/bin)
 
 # --- Create Doxygen source documentation by typing `make doc`
 if(DOXYGEN_FOUND)
@@ -16,8 +18,35 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 if(SPHINX)
+    # To use Doxygen's output, we use the Doxygen-to-Sphinx bridge called
+    # Breathe that we download via Git.
+    ExternalProject_Add(breathe
+        GIT_REPOSITORY "https://github.com/michaeljones/breathe.git"
+        GIT_TAG "origin/master"
+        UPDATE_COMMAND ""
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
+        )
+
+    # Let's configure the Sphinx configuration file with the paths to the
+    # Doxygen output and the Breathe home directory
+    set(UFO_SPHINX_EXTENSIONS "'breathe'")
+    set(UFO_BREATHE_PATH
+        "'${CMAKE_CURRENT_BINARY_DIR}/breathe-prefix/src/breathe'")
+    set(UFO_DOXYGEN_XML_OUTPUT "'${CMAKE_CURRENT_BINARY_DIR}/xml'")
+
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/source
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        )
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py
+        ${CMAKE_CURRENT_BINARY_DIR}/source/conf.py)
+
+    message("${CMAKE_CURRENT_BINARY_DIR} is here")
+
     add_custom_target(docs
-        ${SPHINX} -b html ${CMAKE_CURRENT_SOURCE_DIR}/source docs-${UFO_VERSION_STRING_SHORT} 
+        ${SPHINX} -b html ${CMAKE_CURRENT_BINARY_DIR}/source docs-${UFO_VERSION_STRING_SHORT} 
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating user documentation with Sphinx" VERBATIM
         )

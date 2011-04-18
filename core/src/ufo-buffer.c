@@ -22,38 +22,37 @@ struct _UfoBufferPrivate {
     cl_command_queue command_queue;
 };
 
+static void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height);
+
 /* 
  * Public Interface
  */
 
-/*
- * \brief Set dimension of buffer data in pixels
- *
- * \param[in] width Width of the two-dimensional buffer
- * \param[in] height Height of the two-dimensional buffer
- */
-static void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height)
-{
-    g_return_if_fail(UFO_IS_BUFFER(self));
-    /* FIXME: What to do when buffer already allocated memory? Re-size? */
-    self->priv->width = width;
-    self->priv->height = height;
-}
-
-/*
+/**
  * \brief Create a new buffer with given dimensions
  *
  * \param[in] width Width of the two-dimensional buffer
  * \param[in] height Height of the two-dimensional buffer
- * \param[in] bytes_per_pixel Number of bytes per pixel
  *
  * \return Buffer with allocated memory
+ *
+ * \note Filters should never allocate buffers on their own using this method
+ * but use the UfoResourceManager method ufo_resource_manager_request_buffer().
  */
 UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
 {
     UfoBuffer *buffer = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
     ufo_buffer_set_dimensions(buffer, width, height);
     return buffer;
+}
+
+
+static void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height)
+{
+    g_return_if_fail(UFO_IS_BUFFER(self));
+    /* FIXME: What to do when buffer already allocated memory? Re-size? */
+    self->priv->width = width;
+    self->priv->height = height;
 }
 
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height)
@@ -81,11 +80,17 @@ void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data)
     self->priv->state = CPU_DATA_VALID;
 }
 
-/*
+/**
  * \brief Spread raw data without increasing the contrast
  *
- * This method is used to re-interpret the raw data put in with
- * ufo_buffer_set_cpu_data().
+ * The fundamental data type of a UfoBuffer is one single-precision floating
+ * point per pixel. To increase performance it is possible to load arbitrary
+ * integer data with ufo_buffer_set_cpu_data() and convert that data with this
+ * method.
+ *
+ * \param[in] self UfoBuffer object
+ * \param[in] source_depth The original integer data type. This could be
+ * UFO_BUFFER_DEPTH_8 for 8-bit data or UFO_BUFFER_DEPTH_16 for 16-bit data.
  */
 void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth)
 {

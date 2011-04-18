@@ -23,6 +23,12 @@ struct _UfoElement {
     UfoElementPrivate *priv;
 };
 
+/**
+ * \class UfoElement
+ *
+ * An UfoElement is a base-class for either a computation leaf or some container
+ * holding references to more UfoElements.
+ */
 struct _UfoElementClass {
     GObjectClass parent_class;
 

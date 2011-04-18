@@ -6,6 +6,8 @@ Welcome to UFO
 
     build
     install
+    api
+
 
 Indices and tables
 ==================

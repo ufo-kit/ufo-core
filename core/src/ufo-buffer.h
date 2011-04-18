@@ -17,6 +17,12 @@ typedef struct _UfoBuffer           UfoBuffer;
 typedef struct _UfoBufferClass      UfoBufferClass;
 typedef struct _UfoBufferPrivate    UfoBufferPrivate;
 
+/**
+ * \class UfoBuffer
+ *
+ * Abstract data container that holds either valid GPU data or CPU data.
+ *
+ */
 struct _UfoBuffer {
     GObject parent_instance;
 

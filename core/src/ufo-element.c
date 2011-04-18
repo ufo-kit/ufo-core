@@ -26,6 +26,11 @@ static guint element_signals[LAST_SIGNAL] = { 0 };
 /* 
  * Public Interface
  */
+
+/**
+ * \brief Creates a new UfoElement object
+ * \return An UfoElement
+ */
 UfoElement *ufo_element_new()
 {
     return UFO_ELEMENT(g_object_new(UFO_TYPE_ELEMENT, NULL));
