@@ -1,0 +1,24 @@
+{
+     "type" : "sequence",
+     "elements" : [
+         {
+             "type" : "filter",
+             "plugin" : "uca"
+         },
+         {
+             "type" : "split",
+             "mode" : "copy",
+             "elements" : [
+                 {
+                     "type" : "filter",
+                     "plugin" : "raw"
+                 },
+                 {
+                     "type" : "filter",
+                     "plugin" : "histogram"
+                 }
+             ]
+         }
+     ]
+}
+

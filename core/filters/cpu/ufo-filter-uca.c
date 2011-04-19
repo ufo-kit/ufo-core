@@ -85,6 +85,7 @@ static void ufo_filter_uca_init(UfoFilterUCA *self)
 
     /* init private fields */
     self->priv = UFO_FILTER_UCA_GET_PRIVATE(self);
+    /* FIXME: what to do when u == NULL? */
     self->priv->u = uca_init(NULL);
     self->priv->cam = self->priv->u->cameras;
     uca_cam_alloc(self->priv->cam, 10);

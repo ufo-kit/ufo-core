@@ -94,8 +94,15 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **conta
 /* 
  * Public Interface
  */
-void ufo_graph_read_json_configuration(UfoGraph *self, const gchar *filename)
+/**
+ * \brief Read a JSON configuration file to build a static UfoGraph
+ * \param[in] filename Path and filename to the JSON file
+ * \return A UfoGraph object build from the JSON description or NULL if JSON
+ * file could not be parsed
+ */
+UfoGraph *ufo_graph_new_from_json(const gchar *filename)
 {
+    UfoGraph *self = ufo_graph_new();
     JsonParser *parser = json_parser_new();
     GError *error = NULL;
     json_parser_load_from_file(parser, filename, &error);
@@ -103,19 +110,29 @@ void ufo_graph_read_json_configuration(UfoGraph *self, const gchar *filename)
         g_message("Parse error: %s", error->message);
         g_error_free(error);
         g_object_unref(parser);
-        return;
+        return NULL;
     }
 
     ufo_graph_build(self, json_parser_get_root(parser), &self->priv->root_container);
     g_object_unref(parser);
+    return self;
 }
 
-void ufo_graph_run(UfoGraph *self)
+/**
+ * \brief Start execution of all UfoElements in the UfoGraph until no more data
+ * is produced
+ * \param[in] graph The UfoGraph to be executed
+ */
+void ufo_graph_run(UfoGraph *graph)
 {
-    ufo_element_print(UFO_ELEMENT(self->priv->root_container));
-    ufo_element_process(UFO_ELEMENT(self->priv->root_container));
+    ufo_element_print(UFO_ELEMENT(graph->priv->root_container));
+    ufo_element_process(UFO_ELEMENT(graph->priv->root_container));
 }
 
+/**
+ * \brief Create a new UfoGraph instance
+ * \return A UfoGraph
+ */
 UfoGraph *ufo_graph_new()
 {
     return g_object_new(UFO_TYPE_GRAPH, NULL);

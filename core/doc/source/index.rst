@@ -7,6 +7,7 @@ Welcome to UFO
     build
     install
     api
+    json
 
 
 Indices and tables
