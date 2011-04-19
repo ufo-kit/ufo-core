@@ -16,7 +16,7 @@ enum {
 };
 
 struct _UfoElementPrivate {
-    GAsyncQueue *input_queue;
+    GAsyncQueue *input_queue;   /**< \private \memberof UfoElement */
     GAsyncQueue *output_queue;
     UfoFilter *filter;
 };
@@ -29,6 +29,7 @@ static guint element_signals[LAST_SIGNAL] = { 0 };
 
 /**
  * \brief Creates a new UfoElement object
+ * \public \memberof UfoElement
  * \return An UfoElement
  */
 UfoElement *ufo_element_new()
@@ -38,6 +39,7 @@ UfoElement *ufo_element_new()
 
 /**
  * \brief Return an associated UfoFilter object
+ * \public \memberof UfoElement
  * \param[in] element The element whose associated filter is returned
  * \return The associated filter or NULL if there is none like for an UfoSplit
  *      or UfoSequence
@@ -50,6 +52,7 @@ UfoFilter *ufo_element_get_filter(UfoElement *element)
 /**
  * \brief Associate an UfoElement with a UfoFilter so that an UfoElement
  *      essentially becomes a leaf node.
+ * \public \memberof UfoElement
  * \param[in] element an UfoElement
  * \param[in] filter a UfoFilter that is going to be 
  * \return The associated filter or NULL if there is none like for an UfoSplit
@@ -70,57 +73,61 @@ void ufo_element_set_filter(UfoElement *element, UfoFilter *filter)
 
 /**
  * \brief Set an input queue
+ * \public \memberof UfoElement
  * \param[in] element UfoElement whose input queue is changed
  * \param[in] queue a GAsyncQueue
  */
-void ufo_element_set_input_queue(UfoElement *self, GAsyncQueue *queue)
+void ufo_element_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 {
     if (queue != NULL) {
-        if (self->priv->filter)
-            ufo_filter_set_input_queue(self->priv->filter, queue);
+        if (element->priv->filter)
+            ufo_filter_set_input_queue(element->priv->filter, queue);
         g_async_queue_ref(queue);
     }
-    self->priv->input_queue = queue;
+    element->priv->input_queue = queue;
 }
 
 /**
  * \brief Set an output queue
+ * \public \memberof UfoElement
  * \param[in] element UfoElement whose output queue is changed
  * \param[in] queue a GAsyncQueue
  */
-void ufo_element_set_output_queue(UfoElement *self, GAsyncQueue *queue)
+void ufo_element_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 {
     if (queue != NULL) {
-        if (self->priv->filter)
-            ufo_filter_set_output_queue(self->priv->filter, queue);
+        if (element->priv->filter)
+            ufo_filter_set_output_queue(element->priv->filter, queue);
         g_async_queue_ref(queue);
     }
-    self->priv->output_queue = queue;
+    element->priv->output_queue = queue;
 }
 
 /**
  * \brief Get the input queue
+ * \public \memberof UfoElement
  * \param[in] element UfoElement whose output queue returned
  * \return A GAsyncQueue
  */
-GAsyncQueue *ufo_element_get_input_queue(UfoElement *self)
+GAsyncQueue *ufo_element_get_input_queue(UfoElement *element)
 {
-    if (self->priv->filter != NULL)
-        return ufo_filter_get_input_queue(self->priv->filter);
+    if (element->priv->filter != NULL)
+        return ufo_filter_get_input_queue(element->priv->filter);
 
-    return self->priv->input_queue;
+    return element->priv->input_queue;
 }
 
 /**
  * \brief Get the output queue
+ * \public \memberof UfoElement
  * \param[in] element UfoElement whose output queue returned
  * \return A GAsyncQueue
  */
-GAsyncQueue *ufo_element_get_output_queue(UfoElement *self)
+GAsyncQueue *ufo_element_get_output_queue(UfoElement *element)
 {
-    if (self->priv->filter != NULL)
-        return ufo_filter_get_output_queue(self->priv->filter);
-    return self->priv->output_queue;
+    if (element->priv->filter != NULL)
+        return ufo_filter_get_output_queue(element->priv->filter);
+    return element->priv->output_queue;
 }
 
 
@@ -133,6 +140,7 @@ GAsyncQueue *ufo_element_get_output_queue(UfoElement *self)
  * Processing an UfoElement means to process an associated UfoFilter or the
  * children of UfoSplit or UfoSequence.
  *
+ * \public \memberof UfoElement
  * \param[in] element An UfoElement to process
  */
 void ufo_element_process(UfoElement *element)

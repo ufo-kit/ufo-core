@@ -17,6 +17,13 @@ typedef struct _UfoSplit           UfoSplit;
 typedef struct _UfoSplitClass      UfoSplitClass;
 typedef struct _UfoSplitPrivate    UfoSplitPrivate;
 
+/**
+ * \class UfoSplit
+ * \extends UfoElement
+ *
+ * A UfoSplit distributes incoming work to all of its UfoElement children. Each
+ * child's output queue is identical to its parent output queue.
+ */
 struct _UfoSplit {
     UfoContainer parent_instance;
 

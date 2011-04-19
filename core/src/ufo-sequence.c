@@ -21,6 +21,11 @@ static void sequence_emit(UfoSequence *self, const gchar *signal_name)
 /* 
  * Public Interface
  */
+/**
+ * \brief Create a new UfoSequence object
+ * \public \memberof UfoSequence
+ * \return A UfoElement
+ */
 UfoContainer *ufo_sequence_new()
 {
     return UFO_CONTAINER(g_object_new(UFO_TYPE_SEQUENCE, NULL));

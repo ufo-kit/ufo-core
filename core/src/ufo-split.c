@@ -33,6 +33,11 @@ struct _UfoSplitPrivate {
 /* 
  * Public Interface
  */
+/**
+ * \brief Create a new UfoSplit object
+ * \public \memberof UfoSplit
+ * \return A UfoElement
+ */
 UfoContainer *ufo_split_new()
 {
     return UFO_CONTAINER(g_object_new(UFO_TYPE_SPLIT, NULL));

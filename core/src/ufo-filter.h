@@ -17,6 +17,11 @@ typedef struct _UfoFilter           UfoFilter;
 typedef struct _UfoFilterClass      UfoFilterClass;
 typedef struct _UfoFilterPrivate    UfoFilterPrivate;
 
+/**
+ * \class UfoFilter
+ * \brief Abstract and encapsulated unit of computation
+ * \extends EthosPlugin
+ */
 struct _UfoFilter {
     EthosPlugin parent_instance;
 

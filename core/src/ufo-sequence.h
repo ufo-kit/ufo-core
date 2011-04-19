@@ -17,6 +17,13 @@ typedef struct _UfoSequence           UfoSequence;
 typedef struct _UfoSequenceClass      UfoSequenceClass;
 typedef struct _UfoSequencePrivate    UfoSequencePrivate;
 
+/**
+ * \class UfoSequence
+ * \extends UfoElement
+ *
+ * A UfoSequence pushes input buffers to its first child UfoElement and
+ * organizes subsequent elements in a linear fashion.
+ */
 struct _UfoSequence {
     UfoContainer parent_instance;
 
