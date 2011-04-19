@@ -18,6 +18,14 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 if(SPHINX)
+    set(SPHINX_RESOURCES
+        source/index.rst
+        source/api.rst
+        source/build.rst
+        source/install.rst
+        source/json.rst
+        )
+
     # Check if ExternalProject supports Git repositories
     if (${CMAKE_VERSION} VERSION_GREATER "2.8.1")
         # To use Doxygen's output, we use the Doxygen-to-Sphinx bridge called
@@ -43,9 +51,10 @@ if(SPHINX)
         set(UFO_DOXYGEN_XML_OUTPUT "''")
     endif()
 
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/source
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-        )
+    foreach(file ${SPHINX_RESOURCES})
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${file}
+            ${CMAKE_CURRENT_BINARY_DIR}/${file} COPYONLY)
+    endforeach()
 
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
         ${CMAKE_CURRENT_BINARY_DIR}/source/conf.py)

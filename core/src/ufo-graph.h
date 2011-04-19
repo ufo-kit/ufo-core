@@ -15,6 +15,10 @@ typedef struct _UfoGraphClass      UfoGraphClass;
 typedef struct _UfoGraphPrivate    UfoGraphPrivate;
 
 
+/**
+ * \class UfoGraph
+ * \brief Contains the root UfoElement
+ */
 struct _UfoGraph {
     GObject parent_instance;
 

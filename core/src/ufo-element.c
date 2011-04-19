@@ -146,7 +146,7 @@ GAsyncQueue *ufo_element_get_output_queue(UfoElement *element)
 void ufo_element_process(UfoElement *element)
 {
     g_return_if_fail(UFO_IS_ELEMENT(element));
-    UFO_ELEMENT_GET_CLASS(self)->process(element);
+    UFO_ELEMENT_GET_CLASS(element)->process(element);
 }
 
 static void ufo_element_dispose(GObject *object)

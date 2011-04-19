@@ -18,6 +18,10 @@ typedef struct _UfoResourceManagerClass      UfoResourceManagerClass;
 typedef struct _UfoResourceManagerPrivate    UfoResourceManagerPrivate;
 
 
+/**
+ * \class UfoResourceManager
+ * \brief Manages GPU and UfoBuffer resources
+ */
 struct _UfoResourceManager {
     GObject parent_instance;
 

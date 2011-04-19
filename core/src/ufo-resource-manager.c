@@ -85,11 +85,23 @@ GQuark ufo_resource_manager_error_quark(void)
 /* 
  * Public Interface
  */
+/**
+ * \brief Create a new UfoResourceManager instance
+ * \public \memberof UfoResourceManager
+ * \return A UfoResourceManager
+ */
 UfoResourceManager *ufo_resource_manager_new()
 {
     return UFO_RESOURCE_MANAGER(g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL));
 }
 
+/**
+ * \brief Adds an OpenCL program and loads all kernels in that file
+ * \param[in] filename File containing valid OpenCL code
+ * \param[out] error Pointer to a GError* 
+ * \public \memberof UfoResourceManager
+ * \return TRUE on success else FALSE
+ */
 gboolean ufo_resource_manager_add_program(UfoResourceManager *self, const gchar *filename, GError **error)
 {
     gchar *buffer = resource_manager_load_opencl_program(filename);
@@ -154,6 +166,15 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *self, const gchar 
     return TRUE;
 }
 
+/**
+ * \brief Retrieve a loaded OpenCL kernel
+ * \public \memberof UfoResourceManager
+ * \param[in] kernel_name Zero-delimited string of the kernel name
+ * \param[out] error Pointer to a GError* 
+ * \note The kernel must be contained in of the files that has been previously
+ *      loaded with ufo_resource_manager_add_program()
+ * \return A cl_kernel object
+ */
 cl_kernel ufo_resource_manager_get_kernel(UfoResourceManager *self, const gchar *kernel_name, GError **error)
 {
     cl_kernel kernel = (cl_kernel) g_hash_table_lookup(self->priv->opencl_kernels, kernel_name);
@@ -167,6 +188,16 @@ cl_kernel ufo_resource_manager_get_kernel(UfoResourceManager *self, const gchar 
     return kernel;
 }
 
+/**
+ * \brief Request a UfoBuffer with a given size
+ * \public \memberof UfoResourceManager
+ * \param[in] width Width of the buffer
+ * \param[in] height Height of the buffer
+ * \note If you don't intend to use the buffer or won't push it again to the
+ *      next UfoElement, it has to be released with
+ *      ufo_resource_manager_release_buffer()
+ * \return A UfoBuffer object
+ */
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32 width, guint32 height)
 {
     const gpointer hash = GINT_TO_POINTER(resource_manager_hash_dims(width, height));
@@ -190,6 +221,11 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32
     return buffer;
 }
 
+/**
+ * \brief Release a UfoBuffer for further use
+ * \public \memberof UfoResourceManager
+ * \param[in] buffer A UfoBuffer
+ */
 void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *buffer)
 {
     gint32 width, height;

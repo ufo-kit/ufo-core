@@ -96,6 +96,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **conta
  */
 /**
  * \brief Read a JSON configuration file to build a static UfoGraph
+ * \public \memberof UfoGraph
  * \param[in] filename Path and filename to the JSON file
  * \return A UfoGraph object build from the JSON description or NULL if JSON
  * file could not be parsed
@@ -121,6 +122,7 @@ UfoGraph *ufo_graph_new_from_json(const gchar *filename)
 /**
  * \brief Start execution of all UfoElements in the UfoGraph until no more data
  * is produced
+ * \public \memberof UfoGraph
  * \param[in] graph The UfoGraph to be executed
  */
 void ufo_graph_run(UfoGraph *graph)
@@ -132,6 +134,7 @@ void ufo_graph_run(UfoGraph *graph)
 /**
  * \brief Create a new UfoGraph instance
  * \return A UfoGraph
+ * \public \memberof UfoGraph
  */
 UfoGraph *ufo_graph_new()
 {
