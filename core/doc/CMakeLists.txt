@@ -18,23 +18,29 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 if(SPHINX)
-    # To use Doxygen's output, we use the Doxygen-to-Sphinx bridge called
-    # Breathe that we download via Git.
-    ExternalProject_Add(breathe
-        GIT_REPOSITORY "https://github.com/michaeljones/breathe.git"
-        GIT_TAG "origin/master"
-        UPDATE_COMMAND ""
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND ""
-        )
+    if (${CMAKE_PATCH_VERSION} MATCHES "2")
+        # To use Doxygen's output, we use the Doxygen-to-Sphinx bridge called
+        # Breathe that we download via Git.
+        ExternalProject_Add(breathe
+            GIT_REPOSITORY "https://github.com/michaeljones/breathe.git"
+            GIT_TAG "origin/master"
+            UPDATE_COMMAND ""
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND ""
+            INSTALL_COMMAND ""
+            )
 
-    # Let's configure the Sphinx configuration file with the paths to the
-    # Doxygen output and the Breathe home directory
-    set(UFO_SPHINX_EXTENSIONS "'breathe'")
-    set(UFO_BREATHE_PATH
-        "'${CMAKE_CURRENT_BINARY_DIR}/breathe-prefix/src/breathe'")
-    set(UFO_DOXYGEN_XML_OUTPUT "'${CMAKE_CURRENT_BINARY_DIR}/xml'")
+        # Let's configure the Sphinx configuration file with the paths to the
+        # Doxygen output and the Breathe home directory
+        set(UFO_SPHINX_EXTENSIONS "'breathe'")
+        set(UFO_BREATHE_PATH
+            "'${CMAKE_CURRENT_BINARY_DIR}/breathe-prefix/src/breathe'")
+        set(UFO_DOXYGEN_XML_OUTPUT "'${CMAKE_CURRENT_BINARY_DIR}/xml'")
+    else()
+        set(UFO_SPHINX_EXTENSIONS "''")
+        set(UFO_BREATHE_PATH "''")
+        set(UFO_DOXYGEN_XML_OUTPUT "''")
+    endif()
 
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/source
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}

@@ -26,9 +26,8 @@ import sys, os
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath' ]
 
-extensions.append(${UFO_SPHINX_EXTENSIONS})
-
 if ${UFO_SPHINX_EXTENSIONS} == 'breathe':
+    extensions.append(${UFO_SPHINX_EXTENSIONS})
     sys.path.append(${UFO_BREATHE_PATH})
     breathe_projects = { 'ufo' : ${UFO_DOXYGEN_XML_OUTPUT} }
     breathe_default_project = 'ufo'
