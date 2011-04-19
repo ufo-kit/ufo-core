@@ -18,7 +18,8 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 if(SPHINX)
-    if (${CMAKE_PATCH_VERSION} MATCHES "2")
+    # Check if ExternalProject supports Git repositories
+    if (${CMAKE_VERSION} VERSION_GREATER "2.8.1")
         # To use Doxygen's output, we use the Doxygen-to-Sphinx bridge called
         # Breathe that we download via Git.
         ExternalProject_Add(breathe
@@ -46,10 +47,8 @@ if(SPHINX)
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
         )
 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
         ${CMAKE_CURRENT_BINARY_DIR}/source/conf.py)
-
-    message("${CMAKE_CURRENT_BINARY_DIR} is here")
 
     add_custom_target(docs
         ${SPHINX} -b html ${CMAKE_CURRENT_BINARY_DIR}/source docs-${UFO_VERSION_STRING_SHORT} 
