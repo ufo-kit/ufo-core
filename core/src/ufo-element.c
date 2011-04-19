@@ -36,11 +36,25 @@ UfoElement *ufo_element_new()
     return UFO_ELEMENT(g_object_new(UFO_TYPE_ELEMENT, NULL));
 }
 
+/**
+ * \brief Return an associated UfoFilter object
+ * \param[in] element The element whose associated filter is returned
+ * \return The associated filter or NULL if there is none like for an UfoSplit
+ *      or UfoSequence
+ */
 UfoFilter *ufo_element_get_filter(UfoElement *element)
 {
     return element->priv->filter;
 }
 
+/**
+ * \brief Associate an UfoElement with a UfoFilter so that an UfoElement
+ *      essentially becomes a leaf node.
+ * \param[in] element an UfoElement
+ * \param[in] filter a UfoFilter that is going to be 
+ * \return The associated filter or NULL if there is none like for an UfoSplit
+ *      or UfoSequence
+ */
 void ufo_element_set_filter(UfoElement *element, UfoFilter *filter)
 {
     g_object_ref(filter);
@@ -54,6 +68,11 @@ void ufo_element_set_filter(UfoElement *element, UfoFilter *filter)
     element->priv->filter = filter;
 }
 
+/**
+ * \brief Set an input queue
+ * \param[in] element UfoElement whose input queue is changed
+ * \param[in] queue a GAsyncQueue
+ */
 void ufo_element_set_input_queue(UfoElement *self, GAsyncQueue *queue)
 {
     if (queue != NULL) {
@@ -64,6 +83,11 @@ void ufo_element_set_input_queue(UfoElement *self, GAsyncQueue *queue)
     self->priv->input_queue = queue;
 }
 
+/**
+ * \brief Set an output queue
+ * \param[in] element UfoElement whose output queue is changed
+ * \param[in] queue a GAsyncQueue
+ */
 void ufo_element_set_output_queue(UfoElement *self, GAsyncQueue *queue)
 {
     if (queue != NULL) {
@@ -74,6 +98,11 @@ void ufo_element_set_output_queue(UfoElement *self, GAsyncQueue *queue)
     self->priv->output_queue = queue;
 }
 
+/**
+ * \brief Get the input queue
+ * \param[in] element UfoElement whose output queue returned
+ * \return A GAsyncQueue
+ */
 GAsyncQueue *ufo_element_get_input_queue(UfoElement *self)
 {
     if (self->priv->filter != NULL)
@@ -82,6 +111,11 @@ GAsyncQueue *ufo_element_get_input_queue(UfoElement *self)
     return self->priv->input_queue;
 }
 
+/**
+ * \brief Get the output queue
+ * \param[in] element UfoElement whose output queue returned
+ * \return A GAsyncQueue
+ */
 GAsyncQueue *ufo_element_get_output_queue(UfoElement *self)
 {
     if (self->priv->filter != NULL)
@@ -93,13 +127,21 @@ GAsyncQueue *ufo_element_get_output_queue(UfoElement *self)
 /* 
  * Virtual Methods
  */
-void ufo_element_process(UfoElement *self)
+/**
+ * \brief Execute an element
+ *
+ * Processing an UfoElement means to process an associated UfoFilter or the
+ * children of UfoSplit or UfoSequence.
+ *
+ * \param[in] element An UfoElement to process
+ */
+void ufo_element_process(UfoElement *element)
 {
-    g_return_if_fail(UFO_IS_ELEMENT(self));
-    UFO_ELEMENT_GET_CLASS(self)->process(self);
+    g_return_if_fail(UFO_IS_ELEMENT(element));
+    UFO_ELEMENT_GET_CLASS(self)->process(element);
 }
 
-void ufo_element_dispose(GObject *object)
+static void ufo_element_dispose(GObject *object)
 {
     UfoElement *self = UFO_ELEMENT(object);
     if (self->priv->input_queue)
