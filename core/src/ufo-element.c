@@ -172,7 +172,7 @@ static void ufo_element_dispose(GObject *object)
  */
 void ufo_element_add_element(UfoElement *element, UfoElement *child)
 {
-    UFO_ELEMENT_GET_CLASS(self)->add_element(element, child);
+    UFO_ELEMENT_GET_CLASS(element)->add_element(element, child);
 }
 
 static gpointer ufo_filter_thread(gpointer data)
