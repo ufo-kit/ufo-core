@@ -1,52 +1,84 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <check.h>
+#include <glib.h>
 #include "ufo-graph.h"
+#include "ufo-buffer.h"
 
-/*
-START_TEST (ufo_create)
+static void test_graph_simple(void)
 {
-    g_type_init();
-    UfoGraph *graph = ufo_graph_new();
-    fail_if(graph == NULL);
-    ufo_graph_read_json_configuration(graph, "test.json");
-    printf("what?");
-    ufo_graph_run(graph);
-    g_object_unref(graph);
-}
-END_TEST
-*/
-
-void test(void)
-{
-    g_type_init();
-    UfoGraph *graph = ufo_graph_new_from_json("test.json");
-    printf("what?");
-    ufo_graph_run(graph);
-    g_object_unref(graph);
+    UfoGraph *graph = NULL;
+    g_assert(graph == NULL);
 }
 
+static void test_buffer_set_data(void)
+{
+    UfoBuffer *buffer = ufo_buffer_new(10, 1);
+    g_assert(buffer != NULL);
+
+    GError *error = NULL;
+    float test_data[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    ufo_buffer_set_cpu_data(buffer, test_data, 10, &error);
+    g_assert(error == NULL);
+
+    float *result = ufo_buffer_get_cpu_data(buffer);
+    for (int i = 0; i < 10; i++)
+        g_assert_cmpfloat(test_data[i], ==, result[i]);
+    g_object_unref(buffer);
+}
+
+static void test_buffer_set_too_much_data(void)
+{
+    UfoBuffer *buffer = ufo_buffer_new(1, 1);
+    g_assert(buffer != NULL);
+
+    GError *error = NULL;
+    float test_data[] = { 1.0, 2.0 };
+    ufo_buffer_set_cpu_data(buffer, test_data, 2, &error);
+    g_assert(error != NULL);
+    g_object_unref(buffer);
+}
+
+static void test_buffer_reinterpret(void)
+{
+    UfoBuffer *buffer = ufo_buffer_new(10, 1);
+    g_assert(buffer != NULL);
+
+    GError *error = NULL;
+    uint8_t test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
+    ufo_buffer_set_cpu_data(buffer, (float *) test_data, 10, &error);
+    g_assert(error == NULL);
+    ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8, 10);
+
+    float *result = ufo_buffer_get_cpu_data(buffer);
+    g_assert_cmpfloat(result[0], ==, 1 / 255.);
+    g_assert_cmpfloat(result[1], ==, 2 / 255.);
+    g_object_unref(buffer);
+}
+
+static void test_buffer_dimensions(void)
+{
+    const int in_width = 123;
+    const int in_height = 321;
+    UfoBuffer *buffer = ufo_buffer_new(in_width, in_height);
+
+    gint32 out_width, out_height;
+    ufo_buffer_get_dimensions(buffer, &out_width, &out_height);
+    g_assert_cmpuint(in_width, ==, out_width);
+    g_assert_cmpuint(in_height, ==, out_height);
+    g_object_unref(buffer);
+}
 
 int main(int argc, char *argv[])
 {
-    /*
-    printf("\n=== Using Check for Unit Tests =======================\n");
-    Suite *s = suite_create("UFO");
+    g_type_init();
+    g_test_init(&argc, &argv, NULL);
 
-    TCase *tc_devices = tcase_create("Devices");
-    tcase_add_test(tc_devices, ufo_create);
+    g_test_add_func("/graph/simple", test_graph_simple);
 
-    suite_add_tcase(s, tc_devices);
+    g_test_add_func("/buffer/dimensions", test_buffer_dimensions);
+    g_test_add_func("/buffer/set_too_much_data", test_buffer_set_too_much_data);
+    g_test_add_func("/buffer/set_data", test_buffer_set_data);
+    g_test_add_func("/buffer/reinterpret/8bit", test_buffer_reinterpret);
 
-    SRunner *sr = srunner_create(s);
-    srunner_run_all(sr, CK_NORMAL);
-    int fails = srunner_ntests_failed(sr);
-    srunner_free(sr);
-    printf("\n=== Finished Check ===================================\n");
-
-    return (fails == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
-    */
-    test();
+    g_test_run();
     return 0;
 }
