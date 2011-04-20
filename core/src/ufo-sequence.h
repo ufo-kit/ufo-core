@@ -23,6 +23,10 @@ typedef struct _UfoSequencePrivate    UfoSequencePrivate;
  *
  * A UfoSequence pushes input buffers to its first child UfoElement and
  * organizes subsequent elements in a linear fashion.
+ *
+ * <b>Signals</b>
+ *
+ * <b>Properties</b>
  */
 struct _UfoSequence {
     UfoElement parent_instance;

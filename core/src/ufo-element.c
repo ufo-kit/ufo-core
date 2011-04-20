@@ -160,9 +160,19 @@ static void ufo_element_dispose(GObject *object)
         g_object_unref(self->priv->filter);
 }
 
-void ufo_element_add_element(UfoElement *self, UfoElement *element)
+/**
+ * \brief Add a child element
+ *
+ * A UfoElement either contains more children or is a leaf which just contains a
+ * UfoFilter. Therefore, using this method on a plain UfoElement does not work.
+ *
+ * \public \memberof UfoElement
+ * \param[in] element The UfoElement that the child is added to
+ * \param[in] child A sub-node of element
+ */
+void ufo_element_add_element(UfoElement *element, UfoElement *child)
 {
-    UFO_ELEMENT_GET_CLASS(self)->add_element(self, element);
+    UFO_ELEMENT_GET_CLASS(self)->add_element(element, child);
 }
 
 static gpointer ufo_filter_thread(gpointer data)

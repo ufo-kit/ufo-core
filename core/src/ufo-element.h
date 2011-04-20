@@ -16,6 +16,19 @@ typedef struct _UfoElement           UfoElement;
 typedef struct _UfoElementClass      UfoElementClass;
 typedef struct _UfoElementPrivate    UfoElementPrivate;
 
+/**
+ * \class UfoElement
+ *
+ * An UfoElement is a base-class for either a computation leaf or some container
+ * holding references to more UfoElements.
+ *
+ * <b>Signals</b>
+ *      - <tt>"finished"</tt> :  Indicates that an instance is not going to produce more
+ *          data
+ *
+ * <b>Properties</b>
+ *      - <tt>"name"</tt> : Name of the associated filter
+ */
 struct _UfoElement {
     GObject parent_instance;
 
@@ -23,12 +36,6 @@ struct _UfoElement {
     UfoElementPrivate *priv;
 };
 
-/**
- * \class UfoElement
- *
- * An UfoElement is a base-class for either a computation leaf or some container
- * holding references to more UfoElements.
- */
 struct _UfoElementClass {
     GObjectClass parent_class;
 

@@ -23,6 +23,10 @@ typedef struct _UfoSplitPrivate    UfoSplitPrivate;
  *
  * A UfoSplit distributes incoming work to all of its UfoElement children. Each
  * child's output queue is identical to its parent output queue.
+ *
+ * <b>Signals</b>
+ *
+ * <b>Properties</b>
  */
 struct _UfoSplit {
     UfoElement parent_instance;
