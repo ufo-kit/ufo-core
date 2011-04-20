@@ -34,12 +34,14 @@ struct _UfoElementClass {
 
     void (*finished) (UfoElement *element);
 
+    void (*add_element) (UfoElement *element, UfoElement *child); 
     void (*process) (UfoElement *element);
     void (*print) (UfoElement *element);
 };
 
 UfoElement *ufo_element_new();
 
+void ufo_element_add_element(UfoElement *element, UfoElement *child);
 void ufo_element_process(UfoElement *element);
 void ufo_element_print(UfoElement *element);
 

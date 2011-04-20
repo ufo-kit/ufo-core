@@ -1,6 +1,6 @@
 #include "ufo-sequence.h"
 
-G_DEFINE_TYPE(UfoSequence, ufo_sequence, UFO_TYPE_CONTAINER);
+G_DEFINE_TYPE(UfoSequence, ufo_sequence, UFO_TYPE_ELEMENT);
 
 #define UFO_SEQUENCE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SEQUENCE, UfoSequencePrivate))
 
@@ -26,15 +26,15 @@ static void sequence_emit(UfoSequence *self, const gchar *signal_name)
  * \public \memberof UfoSequence
  * \return A UfoElement
  */
-UfoContainer *ufo_sequence_new()
+UfoElement *ufo_sequence_new()
 {
-    return UFO_CONTAINER(g_object_new(UFO_TYPE_SEQUENCE, NULL));
+    return UFO_ELEMENT(g_object_new(UFO_TYPE_SEQUENCE, NULL));
 }
 
 /* 
  * Virtual Methods 
  */
-void ufo_sequence_add_element(UfoContainer *container, UfoElement *element)
+void ufo_sequence_add_element(UfoElement *element, UfoElement *child)
 {
     /* In this method we also need to add the asynchronous queues. It is
      * important to understand the two cases:
@@ -45,7 +45,7 @@ void ufo_sequence_add_element(UfoContainer *container, UfoElement *element)
      * 2. There is an element in the list. Then we try to get that old element's
      * output queue.
      */
-    UfoSequence *self = UFO_SEQUENCE(container);
+    UfoSequence *self = UFO_SEQUENCE(element);
     GList *last = g_list_last(self->priv->children);
     GAsyncQueue *prev = NULL;
 
@@ -62,15 +62,15 @@ void ufo_sequence_add_element(UfoContainer *container, UfoElement *element)
     }
 
     /* Ok, we have some old output and connect it to the newly added element */
-    ufo_element_set_input_queue(element, prev);
+    ufo_element_set_input_queue(child, prev);
 
     /* Now, we create a new output that is also going to be the container's
      * real output */
     GAsyncQueue *next = g_async_queue_new();
-    ufo_element_set_output_queue(element, next);
+    ufo_element_set_output_queue(child, next);
     ufo_element_set_output_queue(UFO_ELEMENT(self), next);
-    self->priv->children = g_list_append(self->priv->children, element);
-    g_object_ref(element);
+    self->priv->children = g_list_append(self->priv->children, child);
+    g_object_ref(child);
 }
 
 static void ufo_sequence_process(UfoElement *element)
@@ -107,12 +107,11 @@ static void ufo_sequence_class_init(UfoSequenceClass *klass)
 {
     /* override methods */
     UfoElementClass *element_class = UFO_ELEMENT_CLASS(klass);
-    UfoContainerClass *container_class = UFO_CONTAINER_CLASS(klass);
 
+    element_class->add_element = ufo_sequence_add_element;
     element_class->process = ufo_sequence_process;
     element_class->print = ufo_sequence_print;
     element_class->finished = ufo_sequence_finished;
-    container_class->add_element = ufo_sequence_add_element;
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoSequencePrivate));

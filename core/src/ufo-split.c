@@ -1,6 +1,6 @@
 #include "ufo-split.h"
 
-G_DEFINE_TYPE(UfoSplit, ufo_split, UFO_TYPE_CONTAINER);
+G_DEFINE_TYPE(UfoSplit, ufo_split, UFO_TYPE_ELEMENT);
 
 #define UFO_SPLIT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SPLIT, UfoSplitPrivate))
 
@@ -38,9 +38,9 @@ struct _UfoSplitPrivate {
  * \public \memberof UfoSplit
  * \return A UfoElement
  */
-UfoContainer *ufo_split_new()
+UfoElement *ufo_split_new()
 {
-    return UFO_CONTAINER(g_object_new(UFO_TYPE_SPLIT, NULL));
+    return UFO_ELEMENT(g_object_new(UFO_TYPE_SPLIT, NULL));
 }
 
 /* 
@@ -87,25 +87,25 @@ static void ufo_split_get_property(GObject *object,
     }
 }
 
-static void ufo_split_add_element(UfoContainer *container, UfoElement *element)
+static void ufo_split_add_element(UfoElement *element, UfoElement *child)
 {
     /* Contrary to the sequence container, we have to install an input queue for
      * each new element that is added, that we are going to fill according to
      * the `mode`-property. */    
     GAsyncQueue *queue = g_async_queue_new();
-    ufo_element_set_input_queue(element, queue);
+    ufo_element_set_input_queue(child, queue);
 
-    UfoSplit *self = UFO_SPLIT(container);
+    UfoSplit *self = UFO_SPLIT(element);
     self->priv->queues = g_list_append(self->priv->queues, queue);
-    self->priv->children = g_list_append(self->priv->children, element);
+    self->priv->children = g_list_append(self->priv->children, child);
 
     /* On the other side, we are re-using the same output queue for all nodes */
-    queue = ufo_element_get_output_queue(UFO_ELEMENT(container));
+    queue = ufo_element_get_output_queue(UFO_ELEMENT(element));
     if (queue == NULL) {
         queue = g_async_queue_new();
-        ufo_element_set_output_queue(UFO_ELEMENT(container), queue);
+        ufo_element_set_output_queue(UFO_ELEMENT(element), queue);
     }
-    ufo_element_set_output_queue(element, queue);
+    ufo_element_set_output_queue(child, queue);
 }
 
 static void ufo_split_process(UfoElement *element)
@@ -173,15 +173,14 @@ static void ufo_split_class_init(UfoSplitClass *klass)
 {
     /* override methods */
     UfoElementClass *element_class = UFO_ELEMENT_CLASS(klass);
-    UfoContainerClass *container_class = UFO_CONTAINER_CLASS(klass);
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
 
     gobject_class->set_property = ufo_split_set_property;
     gobject_class->get_property = ufo_split_get_property;
+    element_class->add_element = ufo_split_add_element;
     element_class->process = ufo_split_process;
     element_class->print = ufo_split_print;
     element_class->finished = ufo_split_finished;
-    container_class->add_element = ufo_split_add_element;
 
     /* install properties */
     GParamSpec *pspec;

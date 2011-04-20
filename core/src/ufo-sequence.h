@@ -2,7 +2,7 @@
 #define __UFO_SEQUENCE_H
 
 #include <glib-object.h>
-#include "ufo-container.h"
+#include "ufo-element.h"
 
 G_BEGIN_DECLS
 
@@ -25,17 +25,17 @@ typedef struct _UfoSequencePrivate    UfoSequencePrivate;
  * organizes subsequent elements in a linear fashion.
  */
 struct _UfoSequence {
-    UfoContainer parent_instance;
+    UfoElement parent_instance;
 
     /* private */
     UfoSequencePrivate *priv;
 };
 
 struct _UfoSequenceClass {
-    UfoContainerClass parent_class;
+    UfoElementClass parent_class;
 };
 
-UfoContainer *ufo_sequence_new();
+UfoElement *ufo_sequence_new();
 
 GType ufo_sequence_get_type(void);
 

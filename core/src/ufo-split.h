@@ -2,7 +2,7 @@
 #define __UFO_SPLIT_H
 
 #include <glib-object.h>
-#include "ufo-container.h"
+#include "ufo-element.h"
 
 G_BEGIN_DECLS
 
@@ -25,17 +25,17 @@ typedef struct _UfoSplitPrivate    UfoSplitPrivate;
  * child's output queue is identical to its parent output queue.
  */
 struct _UfoSplit {
-    UfoContainer parent_instance;
+    UfoElement parent_instance;
 
     /* private */
     UfoSplitPrivate *priv;
 };
 
 struct _UfoSplitClass {
-    UfoContainerClass parent_class;
+    UfoElementClass parent_class;
 };
 
-UfoContainer *ufo_split_new();
+UfoElement *ufo_split_new();
 
 GType ufo_split_get_type(void);
 

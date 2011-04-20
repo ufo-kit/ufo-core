@@ -160,6 +160,11 @@ static void ufo_element_dispose(GObject *object)
         g_object_unref(self->priv->filter);
 }
 
+void ufo_element_add_element(UfoElement *self, UfoElement *element)
+{
+    UFO_ELEMENT_GET_CLASS(self)->add_element(self, element);
+}
+
 static gpointer ufo_filter_thread(gpointer data)
 {
     ufo_filter_process(UFO_FILTER(data));
@@ -205,6 +210,7 @@ static void ufo_element_class_init(UfoElementClass *klass)
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->dispose = ufo_element_dispose;
     klass->process = ufo_element_process_default;
+    klass->add_element = NULL;
     klass->print = ufo_element_print_default;
     klass->finished = NULL;
 

@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.6)
 # --- Set sources -------------------------------------------------------------
 set(ufocore_SRCS 
     ufo-element.c
-    ufo-container.c
     ufo-sequence.c
     ufo-split.c
     ufo-graph.c
@@ -14,7 +13,6 @@ set(ufocore_SRCS
 
 set(ufocore_HDRS
     ufo-element.h
-    ufo-container.h
     ufo-sequence.h
     ufo-split.h
     ufo-graph.h

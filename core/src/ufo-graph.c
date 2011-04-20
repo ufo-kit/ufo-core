@@ -3,7 +3,6 @@
 #include <json-glib/json-glib.h>
 
 #include "ufo-graph.h"
-#include "ufo-container.h"
 #include "ufo-sequence.h"
 #include "ufo-split.h"
 
@@ -14,7 +13,7 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 struct _UfoGraphPrivate {
     EthosManager        *ethos;
     UfoResourceManager  *resource_manager;
-    UfoContainer        *root_container;
+    UfoElement          *root_container;
     GHashTable          *plugins;   /**< maps from gchar* to EthosPlugin* */
 };
 
@@ -24,20 +23,19 @@ static UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name)
     return UFO_FILTER(g_hash_table_lookup(self->priv->plugins, plugin_name));
 }
 
-static UfoContainer *ufo_graph_build_split(JsonObject *object)
+static UfoElement *ufo_graph_build_split(JsonObject *object)
 {
     UfoSplit *container = UFO_SPLIT(ufo_split_new());
 
     if (json_object_has_member(object, "mode")) {
         const char *mode = json_object_get_string_member(object, "mode");
-        g_message("setting mode to %s", mode);
         g_object_set(container, "mode", mode, NULL);
     }
     
-    return UFO_CONTAINER(container);
+    return UFO_ELEMENT(container);
 }
 
-static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **container)
+static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **container)
 {
     JsonObject *object = json_node_get_object(node);
     if (json_object_has_member(object, "type")) {
@@ -57,13 +55,13 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **conta
                 /* Create new single filter element and add it to the container */
                 UfoElement *element = ufo_element_new();
                 ufo_element_set_filter(element, filter);
-                ufo_container_add_element(*container, element);
+                ufo_element_add_element(*container, element);
             }
             else
                 g_message("Couldn't find plugin '%s'", plugin_name);
         }
         else {
-            UfoContainer *new_container = NULL;
+            UfoElement *new_container = NULL;
             if (g_strcmp0(type, "sequence") == 0)
                 new_container = ufo_sequence_new();
             else if (g_strcmp0(type, "split") == 0)
@@ -77,7 +75,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **conta
             if (*container == NULL)
                 *container = new_container;
             else
-                ufo_container_add_element(*container, UFO_ELEMENT(new_container));
+                ufo_element_add_element(*container, new_container);
 
             JsonArray *elements = json_object_get_array_member(object, "elements");
             for (guint i = 0; i < json_array_get_length(elements); i++) 
@@ -85,8 +83,8 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoContainer **conta
 
             /* After adding all sub-childs, we need to get the updated output of
              * the new container and use it as our own new output */
-            GAsyncQueue *prev = ufo_element_get_output_queue(UFO_ELEMENT(new_container));
-            ufo_element_set_output_queue(UFO_ELEMENT(*container), prev);
+            GAsyncQueue *prev = ufo_element_get_output_queue(new_container);
+            ufo_element_set_output_queue(*container, prev);
         }
     }
 }
