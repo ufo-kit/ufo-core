@@ -41,9 +41,9 @@ enum {
 
 UfoBuffer *ufo_buffer_new(gint32 width, gint32 height);
 
-void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth);
+void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth, gsize n);
 
-void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data);
+void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data, gsize n, GError **error);
 void ufo_buffer_set_cl_mem(UfoBuffer *self, cl_mem mem);
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 

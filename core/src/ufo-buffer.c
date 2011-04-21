@@ -6,6 +6,12 @@ G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT);
 
 #define UFO_BUFFER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BUFFER, UfoBufferPrivate))
 
+#define UFO_BUFFER_ERROR ufo_buffer_error_quark()
+
+enum UfoBufferError {
+    UFO_BUFFER_ERROR_WRONG_SIZE
+};
+
 typedef enum {
     NO_DATA,
     CPU_DATA_VALID,
@@ -23,6 +29,11 @@ struct _UfoBufferPrivate {
 };
 
 static void ufo_buffer_set_dimensions(UfoBuffer *self, gint32 width, gint32 height);
+
+GQuark ufo_buffer_error_quark(void)
+{
+    return g_quark_from_static_string("ufo-buffer-error-quark");
+}
 
 /* 
  * Public Interface
@@ -70,9 +81,16 @@ void ufo_buffer_create_gpu_buffer(UfoBuffer *self, cl_mem mem)
     self->priv->gpu_data = mem;
 }
 
-void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data)
+void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data, gsize n, GError **error)
 {
     const gsize num_bytes = self->priv->width * self->priv->height * sizeof(float);
+    if ((n * sizeof(float)) > num_bytes) {
+        g_set_error(error,
+                UFO_BUFFER_ERROR,
+                UFO_BUFFER_ERROR_WRONG_SIZE,
+                "Trying to set more data than buffer dimensions allow");
+        return;
+    }
     if (self->priv->cpu_data == NULL)
         self->priv->cpu_data = g_malloc0(num_bytes);
 
@@ -92,7 +110,7 @@ void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data)
  * \param[in] source_depth The original integer data type. This could be
  * UFO_BUFFER_DEPTH_8 for 8-bit data or UFO_BUFFER_DEPTH_16 for 16-bit data.
  */
-void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth)
+void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth, gsize n)
 {
     float *dst = self->priv->cpu_data;
     /* To save a memory allocation and several copies, we process data from back
@@ -100,12 +118,12 @@ void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth)
      * the 32-bit target buffer. The processor cache should not be a problem. */
     if (source_depth == UFO_BUFFER_DEPTH_8) {
         guint8 *src = (guint8 *) self->priv->cpu_data;
-        for (int index = self->priv->width * self->priv->height; index >= 0; index--)
+        for (int index = (n-1); index >= 0; index--)
             dst[index] = src[index] / 255.0;
     }
     else if (source_depth == UFO_BUFFER_DEPTH_16) {
         guint16 *src = (guint16 *) self->priv->cpu_data;
-        for (int index = self->priv->width * self->priv->height; index >= 0; index--)
+        for (int index = (n-1); index >= 0; index--)
             dst[index] = src[index] / 65535.0;
     }
 }
