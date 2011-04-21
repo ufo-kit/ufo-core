@@ -1,9 +1,7 @@
 #include "ufo-element.h"
 #include "ufo-filter.h"
 
-G_DEFINE_TYPE(UfoElement, ufo_element, G_TYPE_OBJECT)
-
-#define UFO_ELEMENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_ELEMENT, UfoElementPrivate))
+G_DEFINE_INTERFACE(UfoElement, ufo_element, G_TYPE_OBJECT)
 
 enum {
     FINISHED,
@@ -15,61 +13,11 @@ enum {
     PROP_NAME
 };
 
-struct _UfoElementPrivate {
-    GAsyncQueue *input_queue;   /**< \private \memberof UfoElement */
-    GAsyncQueue *output_queue;
-    UfoFilter *filter;
-};
-
-static guint element_signals[LAST_SIGNAL] = { 0 };
+/*static guint element_signals[LAST_SIGNAL] = { 0 };*/
 
 /* 
  * Public Interface
  */
-
-/**
- * \brief Creates a new UfoElement object
- * \public \memberof UfoElement
- * \return An UfoElement
- */
-UfoElement *ufo_element_new()
-{
-    return UFO_ELEMENT(g_object_new(UFO_TYPE_ELEMENT, NULL));
-}
-
-/**
- * \brief Return an associated UfoFilter object
- * \public \memberof UfoElement
- * \param[in] element The element whose associated filter is returned
- * \return The associated filter or NULL if there is none like for an UfoSplit
- *      or UfoSequence
- */
-UfoFilter *ufo_element_get_filter(UfoElement *element)
-{
-    return element->priv->filter;
-}
-
-/**
- * \brief Associate an UfoElement with a UfoFilter so that an UfoElement
- *      essentially becomes a leaf node.
- * \public \memberof UfoElement
- * \param[in] element an UfoElement
- * \param[in] filter a UfoFilter that is going to be 
- * \return The associated filter or NULL if there is none like for an UfoSplit
- *      or UfoSequence
- */
-void ufo_element_set_filter(UfoElement *element, UfoFilter *filter)
-{
-    g_object_ref(filter);
-
-    /* Now this is tricky: We are subscribing to the child filters "finished"
-     * signal and relay it to our own class method that handles "finished" */
-    g_message("finished %p", UFO_ELEMENT_GET_CLASS(element)->finished);
-    g_signal_connect(filter, "finished",
-            G_CALLBACK(UFO_ELEMENT_GET_CLASS(element)->finished), element);
-
-    element->priv->filter = filter;
-}
 
 /**
  * \brief Set an input queue
@@ -79,12 +27,9 @@ void ufo_element_set_filter(UfoElement *element, UfoFilter *filter)
  */
 void ufo_element_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 {
-    if (queue != NULL) {
-        if (element->priv->filter)
-            ufo_filter_set_input_queue(element->priv->filter, queue);
-        g_async_queue_ref(queue);
-    }
-    element->priv->input_queue = queue;
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    if (iface->set_input_queue != NULL)
+        iface->set_input_queue(element, queue);
 }
 
 /**
@@ -95,12 +40,9 @@ void ufo_element_set_input_queue(UfoElement *element, GAsyncQueue *queue)
  */
 void ufo_element_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 {
-    if (queue != NULL) {
-        if (element->priv->filter)
-            ufo_filter_set_output_queue(element->priv->filter, queue);
-        g_async_queue_ref(queue);
-    }
-    element->priv->output_queue = queue;
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    if (iface->set_output_queue != NULL)
+        iface->set_output_queue(element, queue);
 }
 
 /**
@@ -111,10 +53,11 @@ void ufo_element_set_output_queue(UfoElement *element, GAsyncQueue *queue)
  */
 GAsyncQueue *ufo_element_get_input_queue(UfoElement *element)
 {
-    if (element->priv->filter != NULL)
-        return ufo_filter_get_input_queue(element->priv->filter);
-
-    return element->priv->input_queue;
+    return UFO_ELEMENT_GET_INTERFACE(element)->get_input_queue(element);
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    if (iface->get_input_queue != NULL)
+        return iface->get_input_queue(element);
+    return NULL;
 }
 
 /**
@@ -125,15 +68,21 @@ GAsyncQueue *ufo_element_get_input_queue(UfoElement *element)
  */
 GAsyncQueue *ufo_element_get_output_queue(UfoElement *element)
 {
-    if (element->priv->filter != NULL)
-        return ufo_filter_get_output_queue(element->priv->filter);
-    return element->priv->output_queue;
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    if (iface->get_output_queue != NULL)
+        return iface->get_output_queue(element);
+    return NULL;
 }
 
+void ufo_element_print(UfoElement * element)
+{
+    g_return_if_fail(UFO_IS_ELEMENT(element));
 
-/* 
- * Virtual Methods
- */
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    if (iface->print != NULL)
+        iface->print(element);
+}
+
 /**
  * \brief Execute an element
  *
@@ -146,85 +95,31 @@ GAsyncQueue *ufo_element_get_output_queue(UfoElement *element)
 void ufo_element_process(UfoElement *element)
 {
     g_return_if_fail(UFO_IS_ELEMENT(element));
-    UFO_ELEMENT_GET_CLASS(element)->process(element);
-}
 
-static void ufo_element_dispose(GObject *object)
-{
-    UfoElement *self = UFO_ELEMENT(object);
-    if (self->priv->input_queue)
-        g_async_queue_unref(self->priv->input_queue);
-    if (self->priv->output_queue)
-        g_async_queue_unref(self->priv->output_queue);
-    if (self->priv->filter)
-        g_object_unref(self->priv->filter);
-}
-
-/**
- * \brief Add a child element
- *
- * A UfoElement either contains more children or is a leaf which just contains a
- * UfoFilter. Therefore, using this method on a plain UfoElement does not work.
- *
- * \public \memberof UfoElement
- * \param[in] element The UfoElement that the child is added to
- * \param[in] child A sub-node of element
- */
-void ufo_element_add_element(UfoElement *element, UfoElement *child)
-{
-    UFO_ELEMENT_GET_CLASS(element)->add_element(element, child);
-}
-
-static gpointer ufo_filter_thread(gpointer data)
-{
-    ufo_filter_process(UFO_FILTER(data));
-    return NULL;
-}
-
-static void ufo_element_process_default(UfoElement *self)
-{
-    /* TODO: instead of calling, start as thread */
-    if (self->priv->filter != NULL) {
-        GError *error = NULL;
-        g_thread_create(ufo_filter_thread, self->priv->filter, FALSE, &error);
-        if (error) {
-            g_message("Error starting thread: %s", error->message);
-            g_error_free(error);
-        }
-    }
-}
-
-void ufo_element_print(UfoElement *self)
-{
-    g_return_if_fail(UFO_IS_ELEMENT(self));
-    UFO_ELEMENT_GET_CLASS(self)->print(self);
-}
-
-static void ufo_element_print_default(UfoElement *self)
-{
-    if (self->priv->filter != NULL) {
-        g_message("[filter:%p] <%p,%p>",
-            self,
-            ufo_filter_get_input_queue(self->priv->filter),
-            ufo_filter_get_output_queue(self->priv->filter));
-    }
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    if (iface->process != NULL)
+        iface->process(element);
 }
 
 
 /*
  * Type/Class Initialization
  */
-static void ufo_element_class_init(UfoElementClass *klass)
+static void ufo_element_default_init(UfoElementInterface *iface)
 {
-    /* override methods */
-    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-    gobject_class->dispose = ufo_element_dispose;
-    klass->process = ufo_element_process_default;
-    klass->add_element = NULL;
-    klass->print = ufo_element_print_default;
-    klass->finished = NULL;
+}
 
-    /* install signals */
+/*
+static void ufo_element_interface_init(gpointer g_iface, gpointer iface_data)
+{
+    UfoElementInterface *iface = (UfoElementInterface *) g_iface;
+    iface->process = ufo_element_process;
+    iface->print = ufo_element_print;
+    iface->set_input_queue = ufo_element_set_input_queue;
+    iface->get_input_queue = ufo_element_get_input_queue;
+    iface->set_output_queue = ufo_element_set_output_queue;
+    iface->get_output_queue = ufo_element_get_output_queue;
+
     element_signals[FINISHED] =
         g_signal_new("finished",
                 G_TYPE_FROM_CLASS(klass),
@@ -233,17 +128,6 @@ static void ufo_element_class_init(UfoElementClass *klass)
                 NULL, NULL,
                 g_cclosure_marshal_VOID__VOID,
                 G_TYPE_NONE, 0, NULL);
-
-    /* install private data */
-    g_type_class_add_private(klass, sizeof(UfoElementPrivate));
 }
-
-static void ufo_element_init(UfoElement *self)
-{
-    UfoElementPrivate *priv;
-    self->priv = priv = UFO_ELEMENT_GET_PRIVATE(self);
-    priv->filter = NULL;
-    priv->input_queue = NULL;
-    priv->output_queue = NULL;
-}
+*/
 

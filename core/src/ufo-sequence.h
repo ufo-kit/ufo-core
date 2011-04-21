@@ -2,7 +2,7 @@
 #define __UFO_SEQUENCE_H
 
 #include <glib-object.h>
-#include "ufo-element.h"
+#include "ufo-container.h"
 
 G_BEGIN_DECLS
 
@@ -29,17 +29,17 @@ typedef struct _UfoSequencePrivate    UfoSequencePrivate;
  * <b>Properties</b>
  */
 struct _UfoSequence {
-    UfoElement parent_instance;
+    UfoContainer parent_instance;
 
     /* private */
     UfoSequencePrivate *priv;
 };
 
 struct _UfoSequenceClass {
-    UfoElementClass parent_class;
+    UfoContainerClass parent_class;
 };
 
-UfoElement *ufo_sequence_new();
+UfoSequence *ufo_sequence_new();
 
 GType ufo_sequence_get_type(void);
 

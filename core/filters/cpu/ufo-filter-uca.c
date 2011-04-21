@@ -4,6 +4,7 @@
 
 #include "ufo-filter-uca.h"
 #include "ufo-filter.h"
+#include "ufo-element.h"
 #include "ufo-buffer.h"
 #include "ufo-resource-manager.h"
 
@@ -58,8 +59,8 @@ static void ufo_filter_uca_process(UfoFilter *self)
         cam->grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
         ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8);
 
-        g_message("[uca] send buffer %p to queue %p", buffer, ufo_filter_get_output_queue(self));
-        g_async_queue_push(ufo_filter_get_output_queue(self), buffer);
+        g_message("[uca] send buffer %p to queue %p", buffer, ufo_element_get_output_queue(UFO_ELEMENT(self)));
+        g_async_queue_push(ufo_element_get_output_queue(UFO_ELEMENT(self)), buffer);
     }
     g_signal_emit_by_name(self, "finished");
 }

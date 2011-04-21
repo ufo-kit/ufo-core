@@ -5,6 +5,8 @@
 #include "ufo-graph.h"
 #include "ufo-sequence.h"
 #include "ufo-split.h"
+#include "ufo-resource-manager.h"
+#include "ufo-element.h"
 
 G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 
@@ -25,7 +27,7 @@ static UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name)
 
 static UfoElement *ufo_graph_build_split(JsonObject *object)
 {
-    UfoSplit *container = UFO_SPLIT(ufo_split_new());
+    UfoSplit *container = ufo_split_new();
 
     if (json_object_has_member(object, "mode")) {
         const char *mode = json_object_get_string_member(object, "mode");
@@ -53,9 +55,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
                  * string */
 
                 /* Create new single filter element and add it to the container */
-                UfoElement *element = ufo_element_new();
-                ufo_element_set_filter(element, filter);
-                ufo_element_add_element(*container, element);
+                ufo_container_add_element(UFO_CONTAINER(*container), UFO_ELEMENT(filter));
             }
             else
                 g_message("Couldn't find plugin '%s'", plugin_name);
@@ -63,7 +63,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
         else {
             UfoElement *new_container = NULL;
             if (g_strcmp0(type, "sequence") == 0)
-                new_container = ufo_sequence_new();
+                new_container = UFO_ELEMENT(ufo_sequence_new());
             else if (g_strcmp0(type, "split") == 0)
                 new_container = ufo_graph_build_split(object);
 
@@ -75,7 +75,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
             if (*container == NULL)
                 *container = new_container;
             else
-                ufo_element_add_element(*container, new_container);
+                ufo_container_add_element(UFO_CONTAINER(*container), new_container);
 
             JsonArray *elements = json_object_get_array_member(object, "elements");
             for (guint i = 0; i < json_array_get_length(elements); i++) 

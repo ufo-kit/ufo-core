@@ -2,8 +2,15 @@
 #include <gmodule.h>
 
 #include "ufo-filter.h"
+#include "ufo-element.h"
 
-G_DEFINE_TYPE(UfoFilter, ufo_filter, ETHOS_TYPE_PLUGIN);
+static void ufo_element_iface_init(UfoElementInterface *iface);
+
+G_DEFINE_TYPE_WITH_CODE(UfoFilter,
+                        ufo_filter, 
+                        ETHOS_TYPE_PLUGIN,
+                        G_IMPLEMENT_INTERFACE(UFO_TYPE_ELEMENT,
+                                              ufo_element_iface_init));
 
 #define UFO_FILTER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER, UfoFilterPrivate))
 
@@ -39,33 +46,37 @@ UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self)
     return self->priv->resource_manager;
 }
 
-void ufo_filter_set_input_queue(UfoFilter *self, GAsyncQueue *queue)
+/* 
+ * Virtual Methods
+ */
+static void ufo_filter_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 {
+    UfoFilter *self = UFO_FILTER(element);
     if (queue != NULL)
         g_async_queue_ref(queue);
     self->priv->input_queue = queue;
 }
 
-void ufo_filter_set_output_queue(UfoFilter *self, GAsyncQueue *queue)
+static void ufo_filter_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 {
+    UfoFilter *self = UFO_FILTER(element);
     if (queue != NULL)
         g_async_queue_ref(queue);
     self->priv->output_queue = queue;
 }
 
-GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *self)
+static GAsyncQueue *ufo_filter_get_input_queue(UfoElement *element)
 {
+    UfoFilter *self = UFO_FILTER(element);
     return self->priv->input_queue;
 }
 
-GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *self)
+static GAsyncQueue *ufo_filter_get_output_queue(UfoElement *element)
 {
+    UfoFilter *self = UFO_FILTER(element);
     return self->priv->output_queue;
 }
 
-/* 
- * Virtual Methods
- */
 static void ufo_filter_set_property(GObject *object,
     guint           property_id,
     const GValue    *value,
@@ -103,15 +114,18 @@ static void ufo_filter_get_property(GObject *object,
     }
 }
 
-void ufo_filter_process(UfoFilter *self)
+static void ufo_filter_process(UfoFilter *filter)
 {
-    g_return_if_fail(UFO_IS_FILTER(self));
-    UFO_FILTER_GET_CLASS(self)->process(self);
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(filter);
+    if (iface->process)
+        iface->process(UFO_ELEMENT(filter));
 }
 
-static void ufo_filter_process_default(UfoFilter *self)
+static void ufo_filter_print(UfoElement *self)
 {
-    g_return_if_fail(UFO_IS_FILTER(self));
+    g_message(" [filter:%p] <%p,%p>", self, 
+            ufo_element_get_input_queue(self),
+            ufo_element_get_output_queue(self));
 }
 
 static void ufo_filter_dispose(GObject *object)
@@ -126,15 +140,24 @@ static void ufo_filter_dispose(GObject *object)
 /*
  * Type/Class Initialization
  */
+static void ufo_element_iface_init(UfoElementInterface *iface)
+{
+    iface->process = NULL; /* filters have to implement process()! */
+    iface->print = ufo_filter_print;
+    iface->set_input_queue = ufo_filter_set_input_queue;
+    iface->set_output_queue = ufo_filter_set_output_queue;
+    iface->get_input_queue = ufo_filter_get_input_queue;
+    iface->get_output_queue = ufo_filter_get_output_queue;
+}
+
 static void ufo_filter_class_init(UfoFilterClass *klass)
 {
     /* override GObject methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-
     gobject_class->set_property = ufo_filter_set_property;
     gobject_class->get_property = ufo_filter_get_property;
     gobject_class->dispose = ufo_filter_dispose;
-    klass->process = ufo_filter_process_default;
+    klass->process = ufo_filter_process;
 
     /* install properties */
     GParamSpec *pspec;
