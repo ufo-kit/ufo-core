@@ -53,10 +53,11 @@ static void ufo_filter_uca_process(UfoFilter *self)
 
     for (guint i = 0; i < 1; i++) {
         UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
-            cam->frame_width, cam->frame_height);
+                cam->frame_width, cam->frame_height);
 
         cam->grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
-        ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8);
+        ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8,
+                cam->frame_width * cam->frame_height);
 
         g_message("[uca] send buffer %p to queue %p", buffer, ufo_filter_get_output_queue(self));
         g_async_queue_push(ufo_filter_get_output_queue(self), buffer);

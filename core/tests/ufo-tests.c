@@ -3,6 +3,12 @@
 #include "ufo-graph.h"
 #include "ufo-buffer.h"
 
+static gboolean float_eq(float n1, float n2)
+{
+    static const float epsilon = 0.000001;
+    return (abs(n1-n2) < epsilon);
+}
+
 static void test_graph_simple(void)
 {
     UfoGraph *graph = NULL;
@@ -21,7 +27,7 @@ static void test_buffer_set_data(void)
 
     float *result = ufo_buffer_get_cpu_data(buffer);
     for (int i = 0; i < 10; i++)
-        g_assert_cmpfloat(test_data[i], ==, result[i]);
+        g_assert(float_eq(test_data[i], result[i]));
     g_object_unref(buffer);
 }
 
@@ -43,14 +49,14 @@ static void test_buffer_reinterpret(void)
     g_assert(buffer != NULL);
 
     GError *error = NULL;
-    uint8_t test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
+    guint8 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
     ufo_buffer_set_cpu_data(buffer, (float *) test_data, 10, &error);
     g_assert(error == NULL);
     ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8, 10);
 
     float *result = ufo_buffer_get_cpu_data(buffer);
-    g_assert_cmpfloat(result[0], ==, 1 / 255.);
-    g_assert_cmpfloat(result[1], ==, 2 / 255.);
+    g_assert(float_eq(result[0], 1 / 255.));
+    g_assert(float_eq(result[1], 2 / 255.));
     g_object_unref(buffer);
 }
 
@@ -58,7 +64,9 @@ static void test_buffer_dimensions(void)
 {
     const int in_width = 123;
     const int in_height = 321;
+
     UfoBuffer *buffer = ufo_buffer_new(in_width, in_height);
+    g_assert(buffer != NULL);
 
     gint32 out_width, out_height;
     ufo_buffer_get_dimensions(buffer, &out_width, &out_height);
