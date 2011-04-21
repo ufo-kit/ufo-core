@@ -1,10 +1,6 @@
 Installation
 ============
 
-From packages
--------------
-
-From source
------------
-
+UFO can be installed painlessly from openSUSE and Debian packages or :ref:`built from
+source <building>`.
 

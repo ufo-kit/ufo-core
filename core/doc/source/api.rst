@@ -1,15 +1,30 @@
+=======================================
 UFO's Application Programming Interface
 =======================================
 
 
 Elements
---------
+========
 
 Defined in ``ufo-element.h``
 
 .. doxygenclass:: UfoElement
     :project: ufo
     :members: 
+
+Filters
+-------
+
+.. doxygenclass:: UfoFilter
+    :project: ufo
+    :members:
+
+Containers
+----------
+
+.. doxygenclass:: UfoContainer
+    :project: ufo
+    :members:
 
 Sequence
 ~~~~~~~~
@@ -28,23 +43,14 @@ Split
 
 
 Buffers
--------
+=======
 
 .. doxygenclass:: UfoBuffer
     :project: ufo
     :members:
 
-
-Filters
--------
-
-.. doxygenclass:: UfoFilter
-    :project: ufo
-    :members:
-
-
 Graphs
-------
+======
 
 .. doxygenclass:: UfoGraph
     :project: ufo
@@ -52,7 +58,7 @@ Graphs
 
 
 Resource Manager
-----------------
+================
 
 .. doxygenclass:: UfoResourceManager
     :project: ufo
