@@ -43,6 +43,7 @@ struct _UfoFilterClass {
     void (*process) (UfoFilter *filter);
 };
 
+void ufo_filter_process(UfoFilter *filter);
 void ufo_filter_set_resource_manager(UfoFilter *filter, UfoResourceManager *resource_manager);
 UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *filter);
 

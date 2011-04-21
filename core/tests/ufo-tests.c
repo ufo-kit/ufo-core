@@ -9,10 +9,11 @@ static gboolean float_eq(float n1, float n2)
     return (abs(n1-n2) < epsilon);
 }
 
-static void test_graph_simple(void)
+static void test_graph_run(void)
 {
-    UfoGraph *graph = NULL;
-    g_assert(graph == NULL);
+    UfoGraph *graph = ufo_graph_new_from_json("test.json");
+    g_assert(graph != NULL);
+    ufo_graph_run(graph);
 }
 
 static void test_buffer_set_data(void)
@@ -80,13 +81,15 @@ int main(int argc, char *argv[])
     g_type_init();
     g_test_init(&argc, &argv, NULL);
 
-    g_test_add_func("/graph/simple", test_graph_simple);
-
     g_test_add_func("/buffer/dimensions", test_buffer_dimensions);
     g_test_add_func("/buffer/set_too_much_data", test_buffer_set_too_much_data);
     g_test_add_func("/buffer/set_data", test_buffer_set_data);
     g_test_add_func("/buffer/reinterpret/8bit", test_buffer_reinterpret);
 
     g_test_run();
+
+    /* EthosPlugin is a bit weird and leads to an un-met assertion */
+    test_graph_run();
+
     return 0;
 }

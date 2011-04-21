@@ -109,25 +109,3 @@ static void ufo_element_default_init(UfoElementInterface *iface)
 {
 }
 
-/*
-static void ufo_element_interface_init(gpointer g_iface, gpointer iface_data)
-{
-    UfoElementInterface *iface = (UfoElementInterface *) g_iface;
-    iface->process = ufo_element_process;
-    iface->print = ufo_element_print;
-    iface->set_input_queue = ufo_element_set_input_queue;
-    iface->get_input_queue = ufo_element_get_input_queue;
-    iface->set_output_queue = ufo_element_set_output_queue;
-    iface->get_output_queue = ufo_element_get_output_queue;
-
-    element_signals[FINISHED] =
-        g_signal_new("finished",
-                G_TYPE_FROM_CLASS(klass),
-                G_SIGNAL_RUN_FIRST,
-                G_STRUCT_OFFSET(UfoElementClass, finished),
-                NULL, NULL,
-                g_cclosure_marshal_VOID__VOID,
-                G_TYPE_NONE, 0, NULL);
-}
-*/
-

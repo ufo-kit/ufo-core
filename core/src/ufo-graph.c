@@ -197,7 +197,7 @@ static void ufo_graph_init(UfoGraph *self)
     self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
 
     /* TODO: determine directories in a better way */
-    gchar *plugin_dirs[] = { "/usr/local/lib", "../filters", NULL };
+    gchar *plugin_dirs[] = { "../filters", NULL };
 
     priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
     ethos_manager_initialize(priv->ethos);

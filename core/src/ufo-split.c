@@ -115,27 +115,34 @@ static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
     ufo_element_set_output_queue(child, self->priv->output_queue);
 }
 
+static gpointer ufo_split_process_thread(gpointer data)
+{
+    ufo_element_process(UFO_ELEMENT(data));
+    return NULL;
+}
+
 static void ufo_split_process(UfoElement *element)
 {
     UfoSplit *self = UFO_SPLIT(element);
+    GError *error = NULL;
 
     /* First, start all children */
     GList *current_child = self->priv->children;
     while (current_child != NULL) {
         UfoElement *child = UFO_ELEMENT(current_child->data);
-        ufo_element_process(child);
+        g_thread_create(ufo_split_process_thread, child, TRUE, &error);
         current_child = g_list_next(current_child);
     }
 
     /* Then, watch input queue and distribute work */
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(element);
+    /*GAsyncQueue *input_queue = ufo_element_get_input_queue(element);*/
     GList *current_queue = self->priv->queues;
 
     /* TODO: we must finish some time... */
     int i = 0;
     while (i <= 1) {
         /* TODO: replace this round-robin scheme according to the mode */
-        UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
+        UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(self->priv->input_queue));
         if (input == NULL)
             break;
 

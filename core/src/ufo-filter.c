@@ -114,11 +114,15 @@ static void ufo_filter_get_property(GObject *object,
     }
 }
 
-static void ufo_filter_process(UfoFilter *filter)
+void ufo_filter_process(UfoFilter *self)
 {
-    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(filter);
-    if (iface->process)
-        iface->process(UFO_ELEMENT(filter));
+    UFO_FILTER_GET_CLASS(self)->process(self);
+}
+
+static void ufo_filter_iface_process(UfoElement *element)
+{
+    UfoFilter *self = UFO_FILTER(element);
+    ufo_filter_process(self);
 }
 
 static void ufo_filter_print(UfoElement *self)
@@ -142,7 +146,7 @@ static void ufo_filter_dispose(GObject *object)
  */
 static void ufo_element_iface_init(UfoElementInterface *iface)
 {
-    iface->process = NULL; /* filters have to implement process()! */
+    iface->process = ufo_filter_iface_process;
     iface->print = ufo_filter_print;
     iface->set_input_queue = ufo_filter_set_input_queue;
     iface->set_output_queue = ufo_filter_set_output_queue;
@@ -158,16 +162,6 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     gobject_class->get_property = ufo_filter_get_property;
     gobject_class->dispose = ufo_filter_dispose;
     klass->process = ufo_filter_process;
-
-    /* install properties */
-    GParamSpec *pspec;
-
-    pspec = g_param_spec_string("filter-name",
-        "Name of the filter",
-        "Get filter name",
-        "no-name-set",
-        G_PARAM_CONSTRUCT_ONLY | G_PARAM_READABLE);
-    g_object_class_install_property(gobject_class, PROP_NAME, pspec);
 
     /* install signals */
     filter_signals[FINISHED] =
