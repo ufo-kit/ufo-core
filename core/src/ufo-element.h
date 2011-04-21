@@ -20,11 +20,8 @@ typedef struct _UfoElementInterface UfoElementInterface;
  * holding references to more UfoElements.
  *
  * <b>Signals</b>
- *      - <tt>"finished"</tt> :  Indicates that an instance is not going to produce more
- *          data
  *
  * <b>Properties</b>
- *      - <tt>"name"</tt> : Name of the associated filter
  */
 struct _UfoElementInterface {
     GTypeInterface parent;

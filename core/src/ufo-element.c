@@ -1,19 +1,8 @@
 #include "ufo-element.h"
 #include "ufo-filter.h"
 
+static void ufo_element_default_init(UfoElementInterface *iface);
 G_DEFINE_INTERFACE(UfoElement, ufo_element, G_TYPE_OBJECT)
-
-enum {
-    FINISHED,
-    LAST_SIGNAL
-};
-
-enum {
-    PROP_0,
-    PROP_NAME
-};
-
-/*static guint element_signals[LAST_SIGNAL] = { 0 };*/
 
 /* 
  * Public Interface

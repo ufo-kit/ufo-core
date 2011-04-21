@@ -12,6 +12,11 @@ enum UfoBufferError {
     UFO_BUFFER_ERROR_WRONG_SIZE
 };
 
+enum {
+    PROP_0,
+    PROP_FINISHED
+};
+
 typedef enum {
     NO_DATA,
     CPU_DATA_VALID,
@@ -22,6 +27,7 @@ struct _UfoBufferPrivate {
     gint32      width;
     gint32      height;
 
+    gboolean    finished;
     datastates  state;
     float       *cpu_data;
     cl_mem      gpu_data;
@@ -171,6 +177,42 @@ cl_mem ufo_buffer_get_gpu_data(UfoBuffer *self)
 /* 
  * Virtual Methods 
  */
+static void ufo_filter_set_property(GObject *object,
+    guint           property_id,
+    const GValue    *value,
+    GParamSpec      *pspec)
+{
+    UfoBuffer *self = UFO_BUFFER(object);
+
+    switch (property_id) {
+        case PROP_FINISHED:
+            self->priv->finished = g_value_get_boolean(value);
+            break;
+
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            break;
+    }
+}
+
+static void ufo_filter_get_property(GObject *object,
+    guint       property_id,
+    GValue      *value,
+    GParamSpec  *pspec)
+{
+    UfoBuffer *self = UFO_BUFFER(object);
+
+    switch (property_id) {
+        case PROP_FINISHED:
+            g_value_set_boolean(value, self->priv->finished);
+            break;
+
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            break;
+    }
+}
+
 static void ufo_buffer_finalize(GObject *gobject)
 {
     UfoBuffer *self = UFO_BUFFER(gobject);
@@ -188,7 +230,21 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
 {
     /* override methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+    gobject_class->set_property = ufo_filter_set_property;
+    gobject_class->get_property = ufo_filter_get_property;
     gobject_class->finalize = ufo_buffer_finalize;
+
+    /* install properties */
+    GParamSpec *pspec;
+    pspec = g_param_spec_boolean("finished",
+            "Is last buffer with invalid data and no one follows",
+            "Get finished prop",
+            FALSE,
+            G_PARAM_READWRITE);
+
+    g_object_class_install_property(gobject_class,
+            PROP_FINISHED,
+            pspec);
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoBufferPrivate));
@@ -202,4 +258,5 @@ static void ufo_buffer_init(UfoBuffer *self)
     priv->height = -1;
     priv->cpu_data = NULL;
     priv->state = NO_DATA;
+    priv->finished = FALSE;
 }

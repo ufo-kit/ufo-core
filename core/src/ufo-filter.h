@@ -24,11 +24,8 @@ typedef struct _UfoFilterPrivate    UfoFilterPrivate;
  * \implements UfoElement
  *
  * <b>Signals</b>
- *      - <tt>"finished"</tt> :  Indicates that an instance is not going to produce more
- *          data
  *
  * <b>Properties</b>
- *      - <tt>"name"</tt> : Name of the plugin that this filter is loaded from
  */
 struct _UfoFilter {
     EthosPlugin parent_instance;

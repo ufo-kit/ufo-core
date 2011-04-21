@@ -23,16 +23,6 @@ G_DEFINE_TYPE_WITH_CODE(UfoSequence,
 #define UFO_SEQUENCE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SEQUENCE, UfoSequencePrivate))
 
 
-/** TODO: add static */
-void sequence_emit(UfoSequence *self, const gchar *signal_name)
-{
-    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
-        UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
-        ufo_element_process(child);
-        g_signal_emit_by_name(child, signal_name);
-    }
-}
-
 /* 
  * Public Interface
  */
@@ -88,32 +78,42 @@ static void ufo_sequence_add_element(UfoContainer *container, UfoElement *child)
     g_object_ref(child);
 }
 
+static gpointer ufo_sequence_process_thread(gpointer data)
+{
+    ufo_element_process(UFO_ELEMENT(data));
+    return NULL;
+}
+
+static void ufo_sequence_join_threads(gpointer data, gpointer user_data)
+{
+    GThread *thread = (GThread *) data;
+    g_thread_join(thread);
+}
+
 static void ufo_sequence_process(UfoElement *element)
 {
     UfoSequence *self = UFO_SEQUENCE(element);
+    GList *threads = NULL;
+    GError *error = NULL;
     for (guint i = 0; i < g_list_length(self->priv->children); i++) {
         UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
-        ufo_element_process(child);
+        threads = g_list_append(threads,
+                g_thread_create(ufo_sequence_process_thread, child, TRUE, &error));
     }
+    g_list_foreach(threads, ufo_sequence_join_threads, NULL);
 }
 
 static void ufo_sequence_print(UfoElement *element)
 {
     UfoSequence *self = UFO_SEQUENCE(element);
-    g_message("[seq:%p] <%p,%p>", element, ufo_element_get_input_queue(element),
+    g_message("[seq:%p] <%p,%p>", element, 
+            ufo_element_get_input_queue(element),
             ufo_element_get_output_queue(element));
     for (guint i = 0; i < g_list_length(self->priv->children); i++) {
         UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
         ufo_element_print(child);
     }
     g_message("[/seq:%p]", element);
-}
-
-/** TODO: add static */
-void ufo_sequence_finished(UfoElement *element)
-{
-    g_message("sequence: received finished");
-    sequence_emit(UFO_SEQUENCE(element), "finished");
 }
 
 static void ufo_sequence_set_input_queue(UfoElement *element, GAsyncQueue *queue)

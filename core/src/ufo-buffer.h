@@ -19,9 +19,16 @@ typedef struct _UfoBufferPrivate    UfoBufferPrivate;
 
 /**
  * \class UfoBuffer
+ * \brief Abstract data container
  *
  * Abstract data container that holds either valid GPU data or CPU data.
  *
+ * <b>Signals</b>
+ *
+ * <b>Properties</b>
+ *
+ *  - <tt>"finished" : gboolean</tt> — If TRUE, buffer does not contain any
+ *      useful data but specifies that no more data is following.
  */
 struct _UfoBuffer {
     GObject parent_instance;

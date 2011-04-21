@@ -19,11 +19,6 @@ enum {
     LAST_SIGNAL
 };
 
-enum {
-    PROP_0,
-    PROP_NAME
-};
-
 struct _UfoFilterPrivate {
     UfoResourceManager  *resource_manager;
     GAsyncQueue         *input_queue;
@@ -31,7 +26,6 @@ struct _UfoFilterPrivate {
     gchar               *name;
 };
 
-static guint filter_signals[LAST_SIGNAL] = { 0 };
 
 /* 
  * Public Interface
@@ -45,6 +39,12 @@ UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self)
 {
     return self->priv->resource_manager;
 }
+
+void ufo_filter_process(UfoFilter *self)
+{
+    UFO_FILTER_GET_CLASS(self)->process(self);
+}
+
 
 /* 
  * Virtual Methods
@@ -77,48 +77,6 @@ static GAsyncQueue *ufo_filter_get_output_queue(UfoElement *element)
     return self->priv->output_queue;
 }
 
-static void ufo_filter_set_property(GObject *object,
-    guint           property_id,
-    const GValue    *value,
-    GParamSpec      *pspec)
-{
-    UfoFilter *self = UFO_FILTER(object);
-
-    switch (property_id) {
-        case PROP_NAME:
-            g_free(self->priv->name);
-            self->priv->name = g_value_dup_string(value);
-            break;
-
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-            break;
-    }
-}
-
-static void ufo_filter_get_property(GObject *object,
-    guint       property_id,
-    GValue      *value,
-    GParamSpec  *pspec)
-{
-    UfoFilter *self = UFO_FILTER(object);
-
-    switch (property_id) {
-        case PROP_NAME:
-            g_value_set_string(value, self->priv->name);
-            break;
-
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-            break;
-    }
-}
-
-void ufo_filter_process(UfoFilter *self)
-{
-    UFO_FILTER_GET_CLASS(self)->process(self);
-}
-
 static void ufo_filter_iface_process(UfoElement *element)
 {
     UfoFilter *self = UFO_FILTER(element);
@@ -130,6 +88,11 @@ static void ufo_filter_print(UfoElement *self)
     g_message(" [filter:%p] <%p,%p>", self, 
             ufo_element_get_input_queue(self),
             ufo_element_get_output_queue(self));
+}
+
+static void ufo_filter_finished(UfoElement *self)
+{
+    g_message("filter: received finished signal");
 }
 
 static void ufo_filter_dispose(GObject *object)
@@ -146,32 +109,24 @@ static void ufo_filter_dispose(GObject *object)
  */
 static void ufo_element_iface_init(UfoElementInterface *iface)
 {
+    /* virtual methods */
     iface->process = ufo_filter_iface_process;
     iface->print = ufo_filter_print;
     iface->set_input_queue = ufo_filter_set_input_queue;
     iface->set_output_queue = ufo_filter_set_output_queue;
     iface->get_input_queue = ufo_filter_get_input_queue;
     iface->get_output_queue = ufo_filter_get_output_queue;
+
+    /* signals */
+    iface->finished = ufo_filter_finished;
 }
 
 static void ufo_filter_class_init(UfoFilterClass *klass)
 {
     /* override GObject methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-    gobject_class->set_property = ufo_filter_set_property;
-    gobject_class->get_property = ufo_filter_get_property;
     gobject_class->dispose = ufo_filter_dispose;
     klass->process = ufo_filter_process;
-
-    /* install signals */
-    filter_signals[FINISHED] =
-        g_signal_newv("finished",
-                G_TYPE_FROM_CLASS(klass),
-                G_SIGNAL_RUN_FIRST,
-                NULL, /* no class closure, elements are connecting to us */
-                NULL, NULL,
-                g_cclosure_marshal_VOID__VOID,
-                G_TYPE_NONE, 0, NULL);
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoFilterPrivate));

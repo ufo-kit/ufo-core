@@ -135,16 +135,21 @@ static void ufo_split_process(UfoElement *element)
     }
 
     /* Then, watch input queue and distribute work */
-    /*GAsyncQueue *input_queue = ufo_element_get_input_queue(element);*/
     GList *current_queue = self->priv->queues;
 
-    /* TODO: we must finish some time... */
     int i = 0;
     while (i <= 1) {
         /* TODO: replace this round-robin scheme according to the mode */
         UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(self->priv->input_queue));
         if (input == NULL)
             break;
+
+        /* TODO: when finished == TRUE, we must copy one finished buffer for
+         * each child */
+        gboolean finished = FALSE;
+        g_object_get(input,
+                "finished", &finished,
+                NULL);
 
         g_message("relaying buffer %p to queue %p", input, current_queue->data);
         g_async_queue_push((GAsyncQueue *) current_queue->data, input);
@@ -168,17 +173,6 @@ static void ufo_split_print(UfoElement *element)
         ufo_element_print(child);
     }
     g_message("[/split:%p]", element);
-}
-
-/** TODO: add static */
-void ufo_split_finished(UfoElement *element)
-{
-    UfoSplit *self = UFO_SPLIT(element);
-    g_message("split: received finished");
-    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
-        UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
-        g_signal_emit_by_name(child, "finished");
-    }
 }
 
 static void ufo_split_set_input_queue(UfoElement *element, GAsyncQueue *queue)
