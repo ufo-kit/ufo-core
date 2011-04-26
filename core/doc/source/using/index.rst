@@ -15,3 +15,27 @@ object-oriented :ref:`API <ufo-api>`.
 
 .. _GLib: http://developer.gnome.org/glib/
 .. _GObject: http://developer.gnome.org/gobject/stable/index.html
+
+After :ref:`installing <installation>` the framework you're ready to build your
+own image processing pipeline.
+
+
+Hello World
+===========
+
+The easiest UFO program looks like this::
+
+    int main(void)
+    {
+        g_type_init();  /* initialize GType/GObject */
+
+        UfoGraph *graph = ufo_graph_new_from_json("hello-world.json");
+        ufo_graph_run(graph);
+        return 0;
+    }
+    
+As you can see we simply construct a new UfoGraph object from a JSON encoded
+:ref:`configuration file <json-configuration>` and execute that computation
+pipeline.
+
+
