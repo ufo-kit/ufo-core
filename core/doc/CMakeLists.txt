@@ -28,6 +28,8 @@ if(SPHINX)
         source/glossary.rst
         source/install.rst
         source/json.rst
+        source/using/index.rst
+        source/whatsnew/0.1.rst
         source/_static/ufo-logo.png
         source/_templates/indexcontent.html
         source/_templates/indexsidebar.html
