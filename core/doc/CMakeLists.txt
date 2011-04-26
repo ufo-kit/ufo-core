@@ -28,7 +28,9 @@ if(SPHINX)
         source/glossary.rst
         source/install.rst
         source/json.rst
+        source/_static/ufo-logo.png
         source/_templates/indexcontent.html
+        source/_templates/indexsidebar.html
         )
 
     # Check if ExternalProject supports Git repositories
