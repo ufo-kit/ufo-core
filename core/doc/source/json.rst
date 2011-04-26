@@ -1,11 +1,15 @@
+.. _json-configuration:
+
+=========================
 JSON Configuration Format
 =========================
 
 JSON_ is a self-contained, human-readable data-interchange format. It is pure
-text and language independent. The main structures are key/value pairs
+Unicode text and language independent. The main structures are key/value pairs
 (hash-tables, dictionaries, associative arrays ...) and ordered lists (arrays,
-vectors, sequences ...). For a complete description you may refer to the complete
-reference at json.org.
+vectors, sequences ...) of base types such as strings, numbers and boolean
+values. For a complete description you may refer to the complete reference at
+json.org.
 
 The configuration of a filter setup is stored in a JSON-encoded text file with a
 ``.json`` suffix. The root object must at least contain one ``"type"`` and one
@@ -15,11 +19,11 @@ The configuration of a filter setup is stored in a JSON-encoded text file with a
 Node Types
 ----------
 
-A node type is specified by the key "type" in a JSON object::
+A node type is specified by the key ``"type"`` in a JSON object::
  
   { "type" : $TYPE }
 
-where $TYPE could be
+where ``$TYPE`` could be
 
 ``"sequence"``, that is a sequential chain of filters and containers::
 
@@ -39,7 +43,8 @@ kind of computation.
 Elements
 --------
 
-An ``"elements"`` key specifies the children of a container type as an JSON array.
+An ``"elements"`` key lists the children of a container type as an JSON array.
+The children could be container types again or Filter specifications.
 
 
 Split Containers
@@ -50,9 +55,15 @@ filters or containers.
 
 Properties:
 
-- ``"mode"``: Specifies the mode of operation in which work should be
-  distributed.  Possible modes are ``"random"``, ``"round-robin"`` and
-  ``"copy"``.
+- ``"mode"`` [string]: Mode of operation in which work should be distributed.
+  The following string values are possible:
+  
+  - ``"random"``: choose next free child
+  - ``"round-robin"``: push data to one child after another
+  - ``"copy"``: copy the input and distribute it to `all` children
+
+- ``"repeat"`` [integer]: Controls how many instances of the first filter should be
+  created. If not specified it defaults to ``1``.
 
 
 Filters
@@ -64,7 +75,8 @@ path.
 
 Properties:
 
-- ``"plugin"``: Name of the associated plugin
+- ``"plugin"`` [string]: Name of the associated plugin corresponding to the
+  filter ``libfilterxxx.so``.
 
 Example
 -------

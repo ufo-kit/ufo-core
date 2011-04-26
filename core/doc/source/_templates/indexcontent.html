@@ -1,0 +1,47 @@
+{% extends "defindex.html" %}
+{% block tables %}
+  <p><strong>Parts of the documentation:</strong></p>
+  <table class="contentstable" align="center"><tr>
+    <td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("whatsnew/" + version) }}">What's new in UFO {{ version }}?</a><br/>
+         <span class="linkdescr">what has changed</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("install") }}">Installation</a><br/>
+         <span class="linkdescr">install from either packages or source</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("using/index") }}">Using UFO</a><br/>
+         <span class="linkdescr">how to use UFO on different platforms</span></p>
+    </td><td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("json") }}">JSON Pipeline Description</a><br/>
+         <span class="linkdescr">configure UFO graphs textual</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("api") }}">UFO API</a><br/>
+         <span class="linkdescr">reference for C/C++ programmers</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("faq") }}">FAQ</a><br/>
+         <span class="linkdescr">frequently asked questions</span></p>
+    </td></tr>
+  </table>
+
+  <p><strong>Indices and tables:</strong></p>
+  <table class="contentstable" align="center"><tr>
+    <td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("genindex") }}">General Index</a><br/>
+         <span class="linkdescr">all functions, classes, terms</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("glossary") }}">Glossary</a><br/>
+         <span class="linkdescr">the most important terms explained</span></p>
+    </td><td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("search") }}">Search page</a><br/>
+         <span class="linkdescr">search this documentation</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("contents") }}">Complete Table of Contents</a><br/>
+         <span class="linkdescr">lists all sections and subsections</span></p>
+    </td></tr>
+  </table>
+
+  <p><strong>Meta information:</strong></p>
+  <table class="contentstable" align="center"><tr>
+    <td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("bugs") }}">Reporting bugs</a></p>
+    </td><td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("copyright") }}">Copyright</a></p>
+    </td></tr>
+  </table>
+
+{% endblock %}
+

@@ -19,11 +19,16 @@ endif(DOXYGEN_FOUND)
 
 if(SPHINX)
     set(SPHINX_RESOURCES
-        source/index.rst
+        source/contents.rst
         source/api.rst
+        source/bugs.rst
         source/build.rst
+        source/copyright.rst
+        source/faq.rst
+        source/glossary.rst
         source/install.rst
         source/json.rst
+        source/_templates/indexcontent.html
         )
 
     # Check if ExternalProject supports Git repositories
