@@ -1,6 +1,5 @@
 #include <gmodule.h>
 #include <uca/uca.h>
-#include <uca/uca-cam.h>
 
 #include "ufo-filter-uca.h"
 #include "ufo-filter.h"
@@ -36,7 +35,7 @@ static void deactivated(EthosPlugin *plugin)
 static void ufo_filter_uca_dispose(GObject *object)
 {
     UfoFilterUCAPrivate *priv = UFO_FILTER_UCA_GET_PRIVATE(object);
-    priv->cam->stop_recording(priv->cam);
+    uca_cam_stop_recording(priv->cam);
     uca_destroy(priv->u);
 
     G_OBJECT_CLASS(ufo_filter_uca_parent_class)->dispose(object);
@@ -49,17 +48,21 @@ static void ufo_filter_uca_process(UfoFilter *self)
     UfoFilterUCAPrivate *priv = UFO_FILTER_UCA_GET_PRIVATE(self);
     struct uca_camera *cam = priv->cam;
 
-    cam->start_recording(cam);
+    uint32_t width, height;
+    uca_cam_get_property(cam, UCA_PROP_WIDTH, &width, 0);
+    uca_cam_get_property(cam, UCA_PROP_HEIGHT, &height, 0);
+
+    uca_cam_start_recording(cam);
     UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
 
     for (guint i = 0; i < 1; i++) {
         UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
-                cam->frame_width, cam->frame_height);
+                width, height);
 
-        cam->grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
+        uca_cam_grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
         ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8,
-                cam->frame_width * cam->frame_height);
+                width * height);
 
         g_message("[uca] send buffer %p to queue %p", buffer, output_queue);
         g_async_queue_push(output_queue, buffer);

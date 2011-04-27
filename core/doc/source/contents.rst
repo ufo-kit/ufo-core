@@ -4,14 +4,14 @@ UFO Documentation contents
 
 .. toctree::
 
+    whatsnew/0.1.rst
     build.rst
     install.rst
+    using/index.rst
     api.rst
     json.rst
     faq.rst
     glossary.rst
-    using/index.rst
-    whatsnew/0.1.rst
 
     bugs.rst
     copyright.rst
