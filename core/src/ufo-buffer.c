@@ -194,11 +194,25 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
     return priv->cpu_data;
 }
 
-void ufo_buffer_set_cl_mem(UfoBuffer *self, cl_mem mem)
+/**
+ * \brief Set OpenCL memory object that is used to up and download data.
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer UfoBuffer object
+ * \param[in] mem OpenCL memory object to be associated with this UfoBuffer
+ */
+void ufo_buffer_set_cl_mem(UfoBuffer *buffer, cl_mem mem)
 {
-    self->priv->gpu_data = mem;
+    buffer->priv->gpu_data = mem;
 }
 
+/**
+ * \brief Get OpenCL memory object that is used to up and download data.
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer UfoBuffer object
+ * \return OpenCL memory object associated with this UfoBuffer
+ */
 cl_mem ufo_buffer_get_gpu_data(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
