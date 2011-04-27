@@ -37,9 +37,11 @@ struct _UfoFilter {
 struct _UfoFilterClass {
     EthosPluginClass parent_class;
 
+    void (*initialize) (UfoFilter *filter, UfoResourceManager *resource_manager);
     void (*process) (UfoFilter *filter);
 };
 
+void ufo_filter_initialize(UfoFilter *filter, UfoResourceManager *resource_manager);
 void ufo_filter_process(UfoFilter *filter);
 void ufo_filter_set_resource_manager(UfoFilter *filter, UfoResourceManager *resource_manager);
 UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *filter);

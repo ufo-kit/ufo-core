@@ -7,6 +7,10 @@ set(ufofilter_SRCS
     ufo-filter-scale.c
     )
 
+set(ufofilter_KERNELS
+    scale.cl
+    )
+
 set(ufofilter_LIBS
     ufocore
     ${GLIB2_LIBRARIES}
@@ -45,3 +49,8 @@ foreach(_src ${ufofilter_SRCS})
         ${CMAKE_CURRENT_BINARY_DIR}/${filter}.ufo-plugin)
 endforeach()
 
+# for now we just copy the kernels into the tests/ dir
+foreach(_kernel ${ufofilter_KERNELS})
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${_kernel}
+        ${CMAKE_CURRENT_BINARY_DIR}/../tests/${_kernel})
+endforeach()

@@ -1,4 +1,5 @@
 #include <gmodule.h>
+#include <CL/cl.h>
 
 #include "ufo-filter-scale.h"
 #include "ufo-filter.h"
@@ -9,6 +10,7 @@
 
 struct _UfoFilterScalePrivate {
     gdouble scale;
+    cl_kernel kernel;
 };
 
 GType ufo_filter_scale_get_type(void) G_GNUC_CONST;
@@ -34,18 +36,44 @@ static void deactivated(EthosPlugin *plugin)
 /* 
  * virtual methods 
  */
-static void ufo_filter_scale_process(UfoFilter *self)
+static void ufo_filter_scale_initialize(UfoFilter *filter, UfoResourceManager *manager)
 {
-    g_return_if_fail(UFO_IS_FILTER(self));
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
-    /*UfoResourceManager *manager = ufo_filter_get_resource_manager(self);*/
+    UfoFilterScale *self = UFO_FILTER_SCALE(filter);
+    GError *error = NULL;
+    self->priv->kernel = NULL;
+
+    ufo_resource_manager_add_program(manager, "scale.cl", &error);
+    if (error != NULL) {
+        g_warning(error->message);
+        g_error_free(error);
+        return;
+    }
+
+    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "scale", &error);
+    if (error != NULL) {
+        g_warning(error->message);
+        g_error_free(error);
+    }
+}
+
+static void ufo_filter_scale_process(UfoFilter *filter)
+{
+    g_return_if_fail(UFO_IS_FILTER(filter));
+    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    UfoFilterScale *self = UFO_FILTER_SCALE(filter);
 
     g_message("[scale] waiting...");
     UfoBuffer *buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
     g_message("[scale] received buffer at queue %p", input_queue);
 
-    /* TODO: call OpenCL kernel */
+    if (self->priv->kernel != NULL) {
+        /* TODO: set arguments */
+        clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(buffer),
+                               self->priv->kernel,
+                               2, NULL, NULL, NULL,
+                               0, NULL, NULL);
+    }
 
     g_message("[scale] send buffer to queue %p", output_queue);
     g_async_queue_push(output_queue, buffer);
@@ -95,6 +123,7 @@ static void ufo_filter_scale_class_init(UfoFilterScaleClass *klass)
 
     gobject_class->set_property = ufo_scale_set_property;
     gobject_class->get_property = ufo_scale_get_property;
+    filter_class->initialize = ufo_filter_scale_initialize;
     filter_class->process = ufo_filter_scale_process;
     plugin_class->activated = activated;
     plugin_class->deactivated = deactivated;
@@ -120,6 +149,7 @@ static void ufo_filter_scale_init(UfoFilterScale *self)
 {
     UfoFilterScalePrivate *priv = self->priv = UFO_FILTER_SCALE_GET_PRIVATE(self);
     priv->scale = 1.0;
+    g_message("rm: %p", ufo_filter_get_resource_manager(UFO_FILTER(self)));
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

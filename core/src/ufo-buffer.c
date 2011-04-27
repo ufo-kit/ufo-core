@@ -213,6 +213,16 @@ cl_mem ufo_buffer_get_gpu_data(UfoBuffer *buffer)
     return priv->gpu_data;
 }
 
+void ufo_buffer_set_command_queue(UfoBuffer *self, cl_command_queue queue)
+{
+    self->priv->command_queue = queue;
+}
+
+cl_command_queue ufo_buffer_get_command_queue(UfoBuffer *self)
+{
+    return self->priv->command_queue;
+}
+
 /* 
  * Virtual Methods 
  */

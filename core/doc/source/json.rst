@@ -77,6 +77,9 @@ Properties:
 
 - ``"plugin"`` [string]: Name of the associated plugin corresponding to the
   filter ``libfilterxxx.so``.
+- ``"properties"`` [dict]: Mapping from string to value. Exact names and value
+  types depend on the actual filter
+
 
 Example
 -------
@@ -89,6 +92,13 @@ An example configuration would look like this::
             {
                 "type" : "filter",
                 "plugin" : "uca"
+            },
+            {
+                "type" : "filter",
+                "plugin" : "scale",
+                "properties" : {
+                    "scale" : 0.5
+                }
             },
             {
                 "type" : "split",

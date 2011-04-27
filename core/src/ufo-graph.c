@@ -52,12 +52,15 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
         const char *type = json_object_get_string_member(object, "type");
 
         if (g_strcmp0(type, "filter") == 0) {
+            /* FIXME: we should check that there is a corresponding "plugin"
+             * object available */
             const gchar *plugin_name = json_object_get_string_member(object, "plugin");
             UfoFilter *filter = ufo_graph_get_filter(self, plugin_name);
             if (filter != NULL) {
                 /* TODO: ask the plugin how many/what kind of buffers we need,
                  * for now just reserve a queue for a single output */
-                ufo_filter_set_resource_manager(filter, self->priv->resource_manager);
+                /*ufo_filter_set_resource_manager(filter, self->priv->resource_manager);*/
+                ufo_filter_initialize(filter, self->priv->resource_manager);
 
                 if (json_object_has_member(object, "properties")) {
                     JsonObject *prop_object = json_object_get_object_member(object, "properties");

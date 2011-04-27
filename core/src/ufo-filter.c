@@ -45,6 +45,13 @@ void ufo_filter_process(UfoFilter *self)
     UFO_FILTER_GET_CLASS(self)->process(self);
 }
 
+void ufo_filter_initialize(UfoFilter *self, UfoResourceManager *resource_manager)
+{
+    self->priv->resource_manager = resource_manager;
+    if (UFO_FILTER_GET_CLASS(self)->initialize != NULL)
+        UFO_FILTER_GET_CLASS(self)->initialize(self, resource_manager);
+}
+
 
 /* 
  * Virtual Methods
@@ -126,6 +133,7 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     /* override GObject methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->dispose = ufo_filter_dispose;
+    klass->initialize = NULL;
     klass->process = ufo_filter_process;
 
     /* install private data */
