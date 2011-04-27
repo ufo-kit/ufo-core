@@ -37,6 +37,14 @@ static UfoElement *ufo_graph_build_split(JsonObject *object)
     return UFO_ELEMENT(container);
 }
 
+static void ufo_graph_handle_json_prop(JsonObject *object, const gchar *name, JsonNode *node, gpointer user)
+{
+    GValue val = { 0, };
+    json_node_get_value(node, &val);
+    g_object_set_property(G_OBJECT(user), name, &val);
+    g_value_unset(&val);
+}
+
 static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **container)
 {
     JsonObject *object = json_node_get_object(node);
@@ -51,14 +59,17 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
                  * for now just reserve a queue for a single output */
                 ufo_filter_set_resource_manager(filter, self->priv->resource_manager);
 
-                /* TODO: set plugin-specific properties as specified in the JSON
-                 * string */
+                if (json_object_has_member(object, "properties")) {
+                    JsonObject *prop_object = json_object_get_object_member(object, "properties");
+                    json_object_foreach_member(prop_object, 
+                                               ufo_graph_handle_json_prop,
+                                               filter);
+                }
 
-                /* Create new single filter element and add it to the container */
                 ufo_container_add_element(UFO_CONTAINER(*container), UFO_ELEMENT(filter));
             }
             else
-                g_message("Couldn't find plugin '%s'", plugin_name);
+                g_warning("Couldn't find plugin '%s'", plugin_name);
         }
         else {
             UfoElement *new_container = NULL;

@@ -13,7 +13,6 @@ G_DEFINE_TYPE_WITH_CODE(UfoSplit,
 
 enum {
     PROP_0,
-
     PROP_MODE
 };
 
@@ -171,6 +170,7 @@ static void ufo_split_print(UfoElement *element)
     g_message("[split:%p|m:%i] <%p,%p>", element, self->priv->mode,
             ufo_element_get_input_queue(element),
             ufo_element_get_output_queue(element));
+
     for (guint i = 0; i < g_list_length(self->priv->children); i++) {
         UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
         ufo_element_print(child);

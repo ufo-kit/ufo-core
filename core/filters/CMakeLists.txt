@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 set(ufofilter_SRCS 
     ufo-filter-hist.c
     ufo-filter-raw.c
+    ufo-filter-scale.c
     )
 
 set(ufofilter_LIBS

@@ -6,18 +6,15 @@
              "plugin" : "uca"
          },
          {
-             "type" : "split",
-             "mode" : "copy",
-             "elements" : [
-                 {
-                     "type" : "filter",
-                     "plugin" : "raw"
-                 },
-                 {
-                     "type" : "filter",
-                     "plugin" : "histogram"
-                 }
-             ]
+             "type" : "filter",
+             "plugin" : "scale",
+             "properties" : {
+                 "scale" : 0.5
+             }
+         },
+         {
+             "type" : "filter",
+             "plugin" : "raw"
          }
      ]
 }
