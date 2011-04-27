@@ -55,6 +55,7 @@ filters or containers.
 
 Properties:
 
+- ``"type"`` [string]: Must be ``"split"``.
 - ``"mode"`` [string]: Mode of operation in which work should be distributed.
   The following string values are possible:
   
@@ -66,6 +67,14 @@ Properties:
   created. If not specified it defaults to ``1``.
 
 
+Sequence Containers
+-------------------
+
+Properties:
+
+- ``"type"`` [string]: Must be ``"sequence"``.
+
+
 Filters
 -------
 
@@ -75,10 +84,11 @@ path.
 
 Properties:
 
+- ``"type"`` [string]: Must be ``"filter"``.
 - ``"plugin"`` [string]: Name of the associated plugin corresponding to the
   filter ``libfilterxxx.so``.
 - ``"properties"`` [dict]: Mapping from string to value. Exact names and value
-  types depend on the actual filter
+  types depend on the actual filter.
 
 
 Example

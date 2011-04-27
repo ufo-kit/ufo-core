@@ -40,16 +40,32 @@ UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self)
     return self->priv->resource_manager;
 }
 
-void ufo_filter_process(UfoFilter *self)
+/**
+ * \brief Initializes the concrete UfoFilter with a UfoResourceManager. 
+ * \public \memberof UfoFilter
+ *
+ * This is necessary, because we cannot instantiate the object on our own as
+ * this is already done by the plugin manager.
+ *
+ * \param[in] filter A UfoFilter object
+ * \param[in] resource_manager A UfoResourceManager object
+ */
+void ufo_filter_initialize(UfoFilter *filter, UfoResourceManager *resource_manager)
 {
-    UFO_FILTER_GET_CLASS(self)->process(self);
+    filter->priv->resource_manager = resource_manager;
+    if (UFO_FILTER_GET_CLASS(filter)->initialize != NULL)
+        UFO_FILTER_GET_CLASS(filter)->initialize(filter, resource_manager);
 }
 
-void ufo_filter_initialize(UfoFilter *self, UfoResourceManager *resource_manager)
+/**
+ * \brief Execute a particular filter.
+ * \public \memberof UfoFilter
+ *
+ * \param filter A UfoFilter object
+ */
+void ufo_filter_process(UfoFilter *filter)
 {
-    self->priv->resource_manager = resource_manager;
-    if (UFO_FILTER_GET_CLASS(self)->initialize != NULL)
-        UFO_FILTER_GET_CLASS(self)->initialize(self, resource_manager);
+    UFO_FILTER_GET_CLASS(filter)->process(filter);
 }
 
 
