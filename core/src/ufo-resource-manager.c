@@ -174,8 +174,8 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
  * \param[in] resource_manager A UfoResourceManager
  * \param[in] kernel_name Zero-delimited string of the kernel name
  * \param[out] error Pointer to a GError* 
- * \note The kernel must be contained in of the files that has been previously
- *      loaded with ufo_resource_manager_add_program()
+ * \note The kernel must be contained in one of the files that has been
+ *      previously loaded with ufo_resource_manager_add_program()
  * \return A cl_kernel object
  */
 cl_kernel ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, const gchar *kernel_name, GError **error)

@@ -8,15 +8,14 @@
 # runs the `gtester` tool which outputs failing test cases and creates a summary
 # HTML file called results.html using the `gtester-report` tool.
 #
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
+# configure unit tests
 set(TEST_BINARIES
     buffer
     sequence
     split
     )
-
-file(COPY test.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 foreach(binary ${TEST_BINARIES})
     add_executable(${binary} ${binary}.c)
@@ -26,4 +25,10 @@ endforeach()
 
 add_custom_target(gtest
     gtester ${TEST_BINARIES} -o results.xml && gtester-report results.xml > results.html
-    )
+)
+
+# non-unit test
+file(COPY test.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_executable(foobar test.c)
+target_link_libraries(foobar ufocore ${GLIB2_LIBRARIES})
+

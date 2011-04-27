@@ -25,16 +25,10 @@ set(ufocore_HDRS
 
 
 # --- Find packages and libraries ---------------------------------------------
-find_package(FFTW3)
-
 pkg_check_modules(JSON_GLIB json-glib-1.0)
 
 
 # --- Generate config.h -------------------------------------------------------
-if (FFTW3_FOUND)
-    set(HAVE_FFTW TRUE)
-endif(FFTW3_FOUND)
-
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 

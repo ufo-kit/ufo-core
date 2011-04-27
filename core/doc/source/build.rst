@@ -62,8 +62,14 @@ format by issueing ::
 First Test
 ----------
 
-In the build directory, several files were created. Change into ``core/tests``
-and run ``ufo-tests`` or ``gtester ufo-tests`` to check that all internal unit
-tests are passing.
+To verify that your UFO version is behaving correctly, you should check its
+functionality by running some builtin tests using ::
 
+  $ make test
 
+which is not that much of a help when things break and ::
+
+  $ make gtest
+
+which tells where the problems are. It also outputs a summary in
+``core/tests/results.html``.

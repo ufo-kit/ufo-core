@@ -26,6 +26,7 @@ typedef enum {
 struct _UfoBufferPrivate {
     gint32      width;
     gint32      height;
+    gsize       size;   /**< size in bytes */
 
     gboolean    finished;
     datastates  state;
@@ -39,6 +40,7 @@ static void ufo_buffer_set_dimensions(UfoBuffer *buffer, gint32 width, gint32 he
     g_return_if_fail(UFO_IS_BUFFER(buffer));
     buffer->priv->width = width;
     buffer->priv->height = height;
+    buffer->priv->size = width * height * sizeof(float);
 }
 
 GQuark ufo_buffer_error_quark(void)
@@ -173,11 +175,16 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
         case CPU_DATA_VALID:
             break;
         case GPU_DATA_VALID:
-            /* TODO: download from gpu */
+            clEnqueueReadBuffer(priv->command_queue,
+                                priv->gpu_data,
+                                CL_TRUE,
+                                0, priv->size,
+                                priv->cpu_data,
+                                0, NULL, NULL);
             priv->state = CPU_DATA_VALID;
             break;
         case NO_DATA:
-            priv->cpu_data = g_malloc0(priv->width * priv->height * sizeof(float));
+            priv->cpu_data = g_malloc0(priv->size);
             priv->state = CPU_DATA_VALID;
             break;
     }
@@ -190,7 +197,12 @@ cl_mem ufo_buffer_get_gpu_data(UfoBuffer *buffer)
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
     switch (priv->state) {
         case CPU_DATA_VALID:
-            /* TODO: upload to gpu */
+            clEnqueueWriteBuffer(priv->command_queue,
+                                 priv->gpu_data,
+                                 CL_TRUE,
+                                 0, priv->size,
+                                 priv->cpu_data,
+                                 0, NULL, NULL);
             priv->state = GPU_DATA_VALID;
             break;
         case GPU_DATA_VALID:
