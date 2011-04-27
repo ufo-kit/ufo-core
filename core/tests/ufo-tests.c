@@ -18,10 +18,16 @@ static gboolean float_eq(float n1, float n2)
     /*ufo_graph_run(graph);*/
 /*}*/
 
+static void test_buffer_new(void)
+{
+    UfoBuffer *buffer = ufo_buffer_new(1000, 1000);
+    g_assert(buffer != NULL);
+    g_object_unref(buffer);
+}
+
 static void test_buffer_set_data(void)
 {
     UfoBuffer *buffer = ufo_buffer_new(10, 1);
-    g_assert(buffer != NULL);
 
     GError *error = NULL;
     float test_data[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
@@ -37,7 +43,6 @@ static void test_buffer_set_data(void)
 static void test_buffer_set_too_much_data(void)
 {
     UfoBuffer *buffer = ufo_buffer_new(1, 1);
-    g_assert(buffer != NULL);
 
     GError *error = NULL;
     float test_data[] = { 1.0, 2.0 };
@@ -49,7 +54,6 @@ static void test_buffer_set_too_much_data(void)
 static void test_buffer_reinterpret(void)
 {
     UfoBuffer *buffer = ufo_buffer_new(10, 1);
-    g_assert(buffer != NULL);
 
     GError *error = NULL;
     guint8 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
@@ -69,13 +73,25 @@ static void test_buffer_dimensions(void)
     const int in_height = 321;
 
     UfoBuffer *buffer = ufo_buffer_new(in_width, in_height);
-    g_assert(buffer != NULL);
-
     gint32 out_width, out_height;
     ufo_buffer_get_dimensions(buffer, &out_width, &out_height);
     g_assert_cmpuint(in_width, ==, out_width);
     g_assert_cmpuint(in_height, ==, out_height);
     g_object_unref(buffer);
+}
+
+static void test_split_new(void)
+{
+    UfoSplit *split = ufo_split_new();
+    g_assert(split != NULL);
+    g_object_unref(split);
+}
+
+static void test_split_add_empty(void)
+{
+    UfoSplit *split = ufo_split_new();
+    ufo_container_add_element(UFO_CONTAINER(split), NULL);
+    g_object_unref(split);
 }
 
 /**
@@ -85,7 +101,6 @@ static void test_buffer_dimensions(void)
 static void test_split_queues(void)
 {
     UfoSplit *split = ufo_split_new();
-    g_assert(split != NULL);
     GAsyncQueue *input_queue = g_async_queue_new();
     ufo_element_set_input_queue(UFO_ELEMENT(split), input_queue);
 
@@ -106,6 +121,20 @@ static void test_split_queues(void)
     g_object_unref(split);
 }
 
+static void test_sequence_new(void)
+{
+    UfoSequence *sequence = ufo_sequence_new();
+    g_assert(sequence != NULL);
+    g_object_unref(sequence);
+}
+
+static void test_sequence_add_empty(void)
+{
+    UfoSequence *sequence = ufo_sequence_new();
+    ufo_container_add_element(UFO_CONTAINER(sequence), NULL);
+    g_object_unref(sequence);
+}
+
 /**
  * Tests that input queue of sequence is identical to first filter and output
  * queue is identical to second filter. Furthermore, test that output of filter
@@ -113,7 +142,6 @@ static void test_split_queues(void)
 static void test_sequence_queues(void)
 {
     UfoSequence *sequence = ufo_sequence_new();
-    g_assert(sequence != NULL);
     GAsyncQueue *input_queue = g_async_queue_new();
     ufo_element_set_input_queue(UFO_ELEMENT(sequence), input_queue);
 
@@ -138,13 +166,18 @@ int main(int argc, char *argv[])
     g_type_init();
     g_test_init(&argc, &argv, NULL);
 
+    g_test_add_func("/buffer/new", test_buffer_new);
     g_test_add_func("/buffer/dimensions", test_buffer_dimensions);
     g_test_add_func("/buffer/set_too_much_data", test_buffer_set_too_much_data);
     g_test_add_func("/buffer/set_data", test_buffer_set_data);
     g_test_add_func("/buffer/reinterpret/8bit", test_buffer_reinterpret);
 
-    g_test_add_func("/queues/split", test_split_queues);
-    g_test_add_func("/queues/sequence", test_sequence_queues);
+    g_test_add_func("/split/new", test_split_new);
+    g_test_add_func("/split/add_empty", test_split_add_empty);
+    g_test_add_func("/split/queues", test_split_queues);
+    g_test_add_func("/sequence/new", test_sequence_new);
+    g_test_add_func("/sequence/add_empty", test_sequence_add_empty);
+    g_test_add_func("/sequence/queues", test_sequence_queues);
 
     g_test_run();
 

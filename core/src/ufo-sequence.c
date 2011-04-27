@@ -41,6 +41,9 @@ UfoSequence *ufo_sequence_new()
  */
 static void ufo_sequence_add_element(UfoContainer *container, UfoElement *child)
 {
+    if (container == NULL || child == NULL)
+        return;
+
     /* In this method we also need to add the asynchronous queues. It is
      * important to understand the two cases:
      * 
