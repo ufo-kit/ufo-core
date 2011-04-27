@@ -1,5 +1,6 @@
 
 #include <glib.h>
+#include <math.h>
 #include "ufo-graph.h"
 #include "ufo-buffer.h"
 #include "ufo-split.h"
@@ -8,7 +9,7 @@
 static gboolean float_eq(float n1, float n2)
 {
     static const float epsilon = 0.000001;
-    return (abs(n1-n2) < epsilon);
+    return (fabs(n1-n2) < epsilon);
 }
 
 /*static void test_graph_run(void)*/
@@ -25,6 +26,9 @@ static void test_buffer_new(void)
     g_object_unref(buffer);
 }
 
+/**
+ * Check that data is correctly added to a UfoBuffer.
+ */
 static void test_buffer_set_data(void)
 {
     UfoBuffer *buffer = ufo_buffer_new(10, 1);
@@ -51,6 +55,9 @@ static void test_buffer_set_too_much_data(void)
     g_object_unref(buffer);
 }
 
+/**
+ * Check that data with different type than float is correctly converted.
+ */
 static void test_buffer_reinterpret(void)
 {
     UfoBuffer *buffer = ufo_buffer_new(10, 1);
@@ -165,18 +172,19 @@ int main(int argc, char *argv[])
 {
     g_type_init();
     g_test_init(&argc, &argv, NULL);
+    g_test_bug_base("http://ufo.kit.edu/ufo/ticket");
 
     g_test_add_func("/buffer/new", test_buffer_new);
     g_test_add_func("/buffer/dimensions", test_buffer_dimensions);
-    g_test_add_func("/buffer/set_too_much_data", test_buffer_set_too_much_data);
-    g_test_add_func("/buffer/set_data", test_buffer_set_data);
+    g_test_add_func("/buffer/set-too-much-data", test_buffer_set_too_much_data);
+    g_test_add_func("/buffer/set-data", test_buffer_set_data);
     g_test_add_func("/buffer/reinterpret/8bit", test_buffer_reinterpret);
 
     g_test_add_func("/split/new", test_split_new);
-    g_test_add_func("/split/add_empty", test_split_add_empty);
+    g_test_add_func("/split/add-empty", test_split_add_empty);
     g_test_add_func("/split/queues", test_split_queues);
     g_test_add_func("/sequence/new", test_sequence_new);
-    g_test_add_func("/sequence/add_empty", test_sequence_add_empty);
+    g_test_add_func("/sequence/add-empty", test_sequence_add_empty);
     g_test_add_func("/sequence/queues", test_sequence_queues);
 
     g_test_run();
