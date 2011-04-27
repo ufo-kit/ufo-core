@@ -171,10 +171,12 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gint source_depth, gsize n)
 float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+
     switch (priv->state) {
         case CPU_DATA_VALID:
             break;
         case GPU_DATA_VALID:
+            memset(priv->cpu_data, 0, priv->size);
             clEnqueueReadBuffer(priv->command_queue,
                                 priv->gpu_data,
                                 CL_TRUE,
@@ -192,9 +194,15 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
     return priv->cpu_data;
 }
 
+void ufo_buffer_set_cl_mem(UfoBuffer *self, cl_mem mem)
+{
+    self->priv->gpu_data = mem;
+}
+
 cl_mem ufo_buffer_get_gpu_data(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+
     switch (priv->state) {
         case CPU_DATA_VALID:
             clEnqueueWriteBuffer(priv->command_queue,

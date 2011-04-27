@@ -21,6 +21,11 @@ struct _UfoContainer {
     GObject parent_instance;
 };
 
+/**
+ * \class UfoContainer
+ * \brief A UfoContainer contains UfoElements or other UfoContainers.
+ * \see UfoSplit and UfoSequence
+ */
 struct _UfoContainerClass {
     GObjectClass parent_class;
 

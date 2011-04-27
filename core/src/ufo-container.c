@@ -21,9 +21,19 @@ UfoContainer *ufo_container_new()
 /* 
  * Virtual Methods 
  */
-void ufo_container_add_element(UfoContainer *self, UfoElement *element)
+/**
+ * \brief Add elements successively to the container
+ * \public \memberof UfoContainer
+ * 
+ * The exact way how elements are arranged depends on an actual Container
+ * implementation like UfoSplit or UfoContainer
+ *
+ * \param[in] container A UfoContainer object
+ * \param[in] element A UfoElement
+ */
+void ufo_container_add_element(UfoContainer *container, UfoElement *element)
 {
-    UFO_CONTAINER_GET_CLASS(self)->add_element(self, element);
+    UFO_CONTAINER_GET_CLASS(container)->add_element(container, element);
 }
 
 /*

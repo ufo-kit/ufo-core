@@ -24,6 +24,9 @@ struct _UfoResourceManagerPrivate {
     cl_device_id **opencl_devices;
     cl_context opencl_context;
 
+    /* FIXME: replace with multiple queues */
+    cl_command_queue command_queue;
+
     GList *opencl_programs;
 
     GHashTable *buffers;            /**< maps from dimension hash to a GTrashStack of buffer instances */
@@ -155,15 +158,14 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
                 0, NULL, 
                 &kernel_name_length);
 
-        char *kernel_name = (char *) g_malloc0(kernel_name_length);
+        gchar *kernel_name = (gchar *) g_malloc0(kernel_name_length);
         clGetKernelInfo(kernels[i], CL_KERNEL_FUNCTION_NAME, 
-                kernel_name_length, kernel_name, 
-                NULL);
+                        kernel_name_length, kernel_name, 
+                        NULL);
+        g_debug("Add OpenCL kernel '%s'", kernel_name);
         g_hash_table_insert(self->priv->opencl_kernels, kernel_name, kernels[i]);
-        g_free(kernel_name);
     }
 
-    g_free(kernels);
     g_free(buffer);
     return TRUE;
 }
@@ -186,7 +188,7 @@ cl_kernel ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, 
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_KERNEL_NOT_FOUND,
-                "Kernel %s not found", kernel_name);
+                "Kernel '%s' not found", kernel_name);
         return NULL;
     }
     return kernel;
@@ -215,6 +217,17 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         /* If there is no queue for this hash we create a new one but don't fill
          * it with the newly created buffer */
         buffer = ufo_buffer_new(width, height);
+        /* TODO 1: Let user specify access flags */
+        /* TODO 2: Let user pass initial buffer */
+        /* TODO 3: Release buffer_mem */
+        cl_mem buffer_mem = clCreateBuffer(self->priv->opencl_context,
+                CL_MEM_READ_WRITE, 
+                width * height * sizeof(float),
+                NULL, NULL);
+
+        ufo_buffer_set_cl_mem(buffer, buffer_mem);
+        ufo_buffer_set_command_queue(buffer, self->priv->command_queue);
+
         queue = g_queue_new();
         g_hash_table_insert(self->priv->buffers, hash, queue);
     }
@@ -307,7 +320,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     clGetPlatformIDs(priv->num_platforms, priv->opencl_platforms, NULL);
     priv->num_devices = g_malloc0(priv->num_platforms * sizeof(cl_uint));
     priv->opencl_devices = g_malloc0(priv->num_platforms * sizeof(cl_device_id *));
-    g_message("number of platforms: %i", priv->num_platforms);
+    g_debug("Number of OpenCL platforms: %i", priv->num_platforms);
 
     /* Get devices for each available platform */
     /* TODO: maybe merge all devices into one big list? */
@@ -328,7 +341,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
                 NULL);
 
         priv->num_devices[i] = num_devices;
-        g_message("Number of devices on platform %i: %i", i, num_devices);
+        g_debug("Number of OpenCL devices on platform %i: %i", i, num_devices);
     }
 
     /* XXX: create context for each platform?! */
@@ -337,5 +350,10 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
                 priv->num_devices[0],
                 priv->opencl_devices[0],
                 NULL, NULL, NULL);
+
+        priv->command_queue = clCreateCommandQueue(priv->opencl_context,
+                priv->opencl_devices[0][0],
+                0, NULL);
+        g_debug("Create cmd-queue %p", priv->command_queue);
     }
 }
