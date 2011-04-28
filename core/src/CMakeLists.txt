@@ -23,6 +23,9 @@ set(ufocore_HDRS
     ufo-resource-manager.h
     )
 
+# --- Find packages and libraries ---------------------------------------------
+pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
+
 set(ufocore_LIBS
     ${OPENCL_LIBRARIES}
     ${GLIB2_LIBRARIES} 
@@ -30,9 +33,6 @@ set(ufocore_LIBS
     ${ETHOS_LIBRARIES}
     ${JSON_GLIB_LIBRARIES}
     )
-
-# --- Find packages and libraries ---------------------------------------------
-pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
 
 
 # --- Generate config.h -------------------------------------------------------
