@@ -80,6 +80,15 @@ static void *resource_manager_release_program(gpointer data, gpointer user_data)
     return NULL;
 }
 
+static void *resource_manager_release_mem(gpointer data, gpointer user_data)
+{
+    UfoBuffer *buffer = UFO_BUFFER(data);
+    cl_mem mem = ufo_buffer_get_gpu_data(buffer);
+    if (mem != NULL)
+        clReleaseMemObject(mem);
+    return NULL;
+}
+
 GQuark ufo_resource_manager_error_quark(void)
 {
     return g_quark_from_static_string("ufo-resource-manager-error-quark");
@@ -219,7 +228,6 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         buffer = ufo_buffer_new(width, height);
         /* TODO 1: Let user specify access flags */
         /* TODO 2: Let user pass initial buffer */
-        /* TODO 3: Release buffer_mem */
         cl_mem buffer_mem = clCreateBuffer(self->priv->opencl_context,
                 CL_MEM_READ_WRITE, 
                 width * height * sizeof(float),
@@ -273,6 +281,9 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     GList *kernels = g_hash_table_get_values(self->priv->opencl_kernels);
     g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
     g_list_foreach(self->priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
+
+    GList *buffers = g_hash_table_get_values(self->priv->buffers);
+    g_list_foreach(buffers, (gpointer) resource_manager_release_mem, NULL);
 
     g_hash_table_destroy(self->priv->buffers);
     g_hash_table_destroy(self->priv->opencl_kernels);
