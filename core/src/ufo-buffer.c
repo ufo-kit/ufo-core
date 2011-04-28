@@ -98,9 +98,9 @@ void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height)
  * \note This does not actually copy the data from host to device. Same as
  *      ufo_buffer_new(), users should stay away from calling this on their own.
  */
-void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, cl_mem mem)
+void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
 {
-    buffer->priv->gpu_data = mem;
+    buffer->priv->gpu_data = (cl_mem) mem;
 }
 
 /**
@@ -201,9 +201,9 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
  * \param[in] buffer UfoBuffer object
  * \param[in] mem OpenCL memory object to be associated with this UfoBuffer
  */
-void ufo_buffer_set_cl_mem(UfoBuffer *buffer, cl_mem mem)
+void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
 {
-    buffer->priv->gpu_data = mem;
+    buffer->priv->gpu_data = (cl_mem) mem;
 }
 
 /**
@@ -213,7 +213,7 @@ void ufo_buffer_set_cl_mem(UfoBuffer *buffer, cl_mem mem)
  * \param[in] buffer UfoBuffer object
  * \return OpenCL memory object associated with this UfoBuffer
  */
-cl_mem ufo_buffer_get_gpu_data(UfoBuffer *buffer)
+gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
 
@@ -235,12 +235,12 @@ cl_mem ufo_buffer_get_gpu_data(UfoBuffer *buffer)
     return priv->gpu_data;
 }
 
-void ufo_buffer_set_command_queue(UfoBuffer *self, cl_command_queue queue)
+void ufo_buffer_set_command_queue(UfoBuffer *self, gpointer queue)
 {
-    self->priv->command_queue = queue;
+    self->priv->command_queue = (cl_command_queue) queue;
 }
 
-cl_command_queue ufo_buffer_get_command_queue(UfoBuffer *self)
+gpointer ufo_buffer_get_command_queue(UfoBuffer *self)
 {
     return self->priv->command_queue;
 }

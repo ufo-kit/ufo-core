@@ -2,7 +2,7 @@
 #define __UFO_BUFFER_H
 
 #include <glib-object.h>
-#include <CL/cl.h>
+//#include <CL/cl.h>
 
 G_BEGIN_DECLS
 
@@ -53,11 +53,11 @@ void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth, gsize n);
 void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data, gsize n, GError **error);
 float* ufo_buffer_get_cpu_data(UfoBuffer *self);
-cl_mem ufo_buffer_get_gpu_data(UfoBuffer *self);
-void ufo_buffer_set_cl_mem(UfoBuffer *self, cl_mem mem);
+gpointer ufo_buffer_get_gpu_data(UfoBuffer *self);
+void ufo_buffer_set_cl_mem(UfoBuffer *self, gpointer mem);
 
-void ufo_buffer_set_command_queue(UfoBuffer *self, cl_command_queue queue);
-cl_command_queue ufo_buffer_get_command_queue(UfoBuffer *self);
+void ufo_buffer_set_command_queue(UfoBuffer *self, gpointer queue);
+gpointer ufo_buffer_get_command_queue(UfoBuffer *self);
 
 GType ufo_buffer_get_type(void);
 

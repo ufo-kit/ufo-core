@@ -5,10 +5,12 @@ g-ir-scanner \
     --nsversion=@UFO_VERSION_STRING_SHORT@ \
     --library=ufocore \
     --include=GObject-2.0 \
-    --pkg=ufo,ethos-1.0 \
+    --include=Ethos-1.0 \
+    --pkg=ufo \
     --no-libtool \
     -I@OPENCL_INCLUDE_DIRS@ \
-    -o Ufo-@UFO_VERSION_STRING_SHORT@.gir \
+    -I/usr/local/include/ethos-1.0 \
+    -o @GIR_PREFIX@.gir \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-element.h \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-container.h \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-sequence.h \
@@ -18,4 +20,4 @@ g-ir-scanner \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-filter.h \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-resource-manager.h
 
-g-ir-compiler Ufo-@UFO_VERSION_STRING_SHORT@.gir
+g-ir-compiler -o @GIR_PREFIX@.typelib @GIR_PREFIX@.gir

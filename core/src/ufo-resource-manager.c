@@ -212,7 +212,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
  *      previously loaded with ufo_resource_manager_add_program()
  * \return A cl_kernel object
  */
-cl_kernel ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, const gchar *kernel_name, GError **error)
+gpointer ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, const gchar *kernel_name, GError **error)
 {
     UfoResourceManager *self = resource_manager;
     cl_kernel kernel = (cl_kernel) g_hash_table_lookup(self->priv->opencl_kernels, kernel_name);
