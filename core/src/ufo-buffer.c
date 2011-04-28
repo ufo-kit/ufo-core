@@ -328,6 +328,7 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->width = -1;
     priv->height = -1;
     priv->cpu_data = NULL;
+    priv->gpu_data = NULL;
     priv->state = NO_DATA;
     priv->finished = FALSE;
 }

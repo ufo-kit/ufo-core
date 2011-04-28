@@ -80,14 +80,14 @@ static void *resource_manager_release_program(gpointer data, gpointer user_data)
     return NULL;
 }
 
-static void *resource_manager_release_mem(gpointer data, gpointer user_data)
-{
-    UfoBuffer *buffer = UFO_BUFFER(data);
-    cl_mem mem = ufo_buffer_get_gpu_data(buffer);
-    if (mem != NULL)
-        clReleaseMemObject(mem);
-    return NULL;
-}
+/*static void *resource_manager_release_mem(gpointer data, gpointer user_data)*/
+/*{*/
+    /*UfoBuffer *buffer = UFO_BUFFER(data);*/
+    /*cl_mem mem = ufo_buffer_get_gpu_data(buffer);*/
+    /*if (mem != NULL)*/
+        /*clReleaseMemObject(mem);*/
+    /*return NULL;*/
+/*}*/
 
 static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
         guint32 width, 
@@ -305,8 +305,10 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
     g_list_foreach(self->priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
 
+    /* TODO: check if buffer has GPU data
     GList *buffers = g_hash_table_get_values(self->priv->buffers);
     g_list_foreach(buffers, (gpointer) resource_manager_release_mem, NULL);
+    */
 
     g_hash_table_destroy(self->priv->buffers);
     g_hash_table_destroy(self->priv->opencl_kernels);

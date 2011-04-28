@@ -29,6 +29,7 @@ add_custom_target(gtest
 
 # non-unit test
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test.json ${CMAKE_CURRENT_BINARY_DIR}/test.json)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test.js ${CMAKE_CURRENT_BINARY_DIR}/test.js)
 add_executable(foobar test.c)
 target_link_libraries(foobar ufocore ${GLIB2_LIBRARIES})
 

@@ -76,7 +76,7 @@ static void ufo_filter_scale_process(UfoFilter *filter)
                 (gint32 *) &global_work_size[1]);
 
         global_work_size[0] *= global_work_size[1];
-        cl_mem buffer_mem = ufo_buffer_get_gpu_data(buffer);
+        cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(buffer);
         cl_int err = CL_SUCCESS;
 
         err = clSetKernelArg(self->priv->kernel, 0, sizeof(float), &scale);
