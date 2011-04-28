@@ -58,7 +58,7 @@ static void ufo_filter_uca_process(UfoFilter *self)
 
     for (guint i = 0; i < 1; i++) {
         UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
-                width, height);
+                width, height, NULL);
 
         uca_cam_grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
         ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8,
@@ -69,7 +69,7 @@ static void ufo_filter_uca_process(UfoFilter *self)
     }
 
     /* No more data */
-    UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 1, 1);
+    UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 1, 1, NULL);
     g_object_set(buffer,
             "finished", TRUE,
             NULL);

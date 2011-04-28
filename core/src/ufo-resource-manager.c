@@ -89,6 +89,29 @@ static void *resource_manager_release_mem(gpointer data, gpointer user_data)
     return NULL;
 }
 
+static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
+        guint32 width, 
+        guint32 height,
+        float *data)
+{
+    UfoBuffer *buffer = ufo_buffer_new(width, height);
+    /* TODO 1: Let user specify access flags */
+    cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
+    if (data != NULL)
+        mem_flags |= CL_MEM_COPY_HOST_PTR;
+
+    cl_mem buffer_mem = clCreateBuffer(self->priv->opencl_context,
+            mem_flags, 
+            width * height * sizeof(float),
+            data, NULL);
+
+    ufo_buffer_set_cl_mem(buffer, buffer_mem);
+    ufo_buffer_set_command_queue(buffer, self->priv->command_queue);
+    return buffer;
+}
+
+
+
 GQuark ufo_resource_manager_error_quark(void)
 {
     return g_quark_from_static_string("ufo-resource-manager-error-quark");
@@ -209,12 +232,21 @@ cl_kernel ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, 
  * \param[in] resource_manager A UfoResourceManager
  * \param[in] width Width of the buffer
  * \param[in] height Height of the buffer
+ * \param[in] data Initial floating point data array with at least width*height
+ *      size. If data is NULL, nothing is copied onto a device. If non-floating
+ *      point types have to be uploaded, use ufo_buffer_set_cpu_data() and
+ *      ufo_buffer_reinterpret() on the return UfoBuffer.
+ *
+ * \return A UfoBuffer object
+ *
  * \note If you don't intend to use the buffer or won't push it again to the
  *      next UfoElement, it has to be released with
  *      ufo_resource_manager_release_buffer()
- * \return A UfoBuffer object
  */
-UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, guint32 width, guint32 height)
+UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, 
+        guint32 width, 
+        guint32 height,
+        float *data)
 {
     UfoResourceManager *self = resource_manager;
     const gpointer hash = GINT_TO_POINTER(resource_manager_hash_dims(width, height));
@@ -225,24 +257,15 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
     if (queue == NULL) {
         /* If there is no queue for this hash we create a new one but don't fill
          * it with the newly created buffer */
-        buffer = ufo_buffer_new(width, height);
-        /* TODO 1: Let user specify access flags */
-        /* TODO 2: Let user pass initial buffer */
-        cl_mem buffer_mem = clCreateBuffer(self->priv->opencl_context,
-                CL_MEM_READ_WRITE, 
-                width * height * sizeof(float),
-                NULL, NULL);
-
-        ufo_buffer_set_cl_mem(buffer, buffer_mem);
-        ufo_buffer_set_command_queue(buffer, self->priv->command_queue);
-
+        buffer = resource_manager_create_buffer(self, width, height, data);
         queue = g_queue_new();
         g_hash_table_insert(self->priv->buffers, hash, queue);
     }
     else {
         buffer = g_queue_pop_head(queue);
-        if (buffer == NULL)
-            buffer = ufo_buffer_new(width, height);
+        if (buffer == NULL) {
+            buffer = resource_manager_create_buffer(self, width, height, data);
+        }
     }
     
     return buffer;
