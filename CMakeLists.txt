@@ -14,5 +14,4 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/core/src")
 
 add_subdirectory(core)
-add_subdirectory(bindings)
 

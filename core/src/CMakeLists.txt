@@ -23,9 +23,16 @@ set(ufocore_HDRS
     ufo-resource-manager.h
     )
 
+set(ufocore_LIBS
+    ${OPENCL_LIBRARIES}
+    ${GLIB2_LIBRARIES} 
+    ${GOBJECT2_LIBRARIES}
+    ${ETHOS_LIBRARIES}
+    ${JSON_GLIB_LIBRARIES}
+    )
 
 # --- Find packages and libraries ---------------------------------------------
-pkg_check_modules(JSON_GLIB json-glib-1.0)
+pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
 
 
 # --- Generate config.h -------------------------------------------------------
@@ -38,18 +45,24 @@ include_directories(
     ${JSON_GLIB_INCLUDE_DIRS}
     )
 
-add_library(ufocore ${ufocore_SRCS})
-
-target_link_libraries(ufocore 
-    ${OPENCL_LIBRARIES}
-    ${GLIB2_LIBRARIES} 
-    ${GOBJECT2_LIBRARIES}
-    ${ETHOS_LIBRARIES}
-    ${JSON_GLIB_LIBRARIES}
-    )
+add_library(ufocore SHARED ${ufocore_SRCS})
+target_link_libraries(ufocore ${ufocore_LIBS})
 
 install(TARGETS ufocore 
     ARCHIVE DESTINATION lib 
     LIBRARY DESTINATION lib)
 
 install(FILES ${ufocore_HDRS} DESTINATION include/ufo)
+
+# --- install pkg-config file
+set(prefix      ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix "\${prefix}")
+set(libdir      "\${exec_prefix}/lib")
+set(includedir  "\${prefix}/include")
+
+# FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
+# hard coded values
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc DESTINATION lib/pkgconfig)

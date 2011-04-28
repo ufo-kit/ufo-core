@@ -1,0 +1,13 @@
+# Package Information for pkg-config
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir_old=@includedir@/uca
+includedir_new=@includedir@
+
+Name: ufo-core
+Description: UFO high-speed image processing core library
+Version: @UFO_VERSION_STRING_SHORT@
+Libs: -L${libdir} -lufocore -lglib-2.0 -lgobject-2.0 -lgthread-2.0 -ljson-glib-1.0
+Cflags: -I${includedir_old} -I${includedir_new} -I@GLIB2_INCLUDE_DIRS@

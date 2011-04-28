@@ -21,5 +21,7 @@ add_definitions("-std=c99 -Wall -Werror -fPIC")
 
 add_subdirectory(src)
 add_subdirectory(filters)
+add_subdirectory(bindings)
 add_subdirectory(doc)
 add_subdirectory(tests)
+
