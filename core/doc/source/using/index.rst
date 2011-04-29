@@ -39,3 +39,45 @@ As you can see we simply construct a new UfoGraph object from a JSON encoded
 pipeline.
 
 
+Language Bindings
+=================
+
+There are no plans to support any languages with manually written language
+bindings. However, UFO is a GObject-based library from which ``gir`` (GObject
+Introspection) files can be generated at build time. Any language that supports
+GObject Introspection and the ``gir``/``typelib`` format is thus able to
+integrate UFO.
+
+
+Generating Introspection Files
+------------------------------
+
+No manual intervention is need if the GObject Introspection tools are found.
+With a simple ::
+
+    make install
+
+all necessary files are installed in the correct locations.
+
+
+Using GObject Introspection
+---------------------------
+
+Because several languages support GObject Introspection, you have to consult the
+appropriate reference manuals to find out how the GObjects are mapped to their
+language equivalents. Some of the options are
+
+- Python: PyGObject_
+- Javascript: Gjs_ and Seed_
+- Vala has direct support using the ``--pkg`` option
+
+.. _PyGObject: http://live.gnome.org/PyGObject
+.. _Gjs: http://live.gnome.org/Gjs
+.. _Seed: http://live.gnome.org/Seed
+
+A `GNOME wiki page`__ lists all available runtime bindings. A small example
+written in Javascript and to be used with Gjs can be found in
+``core/tests/test.js`` directory.
+
+
+__ http://live.gnome.org/GObjectIntrospection/Users
