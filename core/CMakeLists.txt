@@ -6,8 +6,9 @@ cmake_minimum_required(VERSION 2.6)
 # part of the API/ABI.
 
 find_package(OpenCL REQUIRED)
-find_package(GObjectIntrospection)
 find_package(PkgConfig REQUIRED)
+find_package(GObjectIntrospection)
+find_package(Vala)
 pkg_check_modules(GLIB2 glib-2.0)
 pkg_check_modules(GOBJECT2 gobject-2.0)
 pkg_check_modules(ETHOS ethos-1.0)
