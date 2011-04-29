@@ -1,6 +1,6 @@
 #!/bin/sh
 
-g-ir-scanner \
+@INTROSPECTION_SCANNER@ \
     --namespace=Ufo \
     --nsversion=@UFO_VERSION_STRING_SHORT@ \
     --library=ufocore \
@@ -9,7 +9,7 @@ g-ir-scanner \
     --pkg=ufo \
     --no-libtool \
     -I@OPENCL_INCLUDE_DIRS@ \
-    -I/usr/local/include/ethos-1.0 \
+    -I@ETHOS_INCLUDE_DIRS@ \
     -o @GIR_PREFIX@.gir \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-element.h \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-container.h \
@@ -20,4 +20,4 @@ g-ir-scanner \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-filter.h \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-resource-manager.h
 
-g-ir-compiler -o @GIR_PREFIX@.typelib @GIR_PREFIX@.gir
+@INTROSPECTION_COMPILER@ -o @GIR_PREFIX@.typelib @GIR_PREFIX@.gir
