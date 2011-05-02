@@ -2,7 +2,6 @@
 #define __UFO_BUFFER_H
 
 #include <glib-object.h>
-//#include <CL/cl.h>
 
 G_BEGIN_DECLS
 
@@ -45,6 +44,12 @@ enum {
     UFO_BUFFER_DEPTH_8,
     UFO_BUFFER_DEPTH_16
 };
+
+typedef enum {
+    UFO_BUFFER_READABLE  = 1 << 1,
+    UFO_BUFFER_WRITEABLE = 1 << 2,
+    UFO_BUFFER_READWRITE = (1 << 1) | (1 << 2),
+} UfoBufferAccess;
 
 UfoBuffer *ufo_buffer_new(gint32 width, gint32 height);
 

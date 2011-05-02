@@ -14,8 +14,12 @@ enum UfoBufferError {
 
 enum {
     PROP_0,
-    PROP_FINISHED
+    PROP_FINISHED,
+    PROP_ACCESS,
+    N_PROPERTIES
 };
+
+static GParamSpec *buffer_properties[N_PROPERTIES] = { NULL, };
 
 typedef enum {
     NO_DATA,
@@ -27,6 +31,7 @@ struct _UfoBufferPrivate {
     gint32      width;
     gint32      height;
     gsize       size;   /**< size in bytes */
+    guint       access;
 
     gboolean    finished;
     datastates  state;
@@ -259,7 +264,9 @@ static void ufo_filter_set_property(GObject *object,
         case PROP_FINISHED:
             buffer->priv->finished = g_value_get_boolean(value);
             break;
-
+        case PROP_ACCESS:
+            buffer->priv->access = g_value_get_flags(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -277,7 +284,9 @@ static void ufo_filter_get_property(GObject *object,
         case PROP_FINISHED:
             g_value_set_boolean(value, buffer->priv->finished);
             break;
-
+        case PROP_ACCESS:
+            g_value_set_flags(value, buffer->priv->access);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -294,6 +303,22 @@ static void ufo_buffer_finalize(GObject *gobject)
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
+#define UFO_BUFFER_TYPE_FLAGS (ufo_buffer_flags_gettype())
+static GType ufo_buffer_flags_gettype()
+{
+    static GType flags_type = 0;
+    if (!flags_type) {
+        static const GFlagsValue flags[] = {
+            { UFO_BUFFER_READABLE, "Read only buffer", "readonly" },
+            { UFO_BUFFER_WRITEABLE, "Write only buffer", "writeonly" },
+            { UFO_BUFFER_READWRITE, "Read and write access", "readwrite" },
+            { 0, NULL, NULL },
+        };
+        flags_type = g_flags_register_static("UfoBufferFlags", flags);
+    }
+    return flags_type;
+}
+
 /*
  * Type/Class Initialization
  */
@@ -306,16 +331,29 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
     gobject_class->finalize = ufo_buffer_finalize;
 
     /* install properties */
-    GParamSpec *pspec;
-    pspec = g_param_spec_boolean("finished",
+    buffer_properties[PROP_FINISHED] = 
+        g_param_spec_boolean("finished",
             "Is last buffer with invalid data and no one follows",
             "Get finished prop",
             FALSE,
             G_PARAM_READWRITE);
 
-    g_object_class_install_property(gobject_class,
-            PROP_FINISHED,
-            pspec);
+    buffer_properties[PROP_ACCESS] = 
+        g_param_spec_flags("access",
+            "Access restrictions",
+            "Read/Write access restrictions of this buffer",
+            UFO_BUFFER_TYPE_FLAGS,
+            UFO_BUFFER_READWRITE,
+            G_PARAM_READWRITE);
+
+    g_object_class_install_property(gobject_class, PROP_FINISHED, buffer_properties[PROP_FINISHED]);
+    g_object_class_install_property(gobject_class, PROP_ACCESS, buffer_properties[PROP_ACCESS]);
+
+    /* TODO: use this when updating to GObject 2.26
+    g_object_class_install_properties(gobject_class,
+            N_PROPERTIES,
+            buffer_properties);
+    */
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoBufferPrivate));
