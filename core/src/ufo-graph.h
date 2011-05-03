@@ -31,7 +31,7 @@ struct _UfoGraphClass {
 };
 
 UfoGraph *ufo_graph_new();
-void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename);
+void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error);
 void ufo_graph_run(UfoGraph *self);
 
 GType ufo_graph_get_type(void);

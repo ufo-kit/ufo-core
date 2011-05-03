@@ -113,14 +113,12 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
  * \return A UfoGraph object build from the JSON description or NULL if JSON
  * file could not be parsed
  */
-void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename)
+void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error)
 {
+    *error = NULL;
     JsonParser *parser = json_parser_new();
-    GError *error = NULL;
-    json_parser_load_from_file(parser, filename, &error);
-    if (error) {
-        g_message("Parse error: %s", error->message);
-        g_error_free(error);
+    json_parser_load_from_file(parser, filename, error);
+    if (*error) {
         g_object_unref(parser);
         return;
     }
