@@ -182,7 +182,7 @@ static void ufo_graph_add_plugin(gpointer data, gpointer user_data)
     EthosPluginInfo *info = (EthosPluginInfo *) data;
     UfoGraphPrivate *priv = (UfoGraphPrivate *) user_data;
 
-    g_message("Load filter: %s", ethos_plugin_info_get_name(info));
+    g_debug("Load filter: %s", ethos_plugin_info_get_name(info));
 
     g_hash_table_insert(priv->plugins, 
         (gpointer) ethos_plugin_info_get_name(info),

@@ -14,7 +14,10 @@
          },
          {
              "type" : "filter",
-             "plugin" : "raw"
+             "plugin" : "raw",
+             "properties" : {
+                 "prefix" : "foo"
+             }
          }
      ]
 }

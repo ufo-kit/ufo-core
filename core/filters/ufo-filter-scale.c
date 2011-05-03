@@ -95,7 +95,7 @@ static void ufo_filter_scale_process(UfoFilter *filter)
     g_async_queue_push(output_queue, buffer);
 }
 
-static void ufo_scale_set_property(GObject *object,
+static void ufo_filter_scale_set_property(GObject *object,
     guint           property_id,
     const GValue    *value,
     GParamSpec      *pspec)
@@ -106,14 +106,13 @@ static void ufo_scale_set_property(GObject *object,
         case PROP_SCALE:
             self->priv->scale = g_value_get_double(value);
             break;
-
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
     }
 }
 
-static void ufo_scale_get_property(GObject *object,
+static void ufo_filter_scale_get_property(GObject *object,
     guint       property_id,
     GValue      *value,
     GParamSpec  *pspec)
@@ -124,7 +123,6 @@ static void ufo_scale_get_property(GObject *object,
         case PROP_SCALE:
             g_value_set_double(value, self->priv->scale);
             break;
-
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -133,16 +131,16 @@ static void ufo_scale_get_property(GObject *object,
 
 static void ufo_filter_scale_class_init(UfoFilterScaleClass *klass)
 {
-    UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
-    EthosPluginClass *plugin_class = ETHOS_PLUGIN_CLASS(klass);
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+    EthosPluginClass *plugin_class = ETHOS_PLUGIN_CLASS(klass);
+    UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
 
-    gobject_class->set_property = ufo_scale_set_property;
-    gobject_class->get_property = ufo_scale_get_property;
-    filter_class->initialize = ufo_filter_scale_initialize;
-    filter_class->process = ufo_filter_scale_process;
+    gobject_class->set_property = ufo_filter_scale_set_property;
+    gobject_class->get_property = ufo_filter_scale_get_property;
     plugin_class->activated = activated;
     plugin_class->deactivated = deactivated;
+    filter_class->initialize = ufo_filter_scale_initialize;
+    filter_class->process = ufo_filter_scale_process;
 
     /* install properties */
     GParamSpec *pspec;
