@@ -225,7 +225,6 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
     cl_program program = clCreateProgramWithSource(self->priv->opencl_context,
             1, (const char **) &buffer, NULL, &err);
     if (err != CL_SUCCESS) {
-        g_message("fuck this: %s", buffer);
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,

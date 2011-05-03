@@ -22,7 +22,7 @@ enum {
 static GParamSpec *buffer_properties[N_PROPERTIES] = { NULL, };
 
 typedef enum {
-    NO_DATA,
+    NO_DATA = 0,
     CPU_DATA_VALID,
     GPU_DATA_VALID
 } datastates;
@@ -184,7 +184,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
             memset(priv->cpu_data, 0, priv->size);
             clEnqueueReadBuffer(priv->command_queue,
                                 priv->gpu_data,
-                                CL_TRUE,
+                                CL_FALSE, /* FIXME: this is wrong here but necessary for ATI CPU... */
                                 0, priv->size,
                                 priv->cpu_data,
                                 0, NULL, NULL);
