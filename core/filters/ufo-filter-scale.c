@@ -78,13 +78,15 @@ static void ufo_filter_scale_process(UfoFilter *filter)
         global_work_size[0] *= global_work_size[1];
         cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(buffer);
         cl_int err = CL_SUCCESS;
+        cl_event event;
 
         err = clSetKernelArg(self->priv->kernel, 0, sizeof(float), &scale);
         err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
         err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(buffer),
                                      self->priv->kernel,
                                      1, NULL, global_work_size, NULL,
-                                     0, NULL, NULL);
+                                     0, NULL, &event);
+        ufo_buffer_wait_on_event(buffer, event);
         if (err != CL_SUCCESS)
             g_debug("too bad enqueue");
     }

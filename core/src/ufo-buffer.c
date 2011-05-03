@@ -38,19 +38,36 @@ struct _UfoBufferPrivate {
     float       *cpu_data;
     cl_mem      gpu_data;
     cl_command_queue command_queue;
+    GQueue      *wait_events;
 };
 
-static void ufo_buffer_set_dimensions(UfoBuffer *buffer, gint32 width, gint32 height)
+static void buffer_set_dimensions(UfoBufferPrivate *priv, gint32 width, gint32 height)
 {
-    g_return_if_fail(UFO_IS_BUFFER(buffer));
-    buffer->priv->width = width;
-    buffer->priv->height = height;
-    buffer->priv->size = width * height * sizeof(float);
+    priv->width = width;
+    priv->height = height;
+    priv->size = width * height * sizeof(float);
 }
 
 GQuark ufo_buffer_error_quark(void)
 {
     return g_quark_from_static_string("ufo-buffer-error-quark");
+}
+
+/**
+ * \brief Converts the queue of events to a flat C array
+ * \param[in] priv Private data of a UfoBuffer
+ * \param[out] events Pointer to uninitialized array
+ * \param[out] num_events Number of events in *events
+ * \note You have to free the *events array using g_free().
+ */
+static void buffer_get_wait_events(UfoBufferPrivate *priv, cl_event** events, guint *num_events)
+{
+    const guint n = g_queue_get_length(priv->wait_events);
+    *num_events = n;
+    *events = (cl_event*) g_malloc0(sizeof(cl_event) * n);
+    for (int i = 0; i < n; i++)
+        *events[i] = g_queue_pop_head(priv->wait_events);
+    g_assert(g_queue_get_length(priv->wait_events) == 0);
 }
 
 /* 
@@ -72,7 +89,7 @@ GQuark ufo_buffer_error_quark(void)
 UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
 {
     UfoBuffer *buffer = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
-    ufo_buffer_set_dimensions(buffer, width, height);
+    buffer_set_dimensions(buffer->priv, width, height);
     return buffer;
 }
 
@@ -176,18 +193,22 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gint source_depth, gsize n)
 float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+    cl_event *wait_events = NULL, event;
+    cl_uint num_events;
 
     switch (priv->state) {
         case CPU_DATA_VALID:
             break;
         case GPU_DATA_VALID:
             memset(priv->cpu_data, 0, priv->size);
+            buffer_get_wait_events(priv, &wait_events, &num_events);
             clEnqueueReadBuffer(priv->command_queue,
                                 priv->gpu_data,
-                                CL_FALSE, /* FIXME: this is wrong here but necessary for ATI CPU... */
+                                CL_FALSE, 
                                 0, priv->size,
                                 priv->cpu_data,
-                                0, NULL, NULL);
+                                num_events, wait_events, &event);
+            g_free(wait_events);
             priv->state = CPU_DATA_VALID;
             break;
         case NO_DATA:
@@ -209,6 +230,13 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
 void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
 {
     buffer->priv->gpu_data = (cl_mem) mem;
+}
+
+void ufo_buffer_wait_on_event(UfoBuffer *buffer, gpointer event)
+{
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+    /* FIXME: does this need to be thread-safe? */
+    g_queue_push_tail(priv->wait_events, event);
 }
 
 /**
@@ -369,4 +397,5 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->gpu_data = NULL;
     priv->state = NO_DATA;
     priv->finished = FALSE;
+    priv->wait_events = g_queue_new();
 }
