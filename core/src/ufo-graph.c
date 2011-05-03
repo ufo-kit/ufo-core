@@ -110,6 +110,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
  * \brief Read a JSON configuration file to build a static UfoGraph
  * \public \memberof UfoGraph
  * \param[in] filename Path and filename to the JSON file
+ * \param[out] error Indicates error in case of failed file loading or parsing
  * \return A UfoGraph object build from the JSON description or NULL if JSON
  * file could not be parsed
  */
