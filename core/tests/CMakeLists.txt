@@ -37,6 +37,6 @@ target_link_libraries(foobar-c ufocore ${GLIB2_LIBRARIES})
 
 if (VALA_FOUND)
     add_custom_target(foobar-vala ALL 
-        ${VALA_EXECUTABLE} -o foobar-vala test.vala)
+        ${VALA_EXECUTABLE} -o foobar-vala ${CMAKE_CURRENT_SOURCE_DIR}/test.vala)
     add_test(foobar-vala foobar-vala)
 endif ()
