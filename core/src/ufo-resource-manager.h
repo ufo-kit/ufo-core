@@ -37,8 +37,6 @@ struct _UfoResourceManagerClass {
     GObjectClass parent_class;
 };
 
-const gchar* opencl_map_error(cl_int error);
-
 UfoResourceManager *ufo_resource_manager_new();
 gboolean ufo_resource_manager_add_program(UfoResourceManager *self, const gchar *filename, GError **error);
 gpointer ufo_resource_manager_get_kernel(UfoResourceManager *self, const gchar *kernel, GError **error);

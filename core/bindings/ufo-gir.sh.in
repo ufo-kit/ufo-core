@@ -3,13 +3,13 @@
 @INTROSPECTION_SCANNER@ \
     --namespace=Ufo \
     --nsversion=@UFO_VERSION_STRING_SHORT@ \
+    --library-path=@DEST_DIR@ \
     --library=ufocore \
     --include=GObject-2.0 \
     --include=Ethos-1.0 \
-    --pkg=ufo \
     --no-libtool \
     -I@OPENCL_INCLUDE_DIRS@ \
-    -I@ETHOS_INCLUDE_DIRS@ \
+    -I@ETHOS_INC_DIR@ \
     -o @GIR_PREFIX@.gir \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-element.h \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-container.h \
