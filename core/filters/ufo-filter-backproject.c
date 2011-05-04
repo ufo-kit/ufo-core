@@ -21,7 +21,6 @@ G_DEFINE_TYPE(UfoFilterBackproject, ufo_filter_backproject, UFO_TYPE_FILTER);
 
 enum {
     PROP_0 = 0,
-    PROP_SCALE,
     N_PROPERTIES
 };
 

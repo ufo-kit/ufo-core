@@ -5,6 +5,7 @@ set(ufofilter_SRCS
     ufo-filter-backproject.c
     ufo-filter-hist.c
     ufo-filter-raw.c
+    ufo-filter-reader.c
     ufo-filter-scale.c
     )
 
