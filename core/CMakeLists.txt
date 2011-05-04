@@ -9,9 +9,9 @@ find_package(OpenCL REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(GObjectIntrospection)
 find_package(Vala)
-pkg_check_modules(GLIB2 glib-2.0)
-pkg_check_modules(GOBJECT2 gobject-2.0)
-pkg_check_modules(ETHOS ethos-1.0)
+pkg_check_modules(GLIB2 glib-2.0>=2.24 REQUIRED)
+pkg_check_modules(GOBJECT2 gobject-2.0>=2.24 REQUIRED)
+pkg_check_modules(ETHOS ethos-1.0 REQUIRED)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}
     ${GLIB2_INCLUDE_DIRS}
