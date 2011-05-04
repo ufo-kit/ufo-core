@@ -79,5 +79,13 @@ A `GNOME wiki page`__ lists all available runtime bindings. A small example
 written in Javascript and to be used with Gjs can be found in
 ``core/tests/test.js`` directory.
 
-
 __ http://live.gnome.org/GObjectIntrospection/Users
+
+A simple Python example -- with Python-GObject installed -- would look like
+this::
+
+    from gi.repository import Ufo
+    graph = Ufo.Graph()
+    graph.read_from_json("some-graph.json")
+    graph.run()
+

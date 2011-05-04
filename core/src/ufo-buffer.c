@@ -204,7 +204,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
             buffer_get_wait_events(priv, &wait_events, &num_events);
             clEnqueueReadBuffer(priv->command_queue,
                                 priv->gpu_data,
-                                CL_FALSE, 
+                                CL_TRUE, 
                                 0, priv->size,
                                 priv->cpu_data,
                                 num_events, wait_events, &event);
