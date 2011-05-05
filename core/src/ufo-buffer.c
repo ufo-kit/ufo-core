@@ -278,6 +278,13 @@ gpointer ufo_buffer_get_command_queue(UfoBuffer *self)
     return self->priv->command_queue;
 }
 
+gboolean ufo_buffer_is_finished(UfoBuffer *buffer)
+{
+    gboolean finished = FALSE;
+    g_object_get(buffer, "finished", &finished, NULL);
+    return finished;
+}
+
 /* 
  * Virtual Methods 
  */

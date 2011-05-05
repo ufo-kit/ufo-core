@@ -67,6 +67,11 @@ static void ufo_filter_scale_process(UfoFilter *filter)
     UfoBuffer *buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
     g_message("[scale] received buffer at queue %p", input_queue);
 
+    if (ufo_buffer_is_finished(buffer)) {
+        g_async_queue_push(output_queue, buffer);
+        return;
+    }
+
     if (self->priv->kernel != NULL) {
         float scale = (float) self->priv->scale;
         gsize global_work_size[2];

@@ -5,7 +5,6 @@ set(ufofilter_SRCS
     ufo-filter-backproject.c
     ufo-filter-hist.c
     ufo-filter-raw.c
-    ufo-filter-reader.c
     ufo-filter-scale.c
     )
 
@@ -22,13 +21,20 @@ set(ufofilter_LIBS
     )
 
 
-# --- Find packages and libraries ---------------------------------------------
+# --- Add filters that depend on other libraries ------------------------------
 pkg_check_modules(UCA uca)
 
 if (UCA_INCLUDE_DIRS AND UCA_LIBRARIES)
     set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-uca.c)
     set(ufofilter_LIBS ${ufofilter_LIBS} ${UCA_LIBRARIES})
     include_directories(${UCA_INCLUDE_DIRS})
+endif ()
+
+find_package(TIFF)
+if (TIFF_FOUND)
+    set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-reader.c)
+    set(ufofilter_LIBS ${ufofilter_LIBS} ${TIFF_LIBRARIES})
+    include_directories(${TIFF_INCLUDE_DIRS})
 endif ()
 
 

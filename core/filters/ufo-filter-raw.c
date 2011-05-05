@@ -96,6 +96,12 @@ static void ufo_filter_raw_process(UfoFilter *self)
     g_message("[raw] waiting...");
     UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(ufo_element_get_input_queue(UFO_ELEMENT(self))));
     g_message("[raw] received buffer %p at queue %p", input, ufo_element_get_input_queue(UFO_ELEMENT(self)));
+    UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
+
+    if (ufo_buffer_is_finished(input)) {
+        ufo_resource_manager_release_buffer(manager, input);
+        return;
+    }
 
     gint32 width, height;
     ufo_buffer_get_dimensions(input, &width, &height);
@@ -109,8 +115,6 @@ static void ufo_filter_raw_process(UfoFilter *self)
     fclose(fp);
 
     priv->current_frame++;
-
-    UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
     ufo_resource_manager_release_buffer(manager, input);
 }
 

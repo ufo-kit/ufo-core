@@ -65,6 +65,8 @@ void ufo_buffer_wait_on_event(UfoBuffer *self, gpointer event);
 void ufo_buffer_set_command_queue(UfoBuffer *self, gpointer queue);
 gpointer ufo_buffer_get_command_queue(UfoBuffer *self);
 
+gboolean ufo_buffer_is_finished(UfoBuffer *self);
+
 GType ufo_buffer_get_type(void);
 
 G_END_DECLS
