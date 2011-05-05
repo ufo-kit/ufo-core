@@ -138,10 +138,12 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
 {
     const gsize num_bytes = buffer->priv->width * buffer->priv->height * sizeof(float);
     if ((n * sizeof(float)) > num_bytes) {
-        g_set_error(error,
-                UFO_BUFFER_ERROR,
-                UFO_BUFFER_ERROR_WRONG_SIZE,
-                "Trying to set more data than buffer dimensions allow");
+        if (error != NULL) {
+            g_set_error(error,
+                    UFO_BUFFER_ERROR,
+                    UFO_BUFFER_ERROR_WRONG_SIZE,
+                    "Trying to set more data than buffer dimensions allow");
+        }
         return;
     }
     if (buffer->priv->cpu_data == NULL)
@@ -161,22 +163,21 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
  * method.
  *
  * \param[in] buffer UfoBuffer object
- * \param[in] source_depth The original integer data type. This could be
- * UFO_BUFFER_DEPTH_8 for 8-bit data or UFO_BUFFER_DEPTH_16 for 16-bit data.
+ * \param[in] source_depth The number of bits that make up the original integer data type.  
  * \param[in] n Number of data elements to consider
  */
-void ufo_buffer_reinterpret(UfoBuffer *buffer, gint source_depth, gsize n)
+void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize n)
 {
     float *dst = buffer->priv->cpu_data;
     /* To save a memory allocation and several copies, we process data from back
      * to front. This is possible if src bit depth is at most half as wide as
      * the 32-bit target buffer. The processor cache should not be a problem. */
-    if (source_depth == UFO_BUFFER_DEPTH_8) {
+    if (source_depth == 8) {
         guint8 *src = (guint8 *) buffer->priv->cpu_data;
         for (int index = (n-1); index >= 0; index--)
             dst[index] = src[index] / 255.0;
     }
-    else if (source_depth == UFO_BUFFER_DEPTH_16) {
+    else if (source_depth == 16) {
         guint16 *src = (guint16 *) buffer->priv->cpu_data;
         for (int index = (n-1); index >= 0; index--)
             dst[index] = src[index] / 65535.0;

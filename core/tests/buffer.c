@@ -48,7 +48,7 @@ static void test_buffer_set_too_much_data(void)
 /**
  * Check that data with different type than float is correctly converted.
  */
-static void test_buffer_reinterpret(void)
+static void test_buffer_reinterpret_8bit(void)
 {
     UfoBuffer *buffer = ufo_buffer_new(10, 1);
 
@@ -56,11 +56,27 @@ static void test_buffer_reinterpret(void)
     guint8 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
     ufo_buffer_set_cpu_data(buffer, (float *) test_data, 10, &error);
     g_assert(error == NULL);
-    ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8, 10);
+    ufo_buffer_reinterpret(buffer, 8, 10);
 
     float *result = ufo_buffer_get_cpu_data(buffer);
     g_assert(float_eq(result[0], 1 / 255.));
     g_assert(float_eq(result[1], 2 / 255.));
+    g_object_unref(buffer);
+}
+
+static void test_buffer_reinterpret_16bit(void)
+{
+    UfoBuffer *buffer = ufo_buffer_new(10, 1);
+
+    GError *error = NULL;
+    guint16 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
+    ufo_buffer_set_cpu_data(buffer, (float *) test_data, 10, &error);
+    g_assert(error == NULL);
+    ufo_buffer_reinterpret(buffer, 16, 10);
+
+    float *result = ufo_buffer_get_cpu_data(buffer);
+    g_assert(float_eq(result[0], 1 / 65535.));
+    g_assert(float_eq(result[1], 2 / 65535.));
     g_object_unref(buffer);
 }
 
@@ -87,7 +103,8 @@ int main(int argc, char *argv[])
     g_test_add_func("/buffer/dimensions", test_buffer_dimensions);
     g_test_add_func("/buffer/set-too-much-data", test_buffer_set_too_much_data);
     g_test_add_func("/buffer/set-data", test_buffer_set_data);
-    g_test_add_func("/buffer/reinterpret/8bit", test_buffer_reinterpret);
+    g_test_add_func("/buffer/reinterpret/8bit", test_buffer_reinterpret_8bit);
+    g_test_add_func("/buffer/reinterpret/16bit", test_buffer_reinterpret_16bit);
     g_test_run();
 
     return 0;

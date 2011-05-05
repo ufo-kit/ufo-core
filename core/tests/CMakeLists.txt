@@ -24,7 +24,7 @@ foreach(binary ${TEST_BINARIES})
 endforeach()
 
 add_custom_target(gtest
-    gtester ${TEST_BINARIES} -o results.xml && gtester-report results.xml > results.html
+    gtester ${TEST_BINARIES} -o results.xml 
 )
 
 # non-unit test

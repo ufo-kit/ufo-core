@@ -40,11 +40,6 @@ struct _UfoBufferClass {
     GObjectClass parent_class;
 };
 
-enum {
-    UFO_BUFFER_DEPTH_8,
-    UFO_BUFFER_DEPTH_16
-};
-
 typedef enum {
     UFO_BUFFER_READABLE  = 1 << 1,
     UFO_BUFFER_WRITEABLE = 1 << 2,
@@ -55,7 +50,7 @@ UfoBuffer *ufo_buffer_new(gint32 width, gint32 height);
 
 void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 
-void ufo_buffer_reinterpret(UfoBuffer *self, gint source_depth, gsize n);
+void ufo_buffer_reinterpret(UfoBuffer *self, gsize source_depth, gsize n);
 void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data, gsize n, GError **error);
 float* ufo_buffer_get_cpu_data(UfoBuffer *self);
 gpointer ufo_buffer_get_gpu_data(UfoBuffer *self);

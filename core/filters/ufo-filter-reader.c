@@ -48,7 +48,7 @@ static gboolean filter_decode_tiff(TIFF *tif, void *buffer, size_t bytes_per_sam
     return TRUE;
 }
 
-void *filter_read_tiff(const gchar *filename, 
+static void *filter_read_tiff(const gchar *filename, 
     guint16 *bits_per_sample,
     guint16 *samples_per_pixel,
     guint32 *width,
@@ -66,7 +66,7 @@ void *filter_read_tiff(const gchar *filename,
     if (*samples_per_pixel != 1)
         goto error_close;
 
-    size_t bytes_per_sample = *bits_per_sample >> 4;
+    size_t bytes_per_sample = *bits_per_sample >> 3;
     void *buffer = g_malloc0(bytes_per_sample * (*width) * (*height));
 
     if (!filter_decode_tiff(tif, buffer, bytes_per_sample))
@@ -151,7 +151,6 @@ static void ufo_filter_reader_process(UfoFilter *self)
     UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
 
-    g_debug("Reading files from %s with prefix %s", priv->path, priv->prefix);
     GDir *directory = g_dir_open(priv->path, 0, NULL);
     if (directory == NULL) {
         g_debug("Could not open %s", priv->path);
@@ -162,16 +161,37 @@ static void ufo_filter_reader_process(UfoFilter *self)
 
     const gchar *filename = g_dir_read_name(directory);
     const guint max_count = (priv->count == -1) ? G_MAXUINT : priv->count;
+    guint32 width, height;
+    guint16 bits_per_sample, samples_per_pixel;
 
     for (gint i = 0; i < max_count && filename != NULL; i++) {
-        g_debug("Reading file %s", filename);
+        GString *filepath = g_string_new(priv->path);
+        g_string_append(filepath, filename);
+        g_debug("Reading file %s", filepath->str);
+        void *buffer = filter_read_tiff(filepath->str,
+                &bits_per_sample, &samples_per_pixel,
+                &width, &height);
+
+        if (buffer == NULL) {
+            g_string_free(filepath, TRUE);
+            /* break out of the loop and insert finishing buffer */
+            break;
+        }
+
+        g_debug(" bits per sample: %i", bits_per_sample);
+        g_debug(" samples per pixel: %i", samples_per_pixel);
+        g_debug(" dimension: %ix%i", width, height);
+
+        UfoBuffer *image = ufo_resource_manager_request_buffer(manager, width, height, NULL);
+        ufo_buffer_set_cpu_data(image, buffer, width * height, NULL);
+        ufo_buffer_reinterpret(image, bits_per_sample, width * height);
+
+        g_async_queue_push(output_queue, image);
+
+        g_free(buffer);
+        g_string_free(filepath, TRUE);
         filename = g_dir_read_name(directory);
     }
-
-    /*
-    UfoBuffer *image = ufo_resource_manager_request_buffer(manager, 256, 256, NULL);
-    g_async_queue_push(output_queue, image);
-    */
 
     /* No more data */
     g_async_queue_push(output_queue, 

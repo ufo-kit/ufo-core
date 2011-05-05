@@ -61,8 +61,8 @@ static void ufo_filter_uca_process(UfoFilter *self)
                 width, height, NULL);
 
         uca_cam_grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
-        ufo_buffer_reinterpret(buffer, UFO_BUFFER_DEPTH_8,
-                width * height);
+        /* FIXME: don't use hardcoded 8 bits per pixel */
+        ufo_buffer_reinterpret(buffer, 8, width * height);
 
         g_message("[uca] send buffer %p to queue %p", buffer, output_queue);
         g_async_queue_push(output_queue, buffer);
