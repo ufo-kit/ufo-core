@@ -25,7 +25,7 @@ static void test_buffer_set_data(void)
 
     GError *error = NULL;
     float test_data[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
-    ufo_buffer_set_cpu_data(buffer, test_data, 10, &error);
+    ufo_buffer_set_cpu_data(buffer, test_data, 10 * sizeof(float), &error);
     g_assert(error == NULL);
 
     float *result = ufo_buffer_get_cpu_data(buffer);
@@ -40,7 +40,7 @@ static void test_buffer_set_too_much_data(void)
 
     GError *error = NULL;
     float test_data[] = { 1.0, 2.0 };
-    ufo_buffer_set_cpu_data(buffer, test_data, 2, &error);
+    ufo_buffer_set_cpu_data(buffer, test_data, 2 * sizeof(float), &error);
     g_assert(error != NULL);
     g_object_unref(buffer);
 }
@@ -54,7 +54,7 @@ static void test_buffer_reinterpret_8bit(void)
 
     GError *error = NULL;
     guint8 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
-    ufo_buffer_set_cpu_data(buffer, (float *) test_data, 10, &error);
+    ufo_buffer_set_cpu_data(buffer, (float *) test_data, 10 * sizeof(float), &error);
     g_assert(error == NULL);
     ufo_buffer_reinterpret(buffer, 8, 10);
 
@@ -70,7 +70,7 @@ static void test_buffer_reinterpret_16bit(void)
 
     GError *error = NULL;
     guint16 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
-    ufo_buffer_set_cpu_data(buffer, (float *) test_data, 10, &error);
+    ufo_buffer_set_cpu_data(buffer, (float *) test_data, 10 * sizeof(float), &error);
     g_assert(error == NULL);
     ufo_buffer_reinterpret(buffer, 16, 10);
 

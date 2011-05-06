@@ -37,7 +37,6 @@ static gboolean filter_decode_tiff(TIFF *tif, void *buffer)
 {
     const int strip_size = TIFFStripSize(tif);
     const int n_strips = TIFFNumberOfStrips(tif);
-    g_debug("strip size=%i, n_strips=%i", strip_size, n_strips);
     int offset = 0;
     int result = 0;
 
@@ -69,7 +68,6 @@ static void *filter_read_tiff(const gchar *filename,
         goto error_close;
 
     size_t bytes_per_sample = *bits_per_sample >> 3;
-    g_debug("bytes per sample = %i", (int) bytes_per_sample);
     void *buffer = g_malloc0(bytes_per_sample * (*width) * (*height));
 
     if (!filter_decode_tiff(tif, buffer))
@@ -201,9 +199,8 @@ static void ufo_filter_reader_process(UfoFilter *self)
         if (buffer == NULL)
             break;
 
-        g_debug(" bits per sample: %i", bits_per_sample);
-        g_debug(" samples per pixel: %i", samples_per_pixel);
-        g_debug(" dimension: %ix%i", width, height);
+        g_debug(" bps=%i, spp=%i, dims=%ix%i", 
+                bits_per_sample, samples_per_pixel, width, height);
 
         UfoBuffer *image = ufo_resource_manager_request_buffer(manager, width, height, NULL);
         ufo_buffer_set_cpu_data(image, buffer, width * height, NULL);

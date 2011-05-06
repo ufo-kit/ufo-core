@@ -93,6 +93,25 @@ UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
     return buffer;
 }
 
+UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer)
+{
+    UfoBuffer *copy = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
+
+    buffer_set_dimensions(copy->priv, buffer->priv->width, buffer->priv->height);
+    g_assert(copy->priv->cpu_data == NULL);
+    ufo_buffer_set_cpu_data(copy,
+            ufo_buffer_get_cpu_data(buffer),
+            copy->priv->size,
+            NULL);
+    if (!ufo_buffer_is_finished(buffer))
+        g_message("copy=%p src=%f dst=%f", copy, buffer->priv->cpu_data[0], copy->priv->cpu_data[0]);
+
+    copy->priv->command_queue = buffer->priv->command_queue;
+    copy->priv->finished = buffer->priv->finished;
+    copy->priv->state = CPU_DATA_VALID;
+    return copy;
+}
+
 
 /**
  * \brief Retrieve dimension of buffer
@@ -131,13 +150,13 @@ void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
  *
  * \param[in] buffer A UfoBuffer to fill the data with
  * \param[in] data User supplied data
- * \param[in] n Number of data elements
+ * \param[in] n Size of data in bytes
  * \param[in] error Pointer to GError*
  */
 void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **error)
 {
     const gsize num_bytes = buffer->priv->width * buffer->priv->height * sizeof(float);
-    if ((n * sizeof(float)) > num_bytes) {
+    if (n > num_bytes) {
         if (error != NULL) {
             g_set_error(error,
                     UFO_BUFFER_ERROR,

@@ -126,6 +126,7 @@ static gpointer ufo_split_process_thread(gpointer data)
 static void ufo_split_process(UfoElement *element)
 {
     UfoSplit *self = UFO_SPLIT(element);
+    UfoSplitPrivate *priv = UFO_SPLIT_GET_PRIVATE(self);
     GError *error = NULL;
 
     /* First, start all children */
@@ -136,31 +137,64 @@ static void ufo_split_process(UfoElement *element)
         current_child = g_list_next(current_child);
     }
 
-    /* Then, watch input queue and distribute work */
     GList *current_queue = self->priv->queues;
+    gboolean finished = FALSE;
 
-    int i = 0;
-    while (i <= 1) {
-        /* TODO: replace this round-robin scheme according to the mode */
-        UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(self->priv->input_queue));
-        if (input == NULL)
-            break;
+    while (!finished) {
+        UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(priv->input_queue));
+        g_message("[split:%p] received buffer %p at queue %p", self, input, priv->input_queue);
 
-        /* TODO: when finished == TRUE, we must copy one finished buffer for
-         * each child */
-        gboolean finished = FALSE;
-        g_object_get(input,
-                "finished", &finished,
-                NULL);
+        /* If we receive the finishing buffer, we switch to copy mode to inform
+         * all succeeding filters of the end */
+        if (ufo_buffer_is_finished(input)) {
+            priv->mode = MODE_COPY;
+            finished = TRUE;
+        }
 
-        g_message("relaying buffer %p to queue %p", input, current_queue->data);
-        g_async_queue_push((GAsyncQueue *) current_queue->data, input);
+        /* FIXME: we could also sub-class UfoSplit to different modes of
+         * operation... */
+        switch (priv->mode) {
+            case MODE_RANDOM:
+            case MODE_ROUND_ROBIN: 
+                {
+                    g_message("relaying buffer %p to queue %p", input, current_queue->data);
+                    g_async_queue_push((GAsyncQueue *) current_queue->data, input);
 
-        /* Start from beginning if no more queues */
-        current_queue = g_list_next(current_queue);
-        if (current_queue == NULL)
-            current_queue = self->priv->queues;
-        i++;
+                    /* Start from beginning if no more queues */
+                    current_queue = g_list_next(current_queue);
+                    if (current_queue == NULL)
+                        current_queue = self->priv->queues;
+                }
+                break;
+
+            case MODE_COPY: 
+                {
+                    /* Create list with copies */
+                    GList *copies = NULL;
+                    copies = g_list_append(copies, (gpointer) input);
+                    int n = g_list_length(priv->queues) - 1;
+                    while (n-- > 0) {
+                        UfoBuffer *copy = ufo_resource_manager_copy_buffer(ufo_resource_manager(), input);
+                        copies = g_list_append(copies, (gpointer) copy);
+                    }
+
+                    /* Distribute copies to all attached queues */
+                    GList *queue = priv->queues;
+                    GList *copy  = copies;
+                    while (queue != NULL) {
+                        g_assert(copy != NULL);
+                        g_message("[split:%p] send buffer %p to queue %p", self, copy->data, queue->data);
+                        g_async_queue_push((GAsyncQueue *) queue->data, (UfoBuffer *) copy->data);
+                        queue = g_list_next(queue);
+                        copy = g_list_next(copy);
+                    }
+                }
+                break; 
+
+            default:
+                break;
+        }
+
     }
 }
 

@@ -141,7 +141,7 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
  */
 void ufo_graph_run(UfoGraph *graph)
 {
-    ufo_element_print(UFO_ELEMENT(graph->priv->root_container));
+    /*ufo_element_print(UFO_ELEMENT(graph->priv->root_container));*/
     ufo_element_process(UFO_ELEMENT(graph->priv->root_container));
 }
 
@@ -225,7 +225,7 @@ static void ufo_graph_init(UfoGraph *self)
     g_list_foreach(plugin_info, &ufo_graph_add_plugin, priv);
     g_list_free(plugin_info);
 
-    priv->resource_manager = ufo_resource_manager_new();
+    priv->resource_manager = ufo_resource_manager();
     priv->root_container = NULL;
 }
 

@@ -73,7 +73,7 @@ static void ufo_filter_scale_process(UfoFilter *filter)
     }
 
     if (self->priv->kernel != NULL) {
-        float scale = (float) self->priv->scale;
+        /*float scale = (float) self->priv->scale;*/
         gsize global_work_size[2];
 
         ufo_buffer_get_dimensions(buffer, 

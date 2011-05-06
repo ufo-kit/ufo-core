@@ -91,11 +91,13 @@ static void ufo_filter_raw_finalize(GObject *object)
 
 static void ufo_filter_raw_process(UfoFilter *self)
 {
+    /* FIXME: filter should popping from the queue until finishing buffer comes by */
     g_return_if_fail(UFO_IS_FILTER(self));
     UfoFilterRawPrivate *priv = UFO_FILTER_RAW_GET_PRIVATE(self);
+    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
 
-    g_message("[raw-%s] waiting...", priv->prefix);
-    UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(ufo_element_get_input_queue(UFO_ELEMENT(self))));
+    g_message("[raw-%s] waiting on queue %p...", priv->prefix, input_queue);
+    UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
     g_message("[raw-%s] received buffer %p at queue %p", priv->prefix,
             input, ufo_element_get_input_queue(UFO_ELEMENT(self)));
     UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
@@ -111,7 +113,9 @@ static void ufo_filter_raw_process(UfoFilter *self)
     GString *filename = g_string_new("");
     g_string_printf(filename, "%s-%ix%i-%i.raw", priv->prefix, width, height, priv->current_frame);
     FILE *fp = fopen(filename->str, "wb");
-    fwrite(ufo_buffer_get_cpu_data(input), sizeof(float), width*height, fp);
+    float *data = ufo_buffer_get_cpu_data(input);
+    g_message("[raw-%s] d[0]=%f", priv->prefix, data[0]);
+    fwrite(data, sizeof(float), width*height, fp);
     fclose(fp);
 
     priv->current_frame++;

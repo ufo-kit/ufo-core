@@ -166,14 +166,17 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
 {
     UfoBuffer *buffer = ufo_buffer_new(width, height);
     /* TODO 1: Let user specify access flags */
+    /* TODO 2: Think about copy strategy */
     cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
-    if (data != NULL)
-        mem_flags |= CL_MEM_COPY_HOST_PTR;
+    if (data != NULL) {
+        /*mem_flags |= CL_MEM_COPY_HOST_PTR;*/
+        ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
+    }
 
     cl_mem buffer_mem = clCreateBuffer(self->priv->opencl_context,
             mem_flags, 
             width * height * sizeof(float),
-            data, NULL);
+            NULL, NULL);
 
     ufo_buffer_set_cl_mem(buffer, buffer_mem);
     ufo_buffer_set_command_queue(buffer, self->priv->command_queue);
@@ -191,13 +194,17 @@ GQuark ufo_resource_manager_error_quark(void)
  * Public Interface
  */
 /**
- * \brief Create a new UfoResourceManager instance
+ * \brief Return a UfoResourceManager instance
  * \public \memberof UfoResourceManager
  * \return A UfoResourceManager
  */
-UfoResourceManager *ufo_resource_manager_new()
+UfoResourceManager *ufo_resource_manager()
 {
-    return UFO_RESOURCE_MANAGER(g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL));
+    static UfoResourceManager *manager = NULL;
+    if (manager == NULL)
+        manager = UFO_RESOURCE_MANAGER(g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL));
+
+    return manager; 
 }
 
 /**
@@ -336,6 +343,9 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         if (buffer == NULL) {
             buffer = resource_manager_create_buffer(self, width, height, data);
         }
+        else if (data != NULL) {
+            ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
+        }
     }
     
     return buffer;
@@ -347,6 +357,16 @@ UfoBuffer *ufo_resource_manager_request_finish_buffer(UfoResourceManager *self)
     /* TODO: make "finished" constructable? How to do ufo_buffer_new? */
     g_object_set(buffer, "finished", TRUE, NULL);
     return buffer;
+}
+
+UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *manager, UfoBuffer *buffer)
+{
+    gint32 width, height;
+    ufo_buffer_get_dimensions(buffer, &width, &height);
+    float *data = ufo_buffer_get_cpu_data(buffer);
+    UfoBuffer *copy = ufo_resource_manager_request_buffer(manager,
+            width, height, data);
+    return copy;
 }
 
 /**
