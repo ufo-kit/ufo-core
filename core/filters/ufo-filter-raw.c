@@ -92,6 +92,7 @@ static void ufo_filter_raw_finalize(GObject *object)
 static void ufo_filter_raw_process(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
+    UfoFilterRawPrivate *priv = UFO_FILTER_RAW_GET_PRIVATE(self);
 
     g_message("[raw] waiting...");
     UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(ufo_element_get_input_queue(UFO_ELEMENT(self))));
@@ -106,7 +107,6 @@ static void ufo_filter_raw_process(UfoFilter *self)
     gint32 width, height;
     ufo_buffer_get_dimensions(input, &width, &height);
 
-    UfoFilterRawPrivate *priv = UFO_FILTER_RAW_GET_PRIVATE(self);
 
     GString *filename = g_string_new("");
     g_string_printf(filename, "%s-%ix%i-%i.raw", priv->prefix, width, height, priv->current_frame);

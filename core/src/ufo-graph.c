@@ -16,16 +16,21 @@ struct _UfoGraphPrivate {
     EthosManager        *ethos;
     UfoResourceManager  *resource_manager;
     UfoElement          *root_container;
-    GHashTable          *plugins;   /**< maps from gchar* to EthosPlugin* */
+    GHashTable          *plugin_types;   /**< maps from gchar* to GType* */
 };
 
 
-static UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name)
+static UfoFilter *graph_get_filter(UfoGraph *self, const gchar *plugin_name)
 {
-    return UFO_FILTER(g_hash_table_lookup(self->priv->plugins, plugin_name));
+    GType type_id = (GType) g_hash_table_lookup(self->priv->plugin_types, plugin_name);
+    /* FIXME: Ethos already instantiated one object, which one should return
+     * using ethos_manager_get_plugin() when called requesting the first time
+     * instead of creating a new one */
+    GObject *object = g_object_new(type_id, NULL);
+    return UFO_FILTER(object);
 }
 
-static UfoElement *ufo_graph_build_split(JsonObject *object)
+static UfoElement *graph_build_split(JsonObject *object)
 {
     UfoSplit *container = ufo_split_new();
 
@@ -37,7 +42,7 @@ static UfoElement *ufo_graph_build_split(JsonObject *object)
     return UFO_ELEMENT(container);
 }
 
-static void ufo_graph_handle_json_prop(JsonObject *object, const gchar *name, JsonNode *node, gpointer user)
+static void graph_handle_json_prop(JsonObject *object, const gchar *name, JsonNode *node, gpointer user)
 {
     GValue val = { 0, };
     json_node_get_value(node, &val);
@@ -45,7 +50,7 @@ static void ufo_graph_handle_json_prop(JsonObject *object, const gchar *name, Js
     g_value_unset(&val);
 }
 
-static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **container)
+static void graph_build(UfoGraph *self, JsonNode *node, UfoElement **container)
 {
     JsonObject *object = json_node_get_object(node);
     if (json_object_has_member(object, "type")) {
@@ -55,7 +60,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
             /* FIXME: we should check that there is a corresponding "plugin"
              * object available */
             const gchar *plugin_name = json_object_get_string_member(object, "plugin");
-            UfoFilter *filter = ufo_graph_get_filter(self, plugin_name);
+            UfoFilter *filter = graph_get_filter(self, plugin_name);
             if (filter != NULL) {
                 /* TODO: ask the plugin how many/what kind of buffers we need,
                  * for now just reserve a queue for a single output */
@@ -65,7 +70,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
                 if (json_object_has_member(object, "properties")) {
                     JsonObject *prop_object = json_object_get_object_member(object, "properties");
                     json_object_foreach_member(prop_object, 
-                                               ufo_graph_handle_json_prop,
+                                               graph_handle_json_prop,
                                                filter);
                 }
 
@@ -79,7 +84,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
             if (g_strcmp0(type, "sequence") == 0)
                 new_container = UFO_ELEMENT(ufo_sequence_new());
             else if (g_strcmp0(type, "split") == 0)
-                new_container = ufo_graph_build_split(object);
+                new_container = graph_build_split(object);
 
             /* Neither filter, sequence or split... just return */
             if (new_container == NULL)
@@ -93,7 +98,7 @@ static void ufo_graph_build(UfoGraph *self, JsonNode *node, UfoElement **contain
 
             JsonArray *elements = json_object_get_array_member(object, "elements");
             for (guint i = 0; i < json_array_get_length(elements); i++) 
-                ufo_graph_build(self, json_array_get_element(elements, i), &new_container);
+                graph_build(self, json_array_get_element(elements, i), &new_container);
 
             /* After adding all sub-childs, we need to get the updated output of
              * the new container and use it as our own new output */
@@ -124,7 +129,7 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
         return;
     }
 
-    ufo_graph_build(graph, json_parser_get_root(parser), &graph->priv->root_container);
+    graph_build(graph, json_parser_get_root(parser), &graph->priv->root_container);
     g_object_unref(parser);
 }
 
@@ -169,9 +174,9 @@ static void ufo_graph_dispose(GObject *object)
         g_object_unref(objects[i++]);
 
 
-    if (self->priv->plugins) {
-        g_hash_table_destroy(self->priv->plugins);
-        self->priv->plugins = NULL;
+    if (self->priv->plugin_types) {
+        g_hash_table_destroy(self->priv->plugin_types);
+        self->priv->plugin_types = NULL;
     }
 
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);
@@ -181,12 +186,13 @@ static void ufo_graph_add_plugin(gpointer data, gpointer user_data)
 {
     EthosPluginInfo *info = (EthosPluginInfo *) data;
     UfoGraphPrivate *priv = (UfoGraphPrivate *) user_data;
+    EthosPlugin *plugin = ethos_manager_get_plugin(priv->ethos, info);
+    const gchar *plugin_name = ethos_plugin_info_get_name(info);
 
-    g_debug("Load filter: %s", ethos_plugin_info_get_name(info));
-
-    g_hash_table_insert(priv->plugins, 
-        (gpointer) ethos_plugin_info_get_name(info),
-        ethos_manager_get_plugin(priv->ethos, info));
+    g_debug("Load filter: %s", plugin_name);
+    g_hash_table_insert(priv->plugin_types, 
+            (gpointer) plugin_name, 
+            (gpointer) G_OBJECT_TYPE(plugin));
 }
 
 /*
@@ -213,7 +219,7 @@ static void ufo_graph_init(UfoGraph *self)
     priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
     ethos_manager_initialize(priv->ethos);
 
-    priv->plugins = g_hash_table_new(g_str_hash, g_str_equal);
+    priv->plugin_types = g_hash_table_new(g_str_hash, g_str_equal);
     GList *plugin_info = ethos_manager_get_plugin_info(priv->ethos);
 
     g_list_foreach(plugin_info, &ufo_graph_add_plugin, priv);
