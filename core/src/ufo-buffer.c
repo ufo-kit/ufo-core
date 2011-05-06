@@ -233,6 +233,14 @@ void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
     buffer->priv->gpu_data = (cl_mem) mem;
 }
 
+/**
+ * \brief Add a cl_event object on which the buffer has to wait when up or
+ * downloading data to or from the GPU.
+ * \public \membero UfoBuffer
+ *
+ * \param[in] buffer A UfoBuffer
+ * \param[in] event A cl_event object
+ */
 void ufo_buffer_wait_on_event(UfoBuffer *buffer, gpointer event)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -269,16 +277,40 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer)
     return priv->gpu_data;
 }
 
-void ufo_buffer_set_command_queue(UfoBuffer *self, gpointer queue)
+/**
+ * \brief Set the command queue over which clEnqueueRead/WriteBuffer commands
+ *  are issued.
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer A UfoBuffer
+ * \param[in] queue a cl_command_queue object
+ */
+void ufo_buffer_set_command_queue(UfoBuffer *buffer, gpointer queue)
 {
-    self->priv->command_queue = (cl_command_queue) queue;
+    buffer->priv->command_queue = (cl_command_queue) queue;
 }
 
+/**
+ * \brief Get the command queue over which clEnqueueRead/WriteBuffer commands
+ *  are currently issued.
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer A UfoBuffer
+ * \return The cl_command_queue object associated with this buffer
+ */
 gpointer ufo_buffer_get_command_queue(UfoBuffer *self)
 {
     return self->priv->command_queue;
 }
 
+/**
+ * \brief Return if buffer is denotes finishing of computation
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer A UfoBuffer
+ * \return TRUE if buffer just denotes that end of computation is reached, else
+ *      FALSE
+ */
 gboolean ufo_buffer_is_finished(UfoBuffer *buffer)
 {
     gboolean finished = FALSE;
