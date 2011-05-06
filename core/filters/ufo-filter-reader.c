@@ -73,6 +73,7 @@ static void *filter_read_tiff(const gchar *filename,
     if (!filter_decode_tiff(tif, buffer, bytes_per_sample))
         goto error_close;
 
+    TIFFClose(tif);
     return buffer;
 
 error_close:
@@ -100,12 +101,13 @@ static void filter_read_filenames(UfoFilterReaderPrivate *priv)
 
     gchar *filename = (gchar *) g_dir_read_name(directory);
     while (filename != NULL) {
-        gchar *filepath = g_strdup_printf("%s/%s", priv->path, filename);
-        priv->filenames = g_list_append(priv->filenames, filepath);
+        if ((priv->prefix == NULL) || (g_str_has_prefix(filename, priv->prefix))) {
+            priv->filenames = g_list_append(priv->filenames, 
+                g_strdup_printf("%s/%s", priv->path, filename));
+        }
         filename = (gchar *) g_dir_read_name(directory);
     }
     priv->filenames = g_list_sort(priv->filenames, (GCompareFunc) g_strcmp0);
-    g_debug("list length = %i", g_list_length(priv->filenames));
 }
 
 /* 
@@ -193,8 +195,8 @@ static void ufo_filter_reader_process(UfoFilter *self)
                 &bits_per_sample, &samples_per_pixel,
                 &width, &height);
 
+        /* break out of the loop and insert finishing buffer if file is not valid */
         if (buffer == NULL)
-            /* break out of the loop and insert finishing buffer */
             break;
 
         g_debug(" bits per sample: %i", bits_per_sample);
@@ -248,9 +250,9 @@ static void ufo_filter_reader_class_init(UfoFilterReaderClass *klass)
         g_param_spec_int("count",
         "Number of files",
         "Number of files to read with -1 denoting all",
-        -1,   /* minimum */
-        4096, /* maximum */
-        -1,   /* default */
+        -1,     /* minimum */
+        8192,   /* maximum */
+        -1,     /* default */
         G_PARAM_READWRITE);
 
     g_object_class_install_property(gobject_class, PROP_PATH, reader_properties[PROP_PATH]);
