@@ -92,8 +92,6 @@ static void ufo_filter_scale_process(UfoFilter *filter)
                                      1, NULL, global_work_size, NULL,
                                      0, NULL, &event);
         ufo_buffer_wait_on_event(buffer, event);
-        if (err != CL_SUCCESS)
-            g_debug("too bad enqueue");
     }
 
     g_message("[scale] send buffer to queue %p", output_queue);
