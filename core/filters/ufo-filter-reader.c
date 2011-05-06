@@ -12,6 +12,7 @@ struct _UfoFilterReaderPrivate {
     gchar *path;
     gchar *prefix;
     gint count;
+    GList *filenames;
 };
 
 GType ufo_filter_reader_get_type(void) G_GNUC_CONST;
@@ -79,6 +80,34 @@ error_close:
     return NULL;
 }
 
+static void filter_dispose_filenames(UfoFilterReaderPrivate *priv)
+{
+    if (priv->filenames != NULL) {
+        g_list_foreach(priv->filenames, (GFunc) g_free, NULL);
+        priv->filenames = NULL;
+    }
+}
+
+static void filter_read_filenames(UfoFilterReaderPrivate *priv)
+{
+    filter_dispose_filenames(priv);
+
+    GDir *directory = g_dir_open(priv->path, 0, NULL);
+    if (directory == NULL) {
+        g_debug("Could not open %s", priv->path);
+        return;
+    }
+
+    gchar *filename = (gchar *) g_dir_read_name(directory);
+    while (filename != NULL) {
+        gchar *filepath = g_strdup_printf("%s/%s", priv->path, filename);
+        priv->filenames = g_list_append(priv->filenames, filepath);
+        filename = (gchar *) g_dir_read_name(directory);
+    }
+    priv->filenames = g_list_sort(priv->filenames, (GCompareFunc) g_strcmp0);
+    g_debug("list length = %i", g_list_length(priv->filenames));
+}
+
 /* 
  * virtual methods 
  */
@@ -140,6 +169,7 @@ static void ufo_filter_reader_get_property(GObject *object,
 
 static void ufo_filter_reader_dispose(GObject *object)
 {
+    filter_dispose_filenames(UFO_FILTER_READER_GET_PRIVATE(UFO_FILTER(object)));
     G_OBJECT_CLASS(ufo_filter_reader_parent_class)->dispose(object);
 }
 
@@ -151,32 +181,21 @@ static void ufo_filter_reader_process(UfoFilter *self)
     UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
 
-    GDir *directory = g_dir_open(priv->path, 0, NULL);
-    if (directory == NULL) {
-        g_debug("Could not open %s", priv->path);
-        g_async_queue_push(output_queue, 
-                ufo_resource_manager_request_finish_buffer(manager));
-        return;
-    }
-
-    const gchar *filename = g_dir_read_name(directory);
+    filter_read_filenames(priv);
     const guint max_count = (priv->count == -1) ? G_MAXUINT : priv->count;
     guint32 width, height;
     guint16 bits_per_sample, samples_per_pixel;
 
-    for (gint i = 0; i < max_count && filename != NULL; i++) {
-        GString *filepath = g_string_new(priv->path);
-        g_string_append(filepath, filename);
-        g_debug("Reading file %s", filepath->str);
-        void *buffer = filter_read_tiff(filepath->str,
+    GList *filename = g_list_first(priv->filenames);
+    for (guint i = 0; i < max_count && filename != NULL; i++) {
+        g_debug("Reading file %s", (char *) filename->data);
+        void *buffer = filter_read_tiff((char *) filename->data,
                 &bits_per_sample, &samples_per_pixel,
                 &width, &height);
 
-        if (buffer == NULL) {
-            g_string_free(filepath, TRUE);
+        if (buffer == NULL)
             /* break out of the loop and insert finishing buffer */
             break;
-        }
 
         g_debug(" bits per sample: %i", bits_per_sample);
         g_debug(" samples per pixel: %i", samples_per_pixel);
@@ -187,10 +206,8 @@ static void ufo_filter_reader_process(UfoFilter *self)
         ufo_buffer_reinterpret(image, bits_per_sample, width * height);
 
         g_async_queue_push(output_queue, image);
-
         g_free(buffer);
-        g_string_free(filepath, TRUE);
-        filename = g_dir_read_name(directory);
+        filename = g_list_next(filename);
     }
 
     /* No more data */
