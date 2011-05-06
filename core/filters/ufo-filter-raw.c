@@ -94,9 +94,10 @@ static void ufo_filter_raw_process(UfoFilter *self)
     g_return_if_fail(UFO_IS_FILTER(self));
     UfoFilterRawPrivate *priv = UFO_FILTER_RAW_GET_PRIVATE(self);
 
-    g_message("[raw] waiting...");
+    g_message("[raw-%s] waiting...", priv->prefix);
     UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(ufo_element_get_input_queue(UFO_ELEMENT(self))));
-    g_message("[raw] received buffer %p at queue %p", input, ufo_element_get_input_queue(UFO_ELEMENT(self)));
+    g_message("[raw-%s] received buffer %p at queue %p", priv->prefix,
+            input, ufo_element_get_input_queue(UFO_ELEMENT(self)));
     UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
 
     if (ufo_buffer_is_finished(input)) {
@@ -106,7 +107,6 @@ static void ufo_filter_raw_process(UfoFilter *self)
 
     gint32 width, height;
     ufo_buffer_get_dimensions(input, &width, &height);
-
 
     GString *filename = g_string_new("");
     g_string_printf(filename, "%s-%ix%i-%i.raw", priv->prefix, width, height, priv->current_frame);

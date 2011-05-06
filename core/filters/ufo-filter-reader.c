@@ -33,10 +33,11 @@ enum {
 static GParamSpec *reader_properties[N_PROPERTIES] = { NULL, };
 
 
-static gboolean filter_decode_tiff(TIFF *tif, void *buffer, size_t bytes_per_sample)
+static gboolean filter_decode_tiff(TIFF *tif, void *buffer)
 {
     const int strip_size = TIFFStripSize(tif);
     const int n_strips = TIFFNumberOfStrips(tif);
+    g_debug("strip size=%i, n_strips=%i", strip_size, n_strips);
     int offset = 0;
     int result = 0;
 
@@ -44,7 +45,7 @@ static gboolean filter_decode_tiff(TIFF *tif, void *buffer, size_t bytes_per_sam
         result = TIFFReadEncodedStrip(tif, strip, buffer+offset, strip_size);
         if (result == -1)
             return FALSE;
-        offset += result / bytes_per_sample;
+        offset += result;
     }
     return TRUE;
 }
@@ -68,9 +69,10 @@ static void *filter_read_tiff(const gchar *filename,
         goto error_close;
 
     size_t bytes_per_sample = *bits_per_sample >> 3;
+    g_debug("bytes per sample = %i", (int) bytes_per_sample);
     void *buffer = g_malloc0(bytes_per_sample * (*width) * (*height));
 
-    if (!filter_decode_tiff(tif, buffer, bytes_per_sample))
+    if (!filter_decode_tiff(tif, buffer))
         goto error_close;
 
     TIFFClose(tif);
