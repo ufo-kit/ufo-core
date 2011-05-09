@@ -14,7 +14,8 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 
 #define UFO_GRAPH_ERROR ufo_graph_error_quark()
 enum UfoGraphError {
-    UFO_GRAPH_ERROR_ALREADY_LOAD
+    UFO_GRAPH_ERROR_ALREADY_LOAD,
+    UFO_GRAPH_ERROR_FILTER_NOT_FOUND
 };
 
 struct _UfoGraphPrivate {
@@ -24,16 +25,6 @@ struct _UfoGraphPrivate {
     GHashTable          *plugin_types;   /**< maps from gchar* to GType* */
 };
 
-
-static UfoFilter *graph_get_filter(UfoGraph *self, const gchar *plugin_name)
-{
-    GType type_id = (GType) g_hash_table_lookup(self->priv->plugin_types, plugin_name);
-    /* FIXME: Ethos already instantiated one object, which one should return
-     * using ethos_manager_get_plugin() when called requesting the first time
-     * instead of creating a new one */
-    GObject *object = g_object_new(type_id, NULL);
-    return UFO_FILTER(object);
-}
 
 static UfoElement *graph_build_split(JsonObject *object)
 {
@@ -65,12 +56,10 @@ static void graph_build(UfoGraph *self, JsonNode *node, UfoElement **container)
             /* FIXME: we should check that there is a corresponding "plugin"
              * object available */
             const gchar *plugin_name = json_object_get_string_member(object, "plugin");
-            UfoFilter *filter = graph_get_filter(self, plugin_name);
+            UfoFilter *filter = ufo_graph_get_filter(self, plugin_name, NULL);
             if (filter != NULL) {
                 /* TODO: ask the plugin how many/what kind of buffers we need,
                  * for now just reserve a queue for a single output */
-                /*ufo_filter_set_resource_manager(filter, self->priv->resource_manager);*/
-                ufo_filter_initialize(filter, self->priv->resource_manager);
 
                 if (json_object_has_member(object, "properties")) {
                     JsonObject *prop_object = json_object_get_object_member(object, "properties");
@@ -172,6 +161,28 @@ UfoContainer *ufo_graph_get_root(UfoGraph *graph)
         graph->priv->root_container = UFO_ELEMENT(ufo_sequence_new());
     return UFO_CONTAINER(graph->priv->root_container);
 }
+
+UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name, GError **error)
+{
+    GType type_id = (GType) g_hash_table_lookup(self->priv->plugin_types, plugin_name);
+    if (type_id == 0) {
+        if (error != NULL) {
+            g_set_error(error,
+                    UFO_GRAPH_ERROR,
+                    UFO_GRAPH_ERROR_FILTER_NOT_FOUND,
+                    "Filter 'libfilter%s.so' not found",
+                    plugin_name);
+        }
+        return NULL;
+    }
+    /* FIXME: Ethos already instantiated one object, which one should return
+     * using ethos_manager_get_plugin() when called requesting the first time
+     * instead of creating a new one */
+    UfoFilter *filter = UFO_FILTER(g_object_new(type_id, NULL));
+    ufo_filter_initialize(filter, self->priv->resource_manager);
+    return filter;
+}
+
 
 /* 
  * Virtual Methods 
