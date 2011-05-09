@@ -255,7 +255,7 @@ void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
 /**
  * \brief Add a cl_event object on which the buffer has to wait when up or
  * downloading data to or from the GPU.
- * \public \membero UfoBuffer
+ * \public \memberof UfoBuffer
  *
  * \param[in] buffer A UfoBuffer
  * \param[in] event A cl_event object
@@ -317,9 +317,9 @@ void ufo_buffer_set_command_queue(UfoBuffer *buffer, gpointer queue)
  * \param[in] buffer A UfoBuffer
  * \return The cl_command_queue object associated with this buffer
  */
-gpointer ufo_buffer_get_command_queue(UfoBuffer *self)
+gpointer ufo_buffer_get_command_queue(UfoBuffer *buffer)
 {
-    return self->priv->command_queue;
+    return buffer->priv->command_queue;
 }
 
 /**
