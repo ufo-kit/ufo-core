@@ -29,7 +29,8 @@ struct _UfoResourceManagerPrivate {
 
     GList *opencl_programs;
 
-    GHashTable *buffers;            /**< maps from dimension hash to a GTrashStack of buffer instances */
+    GList *buffers;                 /**< keep a list for buffer destruction */
+    GHashTable *buffer_map;         /**< maps from dimension hash to a queue of buffer instances */
     GHashTable *opencl_kernels;     /**< maps from kernel string to cl_kernel */
 };
 
@@ -150,14 +151,15 @@ static void *resource_manager_release_program(gpointer data, gpointer user_data)
     return NULL;
 }
 
-/*static void *resource_manager_release_mem(gpointer data, gpointer user_data)*/
-/*{*/
-    /*UfoBuffer *buffer = UFO_BUFFER(data);*/
-    /*cl_mem mem = ufo_buffer_get_gpu_data(buffer);*/
-    /*if (mem != NULL)*/
-        /*clReleaseMemObject(mem);*/
-    /*return NULL;*/
-/*}*/
+static void *resource_manager_release_mem(gpointer data, gpointer user_data)
+{
+    UfoBuffer *buffer = UFO_BUFFER(data);
+    cl_mem mem = ufo_buffer_get_gpu_data(buffer);
+    if (mem != NULL)
+        clReleaseMemObject(mem);
+    g_object_unref(buffer);
+    return NULL;
+}
 
 static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
         guint32 width, 
@@ -165,6 +167,8 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
         float *data)
 {
     UfoBuffer *buffer = ufo_buffer_new(width, height);
+    self->priv->buffers = g_list_append(self->priv->buffers, buffer);
+
     /* TODO 1: Let user specify access flags */
     /* TODO 2: Think about copy strategy */
     cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
@@ -329,7 +333,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
     UfoResourceManager *self = resource_manager;
     const gpointer hash = GINT_TO_POINTER(resource_manager_hash_dims(width, height));
 
-    GQueue *queue = g_hash_table_lookup(self->priv->buffers, hash);
+    GQueue *queue = g_hash_table_lookup(self->priv->buffer_map, hash);
     UfoBuffer *buffer = NULL;
 
     if (queue == NULL) {
@@ -337,7 +341,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
          * it with the newly created buffer */
         buffer = resource_manager_create_buffer(self, width, height, data);
         queue = g_queue_new();
-        g_hash_table_insert(self->priv->buffers, hash, queue);
+        g_hash_table_insert(self->priv->buffer_map, hash, queue);
     }
     else {
         buffer = g_queue_pop_head(queue);
@@ -384,10 +388,10 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
     ufo_buffer_get_dimensions(buffer, &width, &height);
     const gpointer hash = GINT_TO_POINTER(resource_manager_hash_dims(width, height));
 
-    GQueue *queue = g_hash_table_lookup(self->priv->buffers, hash);
+    GQueue *queue = g_hash_table_lookup(self->priv->buffer_map, hash);
     if (queue == NULL) { /* should not be the case */
         queue = g_queue_new();
-        g_hash_table_insert(self->priv->buffers, hash, queue);
+        g_hash_table_insert(self->priv->buffer_map, hash, queue);
     }
     g_queue_push_head(queue, buffer); 
 }
@@ -403,13 +407,9 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     GList *kernels = g_hash_table_get_values(self->priv->opencl_kernels);
     g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
     g_list_foreach(self->priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
+    g_list_foreach(self->priv->buffers, (gpointer) resource_manager_release_mem, NULL);
 
-    /* TODO: check if buffer has GPU data
-    GList *buffers = g_hash_table_get_values(self->priv->buffers);
-    g_list_foreach(buffers, (gpointer) resource_manager_release_mem, NULL);
-    */
-
-    g_hash_table_destroy(self->priv->buffers);
+    g_hash_table_destroy(self->priv->buffer_map);
     g_hash_table_destroy(self->priv->opencl_kernels);
     g_list_free(self->priv->opencl_programs);
 
@@ -446,7 +446,9 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     cl_int error;
 
     self->priv = priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
-    priv->buffers = g_hash_table_new(NULL, NULL);
+
+    priv->buffers = NULL;
+    priv->buffer_map = g_hash_table_new(NULL, NULL);
     priv->opencl_kernels = g_hash_table_new(g_str_hash, g_str_equal);
     priv->opencl_platforms = NULL;
     priv->opencl_programs = NULL;
