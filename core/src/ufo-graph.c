@@ -147,14 +147,25 @@ void ufo_graph_run(UfoGraph *graph)
 
 /**
  * \brief Create a new UfoGraph instance
- * \return A UfoGraph
  * \public \memberof UfoGraph
+ * \return A UfoGraph
  */
 UfoGraph *ufo_graph_new()
 {
     return g_object_new(UFO_TYPE_GRAPH, NULL);
 }
 
+/**
+ * \brief Return the root element of the graph
+ * \public \memberof UfoGraph
+ *
+ * In case a graph has already been load from disk via
+ * ufo_graph_read_from_json() that root node is returned, otherwise a new
+ * UfoSequence node is created.
+ *
+ * \param[in] graph A UfoGraph
+ * \return A UfoContainer
+ */
 UfoContainer *ufo_graph_get_root(UfoGraph *graph)
 {
     if (graph->priv->root_container == NULL)
@@ -162,6 +173,17 @@ UfoContainer *ufo_graph_get_root(UfoGraph *graph)
     return UFO_CONTAINER(graph->priv->root_container);
 }
 
+/**
+ * \brief Return the UfoFilter object belonging to a certain libfilter{name}.so
+ * \public \memberof UfoGraph
+ *
+ * \param[in] graph A UfoGraph
+ * \param[in] plugin_name The name of the plugin, most likely the {name} part of
+ * libfilter{name}.so
+ * \param[out] GError in case the filter could not be found
+ *
+ * \return A UfoFilter instance
+ */
 UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name, GError **error)
 {
     GType type_id = (GType) g_hash_table_lookup(self->priv->plugin_types, plugin_name);
