@@ -32,6 +32,7 @@ struct _UfoContainerClass {
     void (*add_element) (UfoContainer *container, UfoElement *element); 
 };
 
+void ufo_container_join_threads(gpointer data, gpointer user_data);
 void ufo_container_add_element(UfoContainer *container, UfoElement *element);
 
 GType ufo_container_get_type(void);

@@ -18,6 +18,12 @@ UfoContainer *ufo_container_new()
     return UFO_CONTAINER(g_object_new(UFO_TYPE_CONTAINER, NULL));
 }
 
+void ufo_container_join_threads(gpointer data, gpointer user_data)
+{
+    GThread *thread = (GThread *) data;
+    g_thread_join(thread);
+}
+
 /* 
  * Virtual Methods 
  */

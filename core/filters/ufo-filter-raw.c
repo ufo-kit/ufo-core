@@ -96,30 +96,32 @@ static void ufo_filter_raw_process(UfoFilter *self)
     UfoFilterRawPrivate *priv = UFO_FILTER_RAW_GET_PRIVATE(self);
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
 
-    g_message("[raw-%s] waiting on queue %p...", priv->prefix, input_queue);
-    UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
-    g_message("[raw-%s] received buffer %p at queue %p", priv->prefix,
-            input, ufo_element_get_input_queue(UFO_ELEMENT(self)));
-    UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
+    while (1) {
+        g_message("[raw-%s] waiting on queue %p...", priv->prefix, input_queue);
+        UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
+        g_message("[raw-%s] received buffer %p at queue %p", priv->prefix,
+                input, ufo_element_get_input_queue(UFO_ELEMENT(self)));
+        UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
 
-    if (ufo_buffer_is_finished(input)) {
+        if (ufo_buffer_is_finished(input)) {
+            ufo_resource_manager_release_buffer(manager, input);
+            break;
+        }
+
+        gint32 width, height;
+        ufo_buffer_get_dimensions(input, &width, &height);
+
+        GString *filename = g_string_new("");
+        g_string_printf(filename, "%s-%ix%i-%i.raw", priv->prefix, width, height, priv->current_frame);
+        FILE *fp = fopen(filename->str, "wb");
+        float *data = ufo_buffer_get_cpu_data(input);
+        fwrite(data, sizeof(float), width*height, fp);
+        fclose(fp);
+
+        priv->current_frame++;
         ufo_resource_manager_release_buffer(manager, input);
-        return;
     }
-
-    gint32 width, height;
-    ufo_buffer_get_dimensions(input, &width, &height);
-
-    GString *filename = g_string_new("");
-    g_string_printf(filename, "%s-%ix%i-%i.raw", priv->prefix, width, height, priv->current_frame);
-    FILE *fp = fopen(filename->str, "wb");
-    float *data = ufo_buffer_get_cpu_data(input);
-    g_message("[raw-%s] d[0]=%f", priv->prefix, data[0]);
-    fwrite(data, sizeof(float), width*height, fp);
-    fclose(fp);
-
-    priv->current_frame++;
-    ufo_resource_manager_release_buffer(manager, input);
+    g_message("[raw-%s] done", priv->prefix);
 }
 
 static void ufo_filter_raw_class_init(UfoFilterRawClass *klass)

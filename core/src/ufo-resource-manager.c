@@ -300,6 +300,7 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, c
                 "Kernel '%s' not found", kernel_name);
         return NULL;
     }
+    clRetainKernel(kernel);
     return kernel;
 }
 

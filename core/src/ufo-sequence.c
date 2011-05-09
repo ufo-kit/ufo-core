@@ -87,12 +87,6 @@ static gpointer ufo_sequence_process_thread(gpointer data)
     return NULL;
 }
 
-static void ufo_sequence_join_threads(gpointer data, gpointer user_data)
-{
-    GThread *thread = (GThread *) data;
-    g_thread_join(thread);
-}
-
 static void ufo_sequence_process(UfoElement *element)
 {
     UfoSequence *self = UFO_SEQUENCE(element);
@@ -100,10 +94,12 @@ static void ufo_sequence_process(UfoElement *element)
     GError *error = NULL;
     for (guint i = 0; i < g_list_length(self->priv->children); i++) {
         UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
+        g_message("[seq:%p] starting element %p", element, child);
         threads = g_list_append(threads,
                 g_thread_create(ufo_sequence_process_thread, child, TRUE, &error));
     }
-    g_list_foreach(threads, ufo_sequence_join_threads, NULL);
+    g_list_foreach(threads, ufo_container_join_threads, NULL);
+    g_message("[seq:%p] done", element);
 }
 
 static void ufo_sequence_print(UfoElement *element)

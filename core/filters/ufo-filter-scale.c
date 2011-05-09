@@ -63,39 +63,42 @@ static void ufo_filter_scale_process(UfoFilter *filter)
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
-    g_message("[scale] waiting...");
-    UfoBuffer *buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
-    g_message("[scale] received buffer at queue %p", input_queue);
+    while (1) {
+        g_message("[scale] waiting...");
+        UfoBuffer *buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
+        g_message("[scale] received buffer %p at queue %p", buffer, input_queue);
 
-    if (ufo_buffer_is_finished(buffer)) {
+        if (ufo_buffer_is_finished(buffer)) {
+            g_async_queue_push(output_queue, buffer);
+            break;
+        }
+
+        if (self->priv->kernel != NULL) {
+            float scale = (float) self->priv->scale;
+            gsize global_work_size[2];
+
+            ufo_buffer_get_dimensions(buffer, 
+                    (gint32 *) &global_work_size[0], 
+                    (gint32 *) &global_work_size[1]);
+
+            global_work_size[0] *= global_work_size[1];
+            cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(buffer);
+            cl_int err = CL_SUCCESS;
+            cl_event event;
+
+            err = clSetKernelArg(self->priv->kernel, 0, sizeof(float), &scale);
+            err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
+            err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(buffer),
+            self->priv->kernel,
+            1, NULL, global_work_size, NULL,
+            0, NULL, &event);
+            ufo_buffer_wait_on_event(buffer, event);
+        }
+
+        g_message("[scale] send buffer to queue %p", output_queue);
         g_async_queue_push(output_queue, buffer);
-        return;
     }
-
-    if (self->priv->kernel != NULL) {
-        /*float scale = (float) self->priv->scale;*/
-        gsize global_work_size[2];
-
-        ufo_buffer_get_dimensions(buffer, 
-                (gint32 *) &global_work_size[0], 
-                (gint32 *) &global_work_size[1]);
-
-        global_work_size[0] *= global_work_size[1];
-        cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(buffer);
-        cl_int err = CL_SUCCESS;
-        cl_event event;
-
-        err = clSetKernelArg(self->priv->kernel, 0, sizeof(float), &scale);
-        err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
-        err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(buffer),
-                                     self->priv->kernel,
-                                     1, NULL, global_work_size, NULL,
-                                     0, NULL, &event);
-        ufo_buffer_wait_on_event(buffer, event);
-    }
-
-    g_message("[scale] send buffer to queue %p", output_queue);
-    g_async_queue_push(output_queue, buffer);
+    g_message("[scale] done");
 }
 
 static void ufo_filter_scale_set_property(GObject *object,
@@ -166,6 +169,7 @@ static void ufo_filter_scale_init(UfoFilterScale *self)
 {
     UfoFilterScalePrivate *priv = self->priv = UFO_FILTER_SCALE_GET_PRIVATE(self);
     priv->scale = 1.0;
+    priv->kernel = NULL;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

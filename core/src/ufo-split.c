@@ -130,10 +130,13 @@ static void ufo_split_process(UfoElement *element)
     GError *error = NULL;
 
     /* First, start all children */
+    GList *threads = NULL;
     GList *current_child = self->priv->children;
     while (current_child != NULL) {
         UfoElement *child = UFO_ELEMENT(current_child->data);
-        g_thread_create(ufo_split_process_thread, child, TRUE, &error);
+        g_message("[split:%p] starting element %p", element, child);
+        threads = g_list_append(threads,
+                g_thread_create(ufo_split_process_thread, child, TRUE, &error));
         current_child = g_list_next(current_child);
     }
 
@@ -174,7 +177,11 @@ static void ufo_split_process(UfoElement *element)
                     copies = g_list_append(copies, (gpointer) input);
                     int n = g_list_length(priv->queues) - 1;
                     while (n-- > 0) {
-                        UfoBuffer *copy = ufo_resource_manager_copy_buffer(ufo_resource_manager(), input);
+                        UfoBuffer *copy = NULL;
+                        if (finished)
+                            copy = ufo_resource_manager_request_finish_buffer(ufo_resource_manager());
+                        else
+                            copy = ufo_resource_manager_copy_buffer(ufo_resource_manager(), input);
                         copies = g_list_append(copies, (gpointer) copy);
                     }
 
@@ -194,8 +201,11 @@ static void ufo_split_process(UfoElement *element)
             default:
                 break;
         }
-
     }
+    /* We cannot just return because we cannot destroy all filters until they
+     * are ready */
+    g_list_foreach(threads, ufo_container_join_threads, NULL);
+    g_message("[split:%p] done", element);
 }
 
 static void ufo_split_print(UfoElement *element)
