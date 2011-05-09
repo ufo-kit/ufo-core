@@ -35,9 +35,10 @@ static void deactivated(EthosPlugin *plugin)
 /* 
  * virtual methods 
  */
-static void ufo_filter_backproject_initialize(UfoFilter *filter, UfoResourceManager *manager)
+static void ufo_filter_backproject_initialize(UfoFilter *filter)
 {
     UfoFilterBackproject *self = UFO_FILTER_BACKPROJECT(filter);
+    UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
     self->priv->kernel = NULL;
 

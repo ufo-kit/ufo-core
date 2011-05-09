@@ -168,6 +168,7 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
     if (buffer->priv->cpu_data == NULL)
         buffer->priv->cpu_data = g_malloc0(num_bytes);
 
+    g_message("size = %i, wxh = %i", (int) n, (int) num_bytes);
     memcpy(buffer->priv->cpu_data, data, num_bytes);
     buffer->priv->state = CPU_DATA_VALID;
 }

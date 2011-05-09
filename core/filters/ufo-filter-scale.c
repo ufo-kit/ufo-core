@@ -36,9 +36,10 @@ static void deactivated(EthosPlugin *plugin)
 /* 
  * virtual methods 
  */
-static void ufo_filter_scale_initialize(UfoFilter *filter, UfoResourceManager *manager)
+static void ufo_filter_scale_initialize(UfoFilter *filter)
 {
     UfoFilterScale *self = UFO_FILTER_SCALE(filter);
+    UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
     self->priv->kernel = NULL;
 

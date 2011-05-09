@@ -180,13 +180,13 @@ UfoContainer *ufo_graph_get_root(UfoGraph *graph)
  * \param[in] graph A UfoGraph
  * \param[in] plugin_name The name of the plugin, most likely the {name} part of
  * libfilter{name}.so
- * \param[out] GError in case the filter could not be found
+ * \param[out] error in case the filter could not be found
  *
  * \return A UfoFilter instance
  */
-UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name, GError **error)
+UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error)
 {
-    GType type_id = (GType) g_hash_table_lookup(self->priv->plugin_types, plugin_name);
+    GType type_id = (GType) g_hash_table_lookup(graph->priv->plugin_types, plugin_name);
     if (type_id == 0) {
         if (error != NULL) {
             g_set_error(error,
@@ -201,7 +201,7 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name, GError
      * using ethos_manager_get_plugin() when called requesting the first time
      * instead of creating a new one */
     UfoFilter *filter = UFO_FILTER(g_object_new(type_id, NULL));
-    ufo_filter_initialize(filter, self->priv->resource_manager);
+    ufo_filter_initialize(filter);
     return filter;
 }
 

@@ -30,16 +30,6 @@ struct _UfoFilterPrivate {
 /* 
  * Public Interface
  */
-void ufo_filter_set_resource_manager(UfoFilter *self, UfoResourceManager *resource_manager)
-{
-    self->priv->resource_manager = resource_manager;
-}
-
-UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self)
-{
-    return self->priv->resource_manager;
-}
-
 /**
  * \brief Initializes the concrete UfoFilter with a UfoResourceManager. 
  * \public \memberof UfoFilter
@@ -50,11 +40,10 @@ UfoResourceManager *ufo_filter_get_resource_manager(UfoFilter *self)
  * \param[in] filter A UfoFilter object
  * \param[in] resource_manager A UfoResourceManager object
  */
-void ufo_filter_initialize(UfoFilter *filter, UfoResourceManager *resource_manager)
+void ufo_filter_initialize(UfoFilter *filter)
 {
-    filter->priv->resource_manager = resource_manager;
     if (UFO_FILTER_GET_CLASS(filter)->initialize != NULL)
-        UFO_FILTER_GET_CLASS(filter)->initialize(filter, resource_manager);
+        UFO_FILTER_GET_CLASS(filter)->initialize(filter);
 }
 
 /**

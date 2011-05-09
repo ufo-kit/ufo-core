@@ -38,8 +38,7 @@ static void ufo_filter_hist_process(UfoFilter *self)
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(ufo_element_get_input_queue(UFO_ELEMENT(self)));
     g_message("[hist] received buffer %p at queue %p", input, ufo_element_get_input_queue(UFO_ELEMENT(self)));
 
-    UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
-    ufo_resource_manager_release_buffer(manager, input);
+    ufo_resource_manager_release_buffer(ufo_resource_manager(), input);
 }
 
 static void ufo_filter_hist_class_init(UfoFilterHistClass *klass)

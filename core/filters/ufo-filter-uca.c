@@ -53,7 +53,7 @@ static void ufo_filter_uca_process(UfoFilter *self)
     uca_cam_get_property(cam, UCA_PROP_HEIGHT, &height, 0);
 
     uca_cam_start_recording(cam);
-    UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
+    UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
 
     for (guint i = 0; i < 1; i++) {

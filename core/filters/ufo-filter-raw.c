@@ -101,7 +101,7 @@ static void ufo_filter_raw_process(UfoFilter *self)
         UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
         g_message("[raw-%s] received buffer %p at queue %p", priv->prefix,
                 input, ufo_element_get_input_queue(UFO_ELEMENT(self)));
-        UfoResourceManager *manager = ufo_filter_get_resource_manager(self);
+        UfoResourceManager *manager = ufo_resource_manager();
 
         if (ufo_buffer_is_finished(input)) {
             ufo_resource_manager_release_buffer(manager, input);
