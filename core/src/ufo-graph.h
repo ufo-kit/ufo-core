@@ -2,6 +2,7 @@
 #define __UFO_GRAPH_H
 
 #include <glib-object.h>
+#include "ufo-container.h"
 
 #define UFO_TYPE_GRAPH             (ufo_graph_get_type())
 #define UFO_GRAPH(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_GRAPH, UfoGraph))
@@ -33,6 +34,7 @@ struct _UfoGraphClass {
 UfoGraph *ufo_graph_new();
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error);
 void ufo_graph_run(UfoGraph *self);
+UfoContainer *ufo_graph_get_root(UfoGraph *graph);
 
 GType ufo_graph_get_type(void);
 

@@ -12,6 +12,11 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
+#define UFO_GRAPH_ERROR ufo_graph_error_quark()
+enum UfoGraphError {
+    UFO_GRAPH_ERROR_ALREADY_LOAD
+};
+
 struct _UfoGraphPrivate {
     EthosManager        *ethos;
     UfoResourceManager  *resource_manager;
@@ -108,6 +113,11 @@ static void graph_build(UfoGraph *self, JsonNode *node, UfoElement **container)
     }
 }
 
+GQuark ufo_graph_error_quark(void)
+{
+    return g_quark_from_static_string("ufo-graph-error-quark");
+}
+
 /* 
  * Public Interface
  */
@@ -154,6 +164,13 @@ void ufo_graph_run(UfoGraph *graph)
 UfoGraph *ufo_graph_new()
 {
     return g_object_new(UFO_TYPE_GRAPH, NULL);
+}
+
+UfoContainer *ufo_graph_get_root(UfoGraph *graph)
+{
+    if (graph->priv->root_container == NULL)
+        graph->priv->root_container = UFO_ELEMENT(ufo_sequence_new());
+    return UFO_CONTAINER(graph->priv->root_container);
 }
 
 /* 

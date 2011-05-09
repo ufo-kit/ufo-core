@@ -187,8 +187,6 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
     return buffer;
 }
 
-
-
 GQuark ufo_resource_manager_error_quark(void)
 {
     return g_quark_from_static_string("ufo-resource-manager-error-quark");
