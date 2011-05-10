@@ -238,6 +238,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
                 "Failed to create OpenCL program");
+        g_free(buffer);
         return FALSE;
     }
     self->priv->opencl_programs = g_list_append(self->priv->opencl_programs, program);
@@ -253,6 +254,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
                 "Failed to build OpenCL program");
+        g_free(buffer);
         return FALSE;
     }
 
@@ -401,15 +403,18 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
 static void ufo_resource_manager_dispose(GObject *gobject)
 {
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
-    GList *kernels = g_hash_table_get_values(self->priv->opencl_kernels);
+    GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
     g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
-    g_list_foreach(self->priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
-    g_list_foreach(self->priv->buffers, (gpointer) resource_manager_release_mem, NULL);
+    g_list_foreach(priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
+    g_list_foreach(priv->buffers, (gpointer) resource_manager_release_mem, NULL);
 
-    g_hash_table_destroy(self->priv->buffer_map);
-    g_hash_table_destroy(self->priv->opencl_kernels);
-    g_list_free(self->priv->opencl_programs);
+    g_list_foreach(g_hash_table_get_values(priv->buffer_map), (GFunc) g_queue_free, NULL);
+    g_hash_table_destroy(priv->buffer_map);
+    g_hash_table_destroy(priv->opencl_kernels);
+    g_list_free(priv->opencl_programs);
+    g_list_free(priv->buffers);
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->dispose(gobject);
 }
@@ -417,9 +422,16 @@ static void ufo_resource_manager_dispose(GObject *gobject)
 static void ufo_resource_manager_finalize(GObject *gobject)
 {
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
-    g_free(self->priv->opencl_platforms);
-    self->priv->opencl_platforms = NULL;
+    for (guint i = 0; i < priv->num_platforms; i ++)
+        g_free(priv->opencl_devices[i]);
+    g_free(priv->num_devices);
+    g_free(priv->opencl_devices);
+    g_free(priv->opencl_platforms);
+    priv->num_devices = NULL;
+    priv->opencl_devices = NULL;
+    priv->opencl_platforms = NULL;
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->finalize(gobject);
 }

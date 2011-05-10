@@ -205,6 +205,7 @@ static void ufo_split_process(UfoElement *element)
     /* We cannot just return because we cannot destroy all filters until they
      * are ready */
     g_list_foreach(threads, ufo_container_join_threads, NULL);
+    g_list_free(threads);
     g_message("[split:%p] done", element);
 }
 

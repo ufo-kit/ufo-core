@@ -138,6 +138,7 @@ static void ufo_filter_writer_process(UfoFilter *self)
         ufo_resource_manager_release_buffer(ufo_resource_manager(), input);
         input = UFO_BUFFER(g_async_queue_pop(input_queue));
     }
+    g_string_free(filename, TRUE);
 }
 
 static void ufo_filter_writer_class_init(UfoFilterWriterClass *klass)

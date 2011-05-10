@@ -99,6 +99,7 @@ static void ufo_sequence_process(UfoElement *element)
                 g_thread_create(ufo_sequence_process_thread, child, TRUE, &error));
     }
     g_list_foreach(threads, ufo_container_join_threads, NULL);
+    g_list_free(threads);
     g_message("[seq:%p] done", element);
 }
 
