@@ -181,7 +181,6 @@ static void ufo_filter_reader_process(UfoFilter *self)
 
     UfoFilterReaderPrivate *priv = UFO_FILTER_READER_GET_PRIVATE(self);
     UfoResourceManager *manager = ufo_resource_manager();
-    g_message("Manager: %p", manager);
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
 
     filter_read_filenames(priv);
