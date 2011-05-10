@@ -25,6 +25,18 @@ struct _UfoGraphPrivate {
     GHashTable          *plugin_types;   /**< maps from gchar* to GType* */
 };
 
+static void graph_add_plugin(gpointer data, gpointer user_data)
+{
+    EthosPluginInfo *info = (EthosPluginInfo *) data;
+    UfoGraphPrivate *priv = (UfoGraphPrivate *) user_data;
+    EthosPlugin *plugin = ethos_manager_get_plugin(priv->ethos, info);
+    const gchar *plugin_name = ethos_plugin_info_get_name(info);
+
+    g_debug("Load filter: %s", plugin_name);
+    g_hash_table_insert(priv->plugin_types, 
+            (gpointer) plugin_name, 
+            (gpointer) G_OBJECT_TYPE(plugin));
+}
 
 static UfoElement *graph_build_split(JsonObject *object)
 {
@@ -148,11 +160,19 @@ void ufo_graph_run(UfoGraph *graph)
 /**
  * \brief Create a new UfoGraph instance
  * \public \memberof UfoGraph
+ *
+ * Because resources (especially those belonging to the GPU) should only be
+ * allocated once, we allow only one graph at a time. Thus the graph is a
+ * singleton.
+ *
  * \return A UfoGraph
  */
 UfoGraph *ufo_graph_new()
 {
-    return g_object_new(UFO_TYPE_GRAPH, NULL);
+    static UfoGraph *graph = NULL;
+    if (graph == NULL)
+        graph = UFO_GRAPH(g_object_new(UFO_TYPE_GRAPH, NULL));
+    return graph;
 }
 
 /**
@@ -233,19 +253,6 @@ static void ufo_graph_dispose(GObject *object)
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);
 }
 
-static void ufo_graph_add_plugin(gpointer data, gpointer user_data)
-{
-    EthosPluginInfo *info = (EthosPluginInfo *) data;
-    UfoGraphPrivate *priv = (UfoGraphPrivate *) user_data;
-    EthosPlugin *plugin = ethos_manager_get_plugin(priv->ethos, info);
-    const gchar *plugin_name = ethos_plugin_info_get_name(info);
-
-    g_debug("Load filter: %s", plugin_name);
-    g_hash_table_insert(priv->plugin_types, 
-            (gpointer) plugin_name, 
-            (gpointer) G_OBJECT_TYPE(plugin));
-}
-
 /*
  * Type/Class Initialization
  */
@@ -273,7 +280,7 @@ static void ufo_graph_init(UfoGraph *self)
     priv->plugin_types = g_hash_table_new(g_str_hash, g_str_equal);
     GList *plugin_info = ethos_manager_get_plugin_info(priv->ethos);
 
-    g_list_foreach(plugin_info, &ufo_graph_add_plugin, priv);
+    g_list_foreach(plugin_info, &graph_add_plugin, priv);
     g_list_free(plugin_info);
 
     priv->resource_manager = ufo_resource_manager();
