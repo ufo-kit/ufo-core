@@ -11,7 +11,6 @@ UFO Documentation contents
     api.rst
     json.rst
     faq.rst
-    todo.rst
     glossary.rst
 
     bugs.rst
