@@ -27,6 +27,7 @@ struct _UfoResourceManagerPrivate {
     /* FIXME: replace with multiple queues */
     cl_command_queue command_queue;
 
+    GList *opencl_kernel_table;
     GList *opencl_programs;
 
     GList *buffers;                 /**< keep a list for buffer destruction */
@@ -219,7 +220,8 @@ UfoResourceManager *ufo_resource_manager()
  */
 gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, const gchar *filename, GError **error)
 {
-    UfoResourceManager *self = resource_manager;
+    UfoResourceManagerPrivate *priv = resource_manager->priv;
+
     gchar *buffer = resource_manager_load_opencl_program(filename);
     if (buffer == NULL) {
         g_set_error(error,
@@ -231,7 +233,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
     }
 
     int err = CL_SUCCESS;
-    cl_program program = clCreateProgramWithSource(self->priv->opencl_context,
+    cl_program program = clCreateProgramWithSource(priv->opencl_context,
             1, (const char **) &buffer, NULL, &err);
     if (err != CL_SUCCESS) {
         g_set_error(error,
@@ -241,12 +243,12 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
         g_free(buffer);
         return FALSE;
     }
-    self->priv->opencl_programs = g_list_append(self->priv->opencl_programs, program);
+    priv->opencl_programs = g_list_append(priv->opencl_programs, program);
 
     /* TODO: build program for each platform?!*/
     err = clBuildProgram(program, 
-            self->priv->num_devices[0], 
-            self->priv->opencl_devices[0],
+            priv->num_devices[0], 
+            priv->opencl_devices[0],
             NULL, NULL, NULL);
 
     if (err != CL_SUCCESS) {
@@ -262,8 +264,11 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
      * the corresponding cl_kernel object */
     cl_uint num_kernels;
     clCreateKernelsInProgram(program, 0, NULL, &num_kernels);
+    /* FIXME: we are leaking kernels because we don't keep the kernels base
+     * address */
     cl_kernel *kernels = (cl_kernel *) g_malloc0(num_kernels * sizeof(cl_kernel));
     clCreateKernelsInProgram(program, num_kernels, kernels, NULL);
+    priv->opencl_kernel_table = g_list_append(priv->opencl_kernel_table, kernels);
 
     for (guint i = 0; i < num_kernels; i++) {
         size_t kernel_name_length;    
@@ -276,7 +281,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
                         kernel_name_length, kernel_name, 
                         NULL);
         g_debug("Add OpenCL kernel '%s'", kernel_name);
-        g_hash_table_insert(self->priv->opencl_kernels, kernel_name, kernels[i]);
+        g_hash_table_insert(priv->opencl_kernels, kernel_name, kernels[i]);
     }
 
     g_free(buffer);
@@ -359,6 +364,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
 UfoBuffer *ufo_resource_manager_request_finish_buffer(UfoResourceManager *self)
 {
     UfoBuffer *buffer = ufo_buffer_new(1, 1);
+    self->priv->buffers = g_list_append(self->priv->buffers, buffer);
     /* TODO: make "finished" constructable? How to do ufo_buffer_new? */
     g_object_set(buffer, "finished", TRUE, NULL);
     return buffer;
@@ -406,13 +412,25 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
     GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
+    GList *kernel_names = g_hash_table_get_keys(priv->opencl_kernels);
+    g_list_foreach(kernel_names, (GFunc) g_free, NULL);
     g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
+    g_list_free(kernels);
+    g_list_free(kernel_names);
+
+    g_list_foreach(priv->opencl_kernel_table, (GFunc) g_free, NULL);
     g_list_foreach(priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
     g_list_foreach(priv->buffers, (gpointer) resource_manager_release_mem, NULL);
+    clReleaseCommandQueue(priv->command_queue);
+    clReleaseContext(priv->opencl_context);
 
-    g_list_foreach(g_hash_table_get_values(priv->buffer_map), (GFunc) g_queue_free, NULL);
+    GList *buffers = g_hash_table_get_values(priv->buffer_map);
+    g_list_foreach(buffers, (GFunc) g_queue_free, NULL);
+    g_list_free(buffers);
+
     g_hash_table_destroy(priv->buffer_map);
     g_hash_table_destroy(priv->opencl_kernels);
+    g_list_free(priv->opencl_kernel_table);
     g_list_free(priv->opencl_programs);
     g_list_free(priv->buffers);
 
@@ -459,6 +477,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
     priv->buffers = NULL;
     priv->buffer_map = g_hash_table_new(NULL, NULL);
+    priv->opencl_kernel_table = NULL;
     priv->opencl_kernels = g_hash_table_new(g_str_hash, g_str_equal);
     priv->opencl_platforms = NULL;
     priv->opencl_programs = NULL;

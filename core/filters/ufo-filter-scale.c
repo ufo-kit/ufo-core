@@ -90,9 +90,9 @@ static void ufo_filter_scale_process(UfoFilter *filter)
             err = clSetKernelArg(self->priv->kernel, 0, sizeof(float), &scale);
             err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
             err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(buffer),
-            self->priv->kernel,
-            1, NULL, global_work_size, NULL,
-            0, NULL, &event);
+                self->priv->kernel,
+                1, NULL, global_work_size, NULL,
+                0, NULL, &event);
             ufo_buffer_wait_on_event(buffer, event);
         }
 

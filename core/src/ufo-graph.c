@@ -113,7 +113,7 @@ static void graph_handle_json_type(UfoGraph *self, JsonObject *object, UfoElemen
             if (json_object_has_member(object, "prop-refs")) {
                 JsonArray *prop_refs = json_object_get_array_member(object, "prop-refs");
                 for (guint i = 0; i < json_array_get_length(prop_refs); i++) {
-                    gchar *set_name = g_strdup(json_array_get_string_element(prop_refs, i));
+                    const gchar *set_name = json_array_get_string_element(prop_refs, i);
                     JsonObject *prop_set = g_hash_table_lookup(self->priv->property_sets, set_name);
                     if (prop_set == NULL) {
                         g_warning("No property set '%s' in 'prop-sets'", set_name);
@@ -278,7 +278,7 @@ static void ufo_graph_dispose(GObject *object)
         G_OBJECT(self->priv->resource_manager),
         G_OBJECT(self->priv->root_container),
         G_OBJECT(self->priv->json_parser),
-        /*G_OBJECT(self->priv->ethos),*/
+        G_OBJECT(self->priv->ethos),
         NULL
     };
 
@@ -289,6 +289,14 @@ static void ufo_graph_dispose(GObject *object)
     if (self->priv->plugin_types) {
         g_hash_table_destroy(self->priv->plugin_types);
         self->priv->plugin_types = NULL;
+    }
+
+    GList *property_set_names = g_hash_table_get_keys(self->priv->property_sets);
+    g_list_foreach(property_set_names, (GFunc) g_free, NULL);
+    g_list_free(property_set_names);
+    if (self->priv->property_sets) {
+        g_hash_table_destroy(self->priv->property_sets);
+        self->priv->property_sets = NULL;
     }
 
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);

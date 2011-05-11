@@ -95,6 +95,18 @@ static void ufo_split_get_property(GObject *object,
     }
 }
 
+static void ufo_split_dispose(GObject *object)
+{
+    UfoSplit *self = UFO_SPLIT(object);
+    g_list_foreach(self->priv->children, (GFunc) g_object_unref, NULL);
+    if (self->priv->input_queue != NULL)
+        g_async_queue_unref(self->priv->input_queue);
+    if (self->priv->output_queue != NULL)
+        g_async_queue_unref(self->priv->output_queue);
+
+    G_OBJECT_CLASS(ufo_split_parent_class)->dispose(object);
+}
+
 static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
 {
     if (container == NULL || child == NULL)
@@ -195,6 +207,7 @@ static void ufo_split_process(UfoElement *element)
                         queue = g_list_next(queue);
                         copy = g_list_next(copy);
                     }
+                    g_list_free(copies);
                 }
                 break; 
 
@@ -226,12 +239,16 @@ static void ufo_split_print(UfoElement *element)
 static void ufo_split_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 {
     UfoSplit *self = UFO_SPLIT(element);
+    if (queue)
+        g_async_queue_ref(queue);
     self->priv->input_queue = queue;
 }
 
 static void ufo_split_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 {
     UfoSplit *self = UFO_SPLIT(element);
+    if (queue)
+        g_async_queue_ref(queue);
     self->priv->output_queue = queue;
 }
 
@@ -268,6 +285,7 @@ static void ufo_split_class_init(UfoSplitClass *klass)
 
     gobject_class->set_property = ufo_split_set_property;
     gobject_class->get_property = ufo_split_get_property;
+    gobject_class->dispose = ufo_split_dispose;
     container_class->add_element = ufo_split_add_element;
 
     /* install properties */

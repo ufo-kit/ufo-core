@@ -120,6 +120,7 @@ static void ufo_filter_raw_process(UfoFilter *self)
 
         ufo_resource_manager_release_buffer(manager, input);
     }
+    g_string_free(filename, TRUE);
     g_message("[raw-%s] done", priv->prefix);
 }
 

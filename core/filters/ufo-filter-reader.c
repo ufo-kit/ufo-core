@@ -108,6 +108,7 @@ static void filter_read_filenames(UfoFilterReaderPrivate *priv)
         filename = (gchar *) g_dir_read_name(directory);
     }
     priv->filenames = g_list_sort(priv->filenames, (GCompareFunc) g_strcmp0);
+    g_dir_close(directory);
 }
 
 /* 
@@ -219,9 +220,9 @@ static void ufo_filter_reader_process(UfoFilter *self)
 static void ufo_filter_reader_class_init(UfoFilterReaderClass *klass)
 {
     /* override methods */
+    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
     EthosPluginClass *plugin_class = ETHOS_PLUGIN_CLASS(klass);
-    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
 
     gobject_class->set_property = ufo_filter_reader_set_property;
     gobject_class->get_property = ufo_filter_reader_get_property;

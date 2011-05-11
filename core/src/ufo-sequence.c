@@ -39,6 +39,25 @@ UfoSequence *ufo_sequence_new()
 /* 
  * Virtual Methods 
  */
+static void ufo_sequence_dispose(GObject *object)
+{
+    UfoSequence *self = UFO_SEQUENCE(object);
+    g_list_foreach(self->priv->children, (GFunc) g_object_unref, NULL);
+    if (self->priv->input_queue != NULL)
+        g_async_queue_unref(self->priv->input_queue);
+    if (self->priv->output_queue != NULL)
+        g_async_queue_unref(self->priv->output_queue);
+
+    G_OBJECT_CLASS(ufo_sequence_parent_class)->dispose(object);
+}
+
+static void ufo_sequence_finalize(GObject *object)
+{
+    UfoSequence *self = UFO_SEQUENCE(object);
+    g_list_free(self->priv->children);
+    G_OBJECT_CLASS(ufo_sequence_parent_class)->finalize(object);
+}
+
 static void ufo_sequence_add_element(UfoContainer *container, UfoElement *child)
 {
     if (container == NULL || child == NULL)
@@ -119,12 +138,16 @@ static void ufo_sequence_print(UfoElement *element)
 static void ufo_sequence_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 {
     UfoSequence *self = UFO_SEQUENCE(element);
+    if (queue)
+        g_async_queue_ref(queue);
     self->priv->input_queue = queue;
 }
 
 static void ufo_sequence_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 {
     UfoSequence *self = UFO_SEQUENCE(element);
+    if (queue)
+        g_async_queue_ref(queue);
     self->priv->output_queue = queue;
 }
 
@@ -157,7 +180,11 @@ static void ufo_element_iface_init(UfoElementInterface *iface)
 static void ufo_sequence_class_init(UfoSequenceClass *klass)
 {
     /* override methods */
+    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     UfoContainerClass *container_class = UFO_CONTAINER_CLASS(klass);
+
+    gobject_class->dispose = ufo_sequence_dispose;
+    gobject_class->finalize = ufo_sequence_finalize;
     container_class->add_element = ufo_sequence_add_element;
 
     /* install private data */
