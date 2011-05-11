@@ -88,6 +88,8 @@ void ufo_element_process(UfoElement *element)
     UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
     if (iface->process != NULL)
         iface->process(element);
+    else
+        g_message("UfoElement::process not implemented");
 }
 
 

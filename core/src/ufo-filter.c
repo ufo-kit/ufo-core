@@ -44,6 +44,8 @@ void ufo_filter_initialize(UfoFilter *filter)
 {
     if (UFO_FILTER_GET_CLASS(filter)->initialize != NULL)
         UFO_FILTER_GET_CLASS(filter)->initialize(filter);
+    else
+        g_warning("UfoFilter::initialize not implemented");
 }
 
 /**
@@ -54,7 +56,10 @@ void ufo_filter_initialize(UfoFilter *filter)
  */
 void ufo_filter_process(UfoFilter *filter)
 {
-    UFO_FILTER_GET_CLASS(filter)->process(filter);
+    if (UFO_FILTER_GET_CLASS(filter)->process != NULL)
+        UFO_FILTER_GET_CLASS(filter)->process(filter);
+    else
+        g_warning("UfoFilter::process not implemented");
 }
 
 
@@ -139,7 +144,7 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->dispose = ufo_filter_dispose;
     klass->initialize = NULL;
-    klass->process = ufo_filter_process;
+    klass->process = NULL;
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoFilterPrivate));
