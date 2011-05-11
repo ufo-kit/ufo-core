@@ -13,7 +13,8 @@ json.org.
 
 The configuration of a filter setup is stored in a JSON-encoded text file with a
 ``.json`` suffix. The root object must at least contain one ``"type"`` and one
-``"elements"`` mapping.
+``"elements"`` mapping. It may also define several ``"prop-set"`` s for further
+reference.
 
 
 Node Types
@@ -75,6 +76,15 @@ Properties:
 - ``"type"`` [string]: Must be ``"sequence"``.
 
 
+Property Sets
+-------------
+
+To avoid to list the same properties for different filters over and over again,
+properties can be pre-defined with a singular ``"prop-sets"`` mapping. Each key
+is a name that can be referenced in filter nodes using the ``"prop-refs"``
+array. The values are ordinary ``"property"`` mappings.
+
+
 Filters
 -------
 
@@ -89,6 +99,8 @@ Properties:
   filter ``libfilterxxx.so``.
 - ``"properties"`` [dict]: Mapping from string to value. Exact names and value
   types depend on the actual filter.
+- ``"prop-refs"`` [array of strings]: Names of property sets that have been
+  pre-defined with a ``"prop-sets"`` map.
 
 
 Example
@@ -97,6 +109,11 @@ Example
 An example configuration would look like this::
 
     {
+        "prop-sets" : {
+            "set1" : {
+                "path" : "/tmp"
+            }
+        }
         "type" : "sequence",
         "elements" : [
             {
@@ -117,6 +134,7 @@ An example configuration would look like this::
                     {
                         "type" : "filter",
                         "plugin" : "raw"
+                        "prop-refs" : ["set1"]
                     },
                     {
                         "type" : "filter",

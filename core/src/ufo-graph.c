@@ -20,10 +20,14 @@ enum UfoGraphError {
 
 struct _UfoGraphPrivate {
     EthosManager        *ethos;
+    JsonParser          *json_parser;
     UfoResourceManager  *resource_manager;
     UfoElement          *root_container;
     GHashTable          *plugin_types;   /**< maps from gchar* to GType* */
+    GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
 };
+
+static void graph_build(UfoGraph *self, JsonNode *node, UfoElement **container);
 
 static void graph_add_plugin(gpointer data, gpointer user_data)
 {
@@ -50,7 +54,7 @@ static UfoElement *graph_build_split(JsonObject *object)
     return UFO_ELEMENT(container);
 }
 
-static void graph_handle_json_prop(JsonObject *object, const gchar *name, JsonNode *node, gpointer user)
+static void graph_handle_json_single_prop(JsonObject *object, const gchar *name, JsonNode *node, gpointer user)
 {
     GValue val = { 0, };
     json_node_get_value(node, &val);
@@ -58,59 +62,99 @@ static void graph_handle_json_prop(JsonObject *object, const gchar *name, JsonNo
     g_value_unset(&val);
 }
 
+static void graph_handle_json_container(UfoGraph *self, JsonObject *object, UfoElement **container, const gchar *type)
+{
+    UfoElement *new_container = NULL;
+    if (g_strcmp0(type, "sequence") == 0)
+        new_container = UFO_ELEMENT(ufo_sequence_new());
+    else if (g_strcmp0(type, "split") == 0)
+        new_container = graph_build_split(object);
+
+    /* Neither filter, sequence or split... just return */
+    if (new_container == NULL)
+        return;
+
+    /* If we have a root container, assign the newly created one */
+    if (*container == NULL)
+        *container = new_container;
+    else
+        ufo_container_add_element(UFO_CONTAINER(*container), new_container);
+
+    if (json_object_has_member(object, "elements")) {
+        JsonArray *elements = json_object_get_array_member(object, "elements");
+        for (guint i = 0; i < json_array_get_length(elements); i++) 
+            graph_build(self, json_array_get_element(elements, i), &new_container);
+
+        /* After adding all sub-childs, we need to get the updated output of
+         * the new container and use it as our own new output */
+        GAsyncQueue *prev = ufo_element_get_output_queue(new_container);
+        ufo_element_set_output_queue(*container, prev);
+    }
+    else
+        g_warning("Container has no <elements>");
+}
+
+static void graph_handle_json_type(UfoGraph *self, JsonObject *object, UfoElement **container)
+{
+    const char *type = json_object_get_string_member(object, "type");
+
+    if (g_strcmp0(type, "filter") == 0) {
+        const gchar *plugin_name = json_object_get_string_member(object, "plugin");
+        UfoFilter *filter = ufo_graph_get_filter(self, plugin_name, NULL);
+        if (filter != NULL) {
+            /* We can define "properties" for each filter ... */
+            if (json_object_has_member(object, "properties")) {
+                JsonObject *prop_object = json_object_get_object_member(object, "properties");
+                json_object_foreach_member(prop_object, 
+                        graph_handle_json_single_prop,
+                        filter);
+            }
+            /* ... and also add more through prop-refs */
+            if (json_object_has_member(object, "prop-refs")) {
+                JsonArray *prop_refs = json_object_get_array_member(object, "prop-refs");
+                for (guint i = 0; i < json_array_get_length(prop_refs); i++) {
+                    gchar *set_name = g_strdup(json_array_get_string_element(prop_refs, i));
+                    JsonObject *prop_set = g_hash_table_lookup(self->priv->property_sets, set_name);
+                    if (prop_set == NULL) {
+                        g_warning("No property set '%s' in 'prop-sets'", set_name);
+                    }
+                    else {
+                        json_object_foreach_member(prop_set,
+                                graph_handle_json_single_prop,
+                                filter);
+                    }
+                }
+            }
+            ufo_container_add_element(UFO_CONTAINER(*container), UFO_ELEMENT(filter));
+        }
+        else
+            g_warning("Couldn't find plugin '%s'", plugin_name);
+    }
+    else {
+        graph_handle_json_container(self, object, container, type);
+    }
+}
+
+static void graph_handle_json_propset(JsonObject *object, 
+    const gchar *member_name, 
+    JsonNode *member_node, 
+    gpointer user_data)
+{
+    UfoGraph *self = UFO_GRAPH(user_data);
+    g_hash_table_insert(self->priv->property_sets, 
+            (gpointer) g_strdup(member_name), 
+            (gpointer) json_object_get_object_member(object, member_name));
+}
+
 static void graph_build(UfoGraph *self, JsonNode *node, UfoElement **container)
 {
     JsonObject *object = json_node_get_object(node);
+    if (json_object_has_member(object, "prop-sets")) {
+        JsonObject *sets = json_object_get_object_member(object, "prop-sets");
+        json_object_foreach_member(sets, graph_handle_json_propset, self);
+    }
     if (json_object_has_member(object, "type")) {
-        const char *type = json_object_get_string_member(object, "type");
-
-        if (g_strcmp0(type, "filter") == 0) {
-            /* FIXME: we should check that there is a corresponding "plugin"
-             * object available */
-            const gchar *plugin_name = json_object_get_string_member(object, "plugin");
-            UfoFilter *filter = ufo_graph_get_filter(self, plugin_name, NULL);
-            if (filter != NULL) {
-                /* TODO: ask the plugin how many/what kind of buffers we need,
-                 * for now just reserve a queue for a single output */
-
-                if (json_object_has_member(object, "properties")) {
-                    JsonObject *prop_object = json_object_get_object_member(object, "properties");
-                    json_object_foreach_member(prop_object, 
-                                               graph_handle_json_prop,
-                                               filter);
-                }
-
-                ufo_container_add_element(UFO_CONTAINER(*container), UFO_ELEMENT(filter));
-            }
-            else
-                g_warning("Couldn't find plugin '%s'", plugin_name);
-        }
-        else {
-            UfoElement *new_container = NULL;
-            if (g_strcmp0(type, "sequence") == 0)
-                new_container = UFO_ELEMENT(ufo_sequence_new());
-            else if (g_strcmp0(type, "split") == 0)
-                new_container = graph_build_split(object);
-
-            /* Neither filter, sequence or split... just return */
-            if (new_container == NULL)
-                return;
-            
-            /* If we have a root container, assign the newly created one */
-            if (*container == NULL)
-                *container = new_container;
-            else
-                ufo_container_add_element(UFO_CONTAINER(*container), new_container);
-
-            JsonArray *elements = json_object_get_array_member(object, "elements");
-            for (guint i = 0; i < json_array_get_length(elements); i++) 
-                graph_build(self, json_array_get_element(elements, i), &new_container);
-
-            /* After adding all sub-childs, we need to get the updated output of
-             * the new container and use it as our own new output */
-            GAsyncQueue *prev = ufo_element_get_output_queue(new_container);
-            ufo_element_set_output_queue(*container, prev);
-        }
+        graph_handle_json_type(self, object, container);
     }
 }
 
@@ -134,15 +178,12 @@ GQuark ufo_graph_error_quark(void)
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error)
 {
     *error = NULL;
-    JsonParser *parser = json_parser_new();
-    json_parser_load_from_file(parser, filename, error);
+    json_parser_load_from_file(graph->priv->json_parser, filename, error);
     if (*error) {
-        g_object_unref(parser);
         return;
     }
 
-    graph_build(graph, json_parser_get_root(parser), &graph->priv->root_container);
-    g_object_unref(parser);
+    graph_build(graph, json_parser_get_root(graph->priv->json_parser), &graph->priv->root_container);
 }
 
 /**
@@ -236,6 +277,7 @@ static void ufo_graph_dispose(GObject *object)
     GObject *objects[] = {
         G_OBJECT(self->priv->resource_manager),
         G_OBJECT(self->priv->root_container),
+        G_OBJECT(self->priv->json_parser),
         /*G_OBJECT(self->priv->ethos),*/
         NULL
     };
@@ -243,7 +285,6 @@ static void ufo_graph_dispose(GObject *object)
     int i = 0;
     while (objects[i] != NULL)
         g_object_unref(objects[i++]);
-
 
     if (self->priv->plugin_types) {
         g_hash_table_destroy(self->priv->plugin_types);
@@ -274,6 +315,7 @@ static void ufo_graph_init(UfoGraph *self)
     /* TODO: determine directories in a better way */
     gchar *plugin_dirs[] = { "../filters", NULL };
 
+    /* Initialize Ethos and load all plugins that can be found */
     priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
     ethos_manager_initialize(priv->ethos);
 
@@ -285,6 +327,8 @@ static void ufo_graph_init(UfoGraph *self)
 
     priv->resource_manager = ufo_resource_manager();
     priv->root_container = NULL;
+    priv->json_parser = json_parser_new();
+    priv->property_sets = g_hash_table_new(g_str_hash, g_str_equal);
 }
 
 
