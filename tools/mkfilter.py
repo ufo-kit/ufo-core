@@ -80,7 +80,6 @@ static void ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter)
 static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    UfoFilter${prefix_camel} *self = UFO_FILTER_${prefix_upper}(filter);
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 

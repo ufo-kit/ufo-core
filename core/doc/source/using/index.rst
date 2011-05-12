@@ -39,6 +39,61 @@ As you can see we simply construct a new UfoGraph object from a JSON encoded
 pipeline.
 
 
+Writing a filter in C
+=====================
+
+Writing a new UFO filter is simple and by calling :: 
+
+    ./mkfilter.py
+
+in the ``tools/`` directory, you can avoid writing that tedious GObject boiler
+plate code. You are asked for a name, so lets pretend you are going to build the
+latest and greatest `AwesomeFoo` filter. After calling the tool and typing
+``AwesomeFoo`` you have three files: ``ufo-filter-awesome-foo.c``,
+``ufo-filter-awesome-foo.h`` and ``awesomefoo.ufo-plugin.in``. If you intend to
+distribute that awesome filter with the main UFO distribution, copy these files
+to ``core/filters``. If you are not depending on any third-party library you can
+just add the following line to the ``CMakeLists.txt`` file ::
+
+    --- core/filters/CMakeLists.txt old
+    +++ core/filters/CMakeLists.txt new
+    @@ -6,6 +6,7 @@
+         ufo-filter-hist.c
+         ufo-filter-raw.c
+         ufo-filter-scale.c
+    +    ufo-filter-awesome-foo.c
+    )
+                           
+    set(ufofilter_KERNELS)
+
+You can try to compile this as usual by typing ::
+
+    make
+
+in your CMake build directory.
+
+In this state, the filter doesn't do anything useful. Therefore, open
+``ufo-filter-awesome-foo.c`` and take a look at
+``ufo_filter_awesome_foo_initialize()``. If you are about to use a GPU enhanced
+filter, you may want to uncomment the lines and change the lines to include your
+OpenCL file and load the appropriate OpenCL kernels.
+
+The actual processing is done in the ``ufo_filter_awesome_foo_process()`` method
+which is called exactly once per filter. Therefore, you should not return until
+you receive a buffer that is marked TRUE using ``ufo_buffer_is_finished()``.  If
+your filter is a sink or an ordinary input/output filter, you would pop buffers
+from your input queue using ``ufo_filter_pop_buffer()`` and forward any results
+using ``ufo_filter_push_buffer()``. You are free to create as much auxiliary
+buffers using ``ufo_resource_manager_request_buffer()`` as you like. Any buffers
+that are received but not pushed any further (e.g. a file writer) have to be
+released using ``ufo_resource_manager_release_buffer()`` for further re-use.
+
+To work with the buffer data, you would call either
+``ufo_buffer_get_cpu_data()`` or ``ufo_buffer_get_gpu_data()``. You would then
+get a plain ``float`` array or a ``cl_mem`` handle. The latter can be used in
+conjunction with ``cl_set_kernel_arg`` to call an OpenCL kernel with the buffer
+data as an argument.
+
 Language Bindings
 =================
 
