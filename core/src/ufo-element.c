@@ -9,6 +9,13 @@ G_DEFINE_INTERFACE(UfoElement, ufo_element, G_TYPE_OBJECT)
  */
 
 /**
+ * ufo_element_set_input_queue:
+ * @element: A #UfoElement
+ * @queue: (transfer full): A #GAsyncQueue
+ *
+ * Sets @queue that is used for an element to pop input buffers from
+ */
+/**
  * \brief Set an input queue
  * \public \memberof UfoElement
  * \param[in] element UfoElement whose input queue is changed
@@ -34,6 +41,11 @@ void ufo_element_set_output_queue(UfoElement *element, GAsyncQueue *queue)
         iface->set_output_queue(element, queue);
 }
 
+/**
+ * ufo_element_get_input_queue:
+ * @element: A #UfoElement
+ * Returns: (transfer none): A #GAsyncQueue that is used to pop input buffers from
+ */
 /**
  * \brief Get the input queue
  * \public \memberof UfoElement

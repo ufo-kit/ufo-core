@@ -62,6 +62,18 @@ void ufo_filter_process(UfoFilter *filter)
         g_warning("UfoFilter::process not implemented");
 }
 
+UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter)
+{
+    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
+    return g_async_queue_pop(input_queue);
+}
+
+void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer)
+{
+    GAsyncQueue *output_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
+    g_async_queue_push(output_queue, buffer);
+}
+
 
 /* 
  * Virtual Methods

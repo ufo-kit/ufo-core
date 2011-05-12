@@ -5,6 +5,7 @@
 #include <ethos/ethos.h>
 
 #include "ufo-resource-manager.h"
+#include "ufo-buffer.h"
 
 #define UFO_TYPE_FILTER             (ufo_filter_get_type())
 #define UFO_FILTER(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_FILTER, UfoFilter))
@@ -43,6 +44,11 @@ struct _UfoFilterClass {
 
 void ufo_filter_initialize(UfoFilter *filter);
 void ufo_filter_process(UfoFilter *filter);
+
+/* Utility functions for language bindings */
+UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter);
+void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer);
+
 
 GType ufo_filter_get_type(void);
 
