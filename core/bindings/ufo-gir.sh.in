@@ -4,20 +4,28 @@
     --namespace=Ufo \
     --nsversion=@UFO_VERSION_STRING_SHORT@ \
     --library-path=@DEST_DIR@ \
-    --library=ufocore \
+    --library=ufo \
     --include=GObject-2.0 \
     --include=Ethos-1.0 \
     --no-libtool \
     -I@OPENCL_INCLUDE_DIRS@ \
     -I@ETHOS_INC_DIR@ \
     -o @GIR_PREFIX@.gir \
+    @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-element.c \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-element.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-container.c \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-container.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-sequence.c \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-sequence.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-split.c \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-split.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-graph.c \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-graph.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-buffer.c \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-buffer.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-filter.c \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-filter.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-resource-manager.c \
     @CMAKE_CURRENT_SOURCE_DIR@/../src/ufo-resource-manager.h
 
 @INTROSPECTION_COMPILER@ -o @GIR_PREFIX@.typelib @GIR_PREFIX@.gir

@@ -14,7 +14,7 @@ set(ufofilter_KERNELS
     )
 
 set(ufofilter_LIBS
-    ufocore
+    ufo
     ${GLIB2_LIBRARIES}
     ${GOBJECT2_LIBRARIES}
     ${ETHOS_LIBRARIES}

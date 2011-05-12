@@ -19,7 +19,7 @@ set(TEST_BINARIES
 
 foreach(binary ${TEST_BINARIES})
     add_executable(${binary} ${binary}.c)
-    target_link_libraries(${binary} ufocore ${GLIB2_LIBRARIES})
+    target_link_libraries(${binary} ufo ${GLIB2_LIBRARIES})
     add_test(${binary} ${binary})
 endforeach()
 
@@ -33,7 +33,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test.js ${CMAKE_CURRENT_BINARY_DIR}/t
 
 add_executable(foobar-c test.c)
 add_test(foobar-c foobar-c)
-target_link_libraries(foobar-c ufocore ${GLIB2_LIBRARIES})
+target_link_libraries(foobar-c ufo ${GLIB2_LIBRARIES})
 
 if (VALA_FOUND)
     add_custom_target(foobar-vala ALL 

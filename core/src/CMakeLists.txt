@@ -45,10 +45,10 @@ include_directories(
     ${JSON_GLIB_INCLUDE_DIRS}
     )
 
-add_library(ufocore SHARED ${ufocore_SRCS})
-target_link_libraries(ufocore ${ufocore_LIBS})
+add_library(ufo SHARED ${ufocore_SRCS})
+target_link_libraries(ufo ${ufocore_LIBS})
 
-install(TARGETS ufocore 
+install(TARGETS ufo 
     ARCHIVE DESTINATION lib 
     LIBRARY DESTINATION lib)
 
