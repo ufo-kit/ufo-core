@@ -101,7 +101,8 @@ static void filter_read_filenames(UfoFilterReaderPrivate *priv)
 
     gchar *filename = (gchar *) g_dir_read_name(directory);
     while (filename != NULL) {
-        if ((priv->prefix == NULL) || (g_str_has_prefix(filename, priv->prefix))) {
+        if (((priv->prefix == NULL) || (g_str_has_prefix(filename, priv->prefix))) &&
+            (g_str_has_suffix(filename, "tif"))) {
             priv->filenames = g_list_append(priv->filenames, 
                 g_strdup_printf("%s/%s", priv->path, filename));
         }

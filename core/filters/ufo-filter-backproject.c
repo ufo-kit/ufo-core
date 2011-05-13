@@ -71,12 +71,9 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     while (!ufo_buffer_is_finished(sinogram)) {
         if (self->priv->kernel != NULL) {
-            gsize global_work_size[2];
-
-            ufo_buffer_get_dimensions(sinogram, 
-                    (gint32 *) &global_work_size[0], 
-                    (gint32 *) &global_work_size[1]);
-            g_message("sinogram dims=%ix%i", (int) global_work_size[0], (int) global_work_size[1]);
+            gint32 width, num_projections;
+            ufo_buffer_get_dimensions(sinogram, &width, &num_projections);
+            g_message("create slice of size %ix%i", width, width);
 
             /* TODO: We consume the sinogram and allocate a new buffer for the
              * slice. We should also allocate private buffers for the constant data
@@ -93,6 +90,10 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
                                          0, NULL, &event);
             ufo_buffer_wait_on_event(buffer, event);
             */
+        }
+        else {
+        
+            g_message("no kernel");
         }
         ufo_resource_manager_release_buffer(manager, sinogram);
         sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
