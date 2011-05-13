@@ -10,6 +10,7 @@
 
 struct _UfoFilterBackprojectPrivate {
     cl_kernel kernel;
+    gint num_sinograms;
 };
 
 GType ufo_filter_backproject_get_type(void) G_GNUC_CONST;
@@ -21,8 +22,11 @@ G_DEFINE_TYPE(UfoFilterBackproject, ufo_filter_backproject, UFO_TYPE_FILTER);
 
 enum {
     PROP_0 = 0,
+    PROP_NUM_SINOGRAMS,
     N_PROPERTIES
 };
+
+static GParamSpec *backproject_properties[N_PROPERTIES] = { NULL, };
 
 static void activated(EthosPlugin *plugin)
 {
@@ -60,40 +64,42 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterBackproject *self = UFO_FILTER_BACKPROJECT(filter);
+    UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
-    g_message("[bp] waiting...");
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
-    g_message("[bp] received buffer at queue %p", input_queue);
+    while (!ufo_buffer_is_finished(sinogram)) {
+        if (self->priv->kernel != NULL) {
+            gsize global_work_size[2];
 
-    if (self->priv->kernel != NULL) {
-        gsize global_work_size[2];
+            ufo_buffer_get_dimensions(sinogram, 
+                    (gint32 *) &global_work_size[0], 
+                    (gint32 *) &global_work_size[1]);
+            g_message("sinogram dims=%ix%i", (int) global_work_size[0], (int) global_work_size[1]);
 
-        ufo_buffer_get_dimensions(sinogram, 
-                (gint32 *) &global_work_size[0], 
-                (gint32 *) &global_work_size[1]);
+            /* TODO: We consume the sinogram and allocate a new buffer for the
+             * slice. We should also allocate private buffers for the constant data
+             * or put it in like that hack from Suren. */
+            /*
+            cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
+            cl_int err = CL_SUCCESS;
+            cl_event event;
 
-        /* TODO: We consume the sinogram and allocate a new buffer for the
-         * slice. We should also allocate private buffers for the constant data
-         * or put it in like that hack from Suren. */
-        /*
-        cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(buffer);
-        cl_int err = CL_SUCCESS;
-        cl_event event;
-
-        err = clSetKernelArg(self->priv->kernel, 0, sizeof(float), &scale);
-        err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
-        err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(buffer),
-                                     self->priv->kernel,
-                                     1, NULL, global_work_size, NULL,
-                                     0, NULL, &event);
-        ufo_buffer_wait_on_event(buffer, event);
-        */
+            err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
+            err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(buffer),
+                                         self->priv->kernel,
+                                         1, NULL, global_work_size, NULL,
+                                         0, NULL, &event);
+            ufo_buffer_wait_on_event(buffer, event);
+            */
+        }
+        ufo_resource_manager_release_buffer(manager, sinogram);
+        sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
 
-    g_message("[bp] send buffer to queue %p", output_queue);
-    g_async_queue_push(output_queue, sinogram);
+    g_async_queue_push(output_queue, 
+            ufo_resource_manager_request_finish_buffer(manager));
 }
 
 static void ufo_filter_backproject_set_property(GObject *object,
@@ -101,7 +107,11 @@ static void ufo_filter_backproject_set_property(GObject *object,
     const GValue    *value,
     GParamSpec      *pspec)
 {
+    UfoFilterBackproject *self = UFO_FILTER_BACKPROJECT(object);
     switch (property_id) {
+        case PROP_NUM_SINOGRAMS:
+            self->priv->num_sinograms = g_value_get_int(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -113,7 +123,11 @@ static void ufo_filter_backproject_get_property(GObject *object,
     GValue      *value,
     GParamSpec  *pspec)
 {
+    UfoFilterBackproject *self = UFO_FILTER_BACKPROJECT(object);
     switch (property_id) {
+        case PROP_NUM_SINOGRAMS:
+            g_value_set_int(value, self->priv->num_sinograms);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -134,6 +148,16 @@ static void ufo_filter_backproject_class_init(UfoFilterBackprojectClass *klass)
     filter_class->process = ufo_filter_backproject_process;
 
     /* install properties */
+    backproject_properties[PROP_NUM_SINOGRAMS] = 
+        g_param_spec_int("num-sinograms",
+            "Number of sinograms",
+            "Number of to process",
+            -1,   /* minimum */
+            8192,   /* maximum */
+            1,   /* default */
+            G_PARAM_READWRITE);
+
+    g_object_class_install_property(gobject_class, PROP_NUM_SINOGRAMS, backproject_properties[PROP_NUM_SINOGRAMS]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterBackprojectPrivate));
