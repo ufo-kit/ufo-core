@@ -1,4 +1,5 @@
 #include <gmodule.h>
+#include <string.h>
 
 #include "ufo-resource-manager.h"
 #include "ufo-filter-sino-generator.h"
@@ -48,38 +49,47 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterSinoGeneratorPrivate *priv = UFO_FILTER_SINO_GENERATOR_GET_PRIVATE(filter);
+    UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
     /* We pop the very first image, to determine the size w*h of a projection.
      * We then have to allocate h sinogram buffers with a height of
      * num_projections and width w */
-    gint32 width, height;
-    g_message("[sino] wait ...");
+    gint32 width, height, sino_width;
+    guint received = 1;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    g_message("[sino] got something");
     ufo_buffer_get_dimensions(input, &width, &height);
+    sino_width = width;
+    const gint sino_height = priv->num_projections;
+    const gint num_sinos = height;
+    const gsize bytes_per_line = sino_width * sizeof(float);
 
-    g_message("[sino] generating %i sinograms with size %ix%i", 
-        height, width, priv->num_projections);
+    g_message("[sino] %i bytes per line", (int) bytes_per_line);
+    UfoBuffer **sinograms = g_malloc0(sizeof(UfoBuffer*) * num_sinos);
+    for (gint i = 0; i < num_sinos; i++)
+        sinograms[i] = ufo_resource_manager_request_buffer(manager,
+                sino_width, sino_height, NULL);
 
-    while (1) {
-        /* We forward a finished buffer, to let succeeding filters know about
-         * the end of computation. */
-        if (ufo_buffer_is_finished(input)) {
-            g_async_queue_push(output_queue, input);
-            break;
+    /* First step: collect all projections and build sinograms */
+    while ((received < priv->num_projections) || (!ufo_buffer_is_finished(input))) {
+        float *src = ufo_buffer_get_cpu_data(input);
+        for (gint i = 0; i < num_sinos; i++) {
+            float *dst = ufo_buffer_get_cpu_data(sinograms[i]);
+            dst += (received-1)*sino_width;
+            memcpy(dst, src + i*sino_width, bytes_per_line);
         }
-
-        /* Use the input here and push any output that's created. In the case of
-         * a source filter, you wouldn't pop data from the input_queue but just
-         * generate data with ufo_resource_manager_request_buffer() and push
-         * that into output_queue. On the other hand, a sink filter would
-         * release all incoming buffers from input_queue with
-         * ufo_resource_manager_release_buffer() for further re-use. */
-
-        g_async_queue_push(output_queue, input);
+        input = ufo_filter_pop_buffer(filter);
+        received++;
     }
+    
+    /* Second step: push them one by one */
+    for (gint i = 0; i < num_sinos; i++)
+        g_async_queue_push(output_queue, sinograms[i]);
+
+    /* Third step: complete */
+    g_async_queue_push(output_queue, 
+            ufo_resource_manager_request_finish_buffer(manager));
 }
 
 static void ufo_filter_sino_generator_set_property(GObject *object,

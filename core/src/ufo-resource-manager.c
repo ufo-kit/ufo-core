@@ -344,7 +344,6 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
     if (queue == NULL) {
         /* If there is no queue for this hash we create a new one but don't fill
          * it with the newly created buffer */
-        g_message("create new buffer");
         buffer = resource_manager_create_buffer(self, width, height, data);
         queue = g_queue_new();
         g_hash_table_insert(self->priv->buffer_map, hash, queue);

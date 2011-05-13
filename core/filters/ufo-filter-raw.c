@@ -11,6 +11,7 @@
 struct _UfoFilterRawPrivate {
     guint current_frame;
     gchar *prefix;
+    gchar *path;
 };
 
 GType ufo_filter_raw_get_type(void) G_GNUC_CONST;
@@ -22,6 +23,7 @@ G_DEFINE_TYPE(UfoFilterRaw, ufo_filter_raw, UFO_TYPE_FILTER);
 
 enum {
     PROP_0,
+    PROP_PATH,
     PROP_PREFIX,
     N_PROPERTIES
 };
@@ -49,6 +51,10 @@ static void ufo_filter_raw_set_property(GObject *object,
     UfoFilterRaw *filter = UFO_FILTER_RAW(object);
 
     switch (property_id) {
+        case PROP_PATH:
+            g_free(filter->priv->path);
+            filter->priv->path = g_strdup(g_value_get_string(value));
+            break;
         case PROP_PREFIX:
             g_free(filter->priv->prefix);
             filter->priv->prefix = g_strdup(g_value_get_string(value));
@@ -67,6 +73,9 @@ static void ufo_filter_raw_get_property(GObject *object,
     UfoFilterRaw *filter = UFO_FILTER_RAW(object);
 
     switch (property_id) {
+        case PROP_PATH:
+            g_value_set_string(value, filter->priv->path);
+            break;
         case PROP_PREFIX:
             g_value_set_string(value, filter->priv->prefix);
             break;
@@ -86,6 +95,7 @@ static void ufo_filter_raw_finalize(GObject *object)
     UfoFilterRaw *filter = UFO_FILTER_RAW(object);
     UfoFilterRawPrivate *priv = UFO_FILTER_RAW_GET_PRIVATE(filter);
     g_free(priv->prefix);
+    g_free(priv->path);
     G_OBJECT_CLASS(ufo_filter_raw_parent_class)->finalize(object);
 }
 
@@ -112,7 +122,9 @@ static void ufo_filter_raw_process(UfoFilter *self)
         gint32 width, height;
         ufo_buffer_get_dimensions(input, &width, &height);
 
-        g_string_printf(filename, "%s-%ix%i-%i.raw", priv->prefix, width, height, priv->current_frame++);
+        g_string_printf(filename, "%s/%s-%ix%i-%i.raw", 
+                priv->path, priv->prefix, 
+                width, height, priv->current_frame++);
         FILE *fp = fopen(filename->str, "wb");
         float *data = ufo_buffer_get_cpu_data(input);
         fwrite(data, sizeof(float), width*height, fp);
@@ -148,6 +160,14 @@ static void ufo_filter_raw_class_init(UfoFilterRawClass *klass)
             "out",
             G_PARAM_READWRITE);
 
+    raw_properties[PROP_PATH] = 
+        g_param_spec_string("path",
+            "File path",
+            "Path where to store files",
+            ".",
+            G_PARAM_READWRITE);
+
+    g_object_class_install_property(gobject_class, PROP_PATH, raw_properties[PROP_PATH]);
     g_object_class_install_property(gobject_class, PROP_PREFIX, raw_properties[PROP_PREFIX]);
 
     /* install private data */
@@ -162,6 +182,7 @@ static void ufo_filter_raw_init(UfoFilterRaw *self)
     self->priv = UFO_FILTER_RAW_GET_PRIVATE(self);
     self->priv->current_frame = 0;
     self->priv->prefix = g_strdup("prefix");
+    self->priv->path = g_strdup(".");
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
