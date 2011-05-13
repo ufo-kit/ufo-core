@@ -191,7 +191,6 @@ static void ufo_filter_reader_process(UfoFilter *self)
 
     GList *filename = g_list_first(priv->filenames);
     for (guint i = 0; i < max_count && filename != NULL; i++) {
-        g_debug("Reading file %s", (char *) filename->data);
         void *buffer = filter_read_tiff((char *) filename->data,
                 &bits_per_sample, &samples_per_pixel,
                 &width, &height);
@@ -199,9 +198,6 @@ static void ufo_filter_reader_process(UfoFilter *self)
         /* break out of the loop and insert finishing buffer if file is not valid */
         if (buffer == NULL)
             break;
-
-        g_debug(" bps=%i, spp=%i, dims=%ix%i", 
-                bits_per_sample, samples_per_pixel, width, height);
 
         UfoBuffer *image = ufo_resource_manager_request_buffer(manager, width, height, NULL);
         ufo_buffer_set_cpu_data(image, buffer, width * height, NULL);
