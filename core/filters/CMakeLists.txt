@@ -6,6 +6,7 @@ set(ufofilter_SRCS
     ufo-filter-hist.c
     ufo-filter-raw.c
     ufo-filter-scale.c
+    ufo-filter-sino-generator.c
     )
 
 set(ufofilter_KERNELS

@@ -251,7 +251,7 @@ if __name__ == '__main__':
     filename_map = { 
             ("ufo-filter-%s.c" % filter_hyphen) : SKELETON_C, 
             ("ufo-filter-%s.h" % filter_hyphen) : SKELETON_H,
-            ("%s.ufo-plugin.in" % filter_lower) : SKELETON_PLUGIN }
+            ("%s.ufo-plugin.in" % filter_hyphen) : SKELETON_PLUGIN }
     for filename in filename_map.keys():
         template = string.Template(filename_map[filename])
         source = template.substitute(prefix_underscore=filter_underscore,
