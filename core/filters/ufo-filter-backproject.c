@@ -86,12 +86,11 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     float *sin_tmp = g_malloc0(sizeof(float) * num_projections);
     float *axes_tmp = g_malloc0(sizeof(float) * num_projections);
 
-    float step = 0.72 * G_PI / 180.0;
-    float angle = 0.0f;
-    for (int i = 0; i < num_projections; i++, angle += step) {
-        cos_tmp[i] = cos(angle);
-        sin_tmp[i] = sin(angle);
-        axes_tmp[i] = 413.0f;
+    float step = priv->angle_step;
+    for (int i = 0; i < num_projections; i++) {
+        cos_tmp[i] = cos(i*step);
+        sin_tmp[i] = sin(i*step);
+        axes_tmp[i] = priv->axis_position;
     }
 
     UfoBuffer *cos_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, cos_tmp);
