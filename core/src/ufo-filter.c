@@ -44,8 +44,6 @@ void ufo_filter_initialize(UfoFilter *filter)
 {
     if (UFO_FILTER_GET_CLASS(filter)->initialize != NULL)
         UFO_FILTER_GET_CLASS(filter)->initialize(filter);
-    else
-        g_warning("UfoFilter::initialize not implemented");
 }
 
 /**
@@ -58,8 +56,6 @@ void ufo_filter_process(UfoFilter *filter)
 {
     if (UFO_FILTER_GET_CLASS(filter)->process != NULL)
         UFO_FILTER_GET_CLASS(filter)->process(filter);
-    else
-        g_warning("UfoFilter::process not implemented");
 }
 
 UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter)

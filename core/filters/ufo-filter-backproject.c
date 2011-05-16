@@ -1,6 +1,7 @@
 #include <gmodule.h>
 #include <math.h>
 #include <CL/cl.h>
+#include <clFFT.h>
 
 #include "ufo-filter-backproject.h"
 #include "ufo-filter.h"
