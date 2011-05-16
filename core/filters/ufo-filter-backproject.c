@@ -12,6 +12,8 @@
 struct _UfoFilterBackprojectPrivate {
     cl_kernel kernel;
     gint num_sinograms;
+    float axis_position;
+    float angle_step;
 };
 
 GType ufo_filter_backproject_get_type(void) G_GNUC_CONST;
@@ -23,6 +25,8 @@ G_DEFINE_TYPE(UfoFilterBackproject, ufo_filter_backproject, UFO_TYPE_FILTER);
 
 enum {
     PROP_0 = 0,
+    PROP_AXIS_POSITION,
+    PROP_ANGLE_STEP,
     PROP_NUM_SINOGRAMS,
     N_PROPERTIES
 };
@@ -70,8 +74,8 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
-    const float offset_x = 0.0f;
-    const float offset_y = 0.0f;
+    const float offset_x = -413.5f;
+    const float offset_y = -413.5f;
     gint32 width, num_projections;
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     ufo_buffer_get_dimensions(sinogram, &width, &num_projections);
@@ -81,12 +85,12 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     float *sin_tmp = g_malloc0(sizeof(float) * num_projections);
     float *axes_tmp = g_malloc0(sizeof(float) * num_projections);
 
-    float step = G_PI_2 / num_projections;
+    float step = 0.72 * G_PI / 180.0;
     float angle = 0.0f;
     for (int i = 0; i < num_projections; i++, angle += step) {
         cos_tmp[i] = cos(angle);
         sin_tmp[i] = sin(angle);
-        axes_tmp[i] = 0.0f;
+        axes_tmp[i] = 413.0f;
     }
 
     UfoBuffer *cos_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, cos_tmp);
@@ -113,8 +117,9 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     while (!ufo_buffer_is_finished(sinogram)) {
         if (priv->kernel != NULL) {
             size_t global_work_size[2];
+            float *slice_data = g_malloc0(sizeof(float) * width * width);
             UfoBuffer *slice = ufo_resource_manager_request_buffer(manager,
-                    width, width, NULL);
+                    width, width, slice_data);
 
             cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
             cl_mem slice_mem = (cl_mem) ufo_buffer_get_gpu_data(slice);
@@ -126,13 +131,12 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
             global_work_size[1] = width;
             err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(sinogram),
                                          priv->kernel,
-                                         1, NULL, global_work_size, NULL,
+                                         2, NULL, global_work_size, NULL,
                                          0, NULL, &event);
             ufo_buffer_wait_on_event(slice, event);
             g_async_queue_push(output_queue, slice);
         }
         else {
-        
             g_message("no kernel");
         }
         ufo_resource_manager_release_buffer(manager, sinogram);
@@ -153,6 +157,12 @@ static void ufo_filter_backproject_set_property(GObject *object,
         case PROP_NUM_SINOGRAMS:
             self->priv->num_sinograms = g_value_get_int(value);
             break;
+        case PROP_AXIS_POSITION:
+            self->priv->axis_position = (float) g_value_get_double(value);
+            break;
+        case PROP_ANGLE_STEP:
+            self->priv->angle_step = (float) g_value_get_double(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -168,6 +178,12 @@ static void ufo_filter_backproject_get_property(GObject *object,
     switch (property_id) {
         case PROP_NUM_SINOGRAMS:
             g_value_set_int(value, self->priv->num_sinograms);
+            break;
+        case PROP_AXIS_POSITION:
+            g_value_set_double(value, (double) self->priv->axis_position);
+            break;
+        case PROP_ANGLE_STEP:
+            g_value_set_double(value, (double) self->priv->angle_step);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -198,7 +214,27 @@ static void ufo_filter_backproject_class_init(UfoFilterBackprojectClass *klass)
             1,   /* default */
             G_PARAM_READWRITE);
 
+    backproject_properties[PROP_AXIS_POSITION] = 
+        g_param_spec_double("axis-pos",
+            "Position of rotation axis",
+            "Position of rotation axis",
+            -1000.0,   /* minimum */
+            +1000.0,   /* maximum */
+            0.0,   /* default */
+            G_PARAM_READWRITE);
+
+    backproject_properties[PROP_ANGLE_STEP] = 
+        g_param_spec_double("angle-step",
+            "Increment of angle in radians",
+            "Increment of angle in radians",
+            -G_PI,  /* minimum */
+            +G_PI,  /* maximum */
+            0.0,    /* default */
+            G_PARAM_READWRITE);
+
     g_object_class_install_property(gobject_class, PROP_NUM_SINOGRAMS, backproject_properties[PROP_NUM_SINOGRAMS]);
+    g_object_class_install_property(gobject_class, PROP_AXIS_POSITION, backproject_properties[PROP_AXIS_POSITION]);
+    g_object_class_install_property(gobject_class, PROP_ANGLE_STEP, backproject_properties[PROP_ANGLE_STEP]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterBackprojectPrivate));

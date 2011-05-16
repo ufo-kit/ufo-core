@@ -131,7 +131,7 @@ static void ufo_filter_writer_process(UfoFilter *self)
         gint32 width, height;
         ufo_buffer_get_dimensions(input, &width, &height);
         float *data = ufo_buffer_get_cpu_data(input);
-        g_string_printf(filename, "%s/%s-%i.tif", priv->path, priv->prefix, current_frame++);
+        g_string_printf(filename, "%s/%s-%05i.tif", priv->path, priv->prefix, current_frame++);
         if (!filter_write_tiff(data, filename->str, width, height))
             g_message("something went wrong");
 
