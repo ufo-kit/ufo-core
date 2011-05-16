@@ -148,6 +148,10 @@ void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
  * \brief Fill buffer with data
  * \public \memberof UfoBuffer
  *
+ * This method does not take the ownership of data, it just copies the data off
+ * of it because we never know if there is enough memory to hold floats of that
+ * data.
+ *
  * \param[in] buffer A UfoBuffer to fill the data with
  * \param[in] data User supplied data
  * \param[in] n Size of data in bytes
@@ -221,7 +225,10 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
         case CPU_DATA_VALID:
             break;
         case GPU_DATA_VALID:
-            memset(priv->cpu_data, 0, priv->size);
+            if (priv->cpu_data == NULL)
+                priv->cpu_data = g_malloc0(priv->size);
+            else
+                memset(priv->cpu_data, 0, priv->size);
             buffer_get_wait_events(priv, &wait_events, &num_events);
             clEnqueueReadBuffer(priv->command_queue,
                                 priv->gpu_data,
@@ -229,6 +236,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
                                 0, priv->size,
                                 priv->cpu_data,
                                 num_events, wait_events, &event);
+            /* TODO: we should clear all events from the wait_queue */
             g_free(wait_events);
             priv->state = CPU_DATA_VALID;
             break;
@@ -292,6 +300,10 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer)
         case GPU_DATA_VALID:
             break;
         case NO_DATA:
+            if (priv->gpu_data) {
+                priv->state = GPU_DATA_VALID;
+                break;
+            }
             return NULL;
     }
     return priv->gpu_data;

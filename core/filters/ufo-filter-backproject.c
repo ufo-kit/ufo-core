@@ -1,4 +1,5 @@
 #include <gmodule.h>
+#include <math.h>
 #include <CL/cl.h>
 
 #include "ufo-filter-backproject.h"
@@ -64,32 +65,71 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterBackproject *self = UFO_FILTER_BACKPROJECT(filter);
+    UfoFilterBackprojectPrivate *priv = UFO_FILTER_BACKPROJECT_GET_PRIVATE(self);
     UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
+    const float offset_x = 0.0f;
+    const float offset_y = 0.0f;
+    gint32 width, num_projections;
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
-    while (!ufo_buffer_is_finished(sinogram)) {
-        if (self->priv->kernel != NULL) {
-            gint32 width, num_projections;
-            ufo_buffer_get_dimensions(sinogram, &width, &num_projections);
-            g_message("create slice of size %ix%i", width, width);
+    ufo_buffer_get_dimensions(sinogram, &width, &num_projections);
 
-            /* TODO: We consume the sinogram and allocate a new buffer for the
-             * slice. We should also allocate private buffers for the constant data
-             * or put it in like that hack from Suren. */
-            /*
-            cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
-            cl_int err = CL_SUCCESS;
+    /* create angle arrays */
+    float *cos_tmp = g_malloc0(sizeof(float) * num_projections);
+    float *sin_tmp = g_malloc0(sizeof(float) * num_projections);
+    float *axes_tmp = g_malloc0(sizeof(float) * num_projections);
+
+    float step = G_PI_2 / num_projections;
+    float angle = 0.0f;
+    for (int i = 0; i < num_projections; i++, angle += step) {
+        cos_tmp[i] = cos(angle);
+        sin_tmp[i] = sin(angle);
+        axes_tmp[i] = 0.0f;
+    }
+
+    UfoBuffer *cos_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, cos_tmp);
+    UfoBuffer *sin_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, sin_tmp);
+    UfoBuffer *axes_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, axes_tmp);
+
+    cl_mem cos_mem = ufo_buffer_get_gpu_data(cos_buffer);
+    cl_mem sin_mem = ufo_buffer_get_gpu_data(sin_buffer);
+    cl_mem axes_mem = ufo_buffer_get_gpu_data(axes_buffer);
+
+    g_free(cos_tmp);
+    g_free(sin_tmp);
+    g_free(axes_tmp);
+
+    cl_int err = CL_SUCCESS;
+    err = clSetKernelArg(priv->kernel, 0, sizeof(gint32), &num_projections);
+    err = clSetKernelArg(priv->kernel, 1, sizeof(gint32), &width);
+    err = clSetKernelArg(priv->kernel, 2, sizeof(gint32), &offset_x);
+    err = clSetKernelArg(priv->kernel, 3, sizeof(gint32), &offset_y);
+    err = clSetKernelArg(priv->kernel, 4, sizeof(cl_mem), (void *) &cos_mem);
+    err = clSetKernelArg(priv->kernel, 5, sizeof(cl_mem), (void *) &sin_mem);
+    err = clSetKernelArg(priv->kernel, 6, sizeof(cl_mem), (void *) &axes_mem);
+
+    while (!ufo_buffer_is_finished(sinogram)) {
+        if (priv->kernel != NULL) {
+            size_t global_work_size[2];
+            UfoBuffer *slice = ufo_resource_manager_request_buffer(manager,
+                    width, width, NULL);
+
+            cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
+            cl_mem slice_mem = (cl_mem) ufo_buffer_get_gpu_data(slice);
             cl_event event;
 
-            err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
-            err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(buffer),
-                                         self->priv->kernel,
+            err = clSetKernelArg(priv->kernel, 7, sizeof(cl_mem), (void *) &sinogram_mem);
+            err = clSetKernelArg(priv->kernel, 8, sizeof(cl_mem), (void *) &slice_mem);
+            global_work_size[0] = width;
+            global_work_size[1] = width;
+            err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(sinogram),
+                                         priv->kernel,
                                          1, NULL, global_work_size, NULL,
                                          0, NULL, &event);
-            ufo_buffer_wait_on_event(buffer, event);
-            */
+            ufo_buffer_wait_on_event(slice, event);
+            g_async_queue_push(output_queue, slice);
         }
         else {
         

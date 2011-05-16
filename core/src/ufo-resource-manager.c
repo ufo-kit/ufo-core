@@ -350,12 +350,10 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
     }
     else {
         buffer = g_queue_pop_head(queue);
-        if (buffer == NULL) {
+        if (buffer == NULL)
             buffer = resource_manager_create_buffer(self, width, height, data);
-        }
-        else if (data != NULL) {
+        else if (data != NULL)
             ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
-        }
     }
     
     return buffer;
