@@ -44,15 +44,16 @@ static gboolean filter_write_tiff(float *buffer,
     TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
     TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
     TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 32);
+    TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
     TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
-    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, height);
-
-    TIFFSetField(tif, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 
-    size_t written_bytes = TIFFWriteEncodedStrip(tif, 0, buffer, sizeof(short)*width*height);
-    if (written_bytes == -1)
-        success = FALSE;
+    const guint32 rows_per_strip = TIFFDefaultStripSize(tif, (guint32)-1);
+    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, rows_per_strip);
+
+    /* TODO: Evaluate if this is slower than TIFFWriteEncodedStrip() */
+    for (int y = 0; y < height; y++, buffer += width)
+        TIFFWriteScanline(tif, buffer, y, 0);
 
     TIFFClose(tif);
     return success;
@@ -131,7 +132,6 @@ static void ufo_filter_writer_process(UfoFilter *self)
         ufo_buffer_get_dimensions(input, &width, &height);
         float *data = ufo_buffer_get_cpu_data(input);
         g_string_printf(filename, "%s/%s-%i.tif", priv->path, priv->prefix, current_frame++);
-        g_message("writing file %s", filename->str);
         if (!filter_write_tiff(data, filename->str, width, height))
             g_message("something went wrong");
 
