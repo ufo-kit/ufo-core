@@ -12,13 +12,13 @@ struct _UfoFilterIFFTPrivate {
     /* add your private data here */
     /* cl_kernel kernel; */
     float example;
-    clFFT_Dimension fft_dimensions;
-    clFFT_Dim3 fft_size;
+    clFFT_Dimension ifft_dimensions;
+    clFFT_Dim3 ifft_size;
 };
 
-GType ufo_filter_fft_get_type(void) G_GNUC_CONST;
+GType ufo_filter_ifft_get_type(void) G_GNUC_CONST;
 
-G_DEFINE_TYPE(UfoFilterIFFT, ufo_filter_fft, UFO_TYPE_FILTER);
+G_DEFINE_TYPE(UfoFilterIFFT, ufo_filter_ifft, UFO_TYPE_FILTER);
 
 #define UFO_FILTER_IFFT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_IFFT, UfoFilterIFFTPrivate))
 
@@ -31,7 +31,7 @@ enum {
     N_PROPERTIES
 };
 
-static GParamSpec *fft_properties[N_PROPERTIES] = { NULL, };
+static GParamSpec *ifft_properties[N_PROPERTIES] = { NULL, };
 
 static void activated(EthosPlugin *plugin)
 {
@@ -44,7 +44,7 @@ static void deactivated(EthosPlugin *plugin)
 /* 
  * virtual methods 
  */
-static void ufo_filter_fft_initialize(UfoFilter *filter)
+static void ufo_filter_ifft_initialize(UfoFilter *filter)
 {
 }
 
@@ -52,7 +52,7 @@ static void ufo_filter_fft_initialize(UfoFilter *filter)
  * This is the main method in which the filter processes one buffer after
  * another.
  */
-static void ufo_filter_fft_process(UfoFilter *filter)
+static void ufo_filter_ifft_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterIFFTPrivate *priv = UFO_FILTER_IFFT_GET_PRIVATE(filter);
@@ -61,9 +61,9 @@ static void ufo_filter_fft_process(UfoFilter *filter)
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
     int err = CL_SUCCESS;
-    clFFT_Plan fft_plan = clFFT_CreatePlan(
+    clFFT_Plan ifft_plan = clFFT_CreatePlan(
             (cl_context) ufo_resource_manager_get_context(manager),
-            priv->fft_size, priv->fft_dimensions,
+            priv->ifft_size, priv->ifft_dimensions,
             clFFT_InterleavedComplexFormat, &err);
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
@@ -78,7 +78,7 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         /* FIXME: height may not be correct for applications other than FBP */
         /* FIXME: we should wait for previous computations */
         clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(input),
-                fft_plan, height, clFFT_Inverse, buffer_mem, buffer_mem,
+                ifft_plan, height, clFFT_Inverse, buffer_mem, buffer_mem,
                 0, NULL, &event);
 
         ufo_buffer_wait_on_event(input, event);
@@ -94,7 +94,7 @@ static void ufo_filter_fft_process(UfoFilter *filter)
     }
 }
 
-static void ufo_filter_fft_set_property(GObject *object,
+static void ufo_filter_ifft_set_property(GObject *object,
     guint           property_id,
     const GValue    *value,
     GParamSpec      *pspec)
@@ -106,24 +106,24 @@ static void ufo_filter_fft_set_property(GObject *object,
         case PROP_DIMENSIONS:
             switch(g_value_get_int(value)) {
                 case 1:
-                    self->priv->fft_dimensions = clFFT_1D;
+                    self->priv->ifft_dimensions = clFFT_1D;
                     break;
                 case 2:
-                    self->priv->fft_dimensions = clFFT_2D;
+                    self->priv->ifft_dimensions = clFFT_2D;
                     break;
                 case 3:
-                    self->priv->fft_dimensions = clFFT_3D;
+                    self->priv->ifft_dimensions = clFFT_3D;
                     break;
             }
             break;
         case PROP_SIZE_X:
-            self->priv->fft_size.x = g_value_get_int(value);
+            self->priv->ifft_size.x = g_value_get_int(value);
             break;
         case PROP_SIZE_Y:
-            self->priv->fft_size.y = g_value_get_int(value);
+            self->priv->ifft_size.y = g_value_get_int(value);
             break;
         case PROP_SIZE_Z:
-            self->priv->fft_size.z = g_value_get_int(value);
+            self->priv->ifft_size.z = g_value_get_int(value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -131,7 +131,7 @@ static void ufo_filter_fft_set_property(GObject *object,
     }
 }
 
-static void ufo_filter_fft_get_property(GObject *object,
+static void ufo_filter_ifft_get_property(GObject *object,
     guint       property_id,
     GValue      *value,
     GParamSpec  *pspec)
@@ -141,7 +141,7 @@ static void ufo_filter_fft_get_property(GObject *object,
     /* Handle all properties accordingly */
     switch (property_id) {
         case PROP_DIMENSIONS:
-            switch (self->priv->fft_dimensions) {
+            switch (self->priv->ifft_dimensions) {
                 case clFFT_1D:
                     g_value_set_int(value, 1);
                     break;
@@ -154,13 +154,13 @@ static void ufo_filter_fft_get_property(GObject *object,
             }
             break;
         case PROP_SIZE_X:
-            g_value_set_int(value, self->priv->fft_size.x);
+            g_value_set_int(value, self->priv->ifft_size.x);
             break;
         case PROP_SIZE_Y:
-            g_value_set_int(value, self->priv->fft_size.y);
+            g_value_set_int(value, self->priv->ifft_size.y);
             break;
         case PROP_SIZE_Z:
-            g_value_set_int(value, self->priv->fft_size.z);
+            g_value_set_int(value, self->priv->ifft_size.z);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -168,21 +168,21 @@ static void ufo_filter_fft_get_property(GObject *object,
     }
 }
 
-static void ufo_filter_fft_class_init(UfoFilterIFFTClass *klass)
+static void ufo_filter_ifft_class_init(UfoFilterIFFTClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     EthosPluginClass *plugin_class = ETHOS_PLUGIN_CLASS(klass);
     UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
 
-    gobject_class->set_property = ufo_filter_fft_set_property;
-    gobject_class->get_property = ufo_filter_fft_get_property;
+    gobject_class->set_property = ufo_filter_ifft_set_property;
+    gobject_class->get_property = ufo_filter_ifft_get_property;
     plugin_class->activated = activated;
     plugin_class->deactivated = deactivated;
-    filter_class->initialize = ufo_filter_fft_initialize;
-    filter_class->process = ufo_filter_fft_process;
+    filter_class->initialize = ufo_filter_ifft_initialize;
+    filter_class->process = ufo_filter_ifft_process;
 
     /* install properties */
-    fft_properties[PROP_DIMENSIONS] = 
+    ifft_properties[PROP_DIMENSIONS] = 
         g_param_spec_int("dimensions",
             "Number of FFT dimensions from 1 to 3",
             "Number of FFT dimensions from 1 to 3",
@@ -191,7 +191,7 @@ static void ufo_filter_fft_class_init(UfoFilterIFFTClass *klass)
             1,   /* default */
             G_PARAM_READWRITE);
 
-    fft_properties[PROP_SIZE_X] = 
+    ifft_properties[PROP_SIZE_X] = 
         g_param_spec_int("size-x",
             "Size of the FFT transform in x-direction",
             "Size of the FFT transform in x-direction",
@@ -200,7 +200,7 @@ static void ufo_filter_fft_class_init(UfoFilterIFFTClass *klass)
             1,      /* default */
             G_PARAM_READWRITE);
 
-    fft_properties[PROP_SIZE_Y] = 
+    ifft_properties[PROP_SIZE_Y] = 
         g_param_spec_int("size-y",
             "Size of the FFT transform in y-direction",
             "Size of the FFT transform in y-direction",
@@ -209,7 +209,7 @@ static void ufo_filter_fft_class_init(UfoFilterIFFTClass *klass)
             1,      /* default */
             G_PARAM_READWRITE);
 
-    fft_properties[PROP_SIZE_Z] = 
+    ifft_properties[PROP_SIZE_Z] = 
         g_param_spec_int("size-z",
             "Size of the FFT transform in z-direction",
             "Size of the FFT transform in z-direction",
@@ -218,22 +218,22 @@ static void ufo_filter_fft_class_init(UfoFilterIFFTClass *klass)
             1,      /* default */
             G_PARAM_READWRITE);
 
-    g_object_class_install_property(gobject_class, PROP_DIMENSIONS, fft_properties[PROP_DIMENSIONS]);
-    g_object_class_install_property(gobject_class, PROP_SIZE_X, fft_properties[PROP_SIZE_X]);
-    g_object_class_install_property(gobject_class, PROP_SIZE_Y, fft_properties[PROP_SIZE_Y]);
-    g_object_class_install_property(gobject_class, PROP_SIZE_Z, fft_properties[PROP_SIZE_Z]);
+    g_object_class_install_property(gobject_class, PROP_DIMENSIONS, ifft_properties[PROP_DIMENSIONS]);
+    g_object_class_install_property(gobject_class, PROP_SIZE_X, ifft_properties[PROP_SIZE_X]);
+    g_object_class_install_property(gobject_class, PROP_SIZE_Y, ifft_properties[PROP_SIZE_Y]);
+    g_object_class_install_property(gobject_class, PROP_SIZE_Z, ifft_properties[PROP_SIZE_Z]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterIFFTPrivate));
 }
 
-static void ufo_filter_fft_init(UfoFilterIFFT *self)
+static void ufo_filter_ifft_init(UfoFilterIFFT *self)
 {
     UfoFilterIFFTPrivate *priv = self->priv = UFO_FILTER_IFFT_GET_PRIVATE(self);
-    priv->fft_dimensions = 1;
-    priv->fft_size.x = 1;
-    priv->fft_size.y = 1;
-    priv->fft_size.z = 1;
+    priv->ifft_dimensions = 1;
+    priv->ifft_size.x = 1;
+    priv->ifft_size.y = 1;
+    priv->ifft_size.z = 1;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
