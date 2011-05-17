@@ -9,9 +9,7 @@
 #include "ufo-buffer.h"
 
 struct _UfoFilterFFTPrivate {
-    /* add your private data here */
-    /* cl_kernel kernel; */
-    float example;
+    cl_kernel kernel;
     clFFT_Dimension fft_dimensions;
     clFFT_Dim3 fft_size;
 };
@@ -46,6 +44,23 @@ static void deactivated(EthosPlugin *plugin)
  */
 static void ufo_filter_fft_initialize(UfoFilter *filter)
 {
+    UfoFilterFFT *self = UFO_FILTER_FFT(filter);
+    UfoResourceManager *manager = ufo_resource_manager();
+    GError *error = NULL;
+    self->priv->kernel = NULL;
+
+    ufo_resource_manager_add_program(manager, "fft.cl", &error);
+    if (error != NULL) {
+        g_warning("%s", error->message);
+        g_error_free(error);
+        return;
+    }
+
+    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "fft_spread", &error);
+    if (error != NULL) {
+        g_warning("%s", error->message);
+        g_error_free(error);
+    }
 }
 
 /*
@@ -66,27 +81,42 @@ static void ufo_filter_fft_process(UfoFilter *filter)
             priv->fft_size, priv->fft_dimensions,
             clFFT_InterleavedComplexFormat, &err);
 
-    UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     gint32 width, height;
+    ufo_buffer_get_dimensions(sinogram, &width, &height);
 
-    while (!ufo_buffer_is_finished(input)) {
-        ufo_buffer_get_dimensions(input, &width, &height);
-        cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input);
+    while (!ufo_buffer_is_finished(sinogram)) {
+        /* FIXME: sizes of input might change */
+        UfoBuffer *fft_buffer = ufo_resource_manager_request_buffer(manager,
+                2 * priv->fft_size.x, /* what to do in the multi-dimensional case? */
+                height, NULL);
+        cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(fft_buffer);
+        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
         cl_event event;
+        size_t global_work_size[2];
 
-        /* FIXME: add spreading */
-        /* FIXME: height may not be correct for applications other than FBP */
+        global_work_size[0] = priv->fft_size.x;
+        global_work_size[1] = height;
+        clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) fft_buffer_mem);
+        clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) sinogram_mem);
+        clSetKernelArg(priv->kernel, 2, sizeof(int), &width);
+        clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(sinogram), 
+                priv->kernel, 2, NULL, global_work_size, 
+                NULL, 0, NULL, &event);
+
         /* FIXME: we should wait for previous computations */
-        clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(input),
-                fft_plan, height, clFFT_Forward, buffer_mem, buffer_mem,
+        clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(fft_buffer),
+                fft_plan, height, clFFT_Forward, 
+                fft_buffer_mem, fft_buffer_mem,
                 0, NULL, &event);
 
-        ufo_buffer_wait_on_event(input, event);
+        ufo_buffer_wait_on_event(fft_buffer, event);
+        ufo_resource_manager_release_buffer(manager, sinogram);
 
-        g_async_queue_push(output_queue, input);
-        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        g_async_queue_push(output_queue, fft_buffer);
+        sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
-    g_async_queue_push(output_queue, input);
+    g_async_queue_push(output_queue, sinogram);
 }
 
 static void ufo_filter_fft_set_property(GObject *object,

@@ -12,6 +12,7 @@ set(ufofilter_SRCS
 set(ufofilter_KERNELS
     backproject.cl
     scale.cl
+    fft.cl
     )
 
 set(ufofilter_LIBS

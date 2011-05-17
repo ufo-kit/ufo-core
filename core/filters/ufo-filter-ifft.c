@@ -68,9 +68,9 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
     gint32 width, height;
+    ufo_buffer_get_dimensions(input, &width, &height);
 
     while (!ufo_buffer_is_finished(input)) {
-        ufo_buffer_get_dimensions(input, &width, &height);
         cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input);
         cl_event event;
 
