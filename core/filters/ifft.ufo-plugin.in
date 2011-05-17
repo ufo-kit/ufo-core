@@ -1,0 +1,8 @@
+[UFO Plugin]
+Name=ifft
+Module=${UFO_PLUGIN_LIBRARY}
+IAge=1
+Authors=Matthias Vogelgesang
+Copyright=Public Domain
+Website=http://ufo.kit.edu
+Description=Inverse Fast Fourier Transformation

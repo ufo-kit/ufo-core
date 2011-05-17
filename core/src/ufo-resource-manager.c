@@ -314,6 +314,20 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, c
 }
 
 /**
+ * \brief Return an OpenCL context object
+ *
+ * This method can be used to initialize third-party libraries like Apple's FFT
+ * library.
+ *
+ * \param[in] resource_manager A UfoResourceManager
+ * \return A cl_context object
+ */
+gpointer ufo_resource_manager_get_context(UfoResourceManager *resource_manager)
+{
+    return resource_manager->priv->opencl_context; 
+}
+
+/**
  * \brief Request a UfoBuffer with a given size
  * \public \memberof UfoResourceManager
  * \param[in] resource_manager A UfoResourceManager

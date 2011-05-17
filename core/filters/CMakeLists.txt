@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 # --- Set sources -------------------------------------------------------------
 set(ufofilter_SRCS 
+    ufo-filter-backproject.c
     ufo-filter-hist.c
     ufo-filter-raw.c
     ufo-filter-scale.c
@@ -9,6 +10,7 @@ set(ufofilter_SRCS
     )
 
 set(ufofilter_KERNELS
+    backproject.cl
     scale.cl
     )
 
@@ -39,9 +41,9 @@ endif ()
 
 find_package(OCLFFT)
 if (OCLFFT_FOUND)
-    set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-backproject.c)
+    set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-fft.c)
+    set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-ifft.c)
     set(ufofilter_LIBS ${ufofilter_LIBS} ${OCLFFT_LIBRARIES})
-    set(ufofilter_KERNELS ${ufofilter_KERNELS} backproject.cl)
     include_directories(${OCLFFT_INCLUDE_DIRS})
 endif ()
 
