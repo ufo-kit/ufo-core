@@ -83,15 +83,10 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
 
         ufo_buffer_wait_on_event(input, event);
 
-        /* Use the input here and push any output that's created. In the case of
-         * a source filter, you wouldn't pop data from the input_queue but just
-         * generate data with ufo_resource_manager_request_buffer() and push
-         * that into output_queue. On the other hand, a sink filter would
-         * release all incoming buffers from input_queue with
-         * ufo_resource_manager_release_buffer() for further re-use. */
-
         g_async_queue_push(output_queue, input);
+        input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
+    g_async_queue_push(output_queue, input);
 }
 
 static void ufo_filter_ifft_set_property(GObject *object,
