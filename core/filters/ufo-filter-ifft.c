@@ -12,6 +12,7 @@ struct _UfoFilterIFFTPrivate {
     cl_kernel kernel;
     clFFT_Dimension ifft_dimensions;
     clFFT_Dim3 ifft_size;
+    gint32 final_width;
 };
 
 GType ufo_filter_ifft_get_type(void) G_GNUC_CONST;
@@ -26,6 +27,7 @@ enum {
     PROP_SIZE_X,
     PROP_SIZE_Y,
     PROP_SIZE_Z,
+    PROP_FINAL_WIDTH,
     N_PROPERTIES
 };
 
@@ -87,6 +89,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input);
         cl_event event;
         cl_event wait_on_event;
+        guint32 width = (priv->final_width == -1) ? priv->ifft_size.x : priv->final_width;
 
         /* 1. Inverse FFT */
         clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(input),
@@ -100,13 +103,12 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         global_work_size[1] = height;
 
         UfoBuffer *sinogram = ufo_resource_manager_request_buffer(manager,
-                priv->ifft_size.x, height, NULL);
+                width, height, NULL);
 
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
         clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
-        /* FIXME: this must be user-supplied */
-        clSetKernelArg(priv->kernel, 2, sizeof(int), &priv->ifft_size.x);
+        clSetKernelArg(priv->kernel, 2, sizeof(int), &width);
 
         clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(input),
                 priv->kernel,
@@ -153,6 +155,9 @@ static void ufo_filter_ifft_set_property(GObject *object,
         case PROP_SIZE_Z:
             self->priv->ifft_size.z = g_value_get_int(value);
             break;
+        case PROP_FINAL_WIDTH:
+            self->priv->final_width = g_value_get_int(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -189,6 +194,9 @@ static void ufo_filter_ifft_get_property(GObject *object,
             break;
         case PROP_SIZE_Z:
             g_value_set_int(value, self->priv->ifft_size.z);
+            break;
+        case PROP_FINAL_WIDTH:
+            g_value_set_int(value, self->priv->final_width);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -246,10 +254,20 @@ static void ufo_filter_ifft_class_init(UfoFilterIFFTClass *klass)
             1,      /* default */
             G_PARAM_READWRITE);
 
+    ifft_properties[PROP_FINAL_WIDTH] = 
+        g_param_spec_int("final-width",
+            "Specify if target width is smaller than FFT size",
+            "Specify if target width is smaller than FFT size",
+            -1,      /* minimum */
+            8192,   /* maximum */
+            -1,     /* default -1 means "use FFT size" */
+            G_PARAM_READWRITE);
+
     g_object_class_install_property(gobject_class, PROP_DIMENSIONS, ifft_properties[PROP_DIMENSIONS]);
     g_object_class_install_property(gobject_class, PROP_SIZE_X, ifft_properties[PROP_SIZE_X]);
     g_object_class_install_property(gobject_class, PROP_SIZE_Y, ifft_properties[PROP_SIZE_Y]);
     g_object_class_install_property(gobject_class, PROP_SIZE_Z, ifft_properties[PROP_SIZE_Z]);
+    g_object_class_install_property(gobject_class, PROP_FINAL_WIDTH, ifft_properties[PROP_FINAL_WIDTH]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterIFFTPrivate));
@@ -262,6 +280,7 @@ static void ufo_filter_ifft_init(UfoFilterIFFT *self)
     priv->ifft_size.x = 1;
     priv->ifft_size.y = 1;
     priv->ifft_size.z = 1;
+    priv->final_width = -1;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
