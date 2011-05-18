@@ -431,12 +431,12 @@ static void ufo_resource_manager_dispose(GObject *gobject)
 
     GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
     g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
-    g_hash_table_destroy(priv->opencl_kernels);
     g_list_free(kernels);
 
     GList *kernel_names = g_hash_table_get_keys(priv->opencl_kernels);
     g_list_foreach(kernel_names, (GFunc) g_free, NULL);
     g_list_free(kernel_names);
+    g_hash_table_destroy(priv->opencl_kernels);
 
     g_list_foreach(priv->opencl_kernel_table, (GFunc) g_free, NULL);
     g_list_free(priv->opencl_kernel_table);

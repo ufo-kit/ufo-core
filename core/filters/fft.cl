@@ -14,6 +14,7 @@ __kernel void fft_spread(__global float *out, __global float *in, const int num_
         out[idy*dpitch + idx*2] = in[idy*num_bins + idx];
         out[idy*dpitch + idx*2 + 1] = 0.0;
     }
+    out[idy*num_bins + idx] = in[idy*num_bins + idx];
 }
 
 __kernel void fft_pack(__global float *in, __global float *out, const int num_bins)

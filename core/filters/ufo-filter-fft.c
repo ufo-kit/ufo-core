@@ -87,28 +87,32 @@ static void ufo_filter_fft_process(UfoFilter *filter)
 
     while (!ufo_buffer_is_finished(sinogram)) {
         /* FIXME: sizes of input might change */
+
+        /* 1. Spread data for interleaved FFT */
         UfoBuffer *fft_buffer = ufo_resource_manager_request_buffer(manager,
                 2 * priv->fft_size.x, /* what to do in the multi-dimensional case? */
                 height, NULL);
+
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(fft_buffer);
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
-        cl_event event;
+        cl_event event, wait_on_event;
         size_t global_work_size[2];
 
         global_work_size[0] = priv->fft_size.x;
         global_work_size[1] = height;
-        clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) fft_buffer_mem);
-        clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) sinogram_mem);
+        clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
+        clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
         clSetKernelArg(priv->kernel, 2, sizeof(int), &width);
         clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(sinogram), 
-                priv->kernel, 2, NULL, global_work_size, 
-                NULL, 0, NULL, &event);
+                priv->kernel, 
+                2, NULL, global_work_size, NULL, 
+                0, NULL, &wait_on_event);
 
         /* FIXME: we should wait for previous computations */
         clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(fft_buffer),
                 fft_plan, height, clFFT_Forward, 
                 fft_buffer_mem, fft_buffer_mem,
-                0, NULL, &event);
+                1, &wait_on_event, &event);
 
         ufo_buffer_wait_on_event(fft_buffer, event);
         ufo_resource_manager_release_buffer(manager, sinogram);
@@ -259,6 +263,7 @@ static void ufo_filter_fft_init(UfoFilterFFT *self)
     priv->fft_size.x = 1;
     priv->fft_size.y = 1;
     priv->fft_size.z = 1;
+    priv->kernel = NULL;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

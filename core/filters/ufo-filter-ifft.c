@@ -86,17 +86,36 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     while (!ufo_buffer_is_finished(input)) {
         cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input);
         cl_event event;
+        cl_event wait_on_event;
 
-        /* FIXME: add spreading */
-        /* FIXME: height may not be correct for applications other than FBP */
-        /* FIXME: we should wait for previous computations */
+        /* 1. Inverse FFT */
         clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(input),
                 ifft_plan, height, clFFT_Inverse, buffer_mem, buffer_mem,
+                0, NULL, &wait_on_event);
+
+        /* 2. Pack interleaved complex numbers */
+        size_t global_work_size[2];
+        global_work_size[0] = priv->ifft_size.x;
+        global_work_size[1] = height;
+
+        UfoBuffer *sinogram = ufo_resource_manager_request_buffer(manager,
+                priv->ifft_size.x, height, NULL);
+
+        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
+        clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &buffer_mem);
+        clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
+        /* FIXME: this must be user-supplied */
+        clSetKernelArg(priv->kernel, 2, sizeof(int), &priv->ifft_size.x);
+
+        clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(input),
+                priv->kernel,
+                2, NULL, global_work_size, NULL,
                 0, NULL, &event);
 
-        ufo_buffer_wait_on_event(input, event);
+        ufo_buffer_wait_on_event(sinogram, event);
+        ufo_resource_manager_release_buffer(manager, input);
 
-        g_async_queue_push(output_queue, input);
+        g_async_queue_push(output_queue, sinogram);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
     g_async_queue_push(output_queue, input);
