@@ -84,13 +84,14 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     ufo_buffer_get_dimensions(input, &width, &height);
 
     while (!ufo_buffer_is_finished(input)) {
-        cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input);
+        cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input);
         cl_event event;
         cl_event wait_on_event;
 
         /* 1. Inverse FFT */
         clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(input),
-                ifft_plan, height, clFFT_Inverse, buffer_mem, buffer_mem,
+                ifft_plan, height, clFFT_Inverse, 
+                fft_buffer_mem, fft_buffer_mem,
                 0, NULL, &wait_on_event);
 
         /* 2. Pack interleaved complex numbers */
@@ -102,7 +103,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                 priv->ifft_size.x, height, NULL);
 
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
-        clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &buffer_mem);
+        clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
         /* FIXME: this must be user-supplied */
         clSetKernelArg(priv->kernel, 2, sizeof(int), &priv->ifft_size.x);
