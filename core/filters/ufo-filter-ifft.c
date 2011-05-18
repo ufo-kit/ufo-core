@@ -9,9 +9,7 @@
 #include "ufo-buffer.h"
 
 struct _UfoFilterIFFTPrivate {
-    /* add your private data here */
-    /* cl_kernel kernel; */
-    float example;
+    cl_kernel kernel;
     clFFT_Dimension ifft_dimensions;
     clFFT_Dim3 ifft_size;
 };
@@ -46,6 +44,21 @@ static void deactivated(EthosPlugin *plugin)
  */
 static void ufo_filter_ifft_initialize(UfoFilter *filter)
 {
+    UfoFilterIFFT *self = UFO_FILTER_IFFT(filter);
+    UfoResourceManager *manager = ufo_resource_manager();
+    GError *error = NULL;
+    ufo_resource_manager_add_program(manager, "fft.cl", &error);
+    if (error != NULL) {
+        g_warning("%s", error->message);
+        g_error_free(error);
+        return;
+    }
+
+    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "fft_pack", &error);
+    if (error != NULL) {
+        g_warning("%s", error->message);
+        g_error_free(error);
+    }
 }
 
 /*

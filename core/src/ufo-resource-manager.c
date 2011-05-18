@@ -27,6 +27,7 @@ struct _UfoResourceManagerPrivate {
     /* FIXME: replace with multiple queues */
     cl_command_queue command_queue;
 
+    GList *opencl_files;
     GList *opencl_kernel_table;
     GList *opencl_programs;
 
@@ -222,6 +223,10 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
 {
     UfoResourceManagerPrivate *priv = resource_manager->priv;
 
+    /* Don't process the kernel file again, if already load */
+    if (g_list_find_custom(priv->opencl_files, filename, (GCompareFunc) g_strcmp0))
+        return TRUE;
+
     gchar *buffer = resource_manager_load_opencl_program(filename);
     if (buffer == NULL) {
         g_set_error(error,
@@ -231,6 +236,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
                 filename);
         return FALSE;
     }
+    priv->opencl_files = g_list_append(priv->opencl_files, g_strdup(filename));
 
     int err = CL_SUCCESS;
     cl_program program = clCreateProgramWithSource(priv->opencl_context,
@@ -424,27 +430,32 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
     GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
+    g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
+    g_hash_table_destroy(priv->opencl_kernels);
+    g_list_free(kernels);
+
     GList *kernel_names = g_hash_table_get_keys(priv->opencl_kernels);
     g_list_foreach(kernel_names, (GFunc) g_free, NULL);
-    g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
-    g_list_free(kernels);
     g_list_free(kernel_names);
 
     g_list_foreach(priv->opencl_kernel_table, (GFunc) g_free, NULL);
+    g_list_free(priv->opencl_kernel_table);
+
     g_list_foreach(priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
+    g_list_free(priv->opencl_programs);
+
     g_list_foreach(priv->buffers, (gpointer) resource_manager_release_mem, NULL);
+    g_list_free(priv->buffers);
     clReleaseCommandQueue(priv->command_queue);
     clReleaseContext(priv->opencl_context);
 
     GList *buffers = g_hash_table_get_values(priv->buffer_map);
     g_list_foreach(buffers, (GFunc) g_queue_free, NULL);
     g_list_free(buffers);
-
     g_hash_table_destroy(priv->buffer_map);
-    g_hash_table_destroy(priv->opencl_kernels);
-    g_list_free(priv->opencl_kernel_table);
-    g_list_free(priv->opencl_programs);
-    g_list_free(priv->buffers);
+
+    g_list_foreach(priv->opencl_files, (GFunc) g_free, NULL);
+    g_list_free(priv->opencl_files);
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->dispose(gobject);
 }
