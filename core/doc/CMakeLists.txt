@@ -25,6 +25,7 @@ if(SPHINX)
         source/build.rst
         source/copyright.rst
         source/faq.rst
+        source/filters.rst
         source/glossary.rst
         source/install.rst
         source/json.rst

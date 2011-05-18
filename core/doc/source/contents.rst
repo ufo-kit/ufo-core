@@ -10,6 +10,7 @@ UFO Documentation contents
     using/index.rst
     api.rst
     json.rst
+    filters.rst
     faq.rst
     glossary.rst
 

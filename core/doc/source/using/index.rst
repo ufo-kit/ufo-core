@@ -94,6 +94,13 @@ get a plain ``float`` array or a ``cl_mem`` handle. The latter can be used in
 conjunction with ``cl_set_kernel_arg`` to call an OpenCL kernel with the buffer
 data as an argument.
 
+
+Available Filters
+-----------------
+
+Several pre-written filters can be found on a :ref:`separate page <filters>`.
+
+
 Language Bindings
 =================
 

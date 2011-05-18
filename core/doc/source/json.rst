@@ -106,45 +106,74 @@ Properties:
 Example
 -------
 
-An example configuration would look like this::
+Let's say we want to generate sinograms from a directory full of tomographic
+projections. A suitable configuration would look like this::
 
     {
-        "prop-sets" : {
-            "set1" : {
-                "path" : "/tmp"
-            }
-        }
         "type" : "sequence",
         "elements" : [
             {
                 "type" : "filter",
-                "plugin" : "uca"
-            },
-            {
-                "type" : "filter",
-                "plugin" : "scale",
+                "plugin" : "reader",
                 "properties" : {
-                    "scale" : 0.5
+                    "path" : "/home/path/to/projections/",
+                    "count" : 300
                 }
             },
             {
-                "type" : "split",
-                "mode" : "copy",
-                "elements" : [
-                    {
-                        "type" : "filter",
-                        "plugin" : "raw"
-                        "prop-refs" : ["set1"]
-                    },
-                    {
-                        "type" : "filter",
-                        "plugin" : "histogram"
-                    }
-                ]
+                "type" : "filter",
+                "plugin" : "sinogenerator",
+                "properties" : {
+                    "num-projections" : 300
+                }
+            },
+            {
+                "type" : "filter",
+                "plugin" : "writer",
+                "properties" : {
+                    "path" : "/home/path/to/sinograms/",
+                    "prefix" : "sino"
+                }
             }
         ]
     }
 
+Okay, now we have some sinograms. Using the following configuration we can
+easily do an un-filtered back-projection ::
+
+    {
+        "type" : "sequence",
+        "elements" : [
+            {
+                "type" : "filter",
+                "plugin" : "reader",
+                "properties" : {
+                    "path" : "/home/path/to/sinograms/",
+                    "count" : 200,
+                    "prefix" : "sino"
+                }
+            },
+            {
+                "type" : "filter",
+                "plugin" : "backproject",
+                "properties" : {
+                    "axis-pos" : 413.0,
+                    "angle-step" : 0.01256637
+                }
+            },
+            {
+                "type" : "filter",
+                "plugin" : "writer",
+                "properties" : {
+                    "path" : "/home/path/to/slices",
+                    "prefix" : "slice"
+                }
+            }
+        ]
+    }
+
+As you might correctly conclude, we could have also merged these two
+configurations and skip writing the sinograms to disk.
 
 TODO
 ----
