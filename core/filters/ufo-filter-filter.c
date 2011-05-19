@@ -7,9 +7,13 @@
 #include "ufo-element.h"
 #include "ufo-buffer.h"
 
+typedef enum {
+    FILTER_RAMP
+} FilterType;
+
 struct _UfoFilterFilterPrivate {
     cl_kernel kernel;
-    float example;
+    FilterType filter_type;
 };
 
 GType ufo_filter_filter_get_type(void) G_GNUC_CONST;
@@ -20,11 +24,33 @@ G_DEFINE_TYPE(UfoFilterFilter, ufo_filter_filter, UFO_TYPE_FILTER);
 
 enum {
     PROP_0,
-    PROP_EXAMPLE, /* remove this or add more */
+    PROP_FILTER_TYPE,
     N_PROPERTIES
 };
 
 static GParamSpec *filter_properties[N_PROPERTIES] = { NULL, };
+
+static UfoBuffer *filter_create_data(UfoFilterFilterPrivate *priv, guint32 width)
+{
+    float *filter = g_malloc0(width * sizeof(float));
+    const float scale = 2.0 / width / width;
+    filter[0] = 0.0;
+    filter[1] = 1.0 / width;
+    for (int k = 1; k < width / 4; k++) {
+        filter[2*k] = k*scale;
+        filter[2*k + 1] = filter[2*k];
+    }
+
+    /* Mirror filter */
+    for (int k = width/2; k < width; k += 2) {
+        filter[k] = filter[width - k];
+        filter[k + 1] = filter[width - k + 1];
+    }
+    UfoBuffer *filter_buffer = ufo_resource_manager_request_buffer(
+            ufo_resource_manager(), width, 1, filter);
+    g_free(filter);
+    return filter_buffer;
+}
 
 static void activated(EthosPlugin *plugin)
 {
@@ -74,29 +100,12 @@ static void ufo_filter_filter_process(UfoFilter *filter)
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
     gint32 width, height;
     ufo_buffer_get_dimensions(input, &width, &height); 
-    g_message("buffer width %i", width);
 
-    float *ramp_filter = g_malloc0(width * sizeof(float));
-    const float scale = 2.0 / width / width;
-    ramp_filter[0] = 0.0;
-    ramp_filter[1] = 1.0 / width;
-    for (int k = 1; k < width / 4; k++) {
-        ramp_filter[2*k] = k*scale;
-        ramp_filter[2*k + 1] = ramp_filter[2*k];
-    }
-    ramp_filter[width/2] = ramp_filter[1];
-    for (int k = width/2; k < width; k += 2) {
-        ramp_filter[k] = ramp_filter[width - k];
-        ramp_filter[k + 1] = ramp_filter[width - k + 1];
-    }
-
-    UfoBuffer *filter_buffer = ufo_resource_manager_request_buffer(manager,
-            width, 1, ramp_filter);
+    UfoBuffer *filter_buffer = filter_create_data(priv, width);
     cl_mem filter_mem = (cl_mem) ufo_buffer_get_gpu_data(filter_buffer);
 
     while (!ufo_buffer_is_finished(input)) {
         /* FIXME: width might change */
-
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input);
         cl_event event;
         size_t global_work_size[2];
@@ -114,6 +123,7 @@ static void ufo_filter_filter_process(UfoFilter *filter)
         g_async_queue_push(output_queue, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
+    ufo_resource_manager_release_buffer(manager, filter_buffer);
     g_async_queue_push(output_queue, input);
 }
 
@@ -122,12 +132,11 @@ static void ufo_filter_filter_set_property(GObject *object,
     const GValue    *value,
     GParamSpec      *pspec)
 {
-    UfoFilterFilter *self = UFO_FILTER_FILTER(object);
+    /*UfoFilterFilter *self = UFO_FILTER_FILTER(object);*/
 
     /* Handle all properties accordingly */
     switch (property_id) {
-        case PROP_EXAMPLE:
-            self->priv->example = g_value_get_double(value);
+        case PROP_FILTER_TYPE:
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -140,12 +149,12 @@ static void ufo_filter_filter_get_property(GObject *object,
     GValue      *value,
     GParamSpec  *pspec)
 {
-    UfoFilterFilter *self = UFO_FILTER_FILTER(object);
+    /*UfoFilterFilter *self = UFO_FILTER_FILTER(object);*/
 
     /* Handle all properties accordingly */
     switch (property_id) {
-        case PROP_EXAMPLE:
-            g_value_set_double(value, self->priv->example);
+        case PROP_FILTER_TYPE:
+            g_value_set_string(value, "ramp");
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -167,16 +176,14 @@ static void ufo_filter_filter_class_init(UfoFilterFilterClass *klass)
     filter_class->process = ufo_filter_filter_process;
 
     /* install properties */
-    filter_properties[PROP_EXAMPLE] = 
-        g_param_spec_double("example",
-            "This is an example property",
-            "You should definately replace this with some meaningful property",
-            -1.0,   /* minimum */
-             1.0,   /* maximum */
-             1.0,   /* default */
+    filter_properties[PROP_FILTER_TYPE] = 
+        g_param_spec_string("filter-type",
+            "Type of filter",
+            "Type of filter",
+            "ramp",
             G_PARAM_READWRITE);
 
-    g_object_class_install_property(gobject_class, PROP_EXAMPLE, filter_properties[PROP_EXAMPLE]);
+    g_object_class_install_property(gobject_class, PROP_FILTER_TYPE, filter_properties[PROP_FILTER_TYPE]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterFilterPrivate));
@@ -186,6 +193,7 @@ static void ufo_filter_filter_init(UfoFilterFilter *self)
 {
     UfoFilterFilterPrivate *priv = self->priv = UFO_FILTER_FILTER_GET_PRIVATE(self);
     priv->kernel = NULL;
+    priv->filter_type = FILTER_RAMP;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
