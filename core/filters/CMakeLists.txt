@@ -7,12 +7,14 @@ set(ufofilter_SRCS
     ufo-filter-raw.c
     ufo-filter-scale.c
     ufo-filter-sino-generator.c
+    ufo-filter-filter.c
     )
 
 set(ufofilter_KERNELS
     backproject.cl
     scale.cl
     fft.cl
+    filter.cl
     )
 
 set(ufofilter_LIBS

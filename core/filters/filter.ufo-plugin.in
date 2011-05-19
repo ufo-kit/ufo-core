@@ -1,0 +1,8 @@
+[UFO Plugin]
+Name=filter
+Module=${UFO_PLUGIN_LIBRARY}
+IAge=1
+Authors=Matthias Vogelgesang
+Copyright=Public Domain
+Website=http://ufo.kit.edu
+Description=A collection of FIR filters like Ramp
