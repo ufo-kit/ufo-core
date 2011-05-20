@@ -139,28 +139,36 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
     return buffer;
 }
 
-static void *resource_manager_release_kernel(gpointer data, gpointer user_data)
+static void resource_manager_release_kernel(gpointer data, gpointer user_data)
 {
     cl_kernel kernel = (cl_kernel) data;
     clReleaseKernel(kernel);
-    return NULL;
 }
 
-static void *resource_manager_release_program(gpointer data, gpointer user_data)
+static void resource_manager_release_program(gpointer data, gpointer user_data)
 {
     cl_program program = (cl_program) data;
     clReleaseProgram(program);
-    return NULL;
 }
 
-static void *resource_manager_release_mem(gpointer data, gpointer user_data)
+static void resource_manager_release_mem(gpointer data, gpointer user_data)
 {
     UfoBuffer *buffer = UFO_BUFFER(data);
     cl_mem mem = ufo_buffer_get_gpu_data(buffer);
     if (mem != NULL)
         clReleaseMemObject(mem);
     g_object_unref(buffer);
-    return NULL;
+}
+
+static void resource_manager_get_buffer_statistics(gpointer data, gpointer user_data)
+{
+    UfoBuffer *buffer = UFO_BUFFER(data);
+    gint uploads, downloads;
+    ufo_buffer_get_transfer_statistics(buffer, &uploads, &downloads);
+    
+    gint *retval = (gint *) user_data;
+    retval[0] += uploads;
+    retval[1] += downloads;
 }
 
 static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
@@ -429,8 +437,15 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
+    /* print out some debug messages */
+    gint buffer_statistics[2] = { 0, };
+    g_list_foreach(priv->buffers, resource_manager_get_buffer_statistics, buffer_statistics); 
+    g_debug("Total Uploads: %i", buffer_statistics[0]);
+    g_debug("Total Downloads: %i", buffer_statistics[0]);
+
+    /* free resources */
     GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
-    g_list_foreach(kernels, (gpointer) resource_manager_release_kernel, NULL);
+    g_list_foreach(kernels, resource_manager_release_kernel, NULL);
     g_list_free(kernels);
 
     GList *kernel_names = g_hash_table_get_keys(priv->opencl_kernels);
@@ -441,10 +456,10 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     g_list_foreach(priv->opencl_kernel_table, (GFunc) g_free, NULL);
     g_list_free(priv->opencl_kernel_table);
 
-    g_list_foreach(priv->opencl_programs, (gpointer) resource_manager_release_program, NULL);
+    g_list_foreach(priv->opencl_programs, resource_manager_release_program, NULL);
     g_list_free(priv->opencl_programs);
 
-    g_list_foreach(priv->buffers, (gpointer) resource_manager_release_mem, NULL);
+    g_list_foreach(priv->buffers, resource_manager_release_mem, NULL);
     g_list_free(priv->buffers);
     clReleaseCommandQueue(priv->command_queue);
     clReleaseContext(priv->opencl_context);

@@ -56,6 +56,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *self);
 gpointer ufo_buffer_get_gpu_data(UfoBuffer *self);
 void ufo_buffer_set_cl_mem(UfoBuffer *self, gpointer mem);
 void ufo_buffer_wait_on_event(UfoBuffer *self, gpointer event);
+void ufo_buffer_get_transfer_statistics(UfoBuffer *self, gint *uploads, gint *downloads);
 
 void ufo_buffer_set_command_queue(UfoBuffer *self, gpointer queue);
 gpointer ufo_buffer_get_command_queue(UfoBuffer *self);

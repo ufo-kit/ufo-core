@@ -30,8 +30,10 @@ typedef enum {
 struct _UfoBufferPrivate {
     gint32      width;
     gint32      height;
-    gsize       size;   /**< size in bytes */
-    guint       access;
+    gsize       size;   /**< size of buffer in bytes */
+    gint        uploads;
+    gint        downloads;
+    gint        access;
 
     gboolean    finished;
     datastates  state;
@@ -241,6 +243,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
             /* TODO: we should clear all events from the wait_queue */
             g_free(wait_events);
             priv->state = CPU_DATA_VALID;
+            priv->downloads++;
             break;
         case NO_DATA:
             priv->cpu_data = g_malloc0(priv->size);
@@ -279,6 +282,18 @@ void ufo_buffer_wait_on_event(UfoBuffer *buffer, gpointer event)
 }
 
 /**
+ * \brief Get statistics on how often data was copied to and from GPU devices
+ * \param[in] buffer A UfoBuffer
+ * \param[out] uploads Number of transfers to GPU
+ * \param[out] downloads Number of transfers from GPU
+ */
+void ufo_buffer_get_transfer_statistics(UfoBuffer *buffer, gint *uploads, gint *downloads)
+{
+    *uploads = buffer->priv->uploads;
+    *downloads = buffer->priv->downloads;
+}
+
+/**
  * \brief Get OpenCL memory object that is used to up and download data.
  * \public \memberof UfoBuffer
  *
@@ -298,6 +313,7 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer)
                                  priv->cpu_data,
                                  0, NULL, NULL);
             priv->state = GPU_DATA_VALID;
+            priv->uploads++;
             break;
         case GPU_DATA_VALID:
             break;
@@ -470,6 +486,8 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->height = -1;
     priv->cpu_data = NULL;
     priv->gpu_data = NULL;
+    priv->uploads = 0;
+    priv->downloads = 0;
     priv->state = NO_DATA;
     priv->finished = FALSE;
     priv->wait_events = g_queue_new();
