@@ -34,6 +34,9 @@ struct _UfoResourceManagerPrivate {
     GList *buffers;                 /**< keep a list for buffer destruction */
     GHashTable *buffer_map;         /**< maps from dimension hash to a queue of buffer instances */
     GHashTable *opencl_kernels;     /**< maps from kernel string to cl_kernel */
+
+    gint cache_hits;
+    gint cache_misses;
 };
 
 static const gchar* opencl_error_msgs[] = {
@@ -380,15 +383,21 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         /* If there is no queue for this hash we create a new one but don't fill
          * it with the newly created buffer */
         buffer = resource_manager_create_buffer(self, width, height, data);
+        self->priv->cache_misses++;
         queue = g_queue_new();
         g_hash_table_insert(self->priv->buffer_map, hash, queue);
     }
     else {
         buffer = g_queue_pop_head(queue);
-        if (buffer == NULL)
+        if (buffer == NULL) {
             buffer = resource_manager_create_buffer(self, width, height, data);
-        else if (data != NULL)
-            ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
+            self->priv->cache_misses++;
+        }
+        else {
+            self->priv->cache_hits++;
+            if (data != NULL)
+                ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
+        }
     }
     
     return buffer;
@@ -449,6 +458,8 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     g_list_foreach(priv->buffers, resource_manager_get_buffer_statistics, buffer_statistics); 
     g_debug("Total Uploads: %i", buffer_statistics[0]);
     g_debug("Total Downloads: %i", buffer_statistics[0]);
+    g_debug("request_buffer() hits: %i", priv->cache_hits);
+    g_debug("request_buffer() misses: %i", priv->cache_misses);
 
     /* free resources */
     GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
@@ -520,6 +531,8 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
     self->priv = priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
+    priv->cache_hits = 0;
+    priv->cache_misses = 0;
     priv->buffers = NULL;
     priv->buffer_map = g_hash_table_new(NULL, NULL);
     priv->opencl_kernel_table = NULL;
