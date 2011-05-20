@@ -38,7 +38,6 @@ struct _UfoFilterPrivate {
  * this is already done by the plugin manager.
  *
  * \param[in] filter A UfoFilter object
- * \param[in] resource_manager A UfoResourceManager object
  */
 void ufo_filter_initialize(UfoFilter *filter)
 {

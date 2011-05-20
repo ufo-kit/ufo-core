@@ -10,10 +10,12 @@
 
 
 struct _UfoFilterBackprojectPrivate {
-    cl_kernel kernel;
+    cl_kernel normal_kernel;
+    cl_kernel texture_kernel;
     gint num_sinograms;
     float axis_position;
     float angle_step;
+    gboolean use_texture;
 };
 
 GType ufo_filter_backproject_get_type(void) G_GNUC_CONST;
@@ -28,6 +30,7 @@ enum {
     PROP_AXIS_POSITION,
     PROP_ANGLE_STEP,
     PROP_NUM_SINOGRAMS,
+    PROP_USE_TEXTURE,
     N_PROPERTIES
 };
 
@@ -49,7 +52,8 @@ static void ufo_filter_backproject_initialize(UfoFilter *filter)
     UfoFilterBackproject *self = UFO_FILTER_BACKPROJECT(filter);
     UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
-    self->priv->kernel = NULL;
+    self->priv->normal_kernel = NULL;
+    self->priv->texture_kernel = NULL;
 
     ufo_resource_manager_add_program(manager, "backproject.cl", &error);
     if (error != NULL) {
@@ -58,7 +62,8 @@ static void ufo_filter_backproject_initialize(UfoFilter *filter)
         return;
     }
 
-    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "backproject", &error);
+    self->priv->normal_kernel = ufo_resource_manager_get_kernel(manager, "backproject", &error);
+    self->priv->texture_kernel = ufo_resource_manager_get_kernel(manager, "backproject_tex", &error);
     if (error != NULL) {
         g_warning("%s", error->message);
         g_error_free(error);
@@ -105,39 +110,59 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     g_free(axes_tmp);
 
     cl_int err = CL_SUCCESS;
-    err = clSetKernelArg(priv->kernel, 0, sizeof(gint32), &num_projections);
-    err = clSetKernelArg(priv->kernel, 1, sizeof(gint32), &width);
-    err = clSetKernelArg(priv->kernel, 2, sizeof(gint32), &offset_x);
-    err = clSetKernelArg(priv->kernel, 3, sizeof(gint32), &offset_y);
-    err = clSetKernelArg(priv->kernel, 4, sizeof(cl_mem), (void *) &cos_mem);
-    err = clSetKernelArg(priv->kernel, 5, sizeof(cl_mem), (void *) &sin_mem);
-    err = clSetKernelArg(priv->kernel, 6, sizeof(cl_mem), (void *) &axes_mem);
+
+    cl_mem texture = NULL;
+    cl_kernel kernel = NULL;
+
+    if (priv->use_texture) {
+        cl_image_format image_format;
+        image_format.image_channel_order = CL_R;
+        image_format.image_channel_data_type = CL_FLOAT;
+        texture = clCreateImage2D(ufo_resource_manager_get_context(manager),
+                CL_MEM_READ_ONLY,
+                &image_format, width, num_projections, 
+                0, NULL, &err);
+        kernel = priv->texture_kernel;
+    }
+    else
+        kernel = priv->normal_kernel;
+
+    err = clSetKernelArg(kernel, 0, sizeof(gint32), &num_projections);
+    err = clSetKernelArg(kernel, 1, sizeof(gint32), &width);
+    err = clSetKernelArg(kernel, 2, sizeof(gint32), &offset_x);
+    err = clSetKernelArg(kernel, 3, sizeof(gint32), &offset_y);
+    err = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *) &cos_mem);
+    err = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *) &sin_mem);
+    err = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *) &axes_mem);
 
     while (!ufo_buffer_is_finished(sinogram)) {
-        if (priv->kernel != NULL) {
-            size_t global_work_size[2];
-            float *slice_data = g_malloc0(sizeof(float) * width * width);
-            UfoBuffer *slice = ufo_resource_manager_request_buffer(manager,
-                    width, width, slice_data);
+        size_t global_work_size[2] = { width, width };
+        cl_event event;
 
-            cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
-            cl_mem slice_mem = (cl_mem) ufo_buffer_get_gpu_data(slice);
-            cl_event event;
+        UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL);
+        cl_mem slice_mem = (cl_mem) ufo_buffer_get_gpu_data(slice);
+        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
 
-            err = clSetKernelArg(priv->kernel, 7, sizeof(cl_mem), (void *) &sinogram_mem);
-            err = clSetKernelArg(priv->kernel, 8, sizeof(cl_mem), (void *) &slice_mem);
-            global_work_size[0] = width;
-            global_work_size[1] = width;
-            err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(sinogram),
-                                         priv->kernel,
-                                         2, NULL, global_work_size, NULL,
-                                         0, NULL, &event);
-            ufo_buffer_wait_on_event(slice, event);
-            g_async_queue_push(output_queue, slice);
+        if (priv->use_texture) {
+            size_t dest_origin[3] = { 0, 0, 0 };
+            size_t dest_region[3] = { width, num_projections, 1 };
+            clEnqueueCopyBufferToImage(ufo_buffer_get_command_queue(sinogram),
+                    sinogram_mem, texture, 0, dest_origin, dest_region,
+                    0, NULL, &event);
+            err = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *) &texture);
         }
-        else {
-            g_message("no kernel");
-        }
+        else
+            err = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *) &sinogram_mem);
+
+        err = clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *) &slice_mem);
+
+        err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(sinogram), kernel,
+                2, NULL, global_work_size, NULL,
+                0, NULL, &event);
+
+        ufo_buffer_wait_on_event(slice, event);
+        g_async_queue_push(output_queue, slice);
+
         ufo_resource_manager_release_buffer(manager, sinogram);
         sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
@@ -162,6 +187,9 @@ static void ufo_filter_backproject_set_property(GObject *object,
         case PROP_ANGLE_STEP:
             self->priv->angle_step = (float) g_value_get_double(value);
             break;
+        case PROP_USE_TEXTURE:
+            self->priv->use_texture = g_value_get_boolean(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -183,6 +211,9 @@ static void ufo_filter_backproject_get_property(GObject *object,
             break;
         case PROP_ANGLE_STEP:
             g_value_set_double(value, (double) self->priv->angle_step);
+            break;
+        case PROP_USE_TEXTURE:
+            g_value_set_boolean(value, self->priv->use_texture);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -231,9 +262,17 @@ static void ufo_filter_backproject_class_init(UfoFilterBackprojectClass *klass)
             0.0,    /* default */
             G_PARAM_READWRITE);
 
+    backproject_properties[PROP_USE_TEXTURE] = 
+        g_param_spec_boolean("use-texture",
+            "Use texture instead of array lookup",
+            "Use texture instead of array lookup",
+            FALSE,
+            G_PARAM_READWRITE);
+
     g_object_class_install_property(gobject_class, PROP_NUM_SINOGRAMS, backproject_properties[PROP_NUM_SINOGRAMS]);
     g_object_class_install_property(gobject_class, PROP_AXIS_POSITION, backproject_properties[PROP_AXIS_POSITION]);
     g_object_class_install_property(gobject_class, PROP_ANGLE_STEP, backproject_properties[PROP_ANGLE_STEP]);
+    g_object_class_install_property(gobject_class, PROP_USE_TEXTURE, backproject_properties[PROP_USE_TEXTURE]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterBackprojectPrivate));
@@ -242,6 +281,7 @@ static void ufo_filter_backproject_class_init(UfoFilterBackprojectClass *klass)
 static void ufo_filter_backproject_init(UfoFilterBackproject *self)
 {
     self->priv = UFO_FILTER_BACKPROJECT_GET_PRIVATE(self);
+    self->priv->use_texture = FALSE;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

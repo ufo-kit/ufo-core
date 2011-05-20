@@ -249,6 +249,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
     int err = CL_SUCCESS;
     cl_program program = clCreateProgramWithSource(priv->opencl_context,
             1, (const char **) &buffer, NULL, &err);
+
     if (err != CL_SUCCESS) {
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
@@ -266,10 +267,16 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
             NULL, NULL, NULL);
 
     if (err != CL_SUCCESS) {
+        const int LOG_SIZE = 4096;
+        gchar* log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
+        clGetProgramBuildInfo(program, priv->opencl_devices[0][0], 
+                CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void*) log, NULL);
+
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
-                "Failed to build OpenCL program");
+                "Failed to build OpenCL program\n%s", log);
+        g_free(log);
         g_free(buffer);
         return FALSE;
     }
