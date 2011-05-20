@@ -112,6 +112,8 @@ static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
     if (container == NULL || child == NULL)
         return;
 
+    g_object_ref(child);
+
     /* Contrary to the split container, we have to install an input queue for
      * each new element that is added, that we are going to fill according to
      * the `mode`-property. */    
