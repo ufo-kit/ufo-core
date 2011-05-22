@@ -40,6 +40,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DI
 
 
 # --- Target ------------------------------------------------------------------
+set(LIB_INSTALL_DIR "lib${LIB_SUFFIX}")
+
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
     ${JSON_GLIB_INCLUDE_DIRS}
