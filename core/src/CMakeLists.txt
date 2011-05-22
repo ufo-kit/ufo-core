@@ -49,15 +49,15 @@ add_library(ufo SHARED ${ufocore_SRCS})
 target_link_libraries(ufo ${ufocore_LIBS})
 
 install(TARGETS ufo 
-    ARCHIVE DESTINATION lib 
-    LIBRARY DESTINATION lib)
+    ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+    LIBRARY DESTINATION ${LIB_INSTALL_DIR})
 
 install(FILES ${ufocore_HDRS} DESTINATION include/ufo)
 
 # --- install pkg-config file
 set(prefix      ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix "\${prefix}")
-set(libdir      "\${exec_prefix}/lib")
+set(libdir      "${LIB_INSTALL_DIR}")
 set(includedir  "\${prefix}/include")
 
 # FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
