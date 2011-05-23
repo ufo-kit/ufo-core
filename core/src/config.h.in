@@ -1,3 +1,2 @@
-#cmakedefine HAVE_OPENCL    1
 #cmakedefine HAVE_FFTW      1
 #cmakedefine HAVE_OCLFFT    1
