@@ -49,6 +49,8 @@ ELSE (APPLE)
             # Unix style platforms
             FIND_LIBRARY(OPENCL_LIBRARIES OpenCL
               ENV LD_LIBRARY_PATH
+              /usr/lib/nvidia-current
+              /opt/nvidia-current
             )
 
             GET_FILENAME_COMPONENT(OPENCL_LIB_DIR ${OPENCL_LIBRARIES} PATH)

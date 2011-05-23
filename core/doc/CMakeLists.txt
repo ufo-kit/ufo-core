@@ -69,6 +69,7 @@ if(SPHINX)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
         ${CMAKE_CURRENT_BINARY_DIR}/source/conf.py)
 
+    # TODO: add DEPENDS doxygen when using CMake 2.8.4
     add_custom_target(docs
         ${SPHINX} -b html ${CMAKE_CURRENT_BINARY_DIR}/source docs-${UFO_VERSION_STRING_SHORT} 
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
