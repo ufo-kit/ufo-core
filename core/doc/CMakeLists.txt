@@ -4,6 +4,7 @@ include(ExternalProject)
 
 find_package(Doxygen)
 find_program(SPHINX sphinx-build PATHS /usr/local/bin /usr/bin)
+mark_as_advanced(SPHINX)
 
 # --- Create Doxygen source documentation by typing `make doc`
 if(DOXYGEN_FOUND)
