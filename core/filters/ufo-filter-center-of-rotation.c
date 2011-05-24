@@ -86,9 +86,9 @@ static void ufo_filter_center_of_rotation_process(UfoFilter *filter)
     int counter = 0;
 
     /* Take all buffers until we got the opposite projection */
+    input = (UfoBuffer *) g_async_queue_pop(input_queue);
     while (!ufo_buffer_is_finished(input)) {
         if (abs((counter++ * priv->angle_step) - 180.0f) < 0.001f) {
-            g_message("out at %i", counter);
             proj_180 = ufo_buffer_get_cpu_data(input); 
             break;
         }
