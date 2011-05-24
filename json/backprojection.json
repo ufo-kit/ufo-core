@@ -1,0 +1,13 @@
+{
+    "type" : "sequence"    
+    "elements" : [
+        { "type" : "filter", "plugin" : "reader" },
+        { "type" : "filter", "plugin" : "backproject",
+            "properties" : {
+                "axis-pos"  : 413.0,
+                "angle-step" : 0.01256637
+            }     
+        },
+        { "type" : "filter", "plugin" : "writer" }
+    ]
+}

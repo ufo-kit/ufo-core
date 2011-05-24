@@ -8,6 +8,7 @@ set(ufofilter_SRCS
     ufo-filter-scale.c
     ufo-filter-sino-generator.c
     ufo-filter-filter.c
+    ufo-filter-center-of-rotation.c
     )
 
 set(ufofilter_KERNELS
