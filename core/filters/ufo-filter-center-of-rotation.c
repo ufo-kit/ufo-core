@@ -10,7 +10,7 @@
 struct _UfoFilterCenterOfRotationPrivate {
     /* add your private data here */
     /* cl_kernel kernel; */
-    float example;
+    float angle_step;
 };
 
 GType ufo_filter_center_of_rotation_get_type(void) G_GNUC_CONST;
@@ -21,7 +21,7 @@ G_DEFINE_TYPE(UfoFilterCenterOfRotation, ufo_filter_center_of_rotation, UFO_TYPE
 
 enum {
     PROP_0,
-    PROP_EXAMPLE, /* remove this or add more */
+    PROP_ANGLE_STEP, /* remove this or add more */
     N_PROPERTIES
 };
 
@@ -69,7 +69,8 @@ static void ufo_filter_center_of_rotation_initialize(UfoFilter *filter)
 static void ufo_filter_center_of_rotation_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    UfoResourceManager *manager = ufo_resource_manager();
+    UfoFilterCenterOfRotationPrivate *priv = UFO_FILTER_CENTER_OF_ROTATION_GET_PRIVATE(filter);
+    /*UfoResourceManager *manager = ufo_resource_manager();*/
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
     UfoBuffer *input = NULL;
@@ -81,8 +82,19 @@ static void ufo_filter_center_of_rotation_process(UfoFilter *filter)
 
     input = (UfoBuffer *) g_async_queue_pop(input_queue);
     float *proj_0 = ufo_buffer_get_cpu_data(input);
-    input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    float *proj_180 = ufo_buffer_get_cpu_data(input);
+    float *proj_180 = NULL;
+    int counter = 0;
+
+    /* Take all buffers until we got the opposite projection */
+    while (!ufo_buffer_is_finished(input)) {
+        if (abs((counter++ * priv->angle_step) - 180.0f) < 0.001f) {
+            g_message("out at %i", counter);
+            proj_180 = ufo_buffer_get_cpu_data(input); 
+            break;
+        }
+        g_async_queue_push(output_queue, input);
+        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    }
 
     gint32 width, height;
     ufo_buffer_get_dimensions(input, &width, &height);
@@ -90,8 +102,10 @@ static void ufo_filter_center_of_rotation_process(UfoFilter *filter)
     /* We have basically two parameters for tuning the performance: decreasing
      * max_displacement and not considering the whole images but just some of
      * the lines */
-    const gint max_displacement = width/2;   /* XXX: width/2? */
-    float *scores = g_malloc0(max_displacement * 2 * sizeof(float));
+    const gint max_displacement = width / 2;
+    const gsize N = max_displacement * 2 - 1;
+    float *scores = g_malloc0(N * sizeof(float));
+    float *grad = g_malloc0(N * sizeof(float));
 
     for (int displacement = (-max_displacement + 1); displacement < 0; displacement++) {
         const int index = displacement + max_displacement - 1;
@@ -112,16 +126,33 @@ static void ufo_filter_center_of_rotation_process(UfoFilter *filter)
             }
         }
     }
-    for (int i = 0; i < max_displacement*2-1; i++) {
-        int displacement = i - max_displacement + 1;
-        g_print("%i %f\n", (width + displacement) / 2, scores[i]);
-    }
+    grad[0] = 0.0;
+    for (int i = 1; i < N; i++)
+        grad[i] = scores[i] - scores[i-1];
 
+    /*for (int i = 0; i < N; i++) {*/
+        /*int displacement = i - max_displacement + 1;*/
+        /*g_print("%i %f %f\n", (width + displacement) / 2, scores[i], grad[i]);*/
+    /*}*/
+
+    /* Find local minima. Actually, if max_displacement is not to large (like
+     * width/2) the global maximum is always the correct maximum. */
+    for (int i = 1; i < N; i++) 
+        if (grad[i-1] < 0.0 && grad[i] > 0.0) 
+            g_message("Local minimum at %f: %f", (width + i - max_displacement + 1) / 2.0, scores[i]);
+
+    g_free(grad);
     g_free(scores);
 
-    /* That's it folks */
-    g_async_queue_push(output_queue, 
-            ufo_resource_manager_request_finish_buffer(manager));
+    /* Push the 180° projection */
+    g_async_queue_push(output_queue, input);
+
+    /* Push any following projections */
+    do {
+        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        g_async_queue_push(output_queue, input);
+    }
+    while (!ufo_buffer_is_finished(input));
 }
 
 static void ufo_filter_center_of_rotation_set_property(GObject *object,
@@ -133,8 +164,8 @@ static void ufo_filter_center_of_rotation_set_property(GObject *object,
 
     /* Handle all properties accordingly */
     switch (property_id) {
-        case PROP_EXAMPLE:
-            self->priv->example = g_value_get_double(value);
+        case PROP_ANGLE_STEP:
+            self->priv->angle_step = g_value_get_double(value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -151,8 +182,8 @@ static void ufo_filter_center_of_rotation_get_property(GObject *object,
 
     /* Handle all properties accordingly */
     switch (property_id) {
-        case PROP_EXAMPLE:
-            g_value_set_double(value, self->priv->example);
+        case PROP_ANGLE_STEP:
+            g_value_set_double(value, self->priv->angle_step);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -174,16 +205,16 @@ static void ufo_filter_center_of_rotation_class_init(UfoFilterCenterOfRotationCl
     filter_class->process = ufo_filter_center_of_rotation_process;
 
     /* install properties */
-    center_of_rotation_properties[PROP_EXAMPLE] = 
-        g_param_spec_double("example",
-            "This is an example property",
-            "You should definately replace this with some meaningful property",
-            -1.0,   /* minimum */
-             1.0,   /* maximum */
-             1.0,   /* default */
+    center_of_rotation_properties[PROP_ANGLE_STEP] = 
+        g_param_spec_double("angle-step",
+            "Step between two successive projections",
+            "Step between two successive projections",
+            0.00001,   /* minimum */
+            180.0,   /* maximum */
+            1.0,   /* default */
             G_PARAM_READWRITE);
 
-    g_object_class_install_property(gobject_class, PROP_EXAMPLE, center_of_rotation_properties[PROP_EXAMPLE]);
+    g_object_class_install_property(gobject_class, PROP_ANGLE_STEP, center_of_rotation_properties[PROP_ANGLE_STEP]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterCenterOfRotationPrivate));
@@ -192,7 +223,7 @@ static void ufo_filter_center_of_rotation_class_init(UfoFilterCenterOfRotationCl
 static void ufo_filter_center_of_rotation_init(UfoFilterCenterOfRotation *self)
 {
     UfoFilterCenterOfRotationPrivate *priv = self->priv = UFO_FILTER_CENTER_OF_ROTATION_GET_PRIVATE(self);
-    priv->example = 1.0;
+    priv->angle_step = 1.0;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

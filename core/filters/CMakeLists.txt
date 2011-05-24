@@ -3,12 +3,13 @@ cmake_minimum_required(VERSION 2.6)
 # --- Set sources -------------------------------------------------------------
 set(ufofilter_SRCS 
     ufo-filter-backproject.c
+    ufo-filter-center-of-rotation.c
+    ufo-filter-filter.c
     ufo-filter-hist.c
+    ufo-filter-null.c
     ufo-filter-raw.c
     ufo-filter-scale.c
     ufo-filter-sino-generator.c
-    ufo-filter-filter.c
-    ufo-filter-center-of-rotation.c
     )
 
 set(ufofilter_KERNELS
