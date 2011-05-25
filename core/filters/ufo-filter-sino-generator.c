@@ -52,6 +52,7 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
     UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     /* We pop the very first image, to determine the size w*h of a projection.
      * We then have to allocate h sinogram buffers with a height of
@@ -73,9 +74,9 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
 
     /* First step: collect all projections and build sinograms */
     while ((received < priv->num_projections) || (!ufo_buffer_is_finished(input))) {
-        float *src = ufo_buffer_get_cpu_data(input);
+        float *src = ufo_buffer_get_cpu_data(input, command_queue);
         for (gint i = 0; i < num_sinos; i++) {
-            float *dst = ufo_buffer_get_cpu_data(sinograms[i]);
+            float *dst = ufo_buffer_get_cpu_data(sinograms[i], command_queue);
             dst += (received-1)*sino_width;
             memcpy(dst, src + i*sino_width, bytes_per_line);
         }

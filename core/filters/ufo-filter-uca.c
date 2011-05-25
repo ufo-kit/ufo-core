@@ -55,12 +55,13 @@ static void ufo_filter_uca_process(UfoFilter *self)
     uca_cam_start_recording(cam);
     UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
+    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(self));
 
     for (guint i = 0; i < 1; i++) {
         UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
                 width, height, NULL);
 
-        uca_cam_grab(cam, (char *) ufo_buffer_get_cpu_data(buffer), NULL);
+        uca_cam_grab(cam, (char *) ufo_buffer_get_cpu_data(buffer, command_queue), NULL);
         /* FIXME: don't use hardcoded 8 bits per pixel */
         ufo_buffer_reinterpret(buffer, 8, width * height);
 

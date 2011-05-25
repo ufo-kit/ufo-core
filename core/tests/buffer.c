@@ -28,7 +28,8 @@ static void test_buffer_set_data(void)
     ufo_buffer_set_cpu_data(buffer, test_data, 10 * sizeof(float), &error);
     g_assert(error == NULL);
 
-    float *result = ufo_buffer_get_cpu_data(buffer);
+    /* We can pass NULL since the buffer is never copied onto a GPU device */
+    float *result = ufo_buffer_get_cpu_data(buffer, NULL);
     for (int i = 0; i < 10; i++)
         g_assert(float_eq(test_data[i], result[i]));
     g_object_unref(buffer);
@@ -58,7 +59,7 @@ static void test_buffer_reinterpret_8bit(void)
     g_assert(error == NULL);
     ufo_buffer_reinterpret(buffer, 8, 10);
 
-    float *result = ufo_buffer_get_cpu_data(buffer);
+    float *result = ufo_buffer_get_cpu_data(buffer, NULL);
     g_assert(float_eq(result[0], 1 / 255.));
     g_assert(float_eq(result[1], 2 / 255.));
     g_object_unref(buffer);
@@ -74,7 +75,7 @@ static void test_buffer_reinterpret_16bit(void)
     g_assert(error == NULL);
     ufo_buffer_reinterpret(buffer, 16, 10);
 
-    float *result = ufo_buffer_get_cpu_data(buffer);
+    float *result = ufo_buffer_get_cpu_data(buffer, NULL);
     g_assert(float_eq(result[0], 1 / 65535.));
     g_assert(float_eq(result[1], 2 / 65535.));
     g_object_unref(buffer);

@@ -74,9 +74,17 @@ static void graph_handle_json_container(UfoGraph *self, JsonObject *object, UfoE
     if (new_container == NULL)
         return;
 
-    /* If we have a root container, assign the newly created one */
-    if (*container == NULL)
+    /* If we have a root container, assign the newly created one and add the
+     * very first command queue. */
+    if (*container == NULL) {
+        UfoResourceManager *manager = ufo_resource_manager();
+        cl_command_queue *command_queues;
+        guint num_queues;
+        ufo_resource_manager_get_command_queues(manager, (gpointer *) &command_queues, &num_queues);
+        g_message("assigning first queue %p from %i queues", command_queues[0], num_queues);
+        ufo_element_set_command_queue(new_container, command_queues[0]);
         *container = new_container;
+    }
     else
         ufo_container_add_element(UFO_CONTAINER(*container), new_container);
 

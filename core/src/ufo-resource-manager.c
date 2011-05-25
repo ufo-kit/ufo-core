@@ -156,7 +156,8 @@ static void resource_manager_release_program(gpointer data, gpointer user_data)
 static void resource_manager_release_mem(gpointer data, gpointer user_data)
 {
     UfoBuffer *buffer = UFO_BUFFER(data);
-    cl_mem mem = ufo_buffer_get_gpu_data(buffer);
+    cl_command_queue command_queue = (cl_command_queue) user_data;
+    cl_mem mem = ufo_buffer_get_gpu_data(buffer, command_queue);
     if (mem != NULL)
         clReleaseMemObject(mem);
     g_object_unref(buffer);
@@ -195,7 +196,6 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
             NULL, NULL);
 
     ufo_buffer_set_cl_mem(buffer, buffer_mem);
-    ufo_buffer_set_command_queue(buffer, self->priv->command_queues[0]);
     return buffer;
 }
 
@@ -414,7 +414,8 @@ UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *manager, UfoBuff
 {
     gint32 width, height;
     ufo_buffer_get_dimensions(buffer, &width, &height);
-    float *data = ufo_buffer_get_cpu_data(buffer);
+    /* XXX: Use first command queue, which might not be the best in all cases */
+    float *data = ufo_buffer_get_cpu_data(buffer, manager->priv->command_queues);
     UfoBuffer *copy = ufo_resource_manager_request_buffer(manager,
             width, height, data);
     return copy;
@@ -440,6 +441,13 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
         g_hash_table_insert(self->priv->buffer_map, hash, queue);
     }
     g_queue_push_head(queue, buffer); 
+}
+
+void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, guint *num_queues)
+{
+    /* FIXME: Use only first platform */
+    *num_queues = resource_manager->priv->num_devices[0];
+    *command_queues = resource_manager->priv->command_queues;
 }
 
 
@@ -475,7 +483,7 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     g_list_foreach(priv->opencl_programs, resource_manager_release_program, NULL);
     g_list_free(priv->opencl_programs);
 
-    g_list_foreach(priv->buffers, resource_manager_release_mem, NULL);
+    g_list_foreach(priv->buffers, resource_manager_release_mem, priv->command_queues[0]);
     g_list_free(priv->buffers);
     for (int i = 0; i < priv->num_devices[0]; i++)
         clReleaseCommandQueue(priv->command_queues[i]);

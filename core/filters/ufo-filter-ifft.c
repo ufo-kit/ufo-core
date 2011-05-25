@@ -74,6 +74,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     int err = CL_SUCCESS;
     clFFT_Plan ifft_plan = clFFT_CreatePlan(
@@ -86,13 +87,13 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     ufo_buffer_get_dimensions(input, &width, &height);
 
     while (!ufo_buffer_is_finished(input)) {
-        cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input);
+        cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
         cl_event event;
         cl_event wait_on_event;
         guint32 width = (priv->final_width == -1) ? priv->ifft_size.x : priv->final_width;
 
         /* 1. Inverse FFT */
-        clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(input),
+        clFFT_ExecuteInterleaved(command_queue,
                 ifft_plan, height, clFFT_Inverse, 
                 fft_buffer_mem, fft_buffer_mem,
                 0, NULL, &wait_on_event);
@@ -105,12 +106,12 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         UfoBuffer *sinogram = ufo_resource_manager_request_buffer(manager,
                 width, height, NULL);
 
-        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
+        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram, command_queue);
         clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
         clSetKernelArg(priv->kernel, 2, sizeof(int), &width);
 
-        clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(input),
+        clEnqueueNDRangeKernel(command_queue,
                 priv->kernel,
                 2, NULL, global_work_size, NULL,
                 0, NULL, &event);

@@ -34,6 +34,7 @@ struct _UfoSplitPrivate {
     GList *queues;
     GAsyncQueue *input_queue;
     GAsyncQueue *output_queue;
+    cl_command_queue command_queue;
     mode_t mode;
     guint current_node;
 };
@@ -129,6 +130,7 @@ static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
         self->priv->output_queue = g_async_queue_new();
     }
     ufo_element_set_output_queue(child, self->priv->output_queue);
+    ufo_element_set_command_queue(child, self->priv->command_queue);
 }
 
 static gpointer ufo_split_process_thread(gpointer data)
@@ -266,6 +268,18 @@ static GAsyncQueue *ufo_split_get_output_queue(UfoElement *element)
     return self->priv->output_queue;
 }
 
+static void ufo_split_set_command_queue(UfoElement *element, gpointer command_queue)
+{
+    UfoSplit *self = UFO_SPLIT(element);
+    self->priv->command_queue = command_queue;
+}
+
+static gpointer ufo_split_get_command_queue(UfoElement *element)
+{
+    UfoSplit *self = UFO_SPLIT(element);
+    return self->priv->command_queue;
+}
+
 /*
  * Type/Class Initialization
  */
@@ -275,8 +289,10 @@ static void ufo_element_iface_init(UfoElementInterface *iface)
     iface->print = ufo_split_print;
     iface->set_input_queue = ufo_split_set_input_queue;
     iface->set_output_queue = ufo_split_set_output_queue;
+    iface->set_command_queue = ufo_split_set_command_queue;
     iface->get_input_queue = ufo_split_get_input_queue;
     iface->get_output_queue = ufo_split_get_output_queue;
+    iface->get_command_queue = ufo_split_get_command_queue;
 }
 
 static void ufo_split_class_init(UfoSplitClass *klass)
@@ -312,4 +328,5 @@ static void ufo_split_init(UfoSplit *self)
     self->priv->children = NULL;
     self->priv->output_queue = NULL;
     self->priv->input_queue = NULL;
+    self->priv->command_queue = NULL;
 }

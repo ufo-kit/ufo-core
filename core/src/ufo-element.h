@@ -36,6 +36,8 @@ struct _UfoElementInterface {
     void (*set_output_queue) (UfoElement *element, GAsyncQueue *queue);
     GAsyncQueue *(*get_input_queue) (UfoElement *element);
     GAsyncQueue *(*get_output_queue) (UfoElement *element);
+    void (*set_command_queue) (UfoElement *element, gpointer command_queue);
+    gpointer (*get_command_queue) (UfoElement *element);
 };
 
 void ufo_element_process(UfoElement *element);
@@ -45,6 +47,9 @@ void ufo_element_set_input_queue(UfoElement *element, GAsyncQueue *queue);
 void ufo_element_set_output_queue(UfoElement *element, GAsyncQueue *queue);
 GAsyncQueue *ufo_element_get_input_queue(UfoElement *element);
 GAsyncQueue *ufo_element_get_output_queue(UfoElement *element);
+
+void ufo_element_set_command_queue(UfoElement *element, gpointer command_queue);
+gpointer ufo_element_get_command_queue(UfoElement *element);
 
 GType ufo_element_get_type(void);
 

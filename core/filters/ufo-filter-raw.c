@@ -106,6 +106,7 @@ static void ufo_filter_raw_process(UfoFilter *self)
     UfoFilterRawPrivate *priv = UFO_FILTER_RAW_GET_PRIVATE(self);
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
     GString *filename = g_string_new("");
+    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(self));
 
     while (1) {
         UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
@@ -123,7 +124,7 @@ static void ufo_filter_raw_process(UfoFilter *self)
                 priv->path, priv->prefix, 
                 width, height, priv->current_frame++);
         FILE *fp = fopen(filename->str, "wb");
-        float *data = ufo_buffer_get_cpu_data(input);
+        float *data = ufo_buffer_get_cpu_data(input, command_queue);
         fwrite(data, sizeof(float), width*height, fp);
         fclose(fp);
 

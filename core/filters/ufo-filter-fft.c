@@ -74,6 +74,7 @@ static void ufo_filter_fft_process(UfoFilter *filter)
     UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     int err = CL_SUCCESS;
     clFFT_Plan fft_plan = clFFT_CreatePlan(
@@ -93,8 +94,8 @@ static void ufo_filter_fft_process(UfoFilter *filter)
                 2 * priv->fft_size.x, /* what to do in the multi-dimensional case? */
                 height, NULL);
 
-        cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(fft_buffer);
-        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
+        cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(fft_buffer, command_queue);
+        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram, command_queue);
         cl_event event, wait_on_event;
         size_t global_work_size[2];
 
@@ -103,13 +104,13 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
         clSetKernelArg(priv->kernel, 2, sizeof(int), &width);
-        clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(sinogram), 
+        clEnqueueNDRangeKernel(command_queue,
                 priv->kernel, 
                 2, NULL, global_work_size, NULL, 
                 0, NULL, &wait_on_event);
 
         /* FIXME: we should wait for previous computations */
-        clFFT_ExecuteInterleaved(ufo_buffer_get_command_queue(fft_buffer),
+        clFFT_ExecuteInterleaved(command_queue,
                 fft_plan, height, clFFT_Forward, 
                 fft_buffer_mem, fft_buffer_mem,
                 1, &wait_on_event, &event);

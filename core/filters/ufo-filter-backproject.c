@@ -101,9 +101,10 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     UfoBuffer *sin_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, sin_tmp);
     UfoBuffer *axes_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, axes_tmp);
 
-    cl_mem cos_mem = ufo_buffer_get_gpu_data(cos_buffer);
-    cl_mem sin_mem = ufo_buffer_get_gpu_data(sin_buffer);
-    cl_mem axes_mem = ufo_buffer_get_gpu_data(axes_buffer);
+    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    cl_mem cos_mem = ufo_buffer_get_gpu_data(cos_buffer, command_queue);
+    cl_mem sin_mem = ufo_buffer_get_gpu_data(sin_buffer, command_queue);
+    cl_mem axes_mem = ufo_buffer_get_gpu_data(axes_buffer, command_queue);
 
     g_free(cos_tmp);
     g_free(sin_tmp);
@@ -140,13 +141,13 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         cl_event event;
 
         UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL);
-        cl_mem slice_mem = (cl_mem) ufo_buffer_get_gpu_data(slice);
-        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram);
+        cl_mem slice_mem = (cl_mem) ufo_buffer_get_gpu_data(slice, command_queue);
+        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram, command_queue);
 
         if (priv->use_texture) {
             size_t dest_origin[3] = { 0, 0, 0 };
             size_t dest_region[3] = { width, num_projections, 1 };
-            clEnqueueCopyBufferToImage(ufo_buffer_get_command_queue(sinogram),
+            clEnqueueCopyBufferToImage(command_queue,
                     sinogram_mem, texture, 0, dest_origin, dest_region,
                     0, NULL, &event);
             err = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *) &texture);
@@ -156,7 +157,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
 
         err = clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *) &slice_mem);
 
-        err = clEnqueueNDRangeKernel(ufo_buffer_get_command_queue(sinogram), kernel,
+        err = clEnqueueNDRangeKernel(command_queue, kernel,
                 2, NULL, global_work_size, NULL,
                 0, NULL, &event);
 

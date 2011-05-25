@@ -70,7 +70,6 @@ static void ufo_filter_center_of_rotation_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterCenterOfRotationPrivate *priv = UFO_FILTER_CENTER_OF_ROTATION_GET_PRIVATE(filter);
-    /*UfoResourceManager *manager = ufo_resource_manager();*/
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
     UfoBuffer *input = NULL;
@@ -80,8 +79,9 @@ static void ufo_filter_center_of_rotation_process(UfoFilter *filter)
      * microscopy" by C. Hintermüller et al. (2010, International Union of
      * Crystallography, Singapore) */
 
+    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
     input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    float *proj_0 = ufo_buffer_get_cpu_data(input);
+    float *proj_0 = ufo_buffer_get_cpu_data(input, command_queue);
     float *proj_180 = NULL;
     int counter = 0;
 
@@ -89,7 +89,7 @@ static void ufo_filter_center_of_rotation_process(UfoFilter *filter)
     input = (UfoBuffer *) g_async_queue_pop(input_queue);
     while (!ufo_buffer_is_finished(input)) {
         if (abs((counter++ * priv->angle_step) - 180.0f) < 0.001f) {
-            proj_180 = ufo_buffer_get_cpu_data(input); 
+            proj_180 = ufo_buffer_get_cpu_data(input, command_queue); 
             break;
         }
         g_async_queue_push(output_queue, input);

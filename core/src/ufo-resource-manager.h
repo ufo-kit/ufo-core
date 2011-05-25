@@ -45,6 +45,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *self, guint32
 UfoBuffer *ufo_resource_manager_request_finish_buffer(UfoResourceManager *self);
 UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *self, UfoBuffer *buffer);
 void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *buffer);
+void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, guint *num_queues);
 
 GType ufo_resource_manager_get_type(void);
 

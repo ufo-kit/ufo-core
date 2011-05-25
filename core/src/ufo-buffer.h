@@ -52,14 +52,11 @@ void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
 
 void ufo_buffer_reinterpret(UfoBuffer *self, gsize source_depth, gsize n);
 void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data, gsize n, GError **error);
-float* ufo_buffer_get_cpu_data(UfoBuffer *self);
-gpointer ufo_buffer_get_gpu_data(UfoBuffer *self);
+float* ufo_buffer_get_cpu_data(UfoBuffer *self, gpointer command_queue);
+gpointer ufo_buffer_get_gpu_data(UfoBuffer *self, gpointer command_queue);
 void ufo_buffer_set_cl_mem(UfoBuffer *self, gpointer mem);
 void ufo_buffer_wait_on_event(UfoBuffer *self, gpointer event);
 void ufo_buffer_get_transfer_statistics(UfoBuffer *self, gint *uploads, gint *downloads);
-
-void ufo_buffer_set_command_queue(UfoBuffer *self, gpointer queue);
-gpointer ufo_buffer_get_command_queue(UfoBuffer *self);
 
 gboolean ufo_buffer_is_finished(UfoBuffer *self);
 

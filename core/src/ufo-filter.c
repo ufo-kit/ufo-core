@@ -23,7 +23,7 @@ struct _UfoFilterPrivate {
     UfoResourceManager  *resource_manager;
     GAsyncQueue         *input_queue;
     GAsyncQueue         *output_queue;
-    gchar               *name;
+    cl_command_queue    command_queue;
 };
 
 
@@ -101,6 +101,18 @@ static GAsyncQueue *ufo_filter_get_output_queue(UfoElement *element)
     return self->priv->output_queue;
 }
 
+static void ufo_filter_set_command_queue(UfoElement *element, gpointer command_queue)
+{
+    UfoFilter *self = UFO_FILTER(element);
+    self->priv->command_queue = command_queue;
+}
+
+static gpointer ufo_filter_get_command_queue(UfoElement *element)
+{
+    UfoFilter *self = UFO_FILTER(element);
+    return self->priv->command_queue;
+}
+
 static void ufo_filter_iface_process(UfoElement *element)
 {
     UfoFilter *self = UFO_FILTER(element);
@@ -138,8 +150,10 @@ static void ufo_element_iface_init(UfoElementInterface *iface)
     iface->print = ufo_filter_print;
     iface->set_input_queue = ufo_filter_set_input_queue;
     iface->set_output_queue = ufo_filter_set_output_queue;
+    iface->set_command_queue = ufo_filter_set_command_queue;
     iface->get_input_queue = ufo_filter_get_input_queue;
     iface->get_output_queue = ufo_filter_get_output_queue;
+    iface->get_command_queue = ufo_filter_get_command_queue;
 
     /* signals */
     iface->finished = ufo_filter_finished;
@@ -163,5 +177,6 @@ static void ufo_filter_init(UfoFilter *self)
     self->priv = priv = UFO_FILTER_GET_PRIVATE(self);
     priv->input_queue = NULL;
     priv->output_queue = NULL;
+    priv->command_queue = NULL;
 }
 

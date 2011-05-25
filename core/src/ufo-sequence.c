@@ -10,6 +10,7 @@ struct _UfoSequencePrivate {
      * respect this fact and drop these queues. */
     GAsyncQueue *input_queue;
     GAsyncQueue *output_queue;
+    cl_command_queue command_queue;
 };
 
 static void ufo_element_iface_init(UfoElementInterface *iface);
@@ -95,6 +96,7 @@ static void ufo_sequence_add_element(UfoContainer *container, UfoElement *child)
      * real output */
     GAsyncQueue *next = g_async_queue_new();
     ufo_element_set_output_queue(child, next);
+    ufo_element_set_command_queue(child, self->priv->command_queue);
     self->priv->output_queue = next;
     self->priv->children = g_list_append(self->priv->children, child);
     g_object_ref(child);
@@ -161,6 +163,18 @@ static GAsyncQueue *ufo_sequence_get_output_queue(UfoElement *element)
     return self->priv->input_queue;
 }
 
+static void ufo_sequence_set_command_queue(UfoElement *element, gpointer command_queue)
+{
+    UfoSequence *self = UFO_SEQUENCE(element);
+    self->priv->command_queue = command_queue;
+}
+
+static gpointer ufo_sequence_get_command_queue(UfoElement *element)
+{
+    UfoSequence *self = UFO_SEQUENCE(element);
+    return self->priv->command_queue;
+}
+
 
 /*
  * Type/Class Initialization
@@ -171,8 +185,10 @@ static void ufo_element_iface_init(UfoElementInterface *iface)
     iface->print = ufo_sequence_print;
     iface->set_input_queue = ufo_sequence_set_input_queue;
     iface->set_output_queue = ufo_sequence_set_output_queue;
+    iface->set_command_queue = ufo_sequence_set_command_queue;
     iface->get_input_queue = ufo_sequence_get_input_queue;
     iface->get_output_queue = ufo_sequence_get_output_queue;
+    iface->get_command_queue = ufo_sequence_get_command_queue;
 }
 
 static void ufo_sequence_class_init(UfoSequenceClass *klass)
@@ -195,4 +211,5 @@ static void ufo_sequence_init(UfoSequence *self)
     self->priv->children = NULL;
     self->priv->input_queue = NULL;
     self->priv->output_queue = NULL;
+    self->priv->command_queue = NULL;
 }

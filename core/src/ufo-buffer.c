@@ -39,7 +39,6 @@ struct _UfoBufferPrivate {
     datastates  state;
     float       *cpu_data;
     cl_mem      gpu_data;
-    cl_command_queue command_queue;
     GQueue      *wait_events;
 };
 
@@ -95,20 +94,19 @@ UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
     return buffer;
 }
 
-UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer)
+UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBuffer *copy = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
 
     buffer_set_dimensions(copy->priv, buffer->priv->width, buffer->priv->height);
     g_assert(copy->priv->cpu_data == NULL);
     ufo_buffer_set_cpu_data(copy,
-            ufo_buffer_get_cpu_data(buffer),
+            ufo_buffer_get_cpu_data(buffer, command_queue),
             copy->priv->size,
             NULL);
     if (!ufo_buffer_is_finished(buffer))
         g_message("copy=%p src=%f dst=%f", copy, buffer->priv->cpu_data[0], copy->priv->cpu_data[0]);
 
-    copy->priv->command_queue = buffer->priv->command_queue;
     copy->priv->finished = buffer->priv->finished;
     copy->priv->state = CPU_DATA_VALID;
     return copy;
@@ -217,7 +215,7 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize n)
  * \param[in] buffer UfoBuffer object
  * \return Pointer to a float array of valid data
  */
-float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
+float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
     cl_event *wait_events = NULL, event;
@@ -233,7 +231,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer)
                 memset(priv->cpu_data, 0, priv->size);
             buffer_get_wait_events(priv, &wait_events, &num_events);
             /* FIXME: using wait_events sometimes crashes */
-            clEnqueueReadBuffer(priv->command_queue,
+            clEnqueueReadBuffer((cl_command_queue) command_queue,
                                 priv->gpu_data,
                                 CL_TRUE, 
                                 0, priv->size,
@@ -300,13 +298,13 @@ void ufo_buffer_get_transfer_statistics(UfoBuffer *buffer, gint *uploads, gint *
  * \param[in] buffer UfoBuffer object
  * \return OpenCL memory object associated with this UfoBuffer
  */
-gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer)
+gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
 
     switch (priv->state) {
         case CPU_DATA_VALID:
-            clEnqueueWriteBuffer(priv->command_queue,
+            clEnqueueWriteBuffer((cl_command_queue) command_queue,
                                  priv->gpu_data,
                                  CL_TRUE,
                                  0, priv->size,
@@ -325,32 +323,6 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer)
             return NULL;
     }
     return priv->gpu_data;
-}
-
-/**
- * \brief Set the command queue over which clEnqueueRead/WriteBuffer commands
- *  are issued.
- * \public \memberof UfoBuffer
- *
- * \param[in] buffer A UfoBuffer
- * \param[in] queue a cl_command_queue object
- */
-void ufo_buffer_set_command_queue(UfoBuffer *buffer, gpointer queue)
-{
-    buffer->priv->command_queue = (cl_command_queue) queue;
-}
-
-/**
- * \brief Get the command queue over which clEnqueueRead/WriteBuffer commands
- *  are currently issued.
- * \public \memberof UfoBuffer
- *
- * \param[in] buffer A UfoBuffer
- * \return The cl_command_queue object associated with this buffer
- */
-gpointer ufo_buffer_get_command_queue(UfoBuffer *buffer)
-{
-    return buffer->priv->command_queue;
 }
 
 /**

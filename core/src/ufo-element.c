@@ -54,7 +54,6 @@ void ufo_element_set_output_queue(UfoElement *element, GAsyncQueue *queue)
  */
 GAsyncQueue *ufo_element_get_input_queue(UfoElement *element)
 {
-    return UFO_ELEMENT_GET_INTERFACE(element)->get_input_queue(element);
     UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
     if (iface->get_input_queue != NULL)
         return iface->get_input_queue(element);
@@ -72,6 +71,21 @@ GAsyncQueue *ufo_element_get_output_queue(UfoElement *element)
     UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
     if (iface->get_output_queue != NULL)
         return iface->get_output_queue(element);
+    return NULL;
+}
+
+void ufo_element_set_command_queue(UfoElement *element, gpointer command_queue)
+{
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    if (iface->set_command_queue != NULL)
+        iface->set_command_queue(element, command_queue);
+}
+
+gpointer ufo_element_get_command_queue(UfoElement *element)
+{
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    if (iface->get_command_queue != NULL)
+        return iface->get_command_queue(element);
     return NULL;
 }
 
