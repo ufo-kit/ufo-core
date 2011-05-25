@@ -58,6 +58,8 @@ void ufo_buffer_set_cl_mem(UfoBuffer *self, gpointer mem);
 void ufo_buffer_wait_on_event(UfoBuffer *self, gpointer event);
 void ufo_buffer_get_transfer_statistics(UfoBuffer *self, gint *uploads, gint *downloads);
 
+void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to);
+
 gboolean ufo_buffer_is_finished(UfoBuffer *self);
 
 GType ufo_buffer_get_type(void);

@@ -1,3 +1,4 @@
+#include <CL/cl.h>
 #include "ufo-split.h"
 #include "ufo-element.h"
 
@@ -34,7 +35,8 @@ struct _UfoSplitPrivate {
     GList *queues;
     GAsyncQueue *input_queue;
     GAsyncQueue *output_queue;
-    cl_command_queue command_queue;
+    cl_command_queue *command_queues;
+    guint num_queues;
     mode_t mode;
     guint current_node;
 };
@@ -110,6 +112,8 @@ static void ufo_split_dispose(GObject *object)
 
 static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
 {
+    static int num_children = 0;
+
     if (container == NULL || child == NULL)
         return;
 
@@ -130,7 +134,7 @@ static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
         self->priv->output_queue = g_async_queue_new();
     }
     ufo_element_set_output_queue(child, self->priv->output_queue);
-    ufo_element_set_command_queue(child, self->priv->command_queue);
+    ufo_element_set_command_queue(child, self->priv->command_queues[num_children % self->priv->num_queues]);
 }
 
 static gpointer ufo_split_process_thread(gpointer data)
@@ -161,7 +165,7 @@ static void ufo_split_process(UfoElement *element)
 
     while (!finished) {
         UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(priv->input_queue));
-        g_message("[split:%p] received buffer %p at queue %p", self, input, priv->input_queue);
+        /*g_message("[split:%p] received buffer %p at queue %p", self, input, priv->input_queue);*/
 
         /* If we receive the finishing buffer, we switch to copy mode to inform
          * all succeeding filters of the end */
@@ -176,7 +180,7 @@ static void ufo_split_process(UfoElement *element)
             case MODE_RANDOM:
             case MODE_ROUND_ROBIN: 
                 {
-                    g_message("relaying buffer %p to queue %p", input, current_queue->data);
+                    /*g_message("relaying buffer %p to queue %p", input, current_queue->data);*/
                     g_async_queue_push((GAsyncQueue *) current_queue->data, input);
 
                     /* Start from beginning if no more queues */
@@ -206,7 +210,7 @@ static void ufo_split_process(UfoElement *element)
                     GList *copy  = copies;
                     while (queue != NULL) {
                         g_assert(copy != NULL);
-                        g_message("[split:%p] send buffer %p to queue %p", self, copy->data, queue->data);
+                        /*g_message("[split:%p] send buffer %p to queue %p", self, copy->data, queue->data);*/
                         g_async_queue_push((GAsyncQueue *) queue->data, (UfoBuffer *) copy->data);
                         queue = g_list_next(queue);
                         copy = g_list_next(copy);
@@ -271,13 +275,18 @@ static GAsyncQueue *ufo_split_get_output_queue(UfoElement *element)
 static void ufo_split_set_command_queue(UfoElement *element, gpointer command_queue)
 {
     UfoSplit *self = UFO_SPLIT(element);
-    self->priv->command_queue = command_queue;
+    /* In our case, this will most likely be the command queue of our
+     * predecessor node. However, in order to improve multi-GPU operation, we
+     * need all available queues. */
+    UfoResourceManager *manager = ufo_resource_manager();
+    ufo_resource_manager_get_command_queues(manager,
+            (gpointer *) &self->priv->command_queues, &self->priv->num_queues);
 }
 
 static gpointer ufo_split_get_command_queue(UfoElement *element)
 {
     UfoSplit *self = UFO_SPLIT(element);
-    return self->priv->command_queue;
+    return self->priv->command_queues[0];
 }
 
 /*
@@ -328,5 +337,5 @@ static void ufo_split_init(UfoSplit *self)
     self->priv->children = NULL;
     self->priv->output_queue = NULL;
     self->priv->input_queue = NULL;
-    self->priv->command_queue = NULL;
+    self->priv->command_queues = NULL;
 }

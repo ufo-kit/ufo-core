@@ -202,6 +202,7 @@ static void ufo_filter_reader_process(UfoFilter *self)
 
         const guint16 bytes_per_sample = bits_per_sample >> 3;
         UfoBuffer *image = ufo_resource_manager_request_buffer(manager, width, height, NULL);
+        g_object_set(image, "id", i, NULL);
         ufo_buffer_set_cpu_data(image, buffer, bytes_per_sample * width * height, NULL);
         ufo_buffer_reinterpret(image, bits_per_sample, width * height);
 

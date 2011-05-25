@@ -117,6 +117,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                 0, NULL, &event);
 
         ufo_buffer_wait_on_event(sinogram, event);
+        ufo_buffer_transfer_id(input, sinogram);
         ufo_resource_manager_release_buffer(manager, input);
 
         g_async_queue_push(output_queue, sinogram);

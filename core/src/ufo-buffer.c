@@ -14,6 +14,7 @@ enum UfoBufferError {
 
 enum {
     PROP_0,
+    PROP_ID,
     PROP_FINISHED,
     PROP_ACCESS,
     N_PROPERTIES
@@ -34,6 +35,7 @@ struct _UfoBufferPrivate {
     gint        uploads;
     gint        downloads;
     gint        access;
+    gint        id;     /**< unique id that is passed to the transformed buffer */
 
     gboolean    finished;
     datastates  state;
@@ -92,6 +94,13 @@ UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
     UfoBuffer *buffer = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
     buffer_set_dimensions(buffer->priv, width, height);
     return buffer;
+}
+
+void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
+{
+    gint id;
+    g_object_get(from, "id", &id, NULL);
+    g_object_set(to, "id", id, NULL);
 }
 
 UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
@@ -351,6 +360,9 @@ static void ufo_filter_set_property(GObject *object,
     UfoBuffer *buffer = UFO_BUFFER(object);
 
     switch (property_id) {
+        case PROP_ID:
+            buffer->priv->id = g_value_get_int(value);
+            break;
         case PROP_FINISHED:
             buffer->priv->finished = g_value_get_boolean(value);
             break;
@@ -371,6 +383,9 @@ static void ufo_filter_get_property(GObject *object,
     UfoBuffer *buffer = UFO_BUFFER(object);
 
     switch (property_id) {
+        case PROP_ID:
+            g_value_set_int(value, buffer->priv->id);
+            break;
         case PROP_FINISHED:
             g_value_set_boolean(value, buffer->priv->finished);
             break;
@@ -422,6 +437,15 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
     gobject_class->finalize = ufo_buffer_finalize;
 
     /* install properties */
+    buffer_properties[PROP_ID] = 
+        g_param_spec_int("id",
+            "ID of this buffer",
+            "ID of this buffer",
+            -1,
+            8192,
+            0,
+            G_PARAM_READWRITE);
+
     buffer_properties[PROP_FINISHED] = 
         g_param_spec_boolean("finished",
             "Is last buffer with invalid data and no one follows",
@@ -437,6 +461,7 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
             UFO_BUFFER_READWRITE,
             G_PARAM_READWRITE);
 
+    g_object_class_install_property(gobject_class, PROP_ID, buffer_properties[PROP_ID]);
     g_object_class_install_property(gobject_class, PROP_FINISHED, buffer_properties[PROP_FINISHED]);
     g_object_class_install_property(gobject_class, PROP_ACCESS, buffer_properties[PROP_ACCESS]);
 
@@ -460,6 +485,7 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->gpu_data = NULL;
     priv->uploads = 0;
     priv->downloads = 0;
+    priv->id = -1;
     priv->state = NO_DATA;
     priv->finished = FALSE;
     priv->wait_events = g_queue_new();

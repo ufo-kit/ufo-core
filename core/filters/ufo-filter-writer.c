@@ -125,14 +125,15 @@ static void ufo_filter_writer_process(UfoFilter *self)
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
     UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(self));
-    int current_frame = 0;
     GString *filename = g_string_new("");
+    gint id = -1;
 
     while (!ufo_buffer_is_finished(input)) {
         gint32 width, height;
         ufo_buffer_get_dimensions(input, &width, &height);
+        g_object_get(input, "id", &id, NULL);
         float *data = ufo_buffer_get_cpu_data(input, command_queue);
-        g_string_printf(filename, "%s/%s-%05i.tif", priv->path, priv->prefix, current_frame++);
+        g_string_printf(filename, "%s/%s-%05i.tif", priv->path, priv->prefix, id); 
         if (!filter_write_tiff(data, filename->str, width, height))
             g_message("something went wrong");
 
