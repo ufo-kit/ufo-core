@@ -1,7 +1,11 @@
 {
-    "type" : "sequence"    
+    "type" : "sequence",
     "elements" : [
         { "type" : "filter", "plugin" : "reader" },
-        { "type" : "filter", "plugin" : "centerofrotation" }
+        { "type" : "filter", "plugin" : "centerofrotation",
+            "properties" : {
+                "axis-step" : 0.72
+            }
+        }
     ]
 }

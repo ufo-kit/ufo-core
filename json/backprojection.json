@@ -1,5 +1,5 @@
 {
-    "type" : "sequence"    
+    "type" : "sequence",
     "elements" : [
         { "type" : "filter", "plugin" : "reader" },
         { "type" : "filter", "plugin" : "backproject",
