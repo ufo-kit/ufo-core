@@ -46,7 +46,6 @@ static void center_of_rotation_sinograms(UfoFilter *filter)
         const gint max_displacement = width / 2;
         const gsize N = max_displacement * 2 - 1;
         float *scores = g_malloc0(N * sizeof(float));
-        float *grad = g_malloc0(N * sizeof(float));
 
         for (int displacement = (-max_displacement + 1); displacement < 0; displacement++) {
             const int index = displacement + max_displacement - 1;
@@ -63,17 +62,18 @@ static void center_of_rotation_sinograms(UfoFilter *filter)
                 scores[index] += diff * diff;
             }
         }
-        grad[0] = 0.0;
-        for (int i = 1; i < N; i++)
-            grad[i] = scores[i] - scores[i-1];
+        
+        int score_index = 0;
+        float min_score = scores[0];
+        for (int i = 1; i < N; i++) {
+            if (scores[i] < min_score) {
+                score_index = i;
+                min_score = scores[i];
+            } 
+        }
+        float center = (width + score_index - max_displacement + 1) / 2.0;
+        g_message("Center of Rotation: %f", center);
 
-        /* Find local minima. Actually, if max_displacement is not to large (like
-         * width/2) the global maximum is always the correct maximum. */
-        for (int i = 1; i < N; i++) 
-            if (grad[i-1] < 0.0 && grad[i] > 0.0) 
-                g_message("Local minimum at %f: %f", (width + i - max_displacement + 1) / 2.0, scores[i]);
-
-        g_free(grad);
         g_free(scores);
 
         g_async_queue_push(output_queue, sinogram);

@@ -79,8 +79,6 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
-    const float offset_x = -413.5f;
-    const float offset_y = -413.5f;
     gint32 width, num_projections;
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     ufo_buffer_get_dimensions(sinogram, &width, &num_projections);
@@ -96,6 +94,8 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         sin_tmp[i] = sin(i*step);
         axes_tmp[i] = priv->axis_position;
     }
+    const float offset_x = -priv->axis_position;
+    const float offset_y = -priv->axis_position;
 
     UfoBuffer *cos_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, cos_tmp);
     UfoBuffer *sin_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, sin_tmp);
