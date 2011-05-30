@@ -1,0 +1,8 @@
+[UFO Plugin]
+Name=circlecrop
+Module=${UFO_PLUGIN_LIBRARY}
+IAge=1
+Authors=Matthias Vogelgesang
+Copyright=Public Domain
+Website=http://ufo.kit.edu
+Description=Fill outer regions of reconstruction circle with 0s
