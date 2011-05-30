@@ -81,6 +81,68 @@ error_close:
     return NULL;
 }
 
+static void *filter_read_edf(const gchar *filename, 
+    guint16 *bits_per_sample,
+    guint16 *samples_per_pixel,
+    guint32 *width, 
+    guint32 *height)
+{
+    FILE *fp = fopen(filename, "rb");  
+    gchar *header = g_malloc(1024);
+
+    fread(header, 1, 1024, fp);
+
+    gchar **tokens = g_strsplit(header, ";", 0);
+    gboolean big_endian = FALSE;
+    int index = 0;
+    int w = 0, h = 0, size = 0;
+
+    while (tokens[index] != NULL) {
+        gchar **key_value = g_strsplit(tokens[index], "=", 0);
+        if (g_strcmp0(g_strstrip(key_value[0]), "Dim_1") == 0)
+            w = atoi(key_value[1]);
+        else if (g_strcmp0(g_strstrip(key_value[0]), "Dim_2") == 0)
+            h = atoi(key_value[1]);
+        else if (g_strcmp0(g_strstrip(key_value[0]), "Size") == 0)
+            size = atoi(key_value[1]);
+        else if ((g_strcmp0(g_strstrip(key_value[0]), "ByteOrder") == 0) &&
+                 (g_strcmp0(g_strstrip(key_value[1]), "HighByteFirst") == 0))
+            big_endian = TRUE;
+        g_strfreev(key_value);
+        index++;
+    }
+
+    g_strfreev(tokens);
+    g_free(header);
+
+    if (w * h * sizeof(float) != size) {
+        fclose(fp);
+        return NULL;
+    }
+
+    *bits_per_sample = 32;
+    *samples_per_pixel = 1;
+    *width = w;
+    *height = h;
+
+    /* Skip header */
+    fseek(fp, 0L, SEEK_END);
+    size_t file_size = ftell(fp);
+    fseek(fp, file_size - size, SEEK_SET);
+
+    /* Read data */
+    gchar *buffer = g_malloc0(size); 
+    fread(buffer, 1, size, fp);
+    fclose(fp);
+
+    if ((G_BYTE_ORDER == G_LITTLE_ENDIAN) && big_endian) {
+        guint32 *data = (guint32 *) buffer;    
+        for (int i = 0; i < w*h; i++)
+            data[i] = g_ntohl(data[i]);
+    }
+    return buffer;
+}
+
 static void filter_dispose_filenames(UfoFilterReaderPrivate *priv)
 {
     if (priv->filenames != NULL) {
@@ -102,7 +164,7 @@ static void filter_read_filenames(UfoFilterReaderPrivate *priv)
     gchar *filename = (gchar *) g_dir_read_name(directory);
     while (filename != NULL) {
         if (((priv->prefix == NULL) || (g_str_has_prefix(filename, priv->prefix))) &&
-            (g_str_has_suffix(filename, "tif"))) {
+            (g_str_has_suffix(filename, "tif") || g_str_has_suffix(filename, "edf"))) {
             priv->filenames = g_list_append(priv->filenames, 
                 g_strdup_printf("%s/%s", priv->path, filename));
         }
@@ -192,10 +254,17 @@ static void ufo_filter_reader_process(UfoFilter *self)
 
     GList *filename = g_list_first(priv->filenames);
     for (guint i = 0; i < max_count && filename != NULL; i++) {
-        void *buffer = filter_read_tiff((char *) filename->data,
+        void *buffer;
+        if (g_str_has_suffix(filename->data, "tif"))
+            buffer = filter_read_tiff((char *) filename->data,
+                &bits_per_sample, &samples_per_pixel,
+                &width, &height);
+        else
+            buffer = filter_read_edf((char *) filename->data,
                 &bits_per_sample, &samples_per_pixel,
                 &width, &height);
 
+        g_message("w=%i, h=%i, bps=%i, spp=%i", width, height, bits_per_sample, samples_per_pixel);
         /* break out of the loop and insert finishing buffer if file is not valid */
         if (buffer == NULL)
             break;
@@ -204,7 +273,8 @@ static void ufo_filter_reader_process(UfoFilter *self)
         UfoBuffer *image = ufo_resource_manager_request_buffer(manager, width, height, NULL);
         g_object_set(image, "id", i, NULL);
         ufo_buffer_set_cpu_data(image, buffer, bytes_per_sample * width * height, NULL);
-        ufo_buffer_reinterpret(image, bits_per_sample, width * height);
+        if (bits_per_sample < 32)
+            ufo_buffer_reinterpret(image, bits_per_sample, width * height);
 
         g_async_queue_push(output_queue, image);
         g_free(buffer);

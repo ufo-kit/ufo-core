@@ -66,7 +66,6 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
     const gint num_sinos = height;
     const gsize bytes_per_line = sino_width * sizeof(float);
 
-    g_message("[sino] %i bytes per line", (int) bytes_per_line);
     UfoBuffer **sinograms = g_malloc0(sizeof(UfoBuffer*) * num_sinos);
     for (gint i = 0; i < num_sinos; i++)
         sinograms[i] = ufo_resource_manager_request_buffer(manager,

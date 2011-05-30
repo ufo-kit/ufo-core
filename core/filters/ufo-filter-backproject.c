@@ -283,7 +283,7 @@ static void ufo_filter_backproject_class_init(UfoFilterBackprojectClass *klass)
 static void ufo_filter_backproject_init(UfoFilterBackproject *self)
 {
     self->priv = UFO_FILTER_BACKPROJECT_GET_PRIVATE(self);
-    self->priv->use_texture = FALSE;
+    self->priv->use_texture = TRUE;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
