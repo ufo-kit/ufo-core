@@ -84,8 +84,10 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         gint32 width, height;
         ufo_buffer_get_dimensions(input, &width, &height);
 
-        if (priv->ifft_size.x != width/2) {
+        if (priv->ifft_size.x != width / 2) {
             priv->ifft_size.x = width / 2;
+            if (priv->fft_dimensions == clFFT_2D)
+                priv->ifft_size.y = height;
             clFFT_DestroyPlan(ifft_plan);
             ifft_plan = NULL;
         }
@@ -102,10 +104,16 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         cl_event wait_on_event;
 
         /* 1. Inverse FFT */
-        clFFT_ExecuteInterleaved(command_queue,
-                ifft_plan, height, clFFT_Inverse, 
-                fft_buffer_mem, fft_buffer_mem,
-                0, NULL, &wait_on_event);
+        if (priv->ifft_dimensions == clFFT_1D)
+            clFFT_ExecuteInterleaved(command_queue,
+                    ifft_plan, height, clFFT_Inverse, 
+                    fft_buffer_mem, fft_buffer_mem,
+                    0, NULL, &wait_on_event);
+        else
+            clFFT_ExecuteInterleaved(command_queue,
+                    ifft_plan, 1, clFFT_Inverse, 
+                    fft_buffer_mem, fft_buffer_mem,
+                    0, NULL, &wait_on_event);
 
         /* 2. Pack interleaved complex numbers */
         size_t global_work_size[2];

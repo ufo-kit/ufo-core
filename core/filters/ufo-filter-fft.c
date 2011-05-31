@@ -98,6 +98,8 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         /* Check if we can re-use the old FFT plan */
         if (priv->fft_size.x != pow2round(width)) {
             priv->fft_size.x = pow2round(width);
+            if (priv->fft_dimensions == clFFT_2D)
+                priv->fft_size.y = pow2round(height);
             clFFT_DestroyPlan(fft_plan);
             fft_plan = NULL;
         }
@@ -111,9 +113,16 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         }
 
         /* 1. Spread data for interleaved FFT */
-        UfoBuffer *fft_buffer = ufo_resource_manager_request_buffer(manager,
-                2 * priv->fft_size.x, /* what to do in the multi-dimensional case? */
-                height, NULL);
+        UfoBuffer *fft_buffer = NULL;
+        
+        if (priv->fft_dimensions == clFFT_1D)
+            fft_buffer = ufo_resource_manager_request_buffer(manager,
+                    2 * priv->fft_size.x, /* what to do in the multi-dimensional case? */
+                    height, NULL);
+        else
+            fft_buffer = ufo_resource_manager_request_buffer(manager,
+                    2 * priv->fft_size.x, 
+                    priv->fft_size.y, NULL);
 
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(fft_buffer, command_queue);
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
@@ -131,8 +140,14 @@ static void ufo_filter_fft_process(UfoFilter *filter)
                 0, NULL, &wait_on_event);
 
         /* FIXME: we should wait for previous computations */
-        clFFT_ExecuteInterleaved(command_queue,
+        if (priv->fft_dimensions == clFFT_1D)
+            clFFT_ExecuteInterleaved(command_queue,
                 fft_plan, height, clFFT_Forward, 
+                fft_buffer_mem, fft_buffer_mem,
+                1, &wait_on_event, &event);
+        else
+            clFFT_ExecuteInterleaved(command_queue,
+                fft_plan, 1, clFFT_Forward, 
                 fft_buffer_mem, fft_buffer_mem,
                 1, &wait_on_event, &event);
 
@@ -284,7 +299,7 @@ static void ufo_filter_fft_class_init(UfoFilterFFTClass *klass)
 static void ufo_filter_fft_init(UfoFilterFFT *self)
 {
     UfoFilterFFTPrivate *priv = self->priv = UFO_FILTER_FFT_GET_PRIVATE(self);
-    priv->fft_dimensions = 1;
+    priv->fft_dimensions = clFFT_1D;
     priv->fft_size.x = 1;
     priv->fft_size.y = 1;
     priv->fft_size.z = 1;
