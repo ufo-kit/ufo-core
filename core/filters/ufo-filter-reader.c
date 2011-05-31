@@ -264,7 +264,6 @@ static void ufo_filter_reader_process(UfoFilter *self)
                 &bits_per_sample, &samples_per_pixel,
                 &width, &height);
 
-        g_message("w=%i, h=%i, bps=%i, spp=%i", width, height, bits_per_sample, samples_per_pixel);
         /* break out of the loop and insert finishing buffer if file is not valid */
         if (buffer == NULL)
             break;

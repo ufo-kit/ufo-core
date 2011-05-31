@@ -39,6 +39,17 @@ static void deactivated(EthosPlugin *plugin)
 {
 }
 
+static guint32 pow2round(guint32 x)
+{
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return x+1;
+}
+
 /* 
  * virtual methods 
  */
@@ -77,17 +88,27 @@ static void ufo_filter_fft_process(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     int err = CL_SUCCESS;
-    clFFT_Plan fft_plan = clFFT_CreatePlan(
-            (cl_context) ufo_resource_manager_get_context(manager),
-            priv->fft_size, priv->fft_dimensions,
-            clFFT_InterleavedComplexFormat, &err);
+    clFFT_Plan fft_plan = NULL;
+    UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
 
-    UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
-    gint32 width, height;
-    ufo_buffer_get_dimensions(sinogram, &width, &height);
+    while (!ufo_buffer_is_finished(input)) {
+        gint32 width, height;
+        ufo_buffer_get_dimensions(input, &width, &height);
 
-    while (!ufo_buffer_is_finished(sinogram)) {
-        /* FIXME: sizes of input might change */
+        /* Check if we can re-use the old FFT plan */
+        if (priv->fft_size.x != pow2round(width)) {
+            priv->fft_size.x = pow2round(width);
+            clFFT_DestroyPlan(fft_plan);
+            fft_plan = NULL;
+        }
+
+        /* No, then create a new one */
+        if (fft_plan == NULL) {
+            fft_plan = clFFT_CreatePlan(
+                    (cl_context) ufo_resource_manager_get_context(manager),
+                    priv->fft_size, priv->fft_dimensions,
+                    clFFT_InterleavedComplexFormat, &err);
+        }
 
         /* 1. Spread data for interleaved FFT */
         UfoBuffer *fft_buffer = ufo_resource_manager_request_buffer(manager,
@@ -95,7 +116,7 @@ static void ufo_filter_fft_process(UfoFilter *filter)
                 height, NULL);
 
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(fft_buffer, command_queue);
-        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram, command_queue);
+        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
         cl_event event, wait_on_event;
         size_t global_work_size[2];
 
@@ -115,15 +136,16 @@ static void ufo_filter_fft_process(UfoFilter *filter)
                 fft_buffer_mem, fft_buffer_mem,
                 1, &wait_on_event, &event);
 
-        ufo_buffer_transfer_id(sinogram, fft_buffer);
+        ufo_buffer_transfer_id(input, fft_buffer);
         ufo_buffer_wait_on_event(fft_buffer, event);
-        ufo_resource_manager_release_buffer(manager, sinogram);
+        ufo_resource_manager_release_buffer(manager, input);
 
 
         g_async_queue_push(output_queue, fft_buffer);
-        sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
+        input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
-    g_async_queue_push(output_queue, sinogram);
+    g_async_queue_push(output_queue, input);
+    clFFT_DestroyPlan(fft_plan);
 }
 
 static void ufo_filter_fft_set_property(GObject *object,

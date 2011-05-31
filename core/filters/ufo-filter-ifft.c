@@ -77,20 +77,29 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     int err = CL_SUCCESS;
-    clFFT_Plan ifft_plan = clFFT_CreatePlan(
-            (cl_context) ufo_resource_manager_get_context(manager),
-            priv->ifft_size, priv->ifft_dimensions,
-            clFFT_InterleavedComplexFormat, &err);
-
+    clFFT_Plan ifft_plan = NULL;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    gint32 width, height;
-    ufo_buffer_get_dimensions(input, &width, &height);
 
     while (!ufo_buffer_is_finished(input)) {
+        gint32 width, height;
+        ufo_buffer_get_dimensions(input, &width, &height);
+
+        if (priv->ifft_size.x != width/2) {
+            priv->ifft_size.x = width / 2;
+            clFFT_DestroyPlan(ifft_plan);
+            ifft_plan = NULL;
+        }
+
+        if (ifft_plan == NULL) {
+            ifft_plan = clFFT_CreatePlan(
+                (cl_context) ufo_resource_manager_get_context(manager),
+                priv->ifft_size, priv->ifft_dimensions,
+                clFFT_InterleavedComplexFormat, &err);
+        }
+
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
         cl_event event;
         cl_event wait_on_event;
-        guint32 width = (priv->final_width == -1) ? priv->ifft_size.x : priv->final_width;
 
         /* 1. Inverse FFT */
         clFFT_ExecuteInterleaved(command_queue,
@@ -103,6 +112,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         global_work_size[0] = priv->ifft_size.x;
         global_work_size[1] = height;
 
+        width = (priv->final_width == -1) ? priv->ifft_size.x : priv->final_width;
         UfoBuffer *sinogram = ufo_resource_manager_request_buffer(manager,
                 width, height, NULL);
 
@@ -124,6 +134,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
     g_async_queue_push(output_queue, input);
+    clFFT_DestroyPlan(ifft_plan);
 }
 
 static void ufo_filter_ifft_set_property(GObject *object,

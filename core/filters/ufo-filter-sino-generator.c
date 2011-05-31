@@ -1,5 +1,6 @@
 #include <gmodule.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "ufo-resource-manager.h"
 #include "ufo-filter-sino-generator.h"
@@ -79,6 +80,7 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
             dst += (received-1)*sino_width;
             memcpy(dst, src + i*sino_width, bytes_per_line);
         }
+        ufo_resource_manager_release_buffer(manager, input);
         input = ufo_filter_pop_buffer(filter);
         received++;
     }
