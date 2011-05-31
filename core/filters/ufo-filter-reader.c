@@ -1,4 +1,5 @@
 #include <gmodule.h>
+#include <stdlib.h>
 #include <tiffio.h>
 
 #include "ufo-filter-reader.h"

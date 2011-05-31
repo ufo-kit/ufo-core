@@ -49,8 +49,8 @@ static void center_of_rotation_sinograms(UfoFilter *filter)
 
         for (int displacement = (-max_displacement + 1); displacement < 0; displacement++) {
             const int index = displacement + max_displacement - 1;
-            for (int x = 0; x < width-abs(displacement); x++) {
-                float diff = proj_0[x] - proj_180[(width-abs(displacement) - x + 1)];    
+            for (int x = 0; x < width-ABS(displacement); x++) {
+                float diff = proj_0[x] - proj_180[(width-ABS(displacement) - x + 1)];    
                 scores[index] += diff * diff;
             }
         }
@@ -98,7 +98,7 @@ static void center_of_rotation_projections(UfoFilter *filter)
     /* Take all buffers until we got the opposite projection */
     input = (UfoBuffer *) g_async_queue_pop(input_queue);
     while (!ufo_buffer_is_finished(input)) {
-        if (abs((counter++ * priv->angle_step) - 180.0f) < 0.001f) {
+        if (ABS((counter++ * priv->angle_step) - 180.0f) < 0.001f) {
             proj_180 = ufo_buffer_get_cpu_data(input, command_queue); 
             break;
         }
@@ -120,8 +120,8 @@ static void center_of_rotation_projections(UfoFilter *filter)
     for (int displacement = (-max_displacement + 1); displacement < 0; displacement++) {
         const int index = displacement + max_displacement - 1;
         for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width-abs(displacement); x++) {
-                float diff = proj_0[y*width+x] - proj_180[y*width + (width-abs(displacement) - x + 1)];    
+            for (int x = 0; x < width-ABS(displacement); x++) {
+                float diff = proj_0[y*width+x] - proj_180[y*width + (width-ABS(displacement) - x + 1)];    
                 scores[index] += diff * diff;
             }
         }
