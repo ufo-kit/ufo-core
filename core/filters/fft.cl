@@ -1,4 +1,4 @@
-__kernel void fft_spread(__global float *out, __global float *in, const int num_bins)
+__kernel void fft_spread(__global float *out, __global float *in, const int width, const int height)
 {
     const int idx = get_global_id(0);
     const int idy = get_global_id(1);
@@ -6,12 +6,12 @@ __kernel void fft_spread(__global float *out, __global float *in, const int num_
 
     /* May diverge but not possible to reduce latency, because num_bins can 
        be arbitrary and not be aligned. */
-    if (idx >= num_bins) {
+    if ((idy >= height) || (idx >= width)) {
         out[idy*dpitch + idx*2] = 0.0;
         out[idy*dpitch + idx*2 + 1] = 0.0;
     }
     else {
-        out[idy*dpitch + idx*2] = in[idy*num_bins + idx];
+        out[idy*dpitch + idx*2] = in[idy*width + idx];
         out[idy*dpitch + idx*2 + 1] = 0.0;
     }
 }

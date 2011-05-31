@@ -130,10 +130,11 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         size_t global_work_size[2];
 
         global_work_size[0] = priv->fft_size.x;
-        global_work_size[1] = height;
+        global_work_size[1] = priv->fft_dimensions == clFFT_1D ? height : priv->fft_size.y;
         clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
         clSetKernelArg(priv->kernel, 2, sizeof(int), &width);
+        clSetKernelArg(priv->kernel, 3, sizeof(int), &height);
         clEnqueueNDRangeKernel(command_queue,
                 priv->kernel, 
                 2, NULL, global_work_size, NULL, 
