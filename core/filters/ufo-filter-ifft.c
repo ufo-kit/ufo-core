@@ -9,7 +9,8 @@
 #include "ufo-buffer.h"
 
 struct _UfoFilterIFFTPrivate {
-    cl_kernel kernel;
+    cl_kernel pack_kernel;
+    cl_kernel normalize_kernel;
     clFFT_Dimension ifft_dimensions;
     clFFT_Dim3 ifft_size;
     gint32 final_width;
@@ -58,7 +59,8 @@ static void ufo_filter_ifft_initialize(UfoFilter *filter)
         return;
     }
 
-    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "fft_pack", &error);
+    self->priv->pack_kernel = ufo_resource_manager_get_kernel(manager, "fft_pack", &error);
+    self->priv->normalize_kernel = ufo_resource_manager_get_kernel(manager, "fft_normalize", &error);
     if (error != NULL) {
         g_warning("%s", error->message);
         g_error_free(error);
@@ -128,12 +130,18 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         global_work_size[1] = height;
 
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram, command_queue);
-        clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
-        clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
-        clSetKernelArg(priv->kernel, 2, sizeof(int), &width);
+        clSetKernelArg(priv->normalize_kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
+        clEnqueueNDRangeKernel(command_queue,
+                priv->normalize_kernel,
+                2, NULL, global_work_size, NULL,
+                0, NULL, &event);
+
+        clSetKernelArg(priv->pack_kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
+        clSetKernelArg(priv->pack_kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
+        clSetKernelArg(priv->pack_kernel, 2, sizeof(int), &width);
 
         clEnqueueNDRangeKernel(command_queue,
-                priv->kernel,
+                priv->pack_kernel,
                 2, NULL, global_work_size, NULL,
                 0, NULL, &event);
 

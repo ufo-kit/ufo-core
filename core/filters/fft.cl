@@ -16,14 +16,21 @@ __kernel void fft_spread(__global float *out, __global float *in, const int widt
     }
 }
 
-__kernel void fft_pack(__global float *in, __global float *out, const int num_bins)
+__kernel void fft_pack(__global float *in, __global float *out, const int width)
 {
     const int idx = get_global_id(0);
     const int idy = get_global_id(1);
     const int dpitch = get_global_size(0)*2;
 
-    if (idx < num_bins) {
-        out[idy*num_bins + idx] = in[idy*dpitch + idx*2];
+    if (idx < width) {
+        out[idy*width + idx] = in[idy*dpitch + idx*2];
     }
+}
+
+__kernel void fft_normalize(__global float *data)
+{
+    const int idx = get_global_id(0);
+    const int dim_fft = get_global_size(0);
+    data[2*idx] = data[2*idx] / dim_fft;
 }
 

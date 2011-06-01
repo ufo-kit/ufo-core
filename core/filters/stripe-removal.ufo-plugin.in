@@ -5,5 +5,4 @@ IAge=1
 Authors=Matthias Vogelgesang
 Copyright=Public Domain
 Website=http://ufo.kit.edu
-Description=Removes horizontal and vertical stripe artifacts by filtering the 2D
-input FFT
+Description=Removes horizontal and vertical stripe artifacts by filtering the 2D input FFT
