@@ -99,7 +99,7 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         if (priv->fft_size.x != pow2round(width)) {
             priv->fft_size.x = pow2round(width);
             if (priv->fft_dimensions == clFFT_2D)
-                priv->fft_size.y = pow2round(height);
+                priv->fft_size.y = priv->fft_size.x; //pow2round(height);
             clFFT_DestroyPlan(fft_plan);
             fft_plan = NULL;
         }

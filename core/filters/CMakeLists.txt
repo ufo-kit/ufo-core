@@ -10,6 +10,7 @@ set(ufofilter_SRCS
     ufo-filter-raw.c
     ufo-filter-scale.c
     ufo-filter-sino-generator.c
+    ufo-filter-stripe-removal.c
     ufo-filter-circle-crop.c
     )
 
