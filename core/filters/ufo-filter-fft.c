@@ -156,7 +156,6 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         ufo_buffer_wait_on_event(fft_buffer, event);
         ufo_resource_manager_release_buffer(manager, input);
 
-
         g_async_queue_push(output_queue, fft_buffer);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }

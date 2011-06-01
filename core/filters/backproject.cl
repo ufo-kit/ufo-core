@@ -44,8 +44,8 @@ __kernel void backproject_tex(const int num_proj,
     const int slice_width = get_global_size(0);
 
     float h;
-    float bx = idx + off_x;
-    float by = -(idy + off_y);
+    const float bx = idx + off_x;
+    const float by = -(idy + off_y);
     float sum = 0.0f;
 
     for(int proj = 0; proj < num_proj; proj++) {

@@ -138,6 +138,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
 
     while (!ufo_buffer_is_finished(sinogram)) {
         size_t global_work_size[2] = { width, width };
+        size_t local_work_size[2] = { 16, 16 };
         cl_event event;
 
         UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL);
@@ -158,7 +159,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         err = clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *) &slice_mem);
 
         err = clEnqueueNDRangeKernel(command_queue, kernel,
-                2, NULL, global_work_size, NULL,
+                2, NULL, global_work_size, local_work_size,
                 0, NULL, &event);
 
         ufo_buffer_wait_on_event(slice, event);

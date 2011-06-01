@@ -122,7 +122,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         global_work_size[0] = priv->ifft_size.x;
 
         width = (priv->final_width == -1) ? priv->ifft_size.x : priv->final_width;
-        height = (priv->final_height == -1) ? priv->ifft_size.y : priv->final_height;
+        height = (priv->final_height == -1) ? height : priv->final_height;
         UfoBuffer *sinogram = ufo_resource_manager_request_buffer(manager,
                 width, height, NULL);
         global_work_size[1] = height;
