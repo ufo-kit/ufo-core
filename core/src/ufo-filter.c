@@ -65,7 +65,7 @@ UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter)
 
 void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer)
 {
-    GAsyncQueue *output_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
     g_async_queue_push(output_queue, buffer);
 }
 
