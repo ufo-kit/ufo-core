@@ -58,12 +58,15 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
     ufo_buffer_get_dimensions(input, &size.width, &size.height);
     IplImage *image = cvCreateImageHeader(size, IPL_DEPTH_32F, 1);
+    IplImage *blit = cvCreateImage(size, IPL_DEPTH_8U, 1);
     cvNamedWindow("Foo", CV_WINDOW_AUTOSIZE);
     cvMoveWindow("Foo", 100, 100);
 
     while (!ufo_buffer_is_finished(input)) {
         image->imageData = (char *) ufo_buffer_get_cpu_data(input, command_queue);
-        cvShowImage("Foo", image);
+        cvConvertImage(image, blit, 0);
+        cvEqualizeHist(blit, blit);
+        cvShowImage("Foo", blit);
         cvWaitKey(10);
         
         g_async_queue_push(output_queue, input);
