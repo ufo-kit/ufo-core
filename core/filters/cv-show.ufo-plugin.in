@@ -1,0 +1,8 @@
+[UFO Plugin]
+Name=cvshow
+Module=${UFO_PLUGIN_LIBRARY}
+IAge=1
+Authors=Matthias Vogelgesang
+Copyright=Public Domain
+Website=http://ufo.kit.edu
+Description=Show images using OpenCV

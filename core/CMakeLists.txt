@@ -19,7 +19,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}
     ${OPENCL_INCLUDE_DIRS}
     )
 
-add_definitions("-std=c99 -Wall -Werror -fPIC")
+add_definitions("-std=c99 -Wall -fPIC")
 
 add_subdirectory(src)
 add_subdirectory(filters)

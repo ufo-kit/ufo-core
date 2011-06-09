@@ -30,7 +30,10 @@ set(ufofilter_LIBS
 
 
 # --- Add filters that depend on other libraries ------------------------------
+find_package(TIFF)
+find_package(OCLFFT)
 pkg_check_modules(UCA uca)
+pkg_check_modules(OPENCV opencv)
 
 if (UCA_INCLUDE_DIRS AND UCA_LIBRARIES)
     set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-uca.c)
@@ -38,7 +41,6 @@ if (UCA_INCLUDE_DIRS AND UCA_LIBRARIES)
     include_directories(${UCA_INCLUDE_DIRS})
 endif ()
 
-find_package(TIFF)
 if (TIFF_FOUND)
     set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-reader.c)
     set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-writer.c)
@@ -46,12 +48,17 @@ if (TIFF_FOUND)
     include_directories(${TIFF_INCLUDE_DIRS})
 endif ()
 
-find_package(OCLFFT)
 if (OCLFFT_FOUND)
     set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-fft.c)
     set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-ifft.c)
     set(ufofilter_LIBS ${ufofilter_LIBS} ${OCLFFT_LIBRARIES})
     include_directories(${OCLFFT_INCLUDE_DIRS})
+endif ()
+
+if (OPENCV_FOUND)
+    set(ufofilter_SRCS ${ufofilter_SRCS} ufo-filter-cv-show.c)
+    set(ufofilter_LIBS ${ufofilter_LIBS} ${OPENCV_LIBRARIES})
+    include_directories(${OPENCV_INCLUDE_DIRS})
 endif ()
 
 
