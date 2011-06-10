@@ -29,6 +29,7 @@ struct _UfoResourceManagerPrivate {
     GList *opencl_files;
     GList *opencl_kernel_table;
     GList *opencl_programs;
+    GString *opencl_build_options;
 
     GList *buffers;                     /**< keep a list for buffer destruction */
     GHashTable *buffer_map;             /**< maps from dimension hash to a queue of buffer instances */
@@ -266,19 +267,21 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
     err = clBuildProgram(program, 
             priv->num_devices[0], 
             priv->opencl_devices[0],
-            NULL, NULL, NULL);
+            priv->opencl_build_options->str,
+            NULL, NULL);
+
+    const int LOG_SIZE = 4096;
+    gchar* log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
+    clGetProgramBuildInfo(program, priv->opencl_devices[0][0], 
+            CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void*) log, NULL);
+    g_print("\n=== Build log for %s===%s\n\n", filename, log);
+    g_free(log);
 
     if (err != CL_SUCCESS) {
-        const int LOG_SIZE = 4096;
-        gchar* log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
-        clGetProgramBuildInfo(program, priv->opencl_devices[0][0], 
-                CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void*) log, NULL);
-
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
-                "Failed to build OpenCL program\n%s", log);
-        g_free(log);
+                "Failed to build OpenCL program");
         g_free(buffer);
         return FALSE;
     }
@@ -498,6 +501,8 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     g_list_foreach(priv->opencl_files, (GFunc) g_free, NULL);
     g_list_free(priv->opencl_files);
 
+    g_string_free(priv->opencl_build_options, TRUE);
+
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->dispose(gobject);
 }
 
@@ -547,6 +552,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->opencl_kernels = g_hash_table_new(g_str_hash, g_str_equal);
     priv->opencl_platforms = NULL;
     priv->opencl_programs = NULL;
+    priv->opencl_build_options = g_string_new("-cl-mad-enable ");
 
     /* initialize OpenCL subsystem */
     clGetPlatformIDs(0, NULL, &priv->num_platforms);
@@ -564,8 +570,12 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
         clGetPlatformInfo(platform, CL_PLATFORM_NAME, 256, info_buffer, NULL);
         g_debug("--- %s ---", info_buffer);
+
         clGetPlatformInfo(platform, CL_PLATFORM_VENDOR, 256, info_buffer, NULL);
         g_debug(" Vendor...........: %s", info_buffer);
+        if (g_str_has_prefix(info_buffer, "NVIDIA"))
+            g_string_append(priv->opencl_build_options, "-cl-nv-verbose ");
+
         clGetPlatformInfo(platform, CL_PLATFORM_VERSION, 256, info_buffer, NULL);
         g_debug(" Version..........: %s", info_buffer);
 
@@ -585,6 +595,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
         priv->num_devices[i] = num_devices;
         g_debug(" Number of devices: %i", num_devices);
+        g_debug(" Build options....: %s", priv->opencl_build_options->str);
     }
     g_free(info_buffer);
 

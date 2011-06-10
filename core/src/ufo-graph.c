@@ -36,7 +36,6 @@ static void graph_add_plugin(gpointer data, gpointer user_data)
     EthosPlugin *plugin = ethos_manager_get_plugin(priv->ethos, info);
     const gchar *plugin_name = ethos_plugin_info_get_name(info);
 
-    g_debug("Load filter: %s", plugin_name);
     g_hash_table_insert(priv->plugin_types, 
             (gpointer) plugin_name, 
             (gpointer) G_OBJECT_TYPE(plugin));
