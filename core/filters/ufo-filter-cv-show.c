@@ -9,9 +9,7 @@
 #include "ufo-buffer.h"
 
 struct _UfoFilterCvShowPrivate {
-    /* add your private data here */
-    /* cl_kernel kernel; */
-    float example;
+    gboolean show_histogram;
 };
 
 GType ufo_filter_cv_show_get_type(void) G_GNUC_CONST;
@@ -22,7 +20,7 @@ G_DEFINE_TYPE(UfoFilterCvShow, ufo_filter_cv_show, UFO_TYPE_FILTER);
 
 enum {
     PROP_0,
-    PROP_EXAMPLE, /* remove this or add more */
+    PROP_SHOW_HISTOGRAM, 
     N_PROPERTIES
 };
 
@@ -73,6 +71,8 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    UfoFilterCvShow *self = UFO_FILTER_CV_SHOW(filter);
+    UfoFilterCvShowPrivate *priv = UFO_FILTER_CV_SHOW_GET_PRIVATE(self);
 
     CvSize size;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
@@ -92,11 +92,13 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
         cvConvertImage(image, blit, 0);
         cvShowImage("Foo", image);
 
-        cvCalcHist(&blit, hist, 0, 0);
-        IplImage *img_hist = draw_histogram(hist, 1.0, 1.0);
-        cvClearHist(hist);
+        if (priv->show_histogram) {
+            cvCalcHist(&blit, hist, 0, 0);
+            IplImage *img_hist = draw_histogram(hist, 1.0, 1.0);
+            cvClearHist(hist);
 
-        cvShowImage("Histogram", img_hist);
+            cvShowImage("Histogram", img_hist);
+        }
         cvWaitKey(10);
         
         g_async_queue_push(output_queue, input);
@@ -116,8 +118,8 @@ static void ufo_filter_cv_show_set_property(GObject *object,
 
     /* Handle all properties accordingly */
     switch (property_id) {
-        case PROP_EXAMPLE:
-            self->priv->example = g_value_get_double(value);
+        case PROP_SHOW_HISTOGRAM:
+            self->priv->show_histogram = g_value_get_boolean(value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -134,8 +136,8 @@ static void ufo_filter_cv_show_get_property(GObject *object,
 
     /* Handle all properties accordingly */
     switch (property_id) {
-        case PROP_EXAMPLE:
-            g_value_set_double(value, self->priv->example);
+        case PROP_SHOW_HISTOGRAM:
+            g_value_set_boolean(value, self->priv->show_histogram);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -157,16 +159,14 @@ static void ufo_filter_cv_show_class_init(UfoFilterCvShowClass *klass)
     filter_class->process = ufo_filter_cv_show_process;
 
     /* install properties */
-    cv_show_properties[PROP_EXAMPLE] = 
-        g_param_spec_double("example",
-            "This is an example property",
-            "You should definately replace this with some meaningful property",
-            -1.0,   /* minimum */
-             1.0,   /* maximum */
-             1.0,   /* default */
+    cv_show_properties[PROP_SHOW_HISTOGRAM] = 
+        g_param_spec_boolean("show-histogram",
+            "Show also the histogram of the buffer",
+            "Show also the histogram of the buffer",
+            FALSE,
             G_PARAM_READWRITE);
 
-    g_object_class_install_property(gobject_class, PROP_EXAMPLE, cv_show_properties[PROP_EXAMPLE]);
+    g_object_class_install_property(gobject_class, PROP_SHOW_HISTOGRAM, cv_show_properties[PROP_SHOW_HISTOGRAM]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterCvShowPrivate));
@@ -175,7 +175,7 @@ static void ufo_filter_cv_show_class_init(UfoFilterCvShowClass *klass)
 static void ufo_filter_cv_show_init(UfoFilterCvShow *self)
 {
     UfoFilterCvShowPrivate *priv = self->priv = UFO_FILTER_CV_SHOW_GET_PRIVATE(self);
-    priv->example = 1.0;
+    priv->show_histogram = FALSE;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
