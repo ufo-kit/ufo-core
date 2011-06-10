@@ -43,6 +43,26 @@ static void ufo_filter_cv_show_initialize(UfoFilter *filter)
 {
 }
 
+static IplImage *draw_histogram(CvHistogram *hist, float scale_x, float scale_y)
+{
+    float hist_max = 0.0;
+    cvGetMinMaxHistValue(hist, 0, &hist_max, 0, 0);
+    IplImage *img = cvCreateImage(cvSize(256*scale_x, 64*scale_y), 8, 1);
+    cvZero(img);
+    for (int i = 0; i < 255; i++) {
+        float hist_value = cvQueryHistValue_1D(hist, i); 
+        float next_value = cvQueryHistValue_1D(hist, i+1); 
+        CvPoint p1 = cvPoint(i*scale_x, 64*scale_y);
+        CvPoint p2 = cvPoint(i*scale_x+scale_x, 64*scale_y);
+        CvPoint p3 = cvPoint(i*scale_x+scale_x, (64-next_value*64/hist_max)*scale_y);
+        CvPoint p4 = cvPoint(i*scale_x, (64-hist_value*64/hist_max)*scale_y);
+        int num_points = 5;
+        CvPoint points[] = {p1, p2, p3, p4, p1};
+        cvFillConvexPoly(img, points, num_points, cvScalar(255, 0, 0, 0), 8, 0);
+    }
+    return img;
+}
+
 /*
  * This is the main method in which the filter processes one buffer after
  * another.
@@ -62,11 +82,21 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
     cvNamedWindow("Foo", CV_WINDOW_AUTOSIZE);
     cvMoveWindow("Foo", 100, 100);
 
+    int num_bins = 256;
+    float range[] = {0, 255};
+    float *ranges[] = { range };
+    CvHistogram *hist = cvCreateHist(1, &num_bins, CV_HIST_ARRAY, ranges, 1);
+
     while (!ufo_buffer_is_finished(input)) {
         image->imageData = (char *) ufo_buffer_get_cpu_data(input, command_queue);
         cvConvertImage(image, blit, 0);
-        cvEqualizeHist(blit, blit);
-        cvShowImage("Foo", blit);
+        cvShowImage("Foo", image);
+
+        cvCalcHist(&blit, hist, 0, 0);
+        IplImage *img_hist = draw_histogram(hist, 1.0, 1.0);
+        cvClearHist(hist);
+
+        cvShowImage("Histogram", img_hist);
         cvWaitKey(10);
         
         g_async_queue_push(output_queue, input);

@@ -4,14 +4,15 @@ cmake_minimum_required(VERSION 2.6)
 set(ufofilter_SRCS 
     ufo-filter-backproject.c
     ufo-filter-center-of-rotation.c
+    ufo-filter-circle-crop.c
     ufo-filter-filter.c
     ufo-filter-hist.c
+    ufo-filter-normalize.c
     ufo-filter-null.c
     ufo-filter-raw.c
     ufo-filter-scale.c
     ufo-filter-sino-generator.c
     ufo-filter-stripe-removal.c
-    ufo-filter-circle-crop.c
     )
 
 set(ufofilter_KERNELS
