@@ -106,15 +106,6 @@ const gchar* opencl_map_error(cl_int error)
     return NULL;
 }
 
-
-static guint32 resource_manager_hash_dims(guint32 width, guint32 height)
-{
-    guint32 result = 0x345678;
-    result ^= width << 12;
-    result ^= height;
-    return result;
-}
-
 static gchar *resource_manager_load_opencl_program(const gchar *filename)
 {
     FILE *fp = fopen(filename, "r");
@@ -150,27 +141,6 @@ static void resource_manager_release_program(gpointer data, gpointer user_data)
 {
     cl_program program = (cl_program) data;
     clReleaseProgram(program);
-}
-
-static void resource_manager_release_mem(gpointer data, gpointer user_data)
-{
-    UfoBuffer *buffer = UFO_BUFFER(data);
-    cl_command_queue command_queue = (cl_command_queue) user_data;
-    cl_mem mem = ufo_buffer_get_gpu_data(buffer, command_queue);
-    if (mem != NULL)
-        clReleaseMemObject(mem);
-    g_object_unref(buffer);
-}
-
-static void resource_manager_get_buffer_statistics(gpointer data, gpointer user_data)
-{
-    UfoBuffer *buffer = UFO_BUFFER(data);
-    gint uploads, downloads;
-    ufo_buffer_get_transfer_statistics(buffer, &uploads, &downloads);
-    
-    gint *retval = (gint *) user_data;
-    retval[0] += uploads;
-    retval[1] += downloads;
 }
 
 static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
