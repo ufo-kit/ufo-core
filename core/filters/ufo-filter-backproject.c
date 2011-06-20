@@ -101,17 +101,18 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     UfoBuffer *sin_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, sin_tmp);
     UfoBuffer *axes_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, axes_tmp);
 
+    cl_context context = (cl_context) ufo_resource_manager_get_context(manager);
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
-    cl_mem cos_mem = ufo_buffer_get_gpu_data(cos_buffer, command_queue);
-    cl_mem sin_mem = ufo_buffer_get_gpu_data(sin_buffer, command_queue);
-    cl_mem axes_mem = ufo_buffer_get_gpu_data(axes_buffer, command_queue);
+    cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+    cl_mem cos_mem = clCreateBuffer(context, flags, sizeof(float) * num_projections, cos_tmp, NULL);
+    cl_mem sin_mem = clCreateBuffer(context, flags, sizeof(float) * num_projections, sin_tmp, NULL);
+    cl_mem axes_mem = clCreateBuffer(context, flags, sizeof(float) * num_projections, axes_tmp, NULL);
 
     g_free(cos_tmp);
     g_free(sin_tmp);
     g_free(axes_tmp);
 
     cl_int err = CL_SUCCESS;
-
     cl_mem texture = NULL;
     cl_kernel kernel = NULL;
 
@@ -119,7 +120,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         cl_image_format image_format;
         image_format.image_channel_order = CL_R;
         image_format.image_channel_data_type = CL_FLOAT;
-        texture = clCreateImage2D(ufo_resource_manager_get_context(manager),
+        texture = clCreateImage2D(context,
                 CL_MEM_READ_ONLY,
                 &image_format, width, num_projections, 
                 0, NULL, &err);
@@ -169,6 +170,13 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         ufo_resource_manager_release_buffer(manager, sinogram);
         sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
+
+    if (priv->use_texture)
+        clReleaseMemObject(texture);
+
+    clReleaseMemObject(cos_mem);
+    clReleaseMemObject(sin_mem);
+    clReleaseMemObject(axes_mem);
 
     g_async_queue_push(output_queue, 
             ufo_resource_manager_request_finish_buffer(manager));
