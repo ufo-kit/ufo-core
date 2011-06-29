@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 2.6)
 
+
+# --- Options -----------------------------------------------------------------
+option(PROFILE "Enable profiling" OFF)
+if (PROFILE)
+    add_definitions("-pg")
+    set(CMAKE_C_FLAGS "-pg")
+endif ()
+
 # --- Find packages and libraries ---------------------------------------------
 
 # These packages are required in all sub-directories because Glib and GObject is
