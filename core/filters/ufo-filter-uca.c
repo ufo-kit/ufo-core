@@ -59,7 +59,7 @@ static void ufo_filter_uca_process(UfoFilter *self)
 
     for (guint i = 0; i < 1; i++) {
         UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
-                width, height, NULL);
+                width, height, NULL, FALSE);
 
         uca_cam_grab(cam, (char *) ufo_buffer_get_cpu_data(buffer, command_queue), NULL);
         /* FIXME: don't use hardcoded 8 bits per pixel */
@@ -69,12 +69,8 @@ static void ufo_filter_uca_process(UfoFilter *self)
         g_async_queue_push(output_queue, buffer);
     }
 
-    /* No more data */
-    UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 1, 1, NULL);
-    g_object_set(buffer,
-            "finished", TRUE,
-            NULL);
-    g_async_queue_push(output_queue, buffer);
+    g_async_queue_push(output_queue, 
+            ufo_resource_manager_request_finish_buffer(manager));
 }
 
 static void ufo_filter_uca_class_init(UfoFilterUCAClass *klass)

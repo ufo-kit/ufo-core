@@ -97,10 +97,6 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     const float offset_x = -priv->axis_position;
     const float offset_y = -priv->axis_position;
 
-    UfoBuffer *cos_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, cos_tmp);
-    UfoBuffer *sin_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, sin_tmp);
-    UfoBuffer *axes_buffer = ufo_resource_manager_request_buffer(manager, num_projections, 1, axes_tmp);
-
     cl_context context = (cl_context) ufo_resource_manager_get_context(manager);
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
     cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
@@ -137,12 +133,15 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     err = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *) &sin_mem);
     err = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *) &axes_mem);
 
+    gint total = 0;
+    GTimer *timer = g_timer_new();
     while (!ufo_buffer_is_finished(sinogram)) {
+        UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL, FALSE);
+        total++;
         size_t global_work_size[2] = { width, width };
         size_t local_work_size[2] = { 16, 16 };
         cl_event event;
 
-        UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL);
         cl_mem slice_mem = (cl_mem) ufo_buffer_get_gpu_data(slice, command_queue);
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram, command_queue);
 
@@ -170,7 +169,12 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         ufo_resource_manager_release_buffer(manager, sinogram);
         sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
-
+    g_timer_stop(timer);
+    
+    g_message("[bp:%p] %i sinograms on cmd-queue %p in %fs",
+            filter, total, command_queue,
+            g_timer_elapsed(timer, NULL));
+    
     if (priv->use_texture)
         clReleaseMemObject(texture);
 

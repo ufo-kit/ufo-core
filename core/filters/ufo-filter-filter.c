@@ -47,7 +47,7 @@ static UfoBuffer *filter_create_data(UfoFilterFilterPrivate *priv, guint32 width
         filter[k + 1] = filter[width - k + 1];
     }
     UfoBuffer *filter_buffer = ufo_resource_manager_request_buffer(
-            ufo_resource_manager(), width, 1, filter);
+            ufo_resource_manager(), width, 1, filter, TRUE);
     g_free(filter);
     return filter_buffer;
 }

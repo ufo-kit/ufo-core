@@ -143,29 +143,13 @@ static void resource_manager_release_program(gpointer data, gpointer user_data)
     clReleaseProgram(program);
 }
 
-static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,
-        guint32 width, 
-        guint32 height,
-        float *data)
-{
-    UfoBuffer *buffer = ufo_buffer_new(width, height);
-
-    /* TODO 1: Let user specify access flags */
-    /* TODO 2: Think about copy strategy */
-    cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
-    if (data != NULL) {
-        /*mem_flags |= CL_MEM_COPY_HOST_PTR;*/
-        ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
-    }
-
-    cl_mem buffer_mem = clCreateBuffer(self->priv->opencl_context,
-            mem_flags, 
-            width * height * sizeof(float),
-            NULL, NULL);
-
-    ufo_buffer_set_cl_mem(buffer, buffer_mem);
-    return buffer;
-}
+/*static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,*/
+        /*guint32 width, */
+        /*guint32 height,*/
+        /*float *data)*/
+/*{*/
+    /*return buffer;*/
+/*}*/
 
 GQuark ufo_resource_manager_error_quark(void)
 {
@@ -241,7 +225,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
     gchar* log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
     clGetProgramBuildInfo(program, priv->opencl_devices[0][0], 
             CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void*) log, NULL);
-    g_print("\n=== Build log for %s===%s\n\n", filename, log);
+    /*g_print("\n=== Build log for %s===%s\n\n", filename, log);*/
     g_free(log);
 
     if (err != CL_SUCCESS) {
@@ -272,7 +256,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
                         kernel_name_length, kernel_name, 
                         NULL);
 
-        g_debug("Add OpenCL kernel '%s'", kernel_name);
+        /*g_debug("Add OpenCL kernel '%s'", kernel_name);*/
         g_hash_table_insert(priv->opencl_kernels, kernel_name, kernels[i]);
     }
 
@@ -339,11 +323,23 @@ gpointer ufo_resource_manager_get_context(UfoResourceManager *resource_manager)
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, 
         guint32 width, 
         guint32 height,
-        float *data)
+        float *data,
+        gboolean prefer_gpu)
 {
     UfoResourceManager *self = resource_manager;
-    UfoBuffer *buffer = resource_manager_create_buffer(self, width, height, data);
-    if (data != NULL)
+    UfoBuffer *buffer = ufo_buffer_new(width, height);
+
+    cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
+    if ((data != NULL) && (prefer_gpu))
+        mem_flags |= CL_MEM_COPY_HOST_PTR;
+
+    cl_mem buffer_mem = clCreateBuffer(self->priv->opencl_context,
+            mem_flags, 
+            width * height * sizeof(float),
+            data, NULL);
+
+    ufo_buffer_set_cl_mem(buffer, buffer_mem);
+    if ((data) && (!prefer_gpu))
         ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
 
     return buffer;
@@ -364,7 +360,7 @@ UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *manager, UfoBuff
     /* XXX: Use first command queue, which might not be the best in all cases */
     float *data = ufo_buffer_get_cpu_data(buffer, manager->priv->command_queues);
     UfoBuffer *copy = ufo_resource_manager_request_buffer(manager,
-            width, height, data);
+            width, height, data, FALSE);
     return copy;
 }
 
@@ -532,7 +528,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
         for (int i = 0; i < priv->num_devices[0]; i++) {
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                     priv->opencl_devices[0][i],
-                    0, NULL);
+                    CL_QUEUE_PROFILING_ENABLE, NULL);
         }
     }
 }

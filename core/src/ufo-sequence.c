@@ -96,6 +96,7 @@ static void ufo_sequence_add_element(UfoContainer *container, UfoElement *child)
      * real output */
     GAsyncQueue *next = g_async_queue_new();
     ufo_element_set_output_queue(child, next);
+    /*g_message("[seq:%p] assigning %p to child %p", container, self->priv->command_queue, child);*/
     ufo_element_set_command_queue(child, self->priv->command_queue);
     self->priv->output_queue = next;
     self->priv->children = g_list_append(self->priv->children, child);
@@ -115,6 +116,7 @@ static void ufo_sequence_process(UfoElement *element)
     GError *error = NULL;
     for (guint i = 0; i < g_list_length(self->priv->children); i++) {
         UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
+        /*g_message("[seq:%p] starting element %p", element, child);*/
         threads = g_list_append(threads,
                 g_thread_create(ufo_sequence_process_thread, child, TRUE, &error));
     }

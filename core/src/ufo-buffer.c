@@ -168,6 +168,9 @@ void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
  */
 void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **error)
 {
+    if (data == NULL)
+        return;
+
     const gsize num_bytes = buffer->priv->width * buffer->priv->height * sizeof(float);
     if (n > num_bytes) {
         if (error != NULL) {
@@ -315,7 +318,7 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
         case CPU_DATA_VALID:
             clEnqueueWriteBuffer((cl_command_queue) command_queue,
                                  priv->gpu_data,
-                                 CL_TRUE,
+                                 CL_FALSE,
                                  0, priv->size,
                                  priv->cpu_data,
                                  0, NULL, NULL);

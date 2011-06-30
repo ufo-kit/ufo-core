@@ -80,7 +80,6 @@ static void graph_handle_json_container(UfoGraph *self, JsonObject *object, UfoE
         cl_command_queue *command_queues;
         guint num_queues;
         ufo_resource_manager_get_command_queues(manager, (gpointer *) &command_queues, &num_queues);
-        g_message("assigning first queue %p from %i queues", command_queues[0], num_queues);
         ufo_element_set_command_queue(new_container, command_queues[0]);
         *container = new_container;
     }

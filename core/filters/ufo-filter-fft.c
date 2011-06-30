@@ -118,11 +118,11 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         if (priv->fft_dimensions == clFFT_1D)
             fft_buffer = ufo_resource_manager_request_buffer(manager,
                     2 * priv->fft_size.x, /* what to do in the multi-dimensional case? */
-                    height, NULL);
+                    height, NULL, FALSE);
         else
             fft_buffer = ufo_resource_manager_request_buffer(manager,
                     2 * priv->fft_size.x, 
-                    priv->fft_size.y, NULL);
+                    priv->fft_size.y, NULL, FALSE);
 
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(fft_buffer, command_queue);
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);

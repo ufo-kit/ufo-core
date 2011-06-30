@@ -117,6 +117,8 @@ static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
     if (container == NULL || child == NULL)
         return;
 
+    num_children++;
+
     g_object_ref(child);
 
     /* Contrary to the split container, we have to install an input queue for
@@ -154,7 +156,7 @@ static void ufo_split_process(UfoElement *element)
     GList *current_child = self->priv->children;
     while (current_child != NULL) {
         UfoElement *child = UFO_ELEMENT(current_child->data);
-        g_message("[split:%p] starting element %p", element, child);
+        /*g_message("[split:%p] starting element %p", element, child);*/
         threads = g_list_append(threads,
                 g_thread_create(ufo_split_process_thread, child, TRUE, &error));
         current_child = g_list_next(current_child);
@@ -162,9 +164,11 @@ static void ufo_split_process(UfoElement *element)
 
     GList *current_queue = self->priv->queues;
     gboolean finished = FALSE;
+    gint total = 0;
 
     while (!finished) {
         UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(priv->input_queue));
+        total++;
         /*g_message("[split:%p] received buffer %p at queue %p", self, input, priv->input_queue);*/
 
         /* If we receive the finishing buffer, we switch to copy mode to inform

@@ -70,7 +70,7 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
     UfoBuffer **sinograms = g_malloc0(sizeof(UfoBuffer*) * num_sinos);
     for (gint i = 0; i < num_sinos; i++)
         sinograms[i] = ufo_resource_manager_request_buffer(manager,
-                sino_width, sino_height, NULL);
+                sino_width, sino_height, NULL, FALSE);
 
     /* First step: collect all projections and build sinograms */
     while ((received < priv->num_projections) || (!ufo_buffer_is_finished(input))) {
