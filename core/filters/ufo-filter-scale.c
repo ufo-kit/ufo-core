@@ -65,19 +65,12 @@ static void ufo_filter_scale_process(UfoFilter *filter)
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
-    while (1) {
-        g_message("[scale] waiting...");
-        UfoBuffer *buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
-        g_message("[scale] received buffer %p at queue %p", buffer, input_queue);
-
-        if (ufo_buffer_is_finished(buffer)) {
-            g_async_queue_push(output_queue, buffer);
-            break;
-        }
-
+    UfoBuffer *buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
+    while (!ufo_buffer_is_finished(buffer)) {
         if (self->priv->kernel != NULL) {
             float scale = (float) self->priv->scale;
-            gsize global_work_size[2];
+            size_t global_work_size[2];
+            size_t local_work_size[2] = { 16, 16 };
 
             ufo_buffer_get_dimensions(buffer, 
                     (gint32 *) &global_work_size[0], 
@@ -92,15 +85,15 @@ static void ufo_filter_scale_process(UfoFilter *filter)
             err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
             err = clEnqueueNDRangeKernel(command_queue,
                 self->priv->kernel,
-                1, NULL, global_work_size, NULL,
+                1, NULL, global_work_size, local_work_size,
                 0, NULL, &event);
+
             ufo_buffer_wait_on_event(buffer, event);
         }
-
-        g_message("[scale] send buffer to queue %p", output_queue);
         g_async_queue_push(output_queue, buffer);
+        buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
-    g_message("[scale] done");
+    g_async_queue_push(output_queue, buffer);
 }
 
 static void ufo_filter_scale_set_property(GObject *object,

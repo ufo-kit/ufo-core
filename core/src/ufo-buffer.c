@@ -241,8 +241,9 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
                 priv->cpu_data = g_malloc0(priv->size);
             else
                 memset(priv->cpu_data, 0, priv->size);
+
             buffer_get_wait_events(priv, &wait_events, &num_events);
-            /* FIXME: using wait_events sometimes crashes */
+            clWaitForEvents(num_events, wait_events);
             clEnqueueReadBuffer((cl_command_queue) command_queue,
                                 priv->gpu_data,
                                 CL_TRUE, 
