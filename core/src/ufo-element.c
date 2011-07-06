@@ -89,6 +89,19 @@ gpointer ufo_element_get_command_queue(UfoElement *element)
     return NULL;
 }
 
+/**
+ * \brief Get duration of execution
+ * \note This is used for the CPU run-time of a particular element, memory
+ *  transfers between host and GPU are accounted in the UfoBuffer class
+ * \param[in] element An UfoElement
+ * \return Execution time in seconds
+ */
+float ufo_element_get_time_spent(UfoElement *element)
+{
+    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
+    return iface->get_time_spent(element);
+}
+
 void ufo_element_print(UfoElement * element)
 {
     g_return_if_fail(UFO_IS_ELEMENT(element));

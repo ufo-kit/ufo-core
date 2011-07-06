@@ -177,6 +177,16 @@ static gpointer ufo_sequence_get_command_queue(UfoElement *element)
     return self->priv->command_queue;
 }
 
+static float ufo_sequence_get_time_spent(UfoElement *element)
+{
+    UfoSequence *self = UFO_SEQUENCE(element);
+    float time_spent = 0.0f;
+    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
+        UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
+        time_spent += ufo_element_get_time_spent(child);
+    }
+    return time_spent;
+}
 
 /*
  * Type/Class Initialization
@@ -191,6 +201,7 @@ static void ufo_element_iface_init(UfoElementInterface *iface)
     iface->get_input_queue = ufo_sequence_get_input_queue;
     iface->get_output_queue = ufo_sequence_get_output_queue;
     iface->get_command_queue = ufo_sequence_get_command_queue;
+    iface->get_time_spent = ufo_sequence_get_time_spent;
 }
 
 static void ufo_sequence_class_init(UfoSequenceClass *klass)

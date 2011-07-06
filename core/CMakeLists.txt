@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.6)
 
 
 # --- Options -----------------------------------------------------------------
-option(PROFILE "Enable profiling" OFF)
-if (PROFILE)
+option(WITH_PROFILING "Enable profiling" OFF)
+if (WITH_PROFILING)
     add_definitions("-pg")
     set(CMAKE_C_FLAGS "-pg")
 endif ()

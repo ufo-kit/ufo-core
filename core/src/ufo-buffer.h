@@ -57,6 +57,7 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *self, gpointer command_queue);
 void ufo_buffer_set_cl_mem(UfoBuffer *self, gpointer mem);
 void ufo_buffer_wait_on_event(UfoBuffer *self, gpointer event);
 void ufo_buffer_get_transfer_statistics(UfoBuffer *self, gint *uploads, gint *downloads);
+void ufo_buffer_get_transfer_time(UfoBuffer *self, gulong *upload_time, gulong *download_time);
 
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to);
 

@@ -1,6 +1,7 @@
 #include <glib.h>
 #include <stdio.h>
 
+#include "config.h"
 #include "ufo-resource-manager.h"
 
 G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT);
@@ -33,8 +34,8 @@ struct _UfoResourceManagerPrivate {
 
     GHashTable *opencl_kernels;         /**< maps from kernel string to cl_kernel */
 
-    gint cache_hits;
-    gint cache_misses;
+    float upload_time;
+    float download_time;
 };
 
 static const gchar* opencl_error_msgs[] = {
@@ -375,6 +376,13 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
 {
     UfoResourceManager *self = resource_manager;
 
+#ifdef WITH_PROFILING
+    gulong upload_time, download_time;
+    ufo_buffer_get_transfer_time(buffer, &upload_time, &download_time);
+    self->priv->upload_time += upload_time / 1000000000.0;
+    self->priv->download_time += download_time / 1000000000.0;
+#endif
+
     cl_command_queue command_queue = self->priv->command_queues[0];
     cl_mem mem = ufo_buffer_get_gpu_data(buffer, command_queue);
     if (mem != NULL)
@@ -396,6 +404,9 @@ static void ufo_resource_manager_dispose(GObject *gobject)
 {
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
+
+    g_message("Upload/Download [s]: %f/%f", priv->upload_time, priv->download_time);
+    g_message("Total Transfer Time [s]: %f", priv->upload_time + priv->download_time);
 
     /* free resources */
     GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
@@ -464,8 +475,8 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
     self->priv = priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
-    priv->cache_hits = 0;
-    priv->cache_misses = 0;
+    priv->upload_time = 0.0f;
+    priv->download_time = 0.0f;
     priv->opencl_kernel_table = NULL;
     priv->opencl_kernels = g_hash_table_new(g_str_hash, g_str_equal);
     priv->opencl_platforms = NULL;
@@ -517,6 +528,11 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     }
     g_free(info_buffer);
 
+    cl_command_queue_properties queue_properties = 0;
+#ifdef WITH_PROFILING
+    queue_properties = CL_QUEUE_PROFILING_ENABLE;
+#endif
+
     /* XXX: create context for each platform?! */
     if (priv->num_platforms > 0) {
         priv->opencl_context = clCreateContext(NULL, 
@@ -528,7 +544,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
         for (int i = 0; i < priv->num_devices[0]; i++) {
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                     priv->opencl_devices[0][i],
-                    CL_QUEUE_PROFILING_ENABLE, NULL);
+                    queue_properties, NULL);
         }
     }
 }

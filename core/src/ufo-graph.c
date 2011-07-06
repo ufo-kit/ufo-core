@@ -202,8 +202,9 @@ void ufo_graph_run(UfoGraph *graph)
 {
     g_thread_init(NULL);
     GTimer *timer = g_timer_new();
+    UfoElement *root = UFO_ELEMENT(graph->priv->root_container);
     g_timer_start(timer);
-    ufo_element_process(UFO_ELEMENT(graph->priv->root_container));
+    ufo_element_process(root);
     g_timer_stop(timer);
     g_message("Processing finished after %3.5f seconds", 
             g_timer_elapsed(timer, NULL));

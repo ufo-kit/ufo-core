@@ -293,6 +293,17 @@ static gpointer ufo_split_get_command_queue(UfoElement *element)
     return self->priv->command_queues[0];
 }
 
+static float ufo_split_get_time_spent(UfoElement *element)
+{
+    UfoSplit *self = UFO_SPLIT(element);
+    float time_spent = 0.0f;
+    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
+        UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
+        time_spent += ufo_element_get_time_spent(child);
+    }
+    return time_spent;
+}
+
 /*
  * Type/Class Initialization
  */
@@ -306,6 +317,7 @@ static void ufo_element_iface_init(UfoElementInterface *iface)
     iface->get_input_queue = ufo_split_get_input_queue;
     iface->get_output_queue = ufo_split_get_output_queue;
     iface->get_command_queue = ufo_split_get_command_queue;
+    iface->get_time_spent = ufo_split_get_time_spent;
 }
 
 static void ufo_split_class_init(UfoSplitClass *klass)

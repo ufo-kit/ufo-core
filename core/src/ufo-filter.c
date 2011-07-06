@@ -24,6 +24,7 @@ struct _UfoFilterPrivate {
     GAsyncQueue         *input_queue;
     GAsyncQueue         *output_queue;
     cl_command_queue    command_queue;
+    float               time_spent;
 };
 
 
@@ -53,8 +54,13 @@ void ufo_filter_initialize(UfoFilter *filter)
  */
 void ufo_filter_process(UfoFilter *filter)
 {
-    if (UFO_FILTER_GET_CLASS(filter)->process != NULL)
+    if (UFO_FILTER_GET_CLASS(filter)->process != NULL) {
+        GTimer *timer = g_timer_new();
         UFO_FILTER_GET_CLASS(filter)->process(filter);
+        g_timer_stop(timer);
+        filter->priv->time_spent = g_timer_elapsed(timer, NULL);
+        g_timer_destroy(timer);
+    }
 }
 
 UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter)
@@ -113,6 +119,12 @@ static gpointer ufo_filter_get_command_queue(UfoElement *element)
     return self->priv->command_queue;
 }
 
+static float ufo_filter_get_time_spent(UfoElement *element)
+{
+    UfoFilter *self = UFO_FILTER(element);
+    return self->priv->time_spent;
+}
+
 static void ufo_filter_iface_process(UfoElement *element)
 {
     UfoFilter *self = UFO_FILTER(element);
@@ -154,6 +166,7 @@ static void ufo_element_iface_init(UfoElementInterface *iface)
     iface->get_input_queue = ufo_filter_get_input_queue;
     iface->get_output_queue = ufo_filter_get_output_queue;
     iface->get_command_queue = ufo_filter_get_command_queue;
+    iface->get_time_spent = ufo_filter_get_time_spent;
 
     /* signals */
     iface->finished = ufo_filter_finished;
@@ -178,5 +191,6 @@ static void ufo_filter_init(UfoFilter *self)
     priv->input_queue = NULL;
     priv->output_queue = NULL;
     priv->command_queue = NULL;
+    priv->time_spent = 0.0f;
 }
 

@@ -1,5 +1,7 @@
 #include <string.h>
 #include <CL/cl.h>
+
+#include "config.h"
 #include "ufo-buffer.h"
 
 G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT);
@@ -42,6 +44,9 @@ struct _UfoBufferPrivate {
     float       *cpu_data;
     cl_mem      gpu_data;
     GQueue      *wait_events;
+    
+    cl_ulong    time_upload;
+    cl_ulong    time_download;
 };
 
 static void buffer_set_dimensions(UfoBufferPrivate *priv, gint32 width, gint32 height)
@@ -220,51 +225,6 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize n)
     }
 }
 
-/*
- * \brief Get raw pixel data in a flat array (row-column format)
- * \public \memberof UfoBuffer
- *
- * \param[in] buffer UfoBuffer object
- * \return Pointer to a float array of valid data
- */
-float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
-{
-    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
-    cl_event *wait_events = NULL, event;
-    cl_uint num_events;
-
-    switch (priv->state) {
-        case CPU_DATA_VALID:
-            break;
-        case GPU_DATA_VALID:
-            if (priv->cpu_data == NULL)
-                priv->cpu_data = g_malloc0(priv->size);
-            else
-                memset(priv->cpu_data, 0, priv->size);
-
-            buffer_get_wait_events(priv, &wait_events, &num_events);
-            clWaitForEvents(num_events, wait_events);
-            clEnqueueReadBuffer((cl_command_queue) command_queue,
-                                priv->gpu_data,
-                                CL_TRUE, 
-                                0, priv->size,
-                                priv->cpu_data,
-                                0, NULL, &event);
-
-            /* TODO: we should clear all events from the wait_queue */
-            g_free(wait_events);
-            priv->state = CPU_DATA_VALID;
-            priv->downloads++;
-            break;
-        case NO_DATA:
-            priv->cpu_data = g_malloc0(priv->size);
-            priv->state = CPU_DATA_VALID;
-            break;
-    }
-
-    return priv->cpu_data;
-}
-
 /**
  * \brief Set OpenCL memory object that is used to up and download data.
  * \public \memberof UfoBuffer
@@ -304,6 +264,68 @@ void ufo_buffer_get_transfer_statistics(UfoBuffer *buffer, gint *uploads, gint *
     *downloads = buffer->priv->downloads;
 }
 
+void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong *download_time)
+{
+    *upload_time = buffer->priv->time_upload; 
+    *download_time = buffer->priv->time_download; 
+}
+
+/*
+ * \brief Get raw pixel data in a flat array (row-column format)
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer UfoBuffer object
+ * \return Pointer to a float array of valid data
+ */
+float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
+{
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+    cl_event *wait_events = NULL, event;
+    cl_uint num_events;
+
+#ifdef WITH_PROFILING
+    cl_ulong start, end;
+#endif
+
+    switch (priv->state) {
+        case CPU_DATA_VALID:
+            break;
+        case GPU_DATA_VALID:
+            if (priv->cpu_data == NULL)
+                priv->cpu_data = g_malloc0(priv->size);
+            else
+                memset(priv->cpu_data, 0, priv->size);
+
+            buffer_get_wait_events(priv, &wait_events, &num_events);
+            clWaitForEvents(num_events, wait_events);
+            clEnqueueReadBuffer((cl_command_queue) command_queue,
+                                priv->gpu_data,
+                                CL_TRUE, 
+                                0, priv->size,
+                                priv->cpu_data,
+                                0, NULL, &event);
+
+#ifdef WITH_PROFILING
+            clWaitForEvents(1, &event);
+            clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
+            clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
+            priv->time_download += end - start;
+#endif
+
+            /* TODO: we should clear all events from the wait_queue */
+            g_free(wait_events);
+            priv->state = CPU_DATA_VALID;
+            priv->downloads++;
+            break;
+        case NO_DATA:
+            priv->cpu_data = g_malloc0(priv->size);
+            priv->state = CPU_DATA_VALID;
+            break;
+    }
+
+    return priv->cpu_data;
+}
+
 /**
  * \brief Get OpenCL memory object that is used to up and download data.
  * \public \memberof UfoBuffer
@@ -314,6 +336,10 @@ void ufo_buffer_get_transfer_statistics(UfoBuffer *buffer, gint *uploads, gint *
 gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+    cl_event event;
+#ifdef WITH_PROFILING
+    cl_ulong start, end;
+#endif
 
     switch (priv->state) {
         case CPU_DATA_VALID:
@@ -322,7 +348,14 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
                                  CL_FALSE,
                                  0, priv->size,
                                  priv->cpu_data,
-                                 0, NULL, NULL);
+                                 0, NULL, &event);
+
+#ifdef WITH_PROFILING
+            clWaitForEvents(1, &event);
+            clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
+            clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
+            priv->time_upload += end - start;
+#endif
             priv->state = GPU_DATA_VALID;
             priv->uploads++;
             break;
@@ -493,4 +526,6 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->state = NO_DATA;
     priv->finished = FALSE;
     priv->wait_events = g_queue_new();
+    priv->time_upload = 0;
+    priv->time_download = 0;
 }
