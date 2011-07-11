@@ -305,6 +305,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
                                 priv->cpu_data,
                                 0, NULL, &event);
 
+            clWaitForEvents(1, &event);
 #ifdef WITH_PROFILING
             clWaitForEvents(1, &event);
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);

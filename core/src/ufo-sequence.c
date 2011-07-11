@@ -43,6 +43,7 @@ UfoSequence *ufo_sequence_new()
 static void ufo_sequence_dispose(GObject *object)
 {
     UfoSequence *self = UFO_SEQUENCE(object);
+
     g_list_foreach(self->priv->children, (GFunc) g_object_unref, NULL);
     if (self->priv->input_queue != NULL)
         g_async_queue_unref(self->priv->input_queue);

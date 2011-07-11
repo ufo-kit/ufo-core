@@ -78,8 +78,11 @@ static void ufo_filter_circle_crop_process(UfoFilter *filter)
     while (!ufo_buffer_is_finished(input)) {
         gint32 width, height;
         ufo_buffer_get_dimensions(input, &width, &height);
+        g_message("[circle] %ix%i", width, height);
 
         float *data = ufo_buffer_get_cpu_data(input, command_queue);
+        ufo_buffer_get_dimensions(input, &width, &height);
+        g_message("[circle now] %ix%i", width, height);
         for (int x = 0; x < width; x++) {
             int x_off = x - width/2;
             x_off *= x_off;
@@ -90,6 +93,8 @@ static void ufo_filter_circle_crop_process(UfoFilter *filter)
                     data[y*width + x] = 0.0f;
             }
         }
+        ufo_buffer_get_dimensions(input, &width, &height);
+        g_message("[circle then] %ix%i", width, height);
 
         g_async_queue_push(output_queue, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);

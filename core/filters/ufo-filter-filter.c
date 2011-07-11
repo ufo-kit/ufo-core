@@ -105,6 +105,7 @@ static void ufo_filter_filter_process(UfoFilter *filter)
     UfoBuffer *filter_buffer = filter_create_data(priv, width);
     cl_mem filter_mem = (cl_mem) ufo_buffer_get_gpu_data(filter_buffer, command_queue);
 
+    GTimer *timer = g_timer_new();
     while (!ufo_buffer_is_finished(input)) {
         /* FIXME: width might change */
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
@@ -121,9 +122,13 @@ static void ufo_filter_filter_process(UfoFilter *filter)
                 0, NULL, &event);
         
         ufo_buffer_wait_on_event(input, event);
+        g_timer_stop(timer);
         g_async_queue_push(output_queue, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        g_timer_continue(timer);
     }
+    g_message("Filtered in %fs", g_timer_elapsed(timer, NULL));
+    g_timer_destroy(timer);
     ufo_resource_manager_release_buffer(manager, filter_buffer);
     g_async_queue_push(output_queue, input);
 }

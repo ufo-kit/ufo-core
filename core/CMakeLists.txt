@@ -22,6 +22,7 @@ pkg_check_modules(GOBJECT2 gobject-2.0>=2.24 REQUIRED)
 pkg_check_modules(ETHOS ethos-1.0 REQUIRED)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/src
     ${GLIB2_INCLUDE_DIRS}
     ${ETHOS_INCLUDE_DIRS}
     ${OPENCL_INCLUDE_DIRS}

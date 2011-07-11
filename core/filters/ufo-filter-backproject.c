@@ -2,6 +2,7 @@
 #include <math.h>
 #include <CL/cl.h>
 
+#include "config.h"
 #include "ufo-filter-backproject.h"
 #include "ufo-filter.h"
 #include "ufo-element.h"
@@ -133,11 +134,16 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     err = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *) &sin_mem);
     err = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *) &axes_mem);
 
-    gint total = 0;
     GTimer *timer = g_timer_new();
+    int total = 0;
+
+#ifdef WITH_PROFILING
+    cl_ulong start, end, kernel_total = 0;
+#endif
+
     while (!ufo_buffer_is_finished(sinogram)) {
-        UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL, FALSE);
         total++;
+        UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL, FALSE);
         size_t global_work_size[2] = { width, width };
         size_t local_work_size[2] = { 16, 16 };
         cl_event event;
@@ -162,18 +168,31 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
                 2, NULL, global_work_size, local_work_size,
                 0, NULL, &event);
 
+#ifdef WITH_PROFILING
+        clWaitForEvents(1, &event);
+        clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
+        clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
+        kernel_total += end - start;
+#endif
+
         ufo_buffer_wait_on_event(slice, event);
         ufo_buffer_transfer_id(sinogram, slice);
+
+        g_timer_stop(timer);
         g_async_queue_push(output_queue, slice);
+        g_timer_continue(timer);
 
         ufo_resource_manager_release_buffer(manager, sinogram);
+        g_timer_stop(timer);
         sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
+        g_timer_continue(timer);
     }
     g_timer_stop(timer);
-    
-    g_message("[bp:%p] %i sinograms on cmd-queue %p in %fs",
-            filter, total, command_queue,
-            g_timer_elapsed(timer, NULL));
+    g_message("Back-projected %i sinograms in %fs", total, g_timer_elapsed(timer, NULL));
+#ifdef WITH_PROFILING
+    g_message("Kernel execution %fs", kernel_total / 1000000000.0f);
+#endif
+    g_timer_destroy(timer);
     
     if (priv->use_texture)
         clReleaseMemObject(texture);
@@ -263,8 +282,8 @@ static void ufo_filter_backproject_class_init(UfoFilterBackprojectClass *klass)
         g_param_spec_double("axis-pos",
             "Position of rotation axis",
             "Position of rotation axis",
-            -1000.0,   /* minimum */
-            +1000.0,   /* maximum */
+            -8192.0,   /* minimum */
+            +8192.0,   /* maximum */
             0.0,   /* default */
             G_PARAM_READWRITE);
 

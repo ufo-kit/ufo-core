@@ -209,6 +209,7 @@ void ufo_graph_run(UfoGraph *graph)
     g_message("Processing finished after %3.5f seconds", 
             g_timer_elapsed(timer, NULL));
     g_timer_destroy(timer);
+    g_message("total time: %f", ufo_element_get_time_spent(root));
 }
 
 /**

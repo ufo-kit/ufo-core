@@ -128,6 +128,8 @@ static void ufo_filter_writer_process(UfoFilter *self)
     GString *filename = g_string_new("");
     gint id = -1, current_frame = 0;
 
+    GTimer *timer = g_timer_new();
+    g_timer_stop(timer);
     while (!ufo_buffer_is_finished(input)) {
         gint32 width, height;
         ufo_buffer_get_dimensions(input, &width, &height);
@@ -140,8 +142,12 @@ static void ufo_filter_writer_process(UfoFilter *self)
             g_message("something went wrong");
 
         ufo_resource_manager_release_buffer(ufo_resource_manager(), input);
+        g_timer_stop(timer);
         input = UFO_BUFFER(g_async_queue_pop(input_queue));
+        g_timer_continue(timer);
     }
+    g_timer_stop(timer);
+    g_message("Wrote files in %fs", g_timer_elapsed(timer, NULL));
     g_string_free(filename, TRUE);
 }
 
