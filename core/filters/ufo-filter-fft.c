@@ -2,6 +2,7 @@
 #include <CL/cl.h>
 #include <clFFT.h>
 
+#include "config.h"
 #include "ufo-resource-manager.h"
 #include "ufo-filter-fft.h"
 #include "ufo-filter.h"
@@ -140,6 +141,8 @@ static void ufo_filter_fft_process(UfoFilter *filter)
                 priv->kernel, 
                 2, NULL, global_work_size, NULL, 
                 0, NULL, &wait_on_event);
+        
+        ufo_filter_account_gpu_time(filter, (void **) &wait_on_event);
 
         /* FIXME: we should wait for previous computations */
         if (priv->fft_dimensions == clFFT_1D)
@@ -153,6 +156,9 @@ static void ufo_filter_fft_process(UfoFilter *filter)
                 fft_buffer_mem, fft_buffer_mem,
                 1, &wait_on_event, &event);
 
+        /* XXX: FFT execution does _not_ return event */
+        /*ufo_filter_account_gpu_time(filter, &wait_on_event);*/
+
         ufo_buffer_transfer_id(input, fft_buffer);
         ufo_buffer_wait_on_event(fft_buffer, event);
         ufo_resource_manager_release_buffer(manager, input);
@@ -162,7 +168,9 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
         g_timer_continue(timer);
     }
-    g_message("FFT in %fs", g_timer_elapsed(timer, NULL));
+    g_message("ufo-filter-fft: %fs/%fs", 
+            g_timer_elapsed(timer, NULL), ufo_filter_get_gpu_time(filter));
+
     g_timer_destroy(timer);
     g_async_queue_push(output_queue, input);
     clFFT_DestroyPlan(fft_plan);

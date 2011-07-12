@@ -2,6 +2,7 @@
 #include <CL/cl.h>
 #include <clFFT.h>
 
+#include "config.h"
 #include "ufo-resource-manager.h"
 #include "ufo-filter-ifft.h"
 #include "ufo-filter.h"
@@ -120,6 +121,9 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                     fft_buffer_mem, fft_buffer_mem,
                     0, NULL, &wait_on_event);
 
+        /* XXX: FFT execution does _not_ return event */
+        /*ufo_filter_account_gpu_time(filter, &wait_on_event);*/
+
         /* 2. Pack interleaved complex numbers */
         size_t global_work_size[2];
         global_work_size[0] = priv->ifft_size.x;
@@ -137,6 +141,8 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                 2, NULL, global_work_size, NULL,
                 0, NULL, &event);
 
+        ufo_filter_account_gpu_time(filter, (void **) &event);
+
         clSetKernelArg(priv->pack_kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->pack_kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
         clSetKernelArg(priv->pack_kernel, 2, sizeof(int), &width);
@@ -145,6 +151,8 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                 priv->pack_kernel,
                 2, NULL, global_work_size, NULL,
                 0, NULL, &event);
+
+        ufo_filter_account_gpu_time(filter, (void **) &event);
 
         ufo_buffer_wait_on_event(sinogram, event);
         ufo_buffer_transfer_id(input, sinogram);
@@ -155,7 +163,9 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
         g_timer_continue(timer);
     }
-    g_message("IFFT in %fs", g_timer_elapsed(timer, NULL));
+    g_message("ufo-filter-ifft: %fs/%fs", 
+            g_timer_elapsed(timer, NULL), ufo_filter_get_gpu_time(filter));
+
     g_timer_destroy(timer);
     g_async_queue_push(output_queue, input);
     clFFT_DestroyPlan(ifft_plan);

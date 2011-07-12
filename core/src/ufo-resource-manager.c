@@ -185,6 +185,7 @@ UfoResourceManager *ufo_resource_manager()
 gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, const gchar *filename, GError **error)
 {
     UfoResourceManagerPrivate *priv = resource_manager->priv;
+    g_message("adding %s", filename);
 
     /* Don't process the kernel file again, if already load */
     if (g_list_find_custom(priv->opencl_files, filename, (GCompareFunc) g_strcmp0))
@@ -227,16 +228,18 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
     clGetProgramBuildInfo(program, priv->opencl_devices[0][0], 
             CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void*) log, NULL);
     /*g_print("\n=== Build log for %s===%s\n\n", filename, log);*/
-    g_free(log);
 
     if (err != CL_SUCCESS) {
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
                 "Failed to build OpenCL program");
+        g_print("\n=== Build log for %s===%s\n\n", filename, log);
+        g_free(log);
         g_free(buffer);
         return FALSE;
     }
+    g_free(log);
 
     /* Create all kernels in the program source and map their function names to
      * the corresponding cl_kernel object */

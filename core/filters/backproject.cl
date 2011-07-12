@@ -42,17 +42,29 @@ __kernel void backproject_tex(const int num_proj,
     const int idx = get_global_id(0);
     const int idy = get_global_id(1);
     const int slice_width = get_global_size(0);
+    const int slice_index = idy * slice_width + idx;
+
+    /*float x = (idx - slice_width/2);*/
+    /*float y = (idy - slice_width/2);*/
+    /*x *= x;*/
+    /*y *= y;*/
+    /*if (sqrt(x + y) > slice_width/2) {*/
+        /*slice[slice_index] = 0.0f;*/
+        /*return;*/
+    /*}*/
 
     float h;
     const float bx = idx + off_x;
     const float by = -(idy + off_y);
     float sum = 0.0f;
 
+#pragma unroll 8
     for(int proj = 0; proj < num_proj; proj++) {
-        h = mad(by, sin_table[proj], mad(bx, cos_table[proj], axis_table[proj])); 
-        sum += read_imagef(sinogram, volumeSampler, (float2)(h, proj + 0.5f)).x;
+        h = mad(by, sin_table[proj], mad(bx, cos_table[proj], axis_table[proj]));
+        sum += read_imagef(sinogram, volumeSampler, (float2)(h, proj)).x;
     }
     
-    slice[idy*slice_width + idx] = sum;
+    slice[slice_index] = sum;
+    /*slice[idy*slice_width + idx] = (float) lidx;*/
 }
 

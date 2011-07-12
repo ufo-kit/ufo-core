@@ -129,14 +129,17 @@ static void ufo_filter_writer_process(UfoFilter *self)
     gint id = -1, current_frame = 0;
 
     GTimer *timer = g_timer_new();
-    g_timer_stop(timer);
     while (!ufo_buffer_is_finished(input)) {
         gint32 width, height;
         ufo_buffer_get_dimensions(input, &width, &height);
         g_object_get(input, "id", &id, NULL);
         if (id == -1)
             id = current_frame++;
+
+        g_timer_stop(timer);
         float *data = ufo_buffer_get_cpu_data(input, command_queue);
+        g_timer_continue(timer);
+
         g_string_printf(filename, "%s/%s-%05i.tif", priv->path, priv->prefix, id); 
         if (!filter_write_tiff(data, filename->str, width, height))
             g_message("something went wrong");
@@ -147,7 +150,7 @@ static void ufo_filter_writer_process(UfoFilter *self)
         g_timer_continue(timer);
     }
     g_timer_stop(timer);
-    g_message("Wrote files in %fs", g_timer_elapsed(timer, NULL));
+    g_message("ufo-filter-writer: %fs/0.0s", g_timer_elapsed(timer, NULL));
     g_string_free(filename, TRUE);
 }
 

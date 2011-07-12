@@ -71,6 +71,9 @@ static void ufo_filter_backproject_initialize(UfoFilter *filter)
     }
 }
 
+#define BLOCK_SIZE_X 16
+#define BLOCK_SIZE_Y 16
+
 static void ufo_filter_backproject_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
@@ -137,10 +140,6 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     GTimer *timer = g_timer_new();
     int total = 0;
 
-#ifdef WITH_PROFILING
-    cl_ulong start, end, kernel_total = 0;
-#endif
-
     while (!ufo_buffer_is_finished(sinogram)) {
         total++;
         UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL, FALSE);
@@ -168,13 +167,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
                 2, NULL, global_work_size, local_work_size,
                 0, NULL, &event);
 
-#ifdef WITH_PROFILING
-        clWaitForEvents(1, &event);
-        clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
-        clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
-        kernel_total += end - start;
-#endif
-
+        ufo_filter_account_gpu_time(filter, (void **) &event);
         ufo_buffer_wait_on_event(slice, event);
         ufo_buffer_transfer_id(sinogram, slice);
 
@@ -188,10 +181,8 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         g_timer_continue(timer);
     }
     g_timer_stop(timer);
-    g_message("Back-projected %i sinograms in %fs", total, g_timer_elapsed(timer, NULL));
-#ifdef WITH_PROFILING
-    g_message("Kernel execution %fs", kernel_total / 1000000000.0f);
-#endif
+    g_message("ufo-filter-backproject: %fs/%fs", 
+            g_timer_elapsed(timer, NULL), ufo_filter_get_gpu_time(filter));
     g_timer_destroy(timer);
     
     if (priv->use_texture)

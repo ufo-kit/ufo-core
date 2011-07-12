@@ -1,6 +1,8 @@
 #include <glib.h>
 #include <gmodule.h>
+#include <CL/cl.h>
 
+#include "config.h"
 #include "ufo-filter.h"
 #include "ufo-element.h"
 
@@ -24,7 +26,8 @@ struct _UfoFilterPrivate {
     GAsyncQueue         *input_queue;
     GAsyncQueue         *output_queue;
     cl_command_queue    command_queue;
-    float               time_spent;
+    float cpu_time;
+    float gpu_time;
 };
 
 
@@ -58,7 +61,7 @@ void ufo_filter_process(UfoFilter *filter)
         GTimer *timer = g_timer_new();
         UFO_FILTER_GET_CLASS(filter)->process(filter);
         g_timer_stop(timer);
-        filter->priv->time_spent = g_timer_elapsed(timer, NULL);
+        filter->priv->cpu_time = g_timer_elapsed(timer, NULL);
         g_timer_destroy(timer);
     }
 }
@@ -75,6 +78,22 @@ void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer)
     g_async_queue_push(output_queue, buffer);
 }
 
+void ufo_filter_account_gpu_time(UfoFilter *filter, void **event)
+{
+#ifdef WITH_PROFILING
+    cl_ulong start, end;
+    cl_event *e = (cl_event *) event;
+    clWaitForEvents(1, e);
+    clGetEventProfilingInfo(*e, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
+    clGetEventProfilingInfo(*e, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
+    filter->priv->gpu_time += (end - start) / 1000000000.0f;
+#endif
+}
+
+float ufo_filter_get_gpu_time(UfoFilter *filter)
+{
+    return filter->priv->gpu_time;
+}
 
 /* 
  * Virtual Methods
@@ -122,7 +141,7 @@ static gpointer ufo_filter_get_command_queue(UfoElement *element)
 static float ufo_filter_get_time_spent(UfoElement *element)
 {
     UfoFilter *self = UFO_FILTER(element);
-    return self->priv->time_spent;
+    return self->priv->cpu_time;
 }
 
 static void ufo_filter_iface_process(UfoElement *element)
@@ -191,6 +210,7 @@ static void ufo_filter_init(UfoFilter *self)
     priv->input_queue = NULL;
     priv->output_queue = NULL;
     priv->command_queue = NULL;
-    priv->time_spent = 0.0f;
+    priv->cpu_time = 0.0f;
+    priv->gpu_time = 0.0f;
 }
 

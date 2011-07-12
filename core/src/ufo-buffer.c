@@ -72,9 +72,12 @@ static void buffer_get_wait_events(UfoBufferPrivate *priv, cl_event** events, gu
 {
     const guint n = g_queue_get_length(priv->wait_events);
     *num_events = n;
+    g_message("here?");
     *events = (cl_event*) g_malloc0(sizeof(cl_event) * n);
+    g_message("here? %p", priv->wait_events);
     for (int i = 0; i < n; i++)
         *events[i] = g_queue_pop_head(priv->wait_events);
+    g_message("here?");
     g_assert(g_queue_get_length(priv->wait_events) == 0);
 }
 
@@ -281,7 +284,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
     cl_event *wait_events = NULL, event;
-    cl_uint num_events;
+    /*cl_uint num_events;*/
 
 #ifdef WITH_PROFILING
     cl_ulong start, end;
@@ -296,8 +299,8 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
             else
                 memset(priv->cpu_data, 0, priv->size);
 
-            buffer_get_wait_events(priv, &wait_events, &num_events);
-            clWaitForEvents(num_events, wait_events);
+            /*buffer_get_wait_events(priv, &wait_events, &num_events);*/
+            /*clWaitForEvents(num_events, wait_events);*/
             clEnqueueReadBuffer((cl_command_queue) command_queue,
                                 priv->gpu_data,
                                 CL_TRUE, 
@@ -305,7 +308,6 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
                                 priv->cpu_data,
                                 0, NULL, &event);
 
-            clWaitForEvents(1, &event);
 #ifdef WITH_PROFILING
             clWaitForEvents(1, &event);
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);

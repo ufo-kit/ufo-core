@@ -120,6 +120,8 @@ static void ufo_filter_filter_process(UfoFilter *filter)
                 priv->kernel, 
                 2, NULL, global_work_size, NULL, 
                 0, NULL, &event);
+
+        ufo_filter_account_gpu_time(filter, (void **) &event);
         
         ufo_buffer_wait_on_event(input, event);
         g_timer_stop(timer);
@@ -127,7 +129,8 @@ static void ufo_filter_filter_process(UfoFilter *filter)
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
         g_timer_continue(timer);
     }
-    g_message("Filtered in %fs", g_timer_elapsed(timer, NULL));
+    g_message("ufo-filter-filter: %fs/%fs", 
+            g_timer_elapsed(timer, NULL), ufo_filter_get_gpu_time(filter));
     g_timer_destroy(timer);
     ufo_resource_manager_release_buffer(manager, filter_buffer);
     g_async_queue_push(output_queue, input);
