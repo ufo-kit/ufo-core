@@ -12,6 +12,7 @@ struct _UfoFilterClPrivate {
     cl_kernel kernel;
     gchar *file_name;
     gchar *kernel_name;
+    gboolean inplace;
 };
 
 GType ufo_filter_cl_get_type(void) G_GNUC_CONST;
@@ -24,6 +25,7 @@ enum {
     PROP_0,
     PROP_FILE_NAME,
     PROP_KERNEL,
+    PROP_INPLACE,
     N_PROPERTIES
 };
 
@@ -71,6 +73,8 @@ static void ufo_filter_cl_process(UfoFilter *filter)
         return;
     }
 
+    UfoBuffer *output = NULL;
+
     cl_kernel kernel = ufo_resource_manager_get_kernel(manager, priv->kernel_name, &error);
     if (error != NULL) {
         g_warning("%s", error->message);
@@ -87,10 +91,17 @@ static void ufo_filter_cl_process(UfoFilter *filter)
             global_work_size[0] = (size_t) width;
             global_work_size[1] = (size_t) height;
 
-            cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
+            cl_mem input_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
             cl_int err = CL_SUCCESS;
 
-            err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &buffer_mem);
+            err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &input_mem);
+
+            if (!priv->inplace) {
+                output = ufo_resource_manager_request_buffer(manager, width, height, NULL, TRUE);;
+                cl_mem output_mem = ufo_buffer_get_gpu_data(output, command_queue);
+                clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &output_mem);
+            }
+
             /* XXX: For AMD CPU, a clFinish must be issued before enqueuing the
              * kernel. This could be moved to a ufo_kernel_launch method. */
             clFinish(command_queue);
@@ -98,8 +109,18 @@ static void ufo_filter_cl_process(UfoFilter *filter)
                 kernel,
                 2, NULL, global_work_size, local_work_size,
                 0, NULL, &event);
+
+            clFinish(command_queue);
+
+            if (!priv->inplace)
+                ufo_resource_manager_release_buffer(manager, input);
         }
-        g_async_queue_push(output_queue, input);
+
+        if (priv->inplace)
+            g_async_queue_push(output_queue, input);
+        else
+            g_async_queue_push(output_queue, output);
+
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
     g_async_queue_push(output_queue, input);
@@ -124,6 +145,9 @@ static void ufo_filter_cl_set_property(GObject *object,
             g_free(self->priv->kernel_name);
             self->priv->kernel_name = g_strdup(g_value_get_string(value));
             break;
+        case PROP_INPLACE:
+            self->priv->inplace = g_value_get_boolean(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -144,6 +168,9 @@ static void ufo_filter_cl_get_property(GObject *object,
             break;
         case PROP_KERNEL:
             g_value_set_string(value, self->priv->kernel_name);
+            break;
+        case PROP_INPLACE:
+            g_value_set_boolean(value, self->priv->inplace);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -179,8 +206,16 @@ static void ufo_filter_cl_class_init(UfoFilterClClass *klass)
             "",
             G_PARAM_READWRITE);
 
+    cl_properties[PROP_INPLACE] = 
+        g_param_spec_boolean("inplace",
+            "Expect output buffer or calculate inplace",
+            "Expect output buffer or calculate inplace",
+            TRUE,
+            G_PARAM_READWRITE);
+
     g_object_class_install_property(gobject_class, PROP_FILE_NAME, cl_properties[PROP_FILE_NAME]);
     g_object_class_install_property(gobject_class, PROP_KERNEL, cl_properties[PROP_KERNEL]);
+    g_object_class_install_property(gobject_class, PROP_INPLACE, cl_properties[PROP_INPLACE]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterClPrivate));
@@ -192,6 +227,7 @@ static void ufo_filter_cl_init(UfoFilterCl *self)
     priv->file_name = NULL;
     priv->kernel_name = NULL;
     priv->kernel = NULL;
+    priv->inplace = TRUE;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

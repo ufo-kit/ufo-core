@@ -61,6 +61,7 @@ static void ufo_filter_scale_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterScale *self = UFO_FILTER_SCALE(filter);
+    UfoFilterScalePrivate *priv = UFO_FILTER_SCALE_GET_PRIVATE(filter);
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
@@ -68,23 +69,25 @@ static void ufo_filter_scale_process(UfoFilter *filter)
 
     gint32 width, height;
     UfoBuffer *buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
-    while (!ufo_buffer_is_finished(buffer)) {
-        if (self->priv->kernel != NULL) {
-            float scale = (float) self->priv->scale;
-            size_t global_work_size[2];
+    size_t global_work_size[2];
+    size_t local_work_size[2] = { 16, 16 };
+    float scale = (float) priv->scale;
 
+    while (!ufo_buffer_is_finished(buffer)) {
+        if (priv->kernel != NULL) {
             ufo_buffer_get_dimensions(buffer, &width, &height);
-            global_work_size[0] = width;
-            global_work_size[1] = height;
+            global_work_size[0] = (size_t) width;
+            global_work_size[1] = (size_t) height;
 
             cl_mem buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(buffer, command_queue);
             cl_int err = CL_SUCCESS;
 
+            clFinish(command_queue);
             err = clSetKernelArg(self->priv->kernel, 0, sizeof(float), &scale);
             err = clSetKernelArg(self->priv->kernel, 1, sizeof(cl_mem), (void *) &buffer_mem);
             err = clEnqueueNDRangeKernel(command_queue,
-                self->priv->kernel,
-                2, NULL, global_work_size, NULL,
+                priv->kernel,
+                2, NULL, global_work_size, local_work_size,
                 0, NULL, &event);
 
             ufo_filter_account_gpu_time(filter, (void **) &event);
