@@ -185,7 +185,6 @@ UfoResourceManager *ufo_resource_manager()
 gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, const gchar *filename, GError **error)
 {
     UfoResourceManagerPrivate *priv = resource_manager->priv;
-    g_message("adding %s", filename);
 
     /* Don't process the kernel file again, if already load */
     if (g_list_find_custom(priv->opencl_files, filename, (GCompareFunc) g_strcmp0))
