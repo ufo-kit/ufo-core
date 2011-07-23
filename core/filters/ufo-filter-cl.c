@@ -66,14 +66,13 @@ static void ufo_filter_cl_process(UfoFilter *filter)
     UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
 
+    /* TODO: right now it's not possible to have the kernel be loaded upfront... */
     ufo_resource_manager_add_program(manager, priv->file_name, &error);
     if (error != NULL) {
         g_warning("%s", error->message);
         g_error_free(error);
         return;
     }
-
-    UfoBuffer *output = NULL;
 
     cl_kernel kernel = ufo_resource_manager_get_kernel(manager, priv->kernel_name, &error);
     if (error != NULL) {
@@ -84,6 +83,7 @@ static void ufo_filter_cl_process(UfoFilter *filter)
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
     gint32 width, height;
+    UfoBuffer *output = NULL;
 
     while (!ufo_buffer_is_finished(input)) {
         if (kernel) {
@@ -92,9 +92,7 @@ static void ufo_filter_cl_process(UfoFilter *filter)
             global_work_size[1] = (size_t) height;
 
             cl_mem input_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
-            cl_int err = CL_SUCCESS;
-
-            err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &input_mem);
+            clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &input_mem);
 
             if (!priv->inplace) {
                 output = ufo_resource_manager_request_buffer(manager, width, height, NULL, TRUE);;
@@ -105,7 +103,7 @@ static void ufo_filter_cl_process(UfoFilter *filter)
             /* XXX: For AMD CPU, a clFinish must be issued before enqueuing the
              * kernel. This could be moved to a ufo_kernel_launch method. */
             clFinish(command_queue);
-            err = clEnqueueNDRangeKernel(command_queue,
+            clEnqueueNDRangeKernel(command_queue,
                 kernel,
                 2, NULL, global_work_size, local_work_size,
                 0, NULL, &event);
@@ -125,7 +123,7 @@ static void ufo_filter_cl_process(UfoFilter *filter)
     }
     g_async_queue_push(output_queue, input);
 
-    /* free kernel */
+    clReleaseKernel(kernel);
 }
 
 static void ufo_filter_cl_set_property(GObject *object,

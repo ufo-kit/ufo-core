@@ -226,7 +226,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
     gchar* log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
     clGetProgramBuildInfo(program, priv->opencl_devices[0][0], 
             CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void*) log, NULL);
-    /*g_print("\n=== Build log for %s===%s\n\n", filename, log);*/
+    g_print("\n=== Build log for %s===%s\n\n", filename, log);
 
     if (err != CL_SUCCESS) {
         g_set_error(error,
