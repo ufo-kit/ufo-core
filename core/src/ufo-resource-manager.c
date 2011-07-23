@@ -107,6 +107,9 @@ const gchar* opencl_map_error(cl_int error)
     return NULL;
 }
 
+#define CHECK_ERROR(error) { \
+    if (error != CL_SUCCESS) g_message("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
+
 static gchar *resource_manager_load_opencl_program(const gchar *filename)
 {
     FILE *fp = fopen(filename, "r");
@@ -209,7 +212,7 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
-                "Failed to create OpenCL program");
+                "Failed to create OpenCL program: %s", opencl_map_error(err));
         g_free(buffer);
         return FALSE;
     }
@@ -524,6 +527,8 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
                 num_devices, priv->opencl_devices[i],
                 NULL);
 
+        CHECK_ERROR(error);
+
         priv->num_devices[i] = num_devices;
         g_debug(" Number of devices: %i", num_devices);
         g_debug(" Build options....: %s", priv->opencl_build_options->str);
@@ -542,11 +547,15 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
                 priv->opencl_devices[0],
                 NULL, NULL, &error);
 
+        CHECK_ERROR(error);
+
         priv->command_queues = g_malloc0(priv->num_devices[0] * sizeof(cl_command_queue));
         for (int i = 0; i < priv->num_devices[0]; i++) {
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                     priv->opencl_devices[0][i],
-                    queue_properties, NULL);
+                    queue_properties, &error);
+
+            CHECK_ERROR(error);
         }
     }
 }
