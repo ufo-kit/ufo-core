@@ -67,7 +67,8 @@ static void ufo_filter_cl_process(UfoFilter *filter)
     GError *error = NULL;
 
     /* TODO: right now it's not possible to have the kernel be loaded upfront... */
-    ufo_resource_manager_add_program(manager, priv->file_name, &error);
+    ufo_resource_manager_add_program(manager, priv->file_name, NULL, &error);
+
     if (error != NULL) {
         g_warning("%s", error->message);
         g_error_free(error);
@@ -85,6 +86,8 @@ static void ufo_filter_cl_process(UfoFilter *filter)
     gint32 width, height;
     UfoBuffer *output = NULL;
 
+    cl_int clerror = CL_SUCCESS;
+
     while (!ufo_buffer_is_finished(input)) {
         if (kernel) {
             ufo_buffer_get_dimensions(input, &width, &height);
@@ -92,23 +95,21 @@ static void ufo_filter_cl_process(UfoFilter *filter)
             global_work_size[1] = (size_t) height;
 
             cl_mem input_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
-            clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &input_mem);
+            clerror = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &input_mem);
+            clerror |= clSetKernelArg(kernel, 1, sizeof(float)*local_work_size[0]*local_work_size[1], NULL);
 
             if (!priv->inplace) {
                 output = ufo_resource_manager_request_buffer(manager, width, height, NULL, TRUE);;
                 cl_mem output_mem = ufo_buffer_get_gpu_data(output, command_queue);
-                clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &output_mem);
+                clerror |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &output_mem);
             }
 
             /* XXX: For AMD CPU, a clFinish must be issued before enqueuing the
-             * kernel. This could be moved to a ufo_kernel_launch method. */
-            clFinish(command_queue);
-            clEnqueueNDRangeKernel(command_queue,
+             * kernel. This should be moved to a ufo_kernel_launch method. */
+            clerror |= clEnqueueNDRangeKernel(command_queue,
                 kernel,
                 2, NULL, global_work_size, local_work_size,
                 0, NULL, &event);
-
-            clFinish(command_queue);
 
             if (!priv->inplace)
                 ufo_resource_manager_release_buffer(manager, input);

@@ -56,7 +56,7 @@ static void ufo_filter_backproject_initialize(UfoFilter *filter)
     self->priv->normal_kernel = NULL;
     self->priv->texture_kernel = NULL;
 
-    ufo_resource_manager_add_program(manager, "backproject.cl", &error);
+    ufo_resource_manager_add_program(manager, "backproject.cl", NULL, &error);
     if (error != NULL) {
         g_warning("%s", error->message);
         g_error_free(error);

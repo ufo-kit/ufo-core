@@ -181,11 +181,16 @@ UfoResourceManager *ufo_resource_manager()
  * \brief Adds an OpenCL program and loads all kernels in that file
  * \param[in] resource_manager A UfoResourceManager
  * \param[in] filename File containing valid OpenCL code
+ * \param[in] options Additional build options such as "-DX=Y", can be NULL
  * \param[out] error Pointer to a GError* 
  * \public \memberof UfoResourceManager
  * \return TRUE on success else FALSE
  */
-gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, const gchar *filename, GError **error)
+gboolean ufo_resource_manager_add_program(
+        UfoResourceManager *resource_manager, 
+        const gchar *filename, 
+        const gchar *options,
+        GError **error)
 {
     UfoResourceManagerPrivate *priv = resource_manager->priv;
 
@@ -218,12 +223,24 @@ gboolean ufo_resource_manager_add_program(UfoResourceManager *resource_manager, 
     }
     priv->opencl_programs = g_list_append(priv->opencl_programs, program);
 
+    /* Concatenate global build options with per-program options */
+    gchar *build_options = NULL;
+    if (options != NULL)
+        build_options = g_strdup_printf("%s %s", priv->opencl_build_options->str, options);
+    else
+        build_options = priv->opencl_build_options->str;
+
     /* TODO: build program for each platform?!*/
     err = clBuildProgram(program, 
             priv->num_devices[0], 
             priv->opencl_devices[0],
-            priv->opencl_build_options->str,
+            build_options,
             NULL, NULL);
+
+    g_message("Build options: %s", build_options);
+
+    if (options)
+        g_free(build_options);
 
     const int LOG_SIZE = 4096;
     gchar* log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));

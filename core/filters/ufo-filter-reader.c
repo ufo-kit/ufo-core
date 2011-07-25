@@ -91,7 +91,12 @@ static void *filter_read_edf(const gchar *filename,
     FILE *fp = fopen(filename, "rb");  
     gchar *header = g_malloc(1024);
 
-    fread(header, 1, 1024, fp);
+    size_t num_bytes = fread(header, 1, 1024, fp);
+    if (num_bytes != 1024) {
+        g_free(header);
+        fclose(fp);
+        return NULL;
+    }
 
     gchar **tokens = g_strsplit(header, ";", 0);
     gboolean big_endian = FALSE;
@@ -133,8 +138,12 @@ static void *filter_read_edf(const gchar *filename,
 
     /* Read data */
     gchar *buffer = g_malloc0(size); 
-    fread(buffer, 1, size, fp);
+    num_bytes = fread(buffer, 1, size, fp);
     fclose(fp);
+    if (num_bytes != size) {
+        g_free(buffer);
+        return NULL;
+    }
 
     if ((G_BYTE_ORDER == G_LITTLE_ENDIAN) && big_endian) {
         guint32 *data = (guint32 *) buffer;    

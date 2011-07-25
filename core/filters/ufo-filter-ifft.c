@@ -53,7 +53,7 @@ static void ufo_filter_ifft_initialize(UfoFilter *filter)
     UfoFilterIFFT *self = UFO_FILTER_IFFT(filter);
     UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
-    ufo_resource_manager_add_program(manager, "fft.cl", &error);
+    ufo_resource_manager_add_program(manager, "fft.cl", NULL, &error);
     if (error != NULL) {
         g_warning("%s", error->message);
         g_error_free(error);
