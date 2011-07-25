@@ -409,6 +409,8 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
     cl_mem mem = ufo_buffer_get_gpu_data(buffer, command_queue);
     if (mem != NULL)
         clReleaseMemObject(mem);
+
+    g_object_unref(buffer);
 }
 
 void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, guint *num_queues)
