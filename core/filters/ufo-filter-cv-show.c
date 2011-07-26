@@ -75,12 +75,8 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
     UfoFilterCvShowPrivate *priv = UFO_FILTER_CV_SHOW_GET_PRIVATE(self);
 
     CvSize size;
-    gint32 width, height;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
     ufo_buffer_get_dimensions(input, &size.width, &size.height);
-    g_message("image size of %p: %ix%i", input, size.width, size.height);
-    ufo_buffer_get_dimensions(input, &width, &height);
-    g_message("image size %ix%i", width, height);
     IplImage *image = cvCreateImageHeader(size, IPL_DEPTH_32F, 1);
     IplImage *blit = cvCreateImage(size, IPL_DEPTH_8U, 1);
     cvNamedWindow("Foo", CV_WINDOW_AUTOSIZE);

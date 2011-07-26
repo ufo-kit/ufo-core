@@ -287,12 +287,13 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
 static void ufo_graph_dispose(GObject *object)
 {
     UfoGraph *self = UFO_GRAPH(object);
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(self);
 
     GObject *objects[] = {
-        G_OBJECT(self->priv->resource_manager),
-        G_OBJECT(self->priv->root_container),
-        G_OBJECT(self->priv->json_parser),
-        G_OBJECT(self->priv->ethos),
+        G_OBJECT(priv->resource_manager),
+        G_OBJECT(priv->root_container),
+        G_OBJECT(priv->json_parser),
+        G_OBJECT(priv->ethos),
         NULL
     };
 
@@ -300,17 +301,17 @@ static void ufo_graph_dispose(GObject *object)
     while (objects[i] != NULL)
         g_object_unref(objects[i++]);
 
-    if (self->priv->plugin_types) {
-        g_hash_table_destroy(self->priv->plugin_types);
-        self->priv->plugin_types = NULL;
+    if (priv->plugin_types) {
+        g_hash_table_destroy(priv->plugin_types);
+        priv->plugin_types = NULL;
     }
 
-    GList *property_set_names = g_hash_table_get_keys(self->priv->property_sets);
+    GList *property_set_names = g_hash_table_get_keys(priv->property_sets);
     g_list_foreach(property_set_names, (GFunc) g_free, NULL);
     g_list_free(property_set_names);
-    if (self->priv->property_sets) {
-        g_hash_table_destroy(self->priv->property_sets);
-        self->priv->property_sets = NULL;
+    if (priv->property_sets) {
+        g_hash_table_destroy(priv->property_sets);
+        priv->property_sets = NULL;
     }
 
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);

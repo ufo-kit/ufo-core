@@ -77,6 +77,7 @@ static void ufo_filter_uca_get_property(GObject *object,
 static void ufo_filter_uca_dispose(GObject *object)
 {
     UfoFilterUCAPrivate *priv = UFO_FILTER_UCA_GET_PRIVATE(object);
+    g_message("stop recording and camera");
     uca_cam_stop_recording(priv->cam);
     uca_destroy(priv->u);
 
@@ -153,8 +154,12 @@ static void ufo_filter_uca_init(UfoFilterUCA *self)
 
     /* init private fields */
     self->priv = UFO_FILTER_UCA_GET_PRIVATE(self);
+    self->priv->cam = NULL;
     /* FIXME: what to do when u == NULL? */
     self->priv->u = uca_init(NULL);
+    if (self->priv->u == NULL)
+        return;
+
     self->priv->cam = self->priv->u->cameras;
     self->priv->count = -1;
     uca_cam_alloc(self->priv->cam, 10);

@@ -34,6 +34,10 @@ struct _UfoResourceManagerPrivate {
 
     GHashTable *opencl_kernels;         /**< maps from kernel string to cl_kernel */
 
+    GHashTable *cached_buffers;         /**< maps from dimension hash to async queues of buffers */
+    gint cache_hits;
+    gint cache_misses;
+
     float upload_time;
     float download_time;
 };
@@ -110,6 +114,8 @@ const gchar* opencl_map_error(cl_int error)
 #define CHECK_ERROR(error) { \
     if (error != CL_SUCCESS) g_message("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
 
+#define DIM_HASH(width, height) ((width << 16) | height)
+
 static gchar *resource_manager_load_opencl_program(const gchar *filename)
 {
     FILE *fp = fopen(filename, "r");
@@ -147,13 +153,34 @@ static void resource_manager_release_program(gpointer data, gpointer user_data)
     clReleaseProgram(program);
 }
 
-/*static UfoBuffer *resource_manager_create_buffer(UfoResourceManager* self,*/
-        /*guint32 width, */
-        /*guint32 height,*/
-        /*float *data)*/
-/*{*/
-    /*return buffer;*/
-/*}*/
+
+static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv,
+        guint32 width,
+        guint32 height,
+        float *data,
+        gboolean prefer_gpu)
+{
+    UfoBuffer *buffer = ufo_buffer_new(width, height);
+
+    cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
+    if ((data != NULL) && (prefer_gpu))
+        mem_flags |= CL_MEM_COPY_HOST_PTR;
+
+    cl_int error;
+    cl_mem buffer_mem = clCreateBuffer(priv->opencl_context,
+            mem_flags, 
+            width * height * sizeof(float),
+            data, &error);
+
+    if (error != CL_SUCCESS)
+        g_message("Error allocating memory buffer: %i", error);
+
+    ufo_buffer_set_cl_mem(buffer, buffer_mem);
+    if ((data) && (!prefer_gpu))
+        ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
+
+    return buffer;
+}
 
 GQuark ufo_resource_manager_error_quark(void)
 {
@@ -349,21 +376,32 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         float *data,
         gboolean prefer_gpu)
 {
-    UfoResourceManager *self = resource_manager;
-    UfoBuffer *buffer = ufo_buffer_new(width, height);
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(resource_manager);
 
-    cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
-    if ((data != NULL) && (prefer_gpu))
-        mem_flags |= CL_MEM_COPY_HOST_PTR;
+    /* Find a queue that might contain buffers with a certain size */
+    guint hash = DIM_HASH(width, height);
+    GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, (gconstpointer) hash);
 
-    cl_mem buffer_mem = clCreateBuffer(self->priv->opencl_context,
-            mem_flags, 
-            width * height * sizeof(float),
-            data, NULL);
+    if (queue == NULL) {
+        priv->cache_misses++;
+        return resource_manager_create_buffer(priv, width, height, data, prefer_gpu);
+    }
 
-    ufo_buffer_set_cl_mem(buffer, buffer_mem);
-    if ((data) && (!prefer_gpu))
+    /* Try to get a suitable buffer */
+    UfoBuffer *buffer = g_async_queue_try_pop(queue);
+    if (buffer == NULL) {
+        priv->cache_misses++;
+        return resource_manager_create_buffer(priv, width, height, data, prefer_gpu);
+    }
+
+    /* We found a suitable buffer and have to fill it with data if necessary */
+    ufo_buffer_invalidate_gpu_data(buffer);
+    if (data != NULL)
         ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
+
+    gint32 buffer_width, buffer_height;
+    ufo_buffer_get_dimensions(buffer, &buffer_width, &buffer_height);
+    priv->cache_hits++;
 
     return buffer;
 }
@@ -396,21 +434,40 @@ UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *manager, UfoBuff
  */
 void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, UfoBuffer *buffer)
 {
-    UfoResourceManager *self = resource_manager;
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(resource_manager);
 
 #ifdef WITH_PROFILING
     gulong upload_time, download_time;
     ufo_buffer_get_transfer_time(buffer, &upload_time, &download_time);
-    self->priv->upload_time += upload_time / 1000000000.0;
-    self->priv->download_time += download_time / 1000000000.0;
+    priv->upload_time += upload_time / 1000000000.0;
+    priv->download_time += download_time / 1000000000.0;
 #endif
 
-    cl_command_queue command_queue = self->priv->command_queues[0];
-    cl_mem mem = ufo_buffer_get_gpu_data(buffer, command_queue);
+    /* Find a suitable queue */
+    gint32 width, height;
+    ufo_buffer_get_dimensions(buffer, &width, &height);
+    guint hash = DIM_HASH(width, height);
+
+    GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, (gconstpointer) hash);
+
+    /* FIXME: inserting a new queue _must_ happen atomically. However, this is
+     * somewhat relieved as there is usually only one stage releasing a buffer. */
+    if (queue == NULL) {
+        queue = g_async_queue_new();
+        g_hash_table_insert(priv->cached_buffers, (gpointer) hash, queue);
+    }
+
+    /* TODO: make queue limit configurable */
+    if (g_async_queue_length(queue) < 8) {
+        g_async_queue_push(queue, buffer);
+        return;
+    }
+
+    cl_mem mem = (cl_mem) ufo_buffer_get_cl_mem(buffer);
     if (mem != NULL)
         clReleaseMemObject(mem);
 
-    g_object_unref(buffer);
+    /*g_object_unref(buffer);*/
 }
 
 void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, guint *num_queues)
@@ -431,6 +488,8 @@ static void ufo_resource_manager_dispose(GObject *gobject)
 
     g_message("Upload/Download [s]: %f/%f", priv->upload_time, priv->download_time);
     g_message("Total Transfer Time [s]: %f", priv->upload_time + priv->download_time);
+    g_message("Buffer Cache Hitrate: %f", 
+            (float) priv->cache_hits / (priv->cache_hits + priv->cache_misses));
 
     /* free resources */
     GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
@@ -457,6 +516,8 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     g_list_free(priv->opencl_files);
 
     g_string_free(priv->opencl_build_options, TRUE);
+
+    g_hash_table_destroy(priv->cached_buffers);
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->dispose(gobject);
 }
@@ -501,11 +562,16 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
     priv->upload_time = 0.0f;
     priv->download_time = 0.0f;
+
     priv->opencl_kernel_table = NULL;
     priv->opencl_kernels = g_hash_table_new(g_str_hash, g_str_equal);
     priv->opencl_platforms = NULL;
     priv->opencl_programs = NULL;
     priv->opencl_build_options = g_string_new("-cl-mad-enable ");
+
+    priv->cached_buffers = g_hash_table_new(g_direct_hash, g_direct_equal);
+    priv->cache_hits = 0;
+    priv->cache_misses = 0;
 
     /* initialize OpenCL subsystem */
     clGetPlatformIDs(0, NULL, &priv->num_platforms);

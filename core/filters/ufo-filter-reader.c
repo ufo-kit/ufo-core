@@ -287,6 +287,8 @@ static void ufo_filter_reader_process(UfoFilter *self)
             ufo_buffer_reinterpret(image, bits_per_sample, width * height);
 
         g_timer_stop(timer);
+        while (g_async_queue_length(output_queue) > 2)
+            ;
         g_async_queue_push(output_queue, image);
         g_timer_continue(timer);
         g_free(buffer);

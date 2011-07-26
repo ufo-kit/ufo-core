@@ -197,6 +197,11 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
     buffer->priv->state = CPU_DATA_VALID;
 }
 
+void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
+{
+    buffer->priv->state = CPU_DATA_VALID;
+}
+
 /**
  * \brief Spread raw data without increasing the contrast
  * \public \memberof UfoBuffer
@@ -238,6 +243,19 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize n)
 void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
 {
     buffer->priv->gpu_data = (cl_mem) mem;
+}
+
+/**
+ * \brief Return associated OpenCL memory object without synchronizing with CPU
+ * memory.
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer UfoBuffer object
+ * \return OpenCL memory object associated with this UfoBuffer
+ */
+void *ufo_buffer_get_cl_mem(UfoBuffer *buffer)
+{
+    return buffer->priv->gpu_data;
 }
 
 /**
@@ -348,10 +366,11 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
         case CPU_DATA_VALID:
             clEnqueueWriteBuffer((cl_command_queue) command_queue,
                                  priv->gpu_data,
-                                 CL_FALSE,
+                                 CL_TRUE,
                                  0, priv->size,
                                  priv->cpu_data,
                                  0, NULL, &event);
+
 
 #ifdef WITH_PROFILING
             clWaitForEvents(1, &event);
@@ -442,8 +461,11 @@ static void ufo_buffer_finalize(GObject *gobject)
 {
     UfoBuffer *buffer = UFO_BUFFER(gobject);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+    g_message("freeing cpu memory %p", priv->cpu_data);
     if (priv->cpu_data)
         g_free(priv->cpu_data);
+    
+    g_message("freeing wait queue %p", priv->wait_events);
     g_queue_free(priv->wait_events);
 
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
