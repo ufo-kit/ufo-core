@@ -12,6 +12,7 @@ struct _UfoFilterUCAPrivate {
     struct uca *u;
     struct uca_camera *cam;
     gint count;
+    double time;
 };
 
 GType ufo_filter_uca_get_type(void) G_GNUC_CONST;
@@ -24,6 +25,7 @@ G_DEFINE_TYPE(UfoFilterUCA, ufo_filter_uca, UFO_TYPE_FILTER);
 enum {
     PROP_0,
     PROP_COUNT,
+    PROP_TIME,
     N_PROPERTIES
 };
 
@@ -51,6 +53,9 @@ static void ufo_filter_uca_set_property(GObject *object,
         case PROP_COUNT:
             filter->priv->count = g_value_get_int(value);
             break;
+        case PROP_TIME:
+            filter->priv->time = g_value_get_double(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -67,6 +72,9 @@ static void ufo_filter_uca_get_property(GObject *object,
     switch (property_id) {
         case PROP_COUNT:
             g_value_set_int(value, filter->priv->count);
+            break;
+        case PROP_TIME:
+            g_value_set_double(value, filter->priv->time);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -87,8 +95,19 @@ static void ufo_filter_uca_dispose(GObject *object)
 static void ufo_filter_uca_process(UfoFilter *self)
 {
     g_return_if_fail(UFO_IS_FILTER(self));
-
     UfoFilterUCAPrivate *priv = UFO_FILTER_UCA_GET_PRIVATE(self);
+    UfoResourceManager *manager = ufo_resource_manager();
+    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
+
+    /* Camera subsystem could not be initialized, so flag end */
+    if (priv->u == NULL) {
+        g_debug("Camera system is not initialized");
+        g_async_queue_push(output_queue, 
+                ufo_resource_manager_request_finish_buffer(manager));
+        return;
+    }
+
+    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(self));
     struct uca_camera *cam = priv->cam;
 
     uint32_t width, height;
@@ -96,14 +115,9 @@ static void ufo_filter_uca_process(UfoFilter *self)
     uca_cam_get_property(cam, UCA_PROP_HEIGHT, &height, 0);
 
     uca_cam_start_recording(cam);
-    UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(self));
+    GTimer *timer = g_timer_new();
 
-    if (priv->count < 0)
-        priv->count = 8192;
-
-    for (guint i = 0; i < priv->count; i++) {
+    for (guint i = 0; i < priv->count || g_timer_elapsed(timer, NULL) < priv->time; i++) {
         UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
                 width, height, NULL, FALSE);
 
@@ -113,9 +127,11 @@ static void ufo_filter_uca_process(UfoFilter *self)
         ufo_buffer_reinterpret(buffer, 8, width * height);
         while (g_async_queue_length(output_queue) > 2)
             ;
+
         g_async_queue_push(output_queue, buffer);
     }
 
+    g_timer_destroy(timer);
     g_async_queue_push(output_queue, 
             ufo_resource_manager_request_finish_buffer(manager));
 }
@@ -135,14 +151,23 @@ static void ufo_filter_uca_class_init(UfoFilterUCAClass *klass)
 
     uca_properties[PROP_COUNT] =
         g_param_spec_int("count",
-        "Number of frames",
-        "Number of frames to record. -1 denoting all.",
-        -1,     /* minimum */
+        "Number of frames to record",
+        "Number of frames to record",
+        0,     /* minimum */
         8192,   /* maximum */
-        -1,     /* default */
+        0,     /* default */
+        G_PARAM_READWRITE);
+
+    uca_properties[PROP_TIME] = g_param_spec_double("time",
+        "Maximum time for recording in fraction of seconds",
+        "Maximum time for recording in fraction of seconds",
+         0.0,       /* minimum */
+         3600.0,    /* maximum */
+         5.0,       /* default */
         G_PARAM_READWRITE);
 
     g_object_class_install_property(gobject_class, PROP_COUNT, uca_properties[PROP_COUNT]);
+    g_object_class_install_property(gobject_class, PROP_TIME, uca_properties[PROP_TIME]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterUCAPrivate));
@@ -161,7 +186,7 @@ static void ufo_filter_uca_init(UfoFilterUCA *self)
         return;
 
     self->priv->cam = self->priv->u->cameras;
-    self->priv->count = -1;
+    self->priv->count = 0;
     uca_cam_alloc(self->priv->cam, 10);
 }
 
