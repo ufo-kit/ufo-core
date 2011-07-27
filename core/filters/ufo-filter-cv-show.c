@@ -89,6 +89,7 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
 
     while (!ufo_buffer_is_finished(input)) {
         image->imageData = (char *) ufo_buffer_get_cpu_data(input, command_queue);
+
         cvConvertImage(image, blit, 0);
         cvShowImage("Foo", image);
 
@@ -96,7 +97,6 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
             cvCalcHist(&blit, hist, 0, 0);
             IplImage *img_hist = draw_histogram(hist, 1.0, 1.0);
             cvClearHist(hist);
-
             cvShowImage("Histogram", img_hist);
         }
         cvWaitKey(10);

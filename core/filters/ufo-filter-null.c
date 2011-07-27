@@ -44,10 +44,13 @@ static void ufo_filter_null_process(UfoFilter *filter)
     UfoResourceManager *manager = ufo_resource_manager();
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    gint frames = 0;
     while (!ufo_buffer_is_finished(input)) {
+        frames++;
         ufo_resource_manager_release_buffer(manager, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
+    g_message("processed %i frames", frames);
 }
 
 static void ufo_filter_null_set_property(GObject *object,

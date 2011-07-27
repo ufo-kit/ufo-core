@@ -249,6 +249,16 @@ UfoContainer *ufo_graph_get_root(UfoGraph *graph)
 }
 
 /**
+ * ufo_graph_get_filter_names:
+ * 
+ * Return value: (element-type utf8) (transfer none): list of constants.
+ */
+GList *ufo_graph_get_filter_names(UfoGraph *graph)
+{
+    return g_hash_table_get_keys(graph->priv->plugin_types);
+}
+
+/**
  * \brief Return the UfoFilter object belonging to a certain libfilter{name}.so
  * \public \memberof UfoGraph
  *

@@ -115,6 +115,9 @@ static void ufo_filter_cl_process(UfoFilter *filter)
                 ufo_resource_manager_release_buffer(manager, input);
         }
 
+        while (g_async_queue_length(output_queue) > 2)
+            ;
+
         if (priv->inplace)
             g_async_queue_push(output_queue, input);
         else
