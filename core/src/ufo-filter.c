@@ -153,13 +153,6 @@ static void ufo_filter_iface_process(UfoElement *element)
     ufo_filter_process(self);
 }
 
-static void ufo_filter_print(UfoElement *self)
-{
-    g_message(" [filter:%p] <%p,%p>", self, 
-            ufo_element_get_input_queue(self),
-            ufo_element_get_output_queue(self));
-}
-
 static void ufo_filter_finished(UfoElement *self)
 {
     g_message("filter: received finished signal");
@@ -189,7 +182,6 @@ static void ufo_element_iface_init(UfoElementInterface *iface)
 {
     /* virtual methods */
     iface->process = ufo_filter_iface_process;
-    iface->print = ufo_filter_print;
     iface->set_input_queue = ufo_filter_set_input_queue;
     iface->set_output_queue = ufo_filter_set_output_queue;
     iface->set_command_queue = ufo_filter_set_command_queue;

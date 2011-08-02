@@ -236,20 +236,6 @@ static void ufo_split_process(UfoElement *element)
     g_message("[split:%p] done", element);
 }
 
-static void ufo_split_print(UfoElement *element)
-{
-    UfoSplit *self = UFO_SPLIT(element);
-    g_message("[split:%p|m:%i] <%p,%p>", element, self->priv->mode,
-            ufo_element_get_input_queue(element),
-            ufo_element_get_output_queue(element));
-
-    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
-        UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
-        ufo_element_print(child);
-    }
-    g_message("[/split:%p]", element);
-}
-
 static void ufo_split_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 {
     UfoSplit *self = UFO_SPLIT(element);
@@ -312,7 +298,6 @@ static float ufo_split_get_time_spent(UfoElement *element)
 static void ufo_element_iface_init(UfoElementInterface *iface)
 {
     iface->process = ufo_split_process;
-    iface->print = ufo_split_print;
     iface->set_input_queue = ufo_split_set_input_queue;
     iface->set_output_queue = ufo_split_set_output_queue;
     iface->set_command_queue = ufo_split_set_command_queue;

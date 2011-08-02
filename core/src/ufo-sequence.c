@@ -104,7 +104,6 @@ static void ufo_sequence_add_element(UfoContainer *container, UfoElement *child)
      * real output */
     GAsyncQueue *next = g_async_queue_new();
     ufo_element_set_output_queue(child, next);
-    /*g_message("[seq:%p] assigning %p to child %p", container, self->priv->command_queue, child);*/
     ufo_element_set_command_queue(child, self->priv->command_queue);
     self->priv->output_queue = next;
     self->priv->children = g_list_append(self->priv->children, child);
@@ -124,25 +123,11 @@ static void ufo_sequence_process(UfoElement *element)
     GError *error = NULL;
     for (guint i = 0; i < g_list_length(self->priv->children); i++) {
         UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
-        /*g_message("[seq:%p] starting element %p", element, child);*/
         threads = g_list_append(threads,
                 g_thread_create(ufo_sequence_process_thread, child, TRUE, &error));
     }
     g_list_foreach(threads, ufo_container_join_threads, NULL);
     g_list_free(threads);
-}
-
-static void ufo_sequence_print(UfoElement *element)
-{
-    UfoSequence *self = UFO_SEQUENCE(element);
-    g_message("[seq:%p] <%p,%p>", element, 
-            ufo_element_get_input_queue(element),
-            ufo_element_get_output_queue(element));
-    for (guint i = 0; i < g_list_length(self->priv->children); i++) {
-        UfoElement *child = UFO_ELEMENT(g_list_nth_data(self->priv->children, i));
-        ufo_element_print(child);
-    }
-    g_message("[/seq:%p]", element);
 }
 
 static void ufo_sequence_set_input_queue(UfoElement *element, GAsyncQueue *queue)
@@ -202,7 +187,6 @@ static float ufo_sequence_get_time_spent(UfoElement *element)
 static void ufo_element_iface_init(UfoElementInterface *iface)
 {
     iface->process = ufo_sequence_process;
-    iface->print = ufo_sequence_print;
     iface->set_input_queue = ufo_sequence_set_input_queue;
     iface->set_output_queue = ufo_sequence_set_output_queue;
     iface->set_command_queue = ufo_sequence_set_command_queue;

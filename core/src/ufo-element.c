@@ -102,15 +102,6 @@ float ufo_element_get_time_spent(UfoElement *element)
     return iface->get_time_spent(element);
 }
 
-void ufo_element_print(UfoElement * element)
-{
-    g_return_if_fail(UFO_IS_ELEMENT(element));
-
-    UfoElementInterface *iface = UFO_ELEMENT_GET_INTERFACE(element);
-    if (iface->print != NULL)
-        iface->print(element);
-}
-
 /**
  * \brief Execute an element
  *
