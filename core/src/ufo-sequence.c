@@ -44,18 +44,15 @@ static void ufo_sequence_dispose(GObject *object)
 {
     UfoSequence *self = UFO_SEQUENCE(object);
 
-    g_message("Disposing all children");
     /* FIXME: this is a really bad solution to the problem, that references are
      * hold to individual task stages by Ethos */
     g_list_foreach(self->priv->children, (GFunc) g_object_unref, NULL);
     g_list_foreach(self->priv->children, (GFunc) g_object_unref, NULL);
 
-    g_message("[sequence:%p] destroy queues", object);
     if (self->priv->input_queue != NULL)
         g_async_queue_unref(self->priv->input_queue);
     if (self->priv->output_queue != NULL)
         g_async_queue_unref(self->priv->output_queue);
-    g_message("[sequence:%p] done", object);
 
     G_OBJECT_CLASS(ufo_sequence_parent_class)->dispose(object);
 }

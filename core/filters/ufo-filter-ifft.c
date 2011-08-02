@@ -85,7 +85,6 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     clFFT_Plan ifft_plan = NULL;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
 
-    GTimer *timer = g_timer_new();
     while (!ufo_buffer_is_finished(input)) {
         gint32 width, height;
         ufo_buffer_get_dimensions(input, &width, &height);
@@ -158,15 +157,9 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         ufo_buffer_transfer_id(input, sinogram);
         ufo_resource_manager_release_buffer(manager, input);
 
-        g_timer_stop(timer);
         g_async_queue_push(output_queue, sinogram);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
-        g_timer_continue(timer);
     }
-    g_message("ufo-filter-ifft: %fs/%fs", 
-            g_timer_elapsed(timer, NULL), ufo_filter_get_gpu_time(filter));
-
-    g_timer_destroy(timer);
     g_async_queue_push(output_queue, input);
     clFFT_DestroyPlan(ifft_plan);
 }

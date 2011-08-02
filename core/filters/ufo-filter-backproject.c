@@ -137,7 +137,6 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     err = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *) &sin_mem);
     err = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *) &axes_mem);
 
-    GTimer *timer = g_timer_new();
     int total = 0;
 
     while (!ufo_buffer_is_finished(sinogram)) {
@@ -171,19 +170,11 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         ufo_buffer_wait_on_event(slice, event);
         ufo_buffer_transfer_id(sinogram, slice);
 
-        g_timer_stop(timer);
         g_async_queue_push(output_queue, slice);
-        g_timer_continue(timer);
 
         ufo_resource_manager_release_buffer(manager, sinogram);
-        g_timer_stop(timer);
         sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
-        g_timer_continue(timer);
     }
-    g_timer_stop(timer);
-    g_message("ufo-filter-backproject: %fs/%fs", 
-            g_timer_elapsed(timer, NULL), ufo_filter_get_gpu_time(filter));
-    g_timer_destroy(timer);
     
     if (priv->use_texture)
         clReleaseMemObject(texture);

@@ -199,7 +199,7 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
 
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 {
-    buffer->priv->state = CPU_DATA_VALID;
+    buffer->priv->state = NO_DATA;
 }
 
 /**
@@ -301,9 +301,8 @@ void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong
 float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
-    cl_event *wait_events = NULL, event;
-    /*cl_uint num_events;*/
-
+    cl_event event;
+    cl_int err = CL_SUCCESS;
 #ifdef WITH_PROFILING
     cl_ulong start, end;
 #endif
@@ -314,17 +313,13 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
         case GPU_DATA_VALID:
             if (priv->cpu_data == NULL)
                 priv->cpu_data = g_malloc0(priv->size);
-            else
-                memset(priv->cpu_data, 0, priv->size);
 
-            /*buffer_get_wait_events(priv, &wait_events, &num_events);*/
-            /*clWaitForEvents(num_events, wait_events);*/
             clEnqueueReadBuffer((cl_command_queue) command_queue,
-                                priv->gpu_data,
-                                CL_TRUE, 
-                                0, priv->size,
-                                priv->cpu_data,
-                                0, NULL, &event);
+                    priv->gpu_data,
+                    CL_TRUE, 
+                    0, priv->size,
+                    priv->cpu_data,
+                    0, NULL, &event);
 
 #ifdef WITH_PROFILING
             clWaitForEvents(1, &event);
@@ -332,9 +327,8 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
             priv->time_download += end - start;
 #endif
+            clReleaseEvent(event);
 
-            /* TODO: we should clear all events from the wait_queue */
-            g_free(wait_events);
             priv->state = CPU_DATA_VALID;
             priv->downloads++;
             break;
@@ -365,12 +359,11 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
     switch (priv->state) {
         case CPU_DATA_VALID:
             clEnqueueWriteBuffer((cl_command_queue) command_queue,
-                                 priv->gpu_data,
-                                 CL_TRUE,
-                                 0, priv->size,
-                                 priv->cpu_data,
-                                 0, NULL, &event);
-
+                    priv->gpu_data,
+                    CL_TRUE,
+                    0, priv->size,
+                    priv->cpu_data,
+                    0, NULL, &event);
 
 #ifdef WITH_PROFILING
             clWaitForEvents(1, &event);
@@ -378,6 +371,7 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
             priv->time_upload += end - start;
 #endif
+            clReleaseEvent(event);
             priv->state = GPU_DATA_VALID;
             priv->uploads++;
             break;

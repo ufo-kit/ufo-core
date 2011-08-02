@@ -257,7 +257,6 @@ static void ufo_filter_reader_process(UfoFilter *self)
     UfoResourceManager *manager = ufo_resource_manager();
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
 
-    GTimer *timer = g_timer_new();
     filter_read_filenames(priv);
     const guint max_count = (priv->count == -1) ? G_MAXUINT : priv->count;
     guint32 width, height;
@@ -286,17 +285,12 @@ static void ufo_filter_reader_process(UfoFilter *self)
         if (bits_per_sample < 32)
             ufo_buffer_reinterpret(image, bits_per_sample, width * height);
 
-        g_timer_stop(timer);
         while (g_async_queue_length(output_queue) > 2)
             ;
         g_async_queue_push(output_queue, image);
-        g_timer_continue(timer);
         g_free(buffer);
         filename = g_list_next(filename);
     }
-    g_message("Read files in %fs", g_timer_elapsed(timer, NULL));
-    g_timer_destroy(timer);
-
     /* No more data */
     g_async_queue_push(output_queue, 
             ufo_resource_manager_request_finish_buffer(manager));

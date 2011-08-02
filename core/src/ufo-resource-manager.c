@@ -21,11 +21,12 @@ struct _UfoResourceManagerPrivate {
     cl_uint num_platforms;
     cl_platform_id *opencl_platforms;
 
-    cl_uint *num_devices;               /**< Number of OpenCL devices per platform id */
-    cl_device_id **opencl_devices;      /**< Array of OpenCL devices per platform id */
     cl_context opencl_context;
 
+    cl_uint *num_devices;               /**< Number of OpenCL devices per platform id */
+    cl_device_id **opencl_devices;      /**< Array of OpenCL devices per platform id */
     cl_command_queue *command_queues;   /**< Array of command queues per device */
+    size_t *resolutions;              /**< Array of timer resolutions (per ns) per device */
 
     GList *opencl_files;
     GList *opencl_kernel_table;
@@ -459,6 +460,7 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
 
     /* TODO: make queue limit configurable */
     if (g_async_queue_length(queue) < 8) {
+        ufo_buffer_invalidate_gpu_data(buffer);
         g_async_queue_push(queue, buffer);
         return;
     }
@@ -477,6 +479,13 @@ void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manage
     *command_queues = resource_manager->priv->command_queues;
 }
 
+size_t ufo_resource_manager_get_profiling_resolution(UfoResourceManager *resource_manager)
+{
+    /* FIXME: as we don't know on which device a certain kernel was executed we
+     * just return the first timer resolution. */
+    return resource_manager->priv->resolutions[0];
+}
+
 
 /* 
  * Virtual Methods
@@ -486,10 +495,12 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
-    g_message("Upload/Download [s]: %f/%f", priv->upload_time, priv->download_time);
-    g_message("Total Transfer Time [s]: %f", priv->upload_time + priv->download_time);
-    g_message("Buffer Cache Hitrate: %f", 
-            (float) priv->cache_hits / (priv->cache_hits + priv->cache_misses));
+    g_message("Memory transfer time between host and device");
+    g_message("  To Device: %.4lfs", priv->upload_time);
+    g_message("  To Host..: %.4lfs", priv->download_time);
+    g_message("  Total....: %.4lfs", priv->upload_time + priv->download_time);
+    g_message("Buffer Cache Hitrate: %.2f%%", 
+            100.0f * priv->cache_hits / (priv->cache_hits + priv->cache_misses));
 
     /* free resources */
     GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
@@ -509,7 +520,7 @@ static void ufo_resource_manager_dispose(GObject *gobject)
 
     for (int i = 0; i < priv->num_devices[0]; i++)
         clReleaseCommandQueue(priv->command_queues[i]);
-    g_free(priv->command_queues);
+
     clReleaseContext(priv->opencl_context);
 
     g_list_foreach(priv->opencl_files, (GFunc) g_free, NULL);
@@ -529,12 +540,17 @@ static void ufo_resource_manager_finalize(GObject *gobject)
 
     for (guint i = 0; i < priv->num_platforms; i ++)
         g_free(priv->opencl_devices[i]);
+
     g_free(priv->num_devices);
     g_free(priv->opencl_devices);
     g_free(priv->opencl_platforms);
+    g_free(priv->command_queues);
+    g_free(priv->resolutions);
+
     priv->num_devices = NULL;
     priv->opencl_devices = NULL;
     priv->opencl_platforms = NULL;
+    priv->resolutions = NULL;
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->finalize(gobject);
 }
@@ -635,12 +651,16 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
         CHECK_ERROR(error);
 
         priv->command_queues = g_malloc0(priv->num_devices[0] * sizeof(cl_command_queue));
+        priv->resolutions = g_malloc0(priv->num_devices[0] * sizeof(size_t));
+
         for (int i = 0; i < priv->num_devices[0]; i++) {
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                     priv->opencl_devices[0][i],
                     queue_properties, &error);
-
             CHECK_ERROR(error);
+
+            CHECK_ERROR(clGetDeviceInfo(priv->opencl_devices[0][i], CL_DEVICE_PROFILING_TIMER_RESOLUTION,
+                    sizeof(size_t), &priv->resolutions[i], NULL));
         }
     }
 }

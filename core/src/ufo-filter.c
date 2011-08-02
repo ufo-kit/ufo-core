@@ -89,7 +89,7 @@ void ufo_filter_account_gpu_time(UfoFilter *filter, void **event)
     clWaitForEvents(1, e);
     clGetEventProfilingInfo(*e, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
     clGetEventProfilingInfo(*e, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
-    filter->priv->gpu_time += (end - start) / 1000000000.0f;
+    filter->priv->gpu_time += (end - start) * 1e-9;
 #endif
 }
 
@@ -162,6 +162,10 @@ static void ufo_filter_dispose(GObject *object)
 {
     UfoFilter *self = UFO_FILTER(object);
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(self);
+#ifdef WITH_PROFILING
+    g_message("Time for '%s'", priv->plugin_name);
+    g_message("  GPU: %.4lfs", priv->gpu_time);
+#endif
     if (priv->input_queue) {
         g_async_queue_unref(priv->input_queue);
         priv->input_queue = NULL;
