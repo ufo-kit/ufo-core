@@ -286,7 +286,7 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
      * using ethos_manager_get_plugin() when called requesting the first time
      * instead of creating a new one */
     UfoFilter *filter = UFO_FILTER(g_object_new(type_id, NULL));
-    ufo_filter_initialize(filter);
+    ufo_filter_initialize(filter, plugin_name);
     return filter;
 }
 

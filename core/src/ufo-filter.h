@@ -42,7 +42,7 @@ struct _UfoFilterClass {
     void (*process) (UfoFilter *filter);
 };
 
-void ufo_filter_initialize(UfoFilter *filter);
+void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
 void ufo_filter_process(UfoFilter *filter);
 
 UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter);

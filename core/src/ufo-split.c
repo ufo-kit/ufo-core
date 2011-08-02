@@ -102,10 +102,12 @@ static void ufo_split_dispose(GObject *object)
 {
     UfoSplit *self = UFO_SPLIT(object);
     g_list_foreach(self->priv->children, (GFunc) g_object_unref, NULL);
+    g_message("[split:%p] destroy queues", object);
     if (self->priv->input_queue != NULL)
         g_async_queue_unref(self->priv->input_queue);
     if (self->priv->output_queue != NULL)
         g_async_queue_unref(self->priv->output_queue);
+    g_message("[split:%p] done", object);
 
     G_OBJECT_CLASS(ufo_split_parent_class)->dispose(object);
 }

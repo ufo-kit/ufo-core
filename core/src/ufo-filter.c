@@ -26,6 +26,7 @@ struct _UfoFilterPrivate {
     GAsyncQueue         *input_queue;
     GAsyncQueue         *output_queue;
     cl_command_queue    command_queue;
+    gchar               *plugin_name;
     float cpu_time;
     float gpu_time;
 };
@@ -43,8 +44,10 @@ struct _UfoFilterPrivate {
  *
  * \param[in] filter A UfoFilter object
  */
-void ufo_filter_initialize(UfoFilter *filter)
+void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name)
 {
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
+    priv->plugin_name = g_strdup(plugin_name);
     if (UFO_FILTER_GET_CLASS(filter)->initialize != NULL)
         UFO_FILTER_GET_CLASS(filter)->initialize(filter);
 }
@@ -165,8 +168,16 @@ static void ufo_filter_finished(UfoElement *self)
 static void ufo_filter_dispose(GObject *object)
 {
     UfoFilter *self = UFO_FILTER(object);
-    g_async_queue_unref(self->priv->input_queue);
-    g_async_queue_unref(self->priv->output_queue);
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(self);
+    if (priv->input_queue) {
+        g_async_queue_unref(priv->input_queue);
+        priv->input_queue = NULL;
+    }
+    if (priv->output_queue) {
+        g_async_queue_unref(self->priv->output_queue);
+        priv->output_queue = NULL;
+    }
+    g_free(self->priv->plugin_name);
     G_OBJECT_CLASS(ufo_filter_parent_class)->dispose(object);
 }
 
