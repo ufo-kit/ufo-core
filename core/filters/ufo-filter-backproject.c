@@ -167,7 +167,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
                 0, NULL, &event);
 
         ufo_filter_account_gpu_time(filter, (void **) &event);
-        ufo_buffer_wait_on_event(slice, event);
+        clReleaseEvent(event);
         ufo_buffer_transfer_id(sinogram, slice);
 
         g_async_queue_push(output_queue, slice);

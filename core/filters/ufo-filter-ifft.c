@@ -141,6 +141,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                 0, NULL, &event);
 
         ufo_filter_account_gpu_time(filter, (void **) &event);
+        clReleaseEvent(event);
 
         clSetKernelArg(priv->pack_kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->pack_kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
@@ -152,8 +153,8 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                 0, NULL, &event);
 
         ufo_filter_account_gpu_time(filter, (void **) &event);
+        clReleaseEvent(event);
 
-        ufo_buffer_wait_on_event(sinogram, event);
         ufo_buffer_transfer_id(input, sinogram);
         ufo_resource_manager_release_buffer(manager, input);
 

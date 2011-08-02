@@ -156,10 +156,10 @@ static void ufo_filter_fft_process(UfoFilter *filter)
                 1, &wait_on_event, &event);
 
         /* XXX: FFT execution does _not_ return event */
-        /*ufo_filter_account_gpu_time(filter, &wait_on_event);*/
+        /*ufo_filter_account_gpu_time(filter, (void **) &event);*/
+        /*clReleaseEvent(event);*/
 
         ufo_buffer_transfer_id(input, fft_buffer);
-        ufo_buffer_wait_on_event(fft_buffer, event);
         ufo_resource_manager_release_buffer(manager, input);
 
         g_async_queue_push(output_queue, fft_buffer);

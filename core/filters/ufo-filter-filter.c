@@ -121,8 +121,8 @@ static void ufo_filter_filter_process(UfoFilter *filter)
                 0, NULL, &event);
 
         ufo_filter_account_gpu_time(filter, (void **) &event);
+        clReleaseEvent(event);
         
-        ufo_buffer_wait_on_event(input, event);
         g_async_queue_push(output_queue, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
