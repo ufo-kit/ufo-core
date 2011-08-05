@@ -1,7 +1,30 @@
 import pygtk
 pygtk.require('2.0')
 from gi.repository import GObject, Gtk, Gdk, Ufo, cairo
-import cairo
+
+
+class VisualElement(GObject.GObject):
+    """Wraps Ufo.Filter to make it clickable"""
+    __gsignals__ = { 'clicked' : (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, ()), }
+
+    def __init__(self, element):
+        GObject.GObject.__init__(self)
+
+        self.element = element
+        self.position = None
+        self.extents = None
+
+    def handle_click(self, cx, cy):
+        if not self.position or not self.extents:
+            return
+
+        x, y = self.position
+        width, height = self.extents
+        if cx >= x and cx <= x + width and cy >= y and cy <= y + width:
+            self.emit('clicked')
+            return True
+
+        return False
 
 
 class Board(Gtk.DrawingArea, GObject.GObject):
@@ -11,11 +34,29 @@ class Board(Gtk.DrawingArea, GObject.GObject):
     def __init__(self, graph):
         Gtk.DrawingArea.__init__(self)
         GObject.GObject.__init__(self)
-        self.set_events(self.get_events() | Gdk.EventMask.EXPOSURE_MASK)
+
+        self.set_events(self.get_events() | 
+                Gdk.EventMask.EXPOSURE_MASK |
+                Gdk.EventMask.BUTTON_PRESS_MASK)
         self.connect('expose-event', self.do_expose_event)
+        self.connect('button-press-event', self.on_button_press)
+
         self.graph = graph
         self.root = graph.get_root()
-        self.currently_selected = self.root
+        self.current_container = self.root
+        self.selected_element = None
+        self.elements = {}
+
+    def add_element(self, visual_element):
+        self.current_container.add_element(visual_element.element)
+        self.elements[visual_element.element] = visual_element
+
+    def on_button_press(self, board, event):
+        for element in self.elements.values():
+            if element.handle_click(event.button.x, event.button.y):
+                self.selected_element = element.element
+
+        self.queue_draw()
     
     def do_expose_event(self, area, event):
         area = event.expose.area
@@ -32,16 +73,30 @@ class Board(Gtk.DrawingArea, GObject.GObject):
         self.draw_sequence(cr, self.root, 30, 30)
 
     def draw_sequence(self, cr, sequence, x, y):
+        cr.select_font_face("Sans")
+        cr.set_font_size(12);
+
         for child in sequence.get_elements():
-            print child.get_plugin_name()
+            cr.set_source_rgb(0.1, 0.1, 0.1)
+            cr.move_to(x, y)
+            name = child.get_plugin_name()
+            cr.show_text(name)
 
-    @property
-    def selected_container(self):
-        return self.currently_selected
+            width, height, x_advance, y_advance = cr.text_extents(name)[2:]
+            try:
+                visual_element = self.elements[child]
+                visual_element.position = (x, y-height)
+                visual_element.extents = (width, height)
+            except KeyError:
+                pass 
 
-    @selected_container.setter
-    def selected_container(self, element):
-        self.currently_selected = element
+            if child == self.selected_element:
+                cr.set_source_rgb(1.0, 0.1, 0.1)
+
+            cr.rectangle(x, y-height, width, height)
+            cr.stroke()
+            x += x_advance
+            y += y_advance
 
 
 class Application(object):
@@ -51,6 +106,7 @@ class Application(object):
         self.builder.add_from_file("ui.xml")
         self.builder.connect_signals(self)
         self.element_store = self.builder.get_object("element_store")
+        self.property_store = self.builder.get_object("property_store")
         self.element_selection = self.builder.get_object("element_treeview").get_selection()
         self.graph = Ufo.Graph()
 
@@ -88,8 +144,26 @@ class Application(object):
         name = self.element_store.get_value(tree_iter, 1)
         if name not in ["Containers", "Filters"]:
             filter_object = self.graph.get_filter(name)
-            self.board.selected_container.add_element(filter_object)
+            self.__show_filter_properties(filter_object)
+
+            self.board.selected_element = filter_object
+
+            visual_filter = VisualElement(filter_object)
+            visual_filter.connect('clicked', self.on_element_clicked)
+            self.board.add_element(visual_filter)
             self.board.queue_draw()
+
+    def on_element_clicked(self, visual_element):
+        filter_object = visual_element.element
+        self.__show_filter_properties(filter_object)
+
+    def __show_filter_properties(self, filter_object):
+        self.property_store.clear()
+        props = GObject.list_properties(filter_object)
+        tree_iter = self.property_store.get_iter_first()[1]
+        for prop in props:
+            row = self.property_store.append([prop.name, str(prop.default_value)])
+            self.property_store.set_value(row, 1, str(prop.default_value))
 
     def run(self, *args):
         self.builder.get_object("window1").show()

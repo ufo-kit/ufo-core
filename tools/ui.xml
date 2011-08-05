@@ -2,19 +2,19 @@
 <interface>
   <requires lib="gtk+" version="2.16"/>
   <!-- interface-naming-policy project-wide -->
-  <object class="GtkListStore" id="property_store">
-    <columns>
-      <!-- column-name property_name -->
-      <column type="gchararray"/>
-      <!-- column-name property_value -->
-      <column type="gchararray"/>
-    </columns>
-  </object>
   <object class="GtkTreeStore" id="element_store">
     <columns>
       <!-- column-name element_type -->
       <column type="gpointer"/>
       <!-- column-name element_name -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkListStore" id="property_store">
+    <columns>
+      <!-- column-name property_name -->
+      <column type="gchararray"/>
+      <!-- column-name property_value -->
       <column type="gchararray"/>
     </columns>
   </object>
@@ -210,9 +210,7 @@
                               <object class="GtkTreeViewColumn" id="treeviewcolumn1">
                                 <property name="title">Element</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="namecell">
-                                    <signal name="edited" handler="on_element_clicked"/>
-                                  </object>
+                                  <object class="GtkCellRendererText" id="namecell"/>
                                   <attributes>
                                     <attribute name="text">1</attribute>
                                   </attributes>
