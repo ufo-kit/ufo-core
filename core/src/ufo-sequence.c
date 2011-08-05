@@ -107,6 +107,17 @@ static void ufo_sequence_add_element(UfoContainer *container, UfoElement *child)
     g_object_ref(child);
 }
 
+/**
+ * ufo_sequence_get_elements:
+ * 
+ * Return value: (element-type UfoElement) (transfer none): list of children.
+ */
+static GList *ufo_sequence_get_elements(UfoContainer *container)
+{
+    UfoSequence *self = UFO_SEQUENCE(container);
+    return self->priv->children;
+}
+
 static gpointer ufo_sequence_process_thread(gpointer data)
 {
     ufo_element_process(UFO_ELEMENT(data));
@@ -202,6 +213,7 @@ static void ufo_sequence_class_init(UfoSequenceClass *klass)
     gobject_class->dispose = ufo_sequence_dispose;
     gobject_class->finalize = ufo_sequence_finalize;
     container_class->add_element = ufo_sequence_add_element;
+    container_class->get_elements = ufo_sequence_get_elements;
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoSequencePrivate));

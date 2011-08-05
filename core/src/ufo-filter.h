@@ -49,6 +49,7 @@ UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter);
 void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer);
 void ufo_filter_account_gpu_time(UfoFilter *filter, void **event);
 float ufo_filter_get_gpu_time(UfoFilter *filter);
+const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);
 
 
 GType ufo_filter_get_type(void);

@@ -42,6 +42,17 @@ void ufo_container_add_element(UfoContainer *container, UfoElement *element)
     UFO_CONTAINER_GET_CLASS(container)->add_element(container, element);
 }
 
+/**
+ * ufo_container_get_elements:
+ * 
+ * Return value: (element-type UfoElement) (transfer none): list of children.
+ */
+GList *ufo_container_get_elements(UfoContainer *container)
+{
+    return UFO_CONTAINER_GET_CLASS(container)->get_elements(container);
+}
+    
+
 /*
  * Type/Class Initialization
  */

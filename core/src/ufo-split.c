@@ -139,6 +139,17 @@ static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
     ufo_element_set_command_queue(child, self->priv->command_queues[num_children % self->priv->num_queues]);
 }
 
+/**
+ * ufo_split_get_elements:
+ * 
+ * Return value: (element-type UfoElement) (transfer none): list of children.
+ */
+static GList *ufo_split_get_elements(UfoContainer *container)
+{
+    UfoSplit *self = UFO_SPLIT(container);
+    return self->priv->children;
+}
+
 static gpointer ufo_split_process_thread(gpointer data)
 {
     ufo_element_process(UFO_ELEMENT(data));
@@ -315,6 +326,7 @@ static void ufo_split_class_init(UfoSplitClass *klass)
     gobject_class->get_property = ufo_split_get_property;
     gobject_class->dispose = ufo_split_dispose;
     container_class->add_element = ufo_split_add_element;
+    container_class->get_elements = ufo_split_get_elements;
 
     /* install properties */
     GParamSpec *pspec;

@@ -98,6 +98,11 @@ float ufo_filter_get_gpu_time(UfoFilter *filter)
     return filter->priv->gpu_time;
 }
 
+const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
+{
+    return filter->priv->plugin_name;
+}
+
 /* 
  * Virtual Methods
  */
