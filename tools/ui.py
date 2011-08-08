@@ -108,10 +108,14 @@ class Application(object):
         self.element_store = self.builder.get_object("element_store")
         self.property_store = self.builder.get_object("property_store")
         self.element_selection = self.builder.get_object("element_treeview").get_selection()
+        self.property_selection = self.builder.get_object("property_treeview").get_selection()
+        value_cell = self.builder.get_object("value_cell")
+        value_cell.set_property("editable", True)
+
         self.graph = Ufo.Graph()
 
         self.__fill_elements()
-        self.__create_canvas()
+        self.__create_board()
 
     def __fill_elements(self):
         self.filter_names = self.graph.get_filter_names()
@@ -127,12 +131,20 @@ class Application(object):
             child = self.element_store.prepend(self.filter_element)
             self.element_store.set_value(child, 1, filter_name)
 
-    def __create_canvas(self):
+    def __create_board(self):
         self.board = Board(self.graph)
         self.board.show()
         hpane = self.builder.get_object("hpane")
         scrolled_window = hpane.get_child1()
         scrolled_window.add(self.board)
+
+    def __show_filter_properties(self, filter_object):
+        self.property_store.clear()
+        props = GObject.list_properties(filter_object)
+        for prop in props:
+            prop_value = str(filter_object.get_property(prop.name))
+            row = self.property_store.append([prop.name, prop_value])
+            self.property_store.set_value(row, 1, prop_value)
 
     def on_button_add_element_clicked(self, data):
         rows = self.element_selection.get_selected_rows()[0]
@@ -157,13 +169,14 @@ class Application(object):
         filter_object = visual_element.element
         self.__show_filter_properties(filter_object)
 
-    def __show_filter_properties(self, filter_object):
-        self.property_store.clear()
-        props = GObject.list_properties(filter_object)
-        tree_iter = self.property_store.get_iter_first()[1]
-        for prop in props:
-            row = self.property_store.append([prop.name, str(prop.default_value)])
-            self.property_store.set_value(row, 1, str(prop.default_value))
+    def on_value_cell_edited(self, cell_renderer, position, new_value):
+        rows = self.property_selection.get_selected_rows()[0]
+        tree_path = rows[0]
+        tree_iter = self.property_store.get_iter(tree_path)[1]
+        prop_name = self.property_store.get_value(tree_iter, 0)
+        # Update objects property
+        self.board.selected_element.set_property(prop_name, new_value)
+        self.__show_filter_properties(self.board.selected_element)
 
     def run(self, *args):
         self.builder.get_object("window1").show()

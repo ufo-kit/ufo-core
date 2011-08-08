@@ -283,7 +283,9 @@
                           <object class="GtkTreeViewColumn" id="treeviewcolumn3">
                             <property name="title">Value</property>
                             <child>
-                              <object class="GtkCellRendererText" id="value_cell"/>
+                              <object class="GtkCellRendererText" id="value_cell">
+                                <signal name="edited" handler="on_value_cell_edited"/>
+                              </object>
                               <attributes>
                                 <attribute name="text">1</attribute>
                               </attributes>
