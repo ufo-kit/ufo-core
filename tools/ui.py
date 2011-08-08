@@ -77,18 +77,26 @@ class Board(Gtk.DrawingArea, GObject.GObject):
         cr.set_font_size(12);
 
         for child in sequence.get_elements():
+            # FIXME: better use a wrapper around Sequence
+            if isinstance(child, Ufo.Sequence):
+                self.draw_sequence(cr, child, x, y)
+                return
+
             cr.set_source_rgb(0.1, 0.1, 0.1)
             cr.move_to(x, y)
             name = child.get_plugin_name()
             cr.show_text(name)
 
             width, height, x_advance, y_advance = cr.text_extents(name)[2:]
+            ve = None
             try:
-                visual_element = self.elements[child]
-                visual_element.position = (x, y-height)
-                visual_element.extents = (width, height)
+                ve = self.elements[child]
             except KeyError:
-                pass 
+                ve = VisualElement(child)
+                self.elements[child] = ve
+
+            ve.position = (x, y-height)
+            ve.extents = (width, height)
 
             if child == self.selected_element:
                 cr.set_source_rgb(1.0, 0.1, 0.1)
@@ -165,6 +173,10 @@ class Application(object):
                 value_widget.set_range(prop.minimum, prop.maximum)
                 value_widget.set_value(value)
                 value_widget.connect('value-changed', self.on_property_float_change, (filter_object, prop.name))
+            elif type_name == 'gboolean':
+                value_widget = Gtk.CheckButton()
+                value_widget.set_active(value)
+                value_widget.connect('toggled', self.on_property_boolean_change, (filter_object, prop.name))
 
             value_widget.show()
             hbox = Gtk.HBox()
@@ -176,6 +188,30 @@ class Application(object):
             hbox.show()
             vbox.pack_end_defaults(hbox)
         vbox.show()
+
+    def __connect_new_element(self, element):
+        visual_filter = VisualElement(element)
+        visual_filter.connect('clicked', self.on_element_clicked)
+        self.board.add_element(visual_filter)
+
+    def __connect_elements(self, container):
+        for child in container.get_elements():
+            if isinstance(child, Ufo.Sequence):
+                self.__connect_elements(child)
+                return
+            self.__connect_new_element(child)
+
+    def on_open(self, widget, user_data=None):
+        dialog = Gtk.FileChooserDialog(Gtk.FileChooserAction.OPEN)
+        dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK, Gtk.STOCK_CLOSE, Gtk.ResponseType.CLOSE)
+        file_filter = Gtk.FileFilter()
+        file_filter.set_name("JSON Configuration (*.json)")
+        file_filter.add_pattern('*.json')
+        dialog.add_filter(file_filter)
+        if dialog.run() == Gtk.ResponseType.OK:
+            self.graph.read_from_json(dialog.get_filename())
+            self.__connect_elements(self.board.root)
+        dialog.destroy()
 
     def on_property_delete_text(self, widget, start_pos, end_pos, user_data):
         filter_object, prop_name = user_data
@@ -193,6 +229,10 @@ class Application(object):
         filter_object, prop_name = user_data
         filter_object.set_property(prop_name, widget.get_value())
 
+    def on_property_boolean_change(self, widget, user_data):
+        filter_object, prop_name = user_data
+        filter_object.set_property(prop_name, widget.get_active())
+
     def on_button_add_element_clicked(self, data):
         rows = self.element_selection.get_selected_rows()[0]
         if not rows:
@@ -204,12 +244,8 @@ class Application(object):
         if name not in ["Containers", "Filters"]:
             filter_object = self.graph.get_filter(name)
             self.__show_filter_properties(filter_object)
-
+            self.__connect_new_element(filter_object)
             self.board.selected_element = filter_object
-
-            visual_filter = VisualElement(filter_object)
-            visual_filter.connect('clicked', self.on_element_clicked)
-            self.board.add_element(visual_filter)
             self.board.queue_draw()
 
     def on_element_clicked(self, visual_element):
