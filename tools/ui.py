@@ -17,13 +17,11 @@ class VisualElement(GObject.GObject):
     def handle_click(self, cx, cy):
         if not self.position or not self.extents:
             return
-
         x, y = self.position
         width, height = self.extents
         if cx >= x and cx <= x + width and cy >= y and cy <= y + width:
             self.emit('clicked')
             return True
-
         return False
 
 
@@ -55,6 +53,7 @@ class Board(Gtk.DrawingArea, GObject.GObject):
         for element in self.elements.values():
             if element.handle_click(event.button.x, event.button.y):
                 self.selected_element = element.element
+                break
 
         self.queue_draw()
     
@@ -101,9 +100,10 @@ class Board(Gtk.DrawingArea, GObject.GObject):
             if child == self.selected_element:
                 cr.set_source_rgb(1.0, 0.1, 0.1)
 
-            cr.rectangle(x, y-height, width, height)
+            cr.set_line_width(2)
+            cr.rectangle(x-4, y-height-4, width+8, height+8)
             cr.stroke()
-            x += x_advance
+            x += width + 16 
             y += y_advance
 
 
@@ -143,50 +143,59 @@ class Application(object):
         scrolled_window.add_with_viewport(self.board)
 
     def __show_filter_properties(self, filter_object):
+        """List all properties of filter_object in a new Gtk.VBox. Each property
+        is listed as a Gtk.HBox with a Label (derived from the property name)
+        and a widget depending on the type of the property (Gtk.Entry for simple
+        text and so on...)."""
         scroll_container = self.builder.get_object("scrolled_properties")
+
+        # Destroy old property view
         vbox = scroll_container.get_child()
         if vbox is not None:
             scroll_container.remove(vbox)
             vbox.unref()
         vbox = Gtk.VBox()
         scroll_container.add_with_viewport(vbox)
+
         for prop in GObject.list_properties(filter_object):
             # generate widget according to type
-            type_name = prop.value_type.name
             value_widget = None
             value = filter_object.get_property(prop.name)
+            type_name = prop.value_type.name
+            pair = (filter_object, prop.name)
             if type_name == 'gchararray':
                 value_widget = Gtk.Entry()
                 value_widget.set_text(str(value))
-                value_widget.connect('delete-text', self.on_property_delete_text, (filter_object, prop.name))
-                value_widget.connect('insert-text', self.on_property_insert_text, (filter_object, prop.name))
+                value_widget.connect('delete-text', self.on_property_delete_text, pair)
+                value_widget.connect('insert-text', self.on_property_insert_text, pair)
             elif type_name == 'gint':
                 value_widget = Gtk.SpinButton()
                 value_widget.set_increments(1, 5)
                 value_widget.set_range(prop.minimum, prop.maximum)
                 value_widget.set_value(value)
-                value_widget.connect('value-changed', self.on_property_int_change, (filter_object, prop.name))
+                value_widget.connect('value-changed', self.on_property_int_change, pair)
             elif type_name == 'gdouble':
                 value_widget = Gtk.SpinButton()
                 value_widget.set_increments(0.01, 0.5)
                 value_widget.set_digits(5)
                 value_widget.set_range(prop.minimum, prop.maximum)
                 value_widget.set_value(value)
-                value_widget.connect('value-changed', self.on_property_float_change, (filter_object, prop.name))
+                value_widget.connect('value-changed', self.on_property_float_change, pair)
             elif type_name == 'gboolean':
                 value_widget = Gtk.CheckButton()
                 value_widget.set_active(value)
-                value_widget.connect('toggled', self.on_property_boolean_change, (filter_object, prop.name))
+                value_widget.connect('toggled', self.on_property_boolean_change, pair)
 
             value_widget.show()
             hbox = Gtk.HBox()
             label = Gtk.Label()
             label.set_label(prop.name + ":")
             label.show()
-            hbox.pack_start_defaults(label)
-            hbox.pack_end_defaults(value_widget)
+            hbox.pack_start(label, False, True, 6)
+            hbox.pack_start(value_widget, True, True, 6)
             hbox.show()
-            vbox.pack_end_defaults(hbox)
+            vbox.pack_start(hbox, False, False, 6)
+
         vbox.show()
 
     def __connect_new_element(self, element):
