@@ -1,0 +1,36 @@
+{
+    "type" : "sequence",
+    "elements" : [
+        { "type" : "filter", "plugin" : "reader",
+            "properties" : {
+                "path" : "/home/matthias/data/bubbles/radio",
+                "count" : 700
+            }
+        },
+        { "type" : "filter", "plugin" : "normalize" },
+        { "type" : "filter", "plugin" : "cl",
+            "properties" : {
+                "file" : "kernels.cl",
+                "kernel" : "sub_squared_inter",
+                "inplace" : false,
+                "interframe" : true
+            }
+        },
+        { "type" : "filter", "plugin" : "cl",
+            "properties" : {
+                "file" : "kernels.cl",
+                "kernel" : "binarize_inplace",
+                "inplace" : true,
+                "interframe" : false
+            }
+        },
+        { "type" : "filter", "plugin" : "cvshow",
+            "properties" : { "show-histogram" : true }},
+        { "type" : "filter", "plugin" : "writer",
+            "properties" : { 
+                "path" : "/home/matthias/tmp",
+                "prefix" : "diff"
+            }
+        }
+    ]
+}
