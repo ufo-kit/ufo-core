@@ -99,11 +99,12 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
             cvClearHist(hist);
             cvShowImage("Histogram", img_hist);
         }
-        cvWaitKey(10);
+        cvWaitKey(50);
         
         g_async_queue_push(output_queue, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
+    cvWaitKey(10000);
     cvDestroyAllWindows();
 
     g_async_queue_push(output_queue, input);

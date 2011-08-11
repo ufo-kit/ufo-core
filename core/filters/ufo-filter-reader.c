@@ -13,6 +13,7 @@ struct _UfoFilterReaderPrivate {
     gchar *path;
     gchar *prefix;
     gint count;
+    gint nth;
     GList *filenames;
 };
 
@@ -28,6 +29,7 @@ enum {
     PROP_PATH,
     PROP_PREFIX,
     PROP_COUNT,
+    PROP_NTH,
     N_PROPERTIES
 };
 
@@ -214,6 +216,9 @@ static void ufo_filter_reader_set_property(GObject *object,
         case PROP_COUNT:
             filter->priv->count = g_value_get_int(value);
             break;
+        case PROP_NTH:
+            filter->priv->nth = g_value_get_int(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -236,6 +241,9 @@ static void ufo_filter_reader_get_property(GObject *object,
             break;
         case PROP_COUNT:
             g_value_set_int(value, filter->priv->count);
+            break;
+        case PROP_NTH:
+            g_value_set_int(value, filter->priv->nth);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -262,7 +270,12 @@ static void ufo_filter_reader_process(UfoFilter *self)
     guint32 width, height;
     guint16 bits_per_sample, samples_per_pixel;
 
-    GList *filename = g_list_first(priv->filenames);
+    GList *filename = NULL;
+    if ((priv->nth > -1) && (priv->nth < g_list_length(priv->filenames)))
+        filename = g_list_nth(priv->filenames, priv->nth);
+    else
+        filename = g_list_first(priv->filenames);
+
     for (guint i = 0; i < max_count && filename != NULL; i++) {
         void *buffer;
         if (g_str_has_suffix(filename->data, "tif"))
@@ -334,9 +347,19 @@ static void ufo_filter_reader_class_init(UfoFilterReaderClass *klass)
         -1,     /* default */
         G_PARAM_READWRITE);
 
+    reader_properties[PROP_NTH] =
+        g_param_spec_int("nth",
+        "Start from nth file",
+        "Start from nth file or first if -1",
+        -1,     /* minimum */
+        8192,   /* maximum */
+        -1,     /* default */
+        G_PARAM_READWRITE);
+
     g_object_class_install_property(gobject_class, PROP_PATH, reader_properties[PROP_PATH]);
     g_object_class_install_property(gobject_class, PROP_PREFIX, reader_properties[PROP_PREFIX]);
     g_object_class_install_property(gobject_class, PROP_COUNT, reader_properties[PROP_COUNT]);
+    g_object_class_install_property(gobject_class, PROP_NTH, reader_properties[PROP_NTH]);
 
     /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterReaderPrivate));
@@ -348,6 +371,7 @@ static void ufo_filter_reader_init(UfoFilterReader *self)
     self->priv->path = g_strdup(".");
     self->priv->prefix = NULL;
     self->priv->count = -1;
+    self->priv->nth = -1;
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
