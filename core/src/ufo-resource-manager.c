@@ -340,6 +340,37 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, c
     return kernel;
 }
 
+void ufo_resource_manager_call(UfoResourceManager *resource_manager, 
+        const gchar *kernel_name, 
+        void *command_queue,
+        uint32_t work_dim,
+        size_t *global_work_size,
+        size_t *local_work_size,
+        ...)
+{
+    cl_kernel kernel = (cl_kernel) g_hash_table_lookup(resource_manager->priv->opencl_kernels, kernel_name);
+    if (kernel == NULL)
+        return;
+
+    cl_uint num_args = 0;
+    clGetKernelInfo(kernel, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &num_args, NULL);
+    void *ptr = NULL;
+    size_t size = 0;
+    va_list ap;
+    va_start(ap, local_work_size);
+    g_message("parsing arguments");
+    for (int i = 0; i < num_args; i++) {
+        size = va_arg(ap, size_t);
+        ptr = va_arg(ap, void *); 
+        g_message("setting %p with size %i", ptr, size);
+        clSetKernelArg(kernel, i, size, ptr);
+    }
+    va_end(ap);
+    clEnqueueNDRangeKernel(command_queue, kernel,
+        work_dim, NULL, global_work_size, local_work_size,
+        0, NULL, NULL);
+}
+
 /**
  * \brief Return an OpenCL context object
  *
