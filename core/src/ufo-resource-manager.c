@@ -222,9 +222,15 @@ gboolean ufo_resource_manager_add_program(
 {
     UfoResourceManagerPrivate *priv = resource_manager->priv;
 
+    /* programs might be added multiple times if this is not locked */
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
+    g_static_mutex_lock(&mutex);
+
     /* Don't process the kernel file again, if already load */
-    if (g_list_find_custom(priv->opencl_files, filename, (GCompareFunc) g_strcmp0))
+    if (g_list_find_custom(priv->opencl_files, filename, (GCompareFunc) g_strcmp0)) {
+        g_static_mutex_unlock(&mutex);
         return TRUE;
+    }
 
     gchar *buffer = resource_manager_load_opencl_program(filename);
     if (buffer == NULL) {
@@ -233,6 +239,7 @@ gboolean ufo_resource_manager_add_program(
                 UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
                 "Failed to open file: %s",
                 filename);
+        g_static_mutex_unlock(&mutex);
         return FALSE;
     }
     priv->opencl_files = g_list_append(priv->opencl_files, g_strdup(filename));
@@ -246,6 +253,7 @@ gboolean ufo_resource_manager_add_program(
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
                 "Failed to create OpenCL program: %s", opencl_map_error(err));
+        g_static_mutex_unlock(&mutex);
         g_free(buffer);
         return FALSE;
     }
@@ -284,6 +292,7 @@ gboolean ufo_resource_manager_add_program(
         g_print("\n=== Build log for %s===%s\n\n", filename, log);
         g_free(log);
         g_free(buffer);
+        g_static_mutex_unlock(&mutex);
         return FALSE;
     }
     g_free(log);
@@ -311,6 +320,7 @@ gboolean ufo_resource_manager_add_program(
         g_hash_table_insert(priv->opencl_kernels, kernel_name, kernels[i]);
     }
 
+    g_static_mutex_unlock(&mutex);
     g_free(buffer);
     return TRUE;
 }
