@@ -1,0 +1,26 @@
+{
+    "type" : "sequence",
+    "elements" : [
+        { "type" : "filter", "plugin" : "reader",
+            "properties" : {
+                "path" : "/home/matthias/data/bug/projections",
+                "count" : 20
+            }
+        },
+        { "type" : "filter", "plugin" : "normalize" },
+        { "type" : "filter", "plugin" : "cl",
+            "properties" : {
+                "file" : "nlm.cl",
+                "kernel" : "nlm",
+                "inplace" : false,
+                "interframe" : false
+            }
+        },
+        { "type" : "filter", "plugin" : "writer",
+            "properties" : {
+                "path" : "/home/matthias/tmp",
+                "prefix" : "bug-denoised"
+            }
+        }
+    ]
+}
