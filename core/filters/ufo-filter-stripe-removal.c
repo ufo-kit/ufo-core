@@ -74,9 +74,11 @@ static void ufo_filter_stripe_removal_process(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    gint32 dimensions[4] = { 1, 1, 1, 1 };
     while (!ufo_buffer_is_finished(input)) {
-        gint32 width, height;
-        ufo_buffer_get_dimensions(input, &width, &height);
+        ufo_buffer_get_dimensions(input, dimensions);
+        const gint32 width = dimensions[0];
+        const gint32 height = dimensions[1];
         float *data = ufo_buffer_get_cpu_data(input, command_queue);
 
         const int u_cutoff = 4;

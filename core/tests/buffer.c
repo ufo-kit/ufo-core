@@ -85,12 +85,14 @@ static void test_buffer_dimensions(void)
 {
     const int in_width = 123;
     const int in_height = 321;
+    gint32 in_dimensions[4] = { 123, 321, 1, 1 };
 
-    UfoBuffer *buffer = ufo_buffer_new(in_width, in_height);
-    gint32 out_width, out_height;
-    ufo_buffer_get_dimensions(buffer, &out_width, &out_height);
-    g_assert_cmpuint(in_width, ==, out_width);
-    g_assert_cmpuint(in_height, ==, out_height);
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_2D, in_dimensions);
+    gint32 out_dimensions[4];
+    ufo_buffer_get_dimensions(buffer, out_dimensions);
+
+    for (int i = 0; i < 4; i++)
+        g_assert_cmpuint(in_dimensions[i], ==, out_dimensions[i]);
     g_object_unref(buffer);
 }
 

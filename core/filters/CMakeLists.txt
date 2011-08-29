@@ -10,14 +10,12 @@ set(ufofilter_SRCS
     ufo-filter-hist.c
     ufo-filter-normalize.c
     ufo-filter-null.c
-    ufo-filter-scale.c
     ufo-filter-sino-generator.c
     ufo-filter-stripe-removal.c
     )
 
 set(ufofilter_KERNELS
     backproject.cl
-    scale.cl
     fft.cl
     filter.cl
     )

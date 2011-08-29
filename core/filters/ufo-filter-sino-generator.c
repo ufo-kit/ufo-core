@@ -58,19 +58,24 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
     /* We pop the very first image, to determine the size w*h of a projection.
      * We then have to allocate h sinogram buffers with a height of
      * num_projections and width w */
-    gint32 width, height, sino_width;
+    gint32 width, height, sino_width, dimensions[4];
     guint received = 1;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    ufo_buffer_get_dimensions(input, &width, &height);
+    ufo_buffer_get_dimensions(input, dimensions);
+    width = dimensions[0];
+    height = dimensions[1];
+
     sino_width = width;
     const gint sino_height = priv->num_projections;
     const gint num_sinos = height;
     const gsize bytes_per_line = sino_width * sizeof(float);
+    dimensions[0] = sino_width;
+    dimensions[1] = sino_height;
 
     UfoBuffer **sinograms = g_malloc0(sizeof(UfoBuffer*) * num_sinos);
     for (gint i = 0; i < num_sinos; i++)
         sinograms[i] = ufo_resource_manager_request_buffer(manager,
-                sino_width, sino_height, NULL, FALSE);
+                UFO_BUFFER_2D, dimensions, NULL, FALSE);
 
     /* First step: collect all projections and build sinograms */
     while ((received < priv->num_projections) || (!ufo_buffer_is_finished(input))) {

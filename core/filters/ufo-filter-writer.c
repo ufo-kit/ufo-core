@@ -129,9 +129,11 @@ static void ufo_filter_writer_process(UfoFilter *self)
     gint id = -1, current_frame = 0;
 
     GTimer *timer = g_timer_new();
+    gint32 dimensions[4] = { 1, 1, 1, 1 };
     while (!ufo_buffer_is_finished(input)) {
-        gint32 width, height;
-        ufo_buffer_get_dimensions(input, &width, &height);
+        ufo_buffer_get_dimensions(input, dimensions);
+        const gint32 width = dimensions[0];
+        const gint32 height = dimensions[1];
         g_object_get(input, "id", &id, NULL);
         if (id == -1)
             id = current_frame++;

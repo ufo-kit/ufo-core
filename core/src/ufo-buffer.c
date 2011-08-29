@@ -56,7 +56,7 @@ struct _UfoBufferPrivate {
 
 static void buffer_set_dimensions(UfoBufferPrivate *priv, UfoStructure structure, gint32 dimensions[4])
 {
-    int num_elements = 0;
+    int num_elements = 1;
     for (int i = 0; i < 4; i++) {
         priv->dimensions[i] = dimensions[i];
         num_elements *= dimensions[i];
@@ -508,19 +508,19 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
             G_PARAM_READABLE);
 
     buffer_properties[PROP_STRUCTURE] = 
-        g_param_spec_flags("structure",
+        g_param_spec_enum("structure",
             "Spatial structure of the buffer",
             "Spatial structure of the buffer",
             UFO_TYPE_STRUCTURE,
-            UFO_BUFFER_READWRITE,
+            UFO_BUFFER_2D,
             G_PARAM_READWRITE);
 
     buffer_properties[PROP_DOMAIN] = 
-        g_param_spec_flags("domain",
+        g_param_spec_enum("domain",
             "Domain of the buffer",
             "Domain of the buffer, either spatial or frequential",
             UFO_TYPE_DOMAIN,
-            UFO_BUFFER_READWRITE,
+            UFO_BUFFER_SPACE,
             G_PARAM_READWRITE);
 
     g_object_class_install_property(gobject_class, PROP_ID, buffer_properties[PROP_ID]);
@@ -553,7 +553,7 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->finished = FALSE;
     priv->access = UFO_BUFFER_READWRITE;
     priv->domain = UFO_BUFFER_SPACE;
-    priv->structure = UFO_BUFFER_1D;
+    priv->structure = UFO_BUFFER_2D;
     priv->wait_events = g_queue_new();
     priv->time_upload = 0;
     priv->time_download = 0;
