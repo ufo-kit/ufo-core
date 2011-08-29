@@ -24,6 +24,8 @@ set(ufocore_HDRS
     )
 
 # --- Find packages and libraries ---------------------------------------------
+find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
+
 pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
 
 set(ufocore_LIBS
@@ -38,6 +40,29 @@ set(ufocore_LIBS
 # --- Generate config.h -------------------------------------------------------
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+  COMMAND ${GLIB2_MKENUMS}
+  ARGS
+    --template ufo-enums.h.template
+    ${ufocore_HDRS} > ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS ${ufocore_HDRS}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.h.template
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c
+  COMMAND ${GLIB2_MKENUMS}
+  ARGS
+    --template ufo-enums.c.template
+    ${ufocore_HDRS} > ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS ${ufocore_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+          ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.c.template
+)
+
+set(ufocore_SRCS ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 # --- Target ------------------------------------------------------------------
 set(LIB_INSTALL_DIR "lib${LIB_SUFFIX}")
@@ -54,7 +79,10 @@ install(TARGETS ufo
     ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
     LIBRARY DESTINATION ${LIB_INSTALL_DIR})
 
-install(FILES ${ufocore_HDRS} DESTINATION include/ufo)
+install(FILES 
+    ${ufocore_HDRS} 
+    ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+    DESTINATION include/ufo)
 
 # --- install pkg-config file
 set(prefix      ${CMAKE_INSTALL_PREFIX})

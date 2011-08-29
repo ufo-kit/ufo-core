@@ -91,10 +91,12 @@ static void ufo_filter_fft_process(UfoFilter *filter)
     int err = CL_SUCCESS;
     clFFT_Plan fft_plan = NULL;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    gint32 dimensions[4] = { 1, 1, 1, 1 };
 
     while (!ufo_buffer_is_finished(input)) {
-        gint32 width, height;
-        ufo_buffer_get_dimensions(input, &width, &height);
+        ufo_buffer_get_dimensions(input, dimensions);
+        const gint32 width = dimensions[0];
+        const gint32 height = dimensions[1];
 
         /* Check if we can re-use the old FFT plan */
         if (priv->fft_size.x != pow2round(width)) {
@@ -116,14 +118,9 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         /* 1. Spread data for interleaved FFT */
         UfoBuffer *fft_buffer = NULL;
         
-        if (priv->fft_dimensions == clFFT_1D)
-            fft_buffer = ufo_resource_manager_request_buffer(manager,
-                    2 * priv->fft_size.x, /* what to do in the multi-dimensional case? */
-                    height, NULL, FALSE);
-        else
-            fft_buffer = ufo_resource_manager_request_buffer(manager,
-                    2 * priv->fft_size.x, 
-                    priv->fft_size.y, NULL, FALSE);
+        dimensions[0] = 2 * priv->fft_size.x;
+        dimensions[1] = priv->fft_dimensions == clFFT_1D ? height : priv->fft_size.y;
+        fft_buffer = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, FALSE);
 
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(fft_buffer, command_queue);
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);

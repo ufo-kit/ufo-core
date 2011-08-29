@@ -41,14 +41,28 @@ struct _UfoBufferClass {
 };
 
 typedef enum {
-    UFO_BUFFER_READABLE  = 1 << 1,
-    UFO_BUFFER_WRITEABLE = 1 << 2,
-    UFO_BUFFER_READWRITE = (1 << 1) | (1 << 2),
-} UfoBufferAccess;
+    UFO_BUFFER_READABLE  = 1 << 0,
+    UFO_BUFFER_WRITEABLE = 1 << 1,
+    UFO_BUFFER_READWRITE = (UFO_BUFFER_READABLE | UFO_BUFFER_WRITEABLE)
+} UfoAccess;
 
-UfoBuffer *ufo_buffer_new(gint32 width, gint32 height);
+typedef enum {
+    UFO_BUFFER_1D,
+    UFO_BUFFER_2D,
+    UFO_BUFFER_3D,
+    UFO_BUFFER_4D
+} UfoStructure;
 
-void ufo_buffer_get_dimensions(UfoBuffer *self, gint32 *width, gint32 *height);
+typedef enum {
+    UFO_BUFFER_SPACE,
+    UFO_BUFFER_FREQUENCY /**< implies interleaved complex numbers */
+} UfoDomain;
+
+UfoBuffer *ufo_buffer_new(UfoStructure structure, gint32 dimensions[4]);
+UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue);
+
+gsize ufo_buffer_get_size(UfoBuffer *buffer);
+void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions);
 
 void ufo_buffer_reinterpret(UfoBuffer *self, gsize source_depth, gsize n);
 void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data, gsize n, GError **error);

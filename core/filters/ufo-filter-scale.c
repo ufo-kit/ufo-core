@@ -69,12 +69,13 @@ static void ufo_filter_scale_process(UfoFilter *filter)
 
     gint32 width, height;
     UfoBuffer *buffer = (UfoBuffer *) g_async_queue_pop(input_queue);
+    gint32 dimensions[4];
     size_t global_work_size[2];
     float scale = (float) priv->scale;
 
     while (!ufo_buffer_is_finished(buffer)) {
         if (priv->kernel != NULL) {
-            ufo_buffer_get_dimensions(buffer, &width, &height);
+            ufo_buffer_get_dimensions(buffer, dimensions);
             global_work_size[0] = (size_t) width;
             global_work_size[1] = (size_t) height;
 

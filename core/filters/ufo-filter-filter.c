@@ -46,8 +46,10 @@ static UfoBuffer *filter_create_data(UfoFilterFilterPrivate *priv, guint32 width
         filter[k] = filter[width - k];
         filter[k + 1] = filter[width - k + 1];
     }
+
+    gint32 dimensions[4] = { width, 1, 1, 1 };
     UfoBuffer *filter_buffer = ufo_resource_manager_request_buffer(
-            ufo_resource_manager(), width, 1, filter, TRUE);
+            ufo_resource_manager(), UFO_BUFFER_1D, dimensions, filter, TRUE);
     g_free(filter);
     return filter_buffer;
 }
@@ -99,20 +101,18 @@ static void ufo_filter_filter_process(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    gint32 width, height;
-    ufo_buffer_get_dimensions(input, &width, &height); 
+    gint32 dimensions[4];
+    ufo_buffer_get_dimensions(input, dimensions);
 
-    UfoBuffer *filter_buffer = filter_create_data(priv, width);
+    UfoBuffer *filter_buffer = filter_create_data(priv, dimensions[0]);
     cl_mem filter_mem = (cl_mem) ufo_buffer_get_gpu_data(filter_buffer, command_queue);
 
     while (!ufo_buffer_is_finished(input)) {
         /* FIXME: width might change */
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
         cl_event event;
-        size_t global_work_size[2];
+        size_t global_work_size[2] = {dimensions[0], dimensions[1]};
 
-        global_work_size[0] = width; /* this is twice the FFT size */
-        global_work_size[1] = height;
         clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &filter_mem);
         clEnqueueNDRangeKernel(command_queue,

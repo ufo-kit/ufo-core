@@ -62,19 +62,19 @@ static void process_regular(UfoElement *element,
 
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
-    gint32 width, height;
 
     UfoBuffer *frame = (UfoBuffer *) g_async_queue_pop(input_queue);
 
     cl_int clerror = CL_SUCCESS;
     cl_event event;
+    gint32 dimensions[4] = { 1, 1, 1, 1 };
 
     while (!ufo_buffer_is_finished(frame)) { 
-        ufo_buffer_get_dimensions(frame, &width, &height);
-        global_work_size[0] = (size_t) width;
-        global_work_size[1] = (size_t) height;
+        ufo_buffer_get_dimensions(frame, dimensions);
+        global_work_size[0] = (size_t) dimensions[0];
+        global_work_size[1] = (size_t) dimensions[1];
 
-        UfoBuffer *result = ufo_resource_manager_request_buffer(manager, width, height, NULL, TRUE);;
+        UfoBuffer *result = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, TRUE);
         cl_mem frame_mem = (cl_mem) ufo_buffer_get_gpu_data(frame, command_queue);
         cl_mem result_mem = (cl_mem) ufo_buffer_get_gpu_data(result, command_queue);
 
@@ -106,7 +106,7 @@ static void process_inplace(UfoElement *element,
 
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
-    gint32 width, height;
+    gint32 dimensions[4];
 
     UfoBuffer *frame = (UfoBuffer *) g_async_queue_pop(input_queue);
 
@@ -114,9 +114,9 @@ static void process_inplace(UfoElement *element,
     cl_event event;
 
     while (!ufo_buffer_is_finished(frame)) {
-        ufo_buffer_get_dimensions(frame, &width, &height);
-        global_work_size[0] = (size_t) width;
-        global_work_size[1] = (size_t) height;
+        ufo_buffer_get_dimensions(frame, dimensions);
+        global_work_size[0] = (size_t) dimensions[0];
+        global_work_size[1] = (size_t) dimensions[1];
 
         cl_mem frame_mem = (cl_mem) ufo_buffer_get_gpu_data(frame, command_queue);
 
@@ -145,7 +145,7 @@ static void process_two_frames(UfoElement *element,
 
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
-    gint32 width, height;
+    gint32 dimensions[4];
 
     UfoBuffer *frame1 = (UfoBuffer *) g_async_queue_pop(input_queue);
     UfoBuffer *frame2 = (UfoBuffer *) g_async_queue_pop(input_queue);
@@ -154,11 +154,11 @@ static void process_two_frames(UfoElement *element,
     cl_event event;
 
     while (!ufo_buffer_is_finished(frame1) && !ufo_buffer_is_finished(frame2)) {
-        ufo_buffer_get_dimensions(frame1, &width, &height);
-        global_work_size[0] = (size_t) width;
-        global_work_size[1] = (size_t) height;
+        ufo_buffer_get_dimensions(frame1, dimensions);
+        global_work_size[0] = (size_t) dimensions[0];
+        global_work_size[1] = (size_t) dimensions[1];
 
-        UfoBuffer *result = ufo_resource_manager_request_buffer(manager, width, height, NULL, TRUE);
+        UfoBuffer *result = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, TRUE);
         cl_mem frame1_mem = (cl_mem) ufo_buffer_get_gpu_data(frame1, command_queue);
         cl_mem frame2_mem = (cl_mem) ufo_buffer_get_gpu_data(frame2, command_queue);
         cl_mem result_mem = (cl_mem) ufo_buffer_get_gpu_data(result, command_queue);

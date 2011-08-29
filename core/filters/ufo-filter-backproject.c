@@ -83,9 +83,11 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
-    gint32 width, num_projections;
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
-    ufo_buffer_get_dimensions(sinogram, &width, &num_projections);
+    gint32 dims[4];
+    ufo_buffer_get_dimensions(sinogram, dims);
+    const gint32 width = dims[0];
+    const gint32 num_projections = dims[1];
 
     /* create angle arrays */
     float *cos_tmp = g_malloc0(sizeof(float) * num_projections);
@@ -141,7 +143,8 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
 
     while (!ufo_buffer_is_finished(sinogram)) {
         total++;
-        UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, width, width, NULL, FALSE);
+        gint32 dimensions[4] = { width, width, 1, 1 };
+        UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, FALSE);
         size_t global_work_size[2] = { width, width };
         size_t local_work_size[2] = { 16, 16 };
         cl_event event;
