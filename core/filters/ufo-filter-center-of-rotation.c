@@ -36,9 +36,11 @@ static void center_of_rotation_sinograms(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
+    gint32 dims[4];
     while (!ufo_buffer_is_finished(sinogram)) {
-        gint32 width, height;
-        ufo_buffer_get_dimensions(sinogram, &width, &height);
+        ufo_buffer_get_dimensions(sinogram, dims);
+        const gint32 width = dims[0];
+        const gint32 height = dims[1];
 
         float *proj_0 = ufo_buffer_get_cpu_data(sinogram, command_queue);
         float *proj_180 = proj_0 + (height-1) * width;
@@ -106,8 +108,10 @@ static void center_of_rotation_projections(UfoFilter *filter)
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
 
-    gint32 width, height;
-    ufo_buffer_get_dimensions(input, &width, &height);
+    gint32 dims[4];
+    ufo_buffer_get_dimensions(input, dims);
+    const gint32 width = dims[0];
+    const gint32 height = dims[1];
 
     /* We have basically two parameters for tuning the performance: decreasing
      * max_displacement and not considering the whole images but just some of

@@ -10,7 +10,6 @@ set(ufofilter_SRCS
     ufo-filter-hist.c
     ufo-filter-normalize.c
     ufo-filter-null.c
-    ufo-filter-raw.c
     ufo-filter-scale.c
     ufo-filter-sino-generator.c
     ufo-filter-stripe-removal.c

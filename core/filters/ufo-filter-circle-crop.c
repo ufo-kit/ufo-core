@@ -10,7 +10,6 @@
 
 struct _UfoFilterCircleCropPrivate {
     /* add your private data here */
-    /* cl_kernel kernel; */
     float example;
 };
 
@@ -42,25 +41,6 @@ static void deactivated(EthosPlugin *plugin)
 static void ufo_filter_circle_crop_initialize(UfoFilter *filter)
 {
     /* Here you can code, that is called for each newly instantiated filter */
-    /*
-    UfoFilterCircleCrop *self = UFO_FILTER_CIRCLE_CROP(filter);
-    UfoResourceManager *manager = ufo_resource_manager();
-    GError *error = NULL;
-    self->priv->kernel = NULL;
-
-    ufo_resource_manager_add_program(manager, "foo-kernel-file.cl", &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-        return;
-    }
-
-    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "foo-kernel", &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-    }
-    */
 }
 
 /*
@@ -75,12 +55,13 @@ static void ufo_filter_circle_crop_process(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    gint32 dimensions[4];
     while (!ufo_buffer_is_finished(input)) {
-        gint32 width, height;
-        ufo_buffer_get_dimensions(input, &width, &height);
+        ufo_buffer_get_dimensions(input, dimensions);
+        const gint32 width = dimensions[0];
+        const gint32 height = dimensions[1];
 
         float *data = ufo_buffer_get_cpu_data(input, command_queue);
-        ufo_buffer_get_dimensions(input, &width, &height);
         for (int x = 0; x < width; x++) {
             int x_off = x - width/2;
             x_off *= x_off;
@@ -91,7 +72,6 @@ static void ufo_filter_circle_crop_process(UfoFilter *filter)
                     data[y*width + x] = 0.0f;
             }
         }
-        ufo_buffer_get_dimensions(input, &width, &height);
 
         g_async_queue_push(output_queue, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);

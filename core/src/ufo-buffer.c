@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "ufo-buffer.h"
+#include "ufo-enums.h"
 
 G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT);
 
@@ -19,6 +20,8 @@ enum {
     PROP_ID,
     PROP_FINISHED,
     PROP_ACCESS,
+    PROP_DOMAIN,
+    PROP_STRUCTURE,
     N_PROPERTIES
 };
 
@@ -31,13 +34,15 @@ typedef enum {
 } datastates;
 
 struct _UfoBufferPrivate {
-    gint32      width;
-    gint32      height;
+    gint32      dimensions[4];
     gsize       size;   /**< size of buffer in bytes */
     gint        uploads;
     gint        downloads;
-    gint        access;
     gint        id;     /**< unique id that is passed to the transformed buffer */
+
+    UfoAccess   access;
+    UfoDomain   domain;
+    UfoStructure structure;
 
     gboolean    finished;
     datastates  state;
@@ -49,11 +54,15 @@ struct _UfoBufferPrivate {
     cl_ulong    time_download;
 };
 
-static void buffer_set_dimensions(UfoBufferPrivate *priv, gint32 width, gint32 height)
+static void buffer_set_dimensions(UfoBufferPrivate *priv, UfoStructure structure, gint32 dimensions[4])
 {
-    priv->width = width;
-    priv->height = height;
-    priv->size = width * height * sizeof(float);
+    int num_elements = 0;
+    for (int i = 0; i < 4; i++) {
+        priv->dimensions[i] = dimensions[i];
+        num_elements *= dimensions[i];
+    }
+    priv->structure = structure;
+    priv->size = num_elements * sizeof(float);
 }
 
 GQuark ufo_buffer_error_quark(void)
@@ -61,25 +70,6 @@ GQuark ufo_buffer_error_quark(void)
     return g_quark_from_static_string("ufo-buffer-error-quark");
 }
 
-/**
- * \brief Converts the queue of events to a flat C array
- * \param[in] priv Private data of a UfoBuffer
- * \param[out] events Pointer to uninitialized array
- * \param[out] num_events Number of events in *events
- * \note You have to free the *events array using g_free().
- */
-static void buffer_get_wait_events(UfoBufferPrivate *priv, cl_event** events, guint *num_events)
-{
-    const guint n = g_queue_get_length(priv->wait_events);
-    *num_events = n;
-    g_message("here?");
-    *events = (cl_event*) g_malloc0(sizeof(cl_event) * n);
-    g_message("here? %p", priv->wait_events);
-    for (int i = 0; i < n; i++)
-        *events[i] = g_queue_pop_head(priv->wait_events);
-    g_message("here?");
-    g_assert(g_queue_get_length(priv->wait_events) == 0);
-}
 
 /* 
  * Public Interface
@@ -97,11 +87,16 @@ static void buffer_get_wait_events(UfoBufferPrivate *priv, cl_event** events, gu
  * \note Filters should never allocate buffers on their own using this method
  * but use the UfoResourceManager method ufo_resource_manager_request_buffer().
  */
-UfoBuffer *ufo_buffer_new(gint32 width, gint32 height)
+UfoBuffer *ufo_buffer_new(UfoStructure structure, gint32 dimensions[4])
 {
     UfoBuffer *buffer = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
-    buffer_set_dimensions(buffer->priv, width, height);
+    buffer_set_dimensions(buffer->priv, structure, dimensions);
     return buffer;
+}
+
+gsize ufo_buffer_get_size(UfoBuffer *buffer)
+{
+    return buffer->priv->size;
 }
 
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
@@ -115,7 +110,7 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBuffer *copy = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
 
-    buffer_set_dimensions(copy->priv, buffer->priv->width, buffer->priv->height);
+    buffer_set_dimensions(copy->priv, buffer->priv->structure, buffer->priv->dimensions);
     g_assert(copy->priv->cpu_data == NULL);
     ufo_buffer_set_cpu_data(copy,
             ufo_buffer_get_cpu_data(buffer, command_queue),
@@ -138,11 +133,11 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
  * \param[out] width Width of the buffer
  * \param[out] height Height of the buffer
  */
-void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height)
+void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer));
-    *width = buffer->priv->width;
-    *height = buffer->priv->height;
+    for (int i = 0; i < 4; i++)
+        dimensions[i] = buffer->priv->dimensions[i];
 }
 
 /**
@@ -176,11 +171,11 @@ void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
  */
 void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **error)
 {
+    UfoBufferPrivate *priv = buffer->priv;
     if (data == NULL)
         return;
 
-    const gsize num_bytes = buffer->priv->width * buffer->priv->height * sizeof(float);
-    if (n > num_bytes) {
+    if (n > priv->size) {
         if (error != NULL) {
             g_set_error(error,
                     UFO_BUFFER_ERROR,
@@ -189,12 +184,11 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
         }
         return;
     }
-    if (buffer->priv->cpu_data == NULL) {
-        buffer->priv->cpu_data = g_malloc0(num_bytes);
-    }
+    if (priv->cpu_data == NULL) 
+        priv->cpu_data = g_malloc0(priv->size);
 
-    memcpy(buffer->priv->cpu_data, data, n);
-    buffer->priv->state = CPU_DATA_VALID;
+    memcpy(priv->cpu_data, data, n);
+    priv->state = CPU_DATA_VALID;
 }
 
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
@@ -302,7 +296,6 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
     cl_event event;
-    cl_int err = CL_SUCCESS;
 #ifdef WITH_PROFILING
     cl_ulong start, end;
 #endif
@@ -422,6 +415,12 @@ static void ufo_filter_set_property(GObject *object,
         case PROP_ACCESS:
             buffer->priv->access = g_value_get_flags(value);
             break;
+        case PROP_STRUCTURE:
+            buffer->priv->structure = g_value_get_enum(value);
+            break;
+        case PROP_DOMAIN:
+            buffer->priv->domain = g_value_get_enum(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -445,6 +444,12 @@ static void ufo_filter_get_property(GObject *object,
         case PROP_ACCESS:
             g_value_set_flags(value, buffer->priv->access);
             break;
+        case PROP_STRUCTURE:
+            g_value_set_enum(value, buffer->priv->structure);
+            break;
+        case PROP_DOMAIN:
+            g_value_set_enum(value, buffer->priv->domain);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -465,21 +470,6 @@ static void ufo_buffer_finalize(GObject *gobject)
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
-#define UFO_BUFFER_TYPE_FLAGS (ufo_buffer_flags_gettype())
-static GType ufo_buffer_flags_gettype()
-{
-    static GType flags_type = 0;
-    if (!flags_type) {
-        static const GFlagsValue flags[] = {
-            { UFO_BUFFER_READABLE, "Read only buffer", "readonly" },
-            { UFO_BUFFER_WRITEABLE, "Write only buffer", "writeonly" },
-            { UFO_BUFFER_READWRITE, "Read and write access", "readwrite" },
-            { 0, NULL, NULL },
-        };
-        flags_type = g_flags_register_static("UfoBufferFlags", flags);
-    }
-    return flags_type;
-}
 
 /*
  * Type/Class Initialization
@@ -498,7 +488,7 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
             "ID of this buffer",
             "ID of this buffer",
             -1,
-            8192,
+            32736,
             0,
             G_PARAM_READWRITE);
 
@@ -513,13 +503,31 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
         g_param_spec_flags("access",
             "Access restrictions",
             "Read/Write access restrictions of this buffer",
-            UFO_BUFFER_TYPE_FLAGS,
+            UFO_TYPE_ACCESS,
+            UFO_BUFFER_READWRITE,
+            G_PARAM_READABLE);
+
+    buffer_properties[PROP_STRUCTURE] = 
+        g_param_spec_flags("structure",
+            "Spatial structure of the buffer",
+            "Spatial structure of the buffer",
+            UFO_TYPE_STRUCTURE,
+            UFO_BUFFER_READWRITE,
+            G_PARAM_READWRITE);
+
+    buffer_properties[PROP_DOMAIN] = 
+        g_param_spec_flags("domain",
+            "Domain of the buffer",
+            "Domain of the buffer, either spatial or frequential",
+            UFO_TYPE_DOMAIN,
             UFO_BUFFER_READWRITE,
             G_PARAM_READWRITE);
 
     g_object_class_install_property(gobject_class, PROP_ID, buffer_properties[PROP_ID]);
     g_object_class_install_property(gobject_class, PROP_FINISHED, buffer_properties[PROP_FINISHED]);
     g_object_class_install_property(gobject_class, PROP_ACCESS, buffer_properties[PROP_ACCESS]);
+    g_object_class_install_property(gobject_class, PROP_STRUCTURE, buffer_properties[PROP_STRUCTURE]);
+    g_object_class_install_property(gobject_class, PROP_DOMAIN, buffer_properties[PROP_DOMAIN]);
 
     /* TODO: use this when updating to GObject 2.26
     g_object_class_install_properties(gobject_class,
@@ -535,8 +543,7 @@ static void ufo_buffer_init(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv;
     buffer->priv = priv = UFO_BUFFER_GET_PRIVATE(buffer);
-    priv->width = -1;
-    priv->height = -1;
+    priv->dimensions[0] = priv->dimensions[1] = priv->dimensions[2] = priv->dimensions[3] = 1;
     priv->cpu_data = NULL;
     priv->gpu_data = NULL;
     priv->uploads = 0;
@@ -544,6 +551,9 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->id = -1;
     priv->state = NO_DATA;
     priv->finished = FALSE;
+    priv->access = UFO_BUFFER_READWRITE;
+    priv->domain = UFO_BUFFER_SPACE;
+    priv->structure = UFO_BUFFER_1D;
     priv->wait_events = g_queue_new();
     priv->time_upload = 0;
     priv->time_download = 0;

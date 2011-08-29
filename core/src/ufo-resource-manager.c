@@ -115,7 +115,7 @@ const gchar* opencl_map_error(cl_int error)
 #define CHECK_ERROR(error) { \
     if (error != CL_SUCCESS) g_message("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
 
-#define DIM_HASH(width, height) ((width << 16) | height)
+#define DIM_HASH(d) ((d[0] << 26) | (d[1] << 13) | d[2])
 
 static gchar *resource_manager_load_opencl_program(const gchar *filename)
 {
@@ -156,12 +156,13 @@ static void resource_manager_release_program(gpointer data, gpointer user_data)
 
 
 static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv,
-        guint32 width,
-        guint32 height,
+        UfoStructure structure,
+        gint32 dimensions[4],
         float *data,
         gboolean prefer_gpu)
 {
-    UfoBuffer *buffer = ufo_buffer_new(width, height);
+    UfoBuffer *buffer = ufo_buffer_new(structure, dimensions);
+    const gsize num_bytes = ufo_buffer_get_size(buffer);
 
     cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
     if ((data != NULL) && (prefer_gpu))
@@ -170,7 +171,7 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv
     cl_int error;
     cl_mem buffer_mem = clCreateBuffer(priv->opencl_context,
             mem_flags, 
-            width * height * sizeof(float),
+            num_bytes,
             data, &error);
 
     if (error != CL_SUCCESS)
@@ -178,7 +179,7 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv
 
     ufo_buffer_set_cl_mem(buffer, buffer_mem);
     if ((data) && (!prefer_gpu))
-        ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
+        ufo_buffer_set_cpu_data(buffer, data, num_bytes, NULL);
 
     return buffer;
 }
@@ -413,44 +414,42 @@ gpointer ufo_resource_manager_get_context(UfoResourceManager *resource_manager)
  *      ufo_resource_manager_release_buffer()
  */
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, 
-        guint32 width, 
-        guint32 height,
+        UfoStructure structure,
+        gint32 dimensions[4],
         float *data,
         gboolean prefer_gpu)
 {
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(resource_manager);
 
     /* Find a queue that might contain buffers with a certain size */
-    guint hash = DIM_HASH(width, height);
+    guint hash = DIM_HASH(dimensions);
     GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, (gconstpointer) hash);
 
     if (queue == NULL) {
         priv->cache_misses++;
-        return resource_manager_create_buffer(priv, width, height, data, prefer_gpu);
+        return resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
     }
 
     /* Try to get a suitable buffer */
     UfoBuffer *buffer = g_async_queue_try_pop(queue);
     if (buffer == NULL) {
         priv->cache_misses++;
-        return resource_manager_create_buffer(priv, width, height, data, prefer_gpu);
+        return resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
     }
 
     /* We found a suitable buffer and have to fill it with data if necessary */
     ufo_buffer_invalidate_gpu_data(buffer);
     if (data != NULL)
-        ufo_buffer_set_cpu_data(buffer, data, width*height*sizeof(float), NULL);
+        ufo_buffer_set_cpu_data(buffer, data, ufo_buffer_get_size(buffer), NULL);
 
-    gint32 buffer_width, buffer_height;
-    ufo_buffer_get_dimensions(buffer, &buffer_width, &buffer_height);
     priv->cache_hits++;
-
     return buffer;
 }
 
 UfoBuffer *ufo_resource_manager_request_finish_buffer(UfoResourceManager *self)
 {
-    UfoBuffer *buffer = ufo_buffer_new(1, 1);
+    gint dims[4] = {1,1,1,1};
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_1D, dims);
     /* TODO: make "finished" constructable? How to do ufo_buffer_new? */
     g_object_set(buffer, "finished", TRUE, NULL);
     return buffer;
@@ -458,13 +457,7 @@ UfoBuffer *ufo_resource_manager_request_finish_buffer(UfoResourceManager *self)
 
 UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *manager, UfoBuffer *buffer)
 {
-    gint32 width, height;
-    ufo_buffer_get_dimensions(buffer, &width, &height);
-    /* XXX: Use first command queue, which might not be the best in all cases */
-    float *data = ufo_buffer_get_cpu_data(buffer, manager->priv->command_queues);
-    UfoBuffer *copy = ufo_resource_manager_request_buffer(manager,
-            width, height, data, FALSE);
-    return copy;
+    return ufo_buffer_copy(buffer, manager->priv->command_queues);
 }
 
 /**
@@ -486,9 +479,9 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
 #endif
 
     /* Find a suitable queue */
-    gint32 width, height;
-    ufo_buffer_get_dimensions(buffer, &width, &height);
-    guint hash = DIM_HASH(width, height);
+    gint32 dimensions[4];
+    ufo_buffer_get_dimensions(buffer, dimensions);
+    guint hash = DIM_HASH(dimensions);
 
     GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, (gconstpointer) hash);
 

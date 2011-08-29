@@ -73,13 +73,14 @@ static void ufo_filter_normalize_process(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    gint32 dimensions[4] = {1, 1, 1, 1};
     while (!ufo_buffer_is_finished(input)) {
-        gint32 width, height;
-        ufo_buffer_get_dimensions(input, &width, &height);
+        ufo_buffer_get_dimensions(input, dimensions);
+        const gint32 num_elements = dimensions[0] * dimensions[1] * dimensions[2] * dimensions[3];
         float *data = ufo_buffer_get_cpu_data(input, command_queue);
 
         float min = 1.0, max = 0.0;
-        for (int i = 0; i < width*height; i++) {
+        for (int i = 0; i < num_elements; i++) {
             if (data[i] < min)
                 min = data[i];
             if (data[i] > max)
@@ -87,7 +88,7 @@ static void ufo_filter_normalize_process(UfoFilter *filter)
         }
 
         float scale = 1.0 / (max - min);
-        for (int i = 0; i < width*height; i++) {
+        for (int i = 0; i < num_elements; i++) {
             data[i] = (data[i] - min) * scale;
         }
         g_async_queue_push(output_queue, input);

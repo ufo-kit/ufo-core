@@ -276,6 +276,7 @@ static void ufo_filter_reader_process(UfoFilter *self)
     else
         filename = g_list_first(priv->filenames);
 
+    gint32 dimensions[4] = { 1, 1, 1, 1 };
     for (guint i = 0; i < max_count && filename != NULL; i++) {
         void *buffer;
         if (g_str_has_suffix(filename->data, "tif"))
@@ -291,9 +292,12 @@ static void ufo_filter_reader_process(UfoFilter *self)
         if (buffer == NULL)
             break;
 
-        const guint16 bytes_per_sample = bits_per_sample >> 3;
-        UfoBuffer *image = ufo_resource_manager_request_buffer(manager, width, height, NULL, FALSE);
+        dimensions[0] = width;
+        dimensions[1] = height;
+        UfoBuffer *image = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, FALSE);
         g_object_set(image, "id", i, NULL);
+
+        const guint16 bytes_per_sample = bits_per_sample >> 3;
         ufo_buffer_set_cpu_data(image, buffer, bytes_per_sample * width * height, NULL);
         if (bits_per_sample < 32)
             ufo_buffer_reinterpret(image, bits_per_sample, width * height);

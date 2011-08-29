@@ -84,10 +84,12 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     int err = CL_SUCCESS;
     clFFT_Plan ifft_plan = NULL;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    gint32 dimensions[4] = { 1, 1, 1, 1 };
 
     while (!ufo_buffer_is_finished(input)) {
-        gint32 width, height;
-        ufo_buffer_get_dimensions(input, &width, &height);
+        ufo_buffer_get_dimensions(input, dimensions);
+        gint32 width = dimensions[0];
+        gint32 height = dimensions[0];
 
         if (priv->ifft_size.x != width / 2) {
             priv->ifft_size.x = width / 2;
@@ -129,8 +131,10 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
 
         width = (priv->final_width == -1) ? priv->ifft_size.x : priv->final_width;
         height = (priv->final_height == -1) ? height : priv->final_height;
+        dimensions[0] = width;
+        dimensions[1] = height;
         UfoBuffer *sinogram = ufo_resource_manager_request_buffer(manager,
-                width, height, NULL, FALSE);
+                UFO_BUFFER_2D, dimensions, NULL, FALSE);
         global_work_size[1] = height;
 
         cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram, command_queue);
