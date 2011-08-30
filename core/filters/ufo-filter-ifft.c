@@ -89,7 +89,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     while (!ufo_buffer_is_finished(input)) {
         ufo_buffer_get_dimensions(input, dimensions);
         gint32 width = dimensions[0];
-        gint32 height = dimensions[0];
+        gint32 height = dimensions[1];
 
         if (priv->ifft_size.x != width / 2) {
             priv->ifft_size.x = width / 2;

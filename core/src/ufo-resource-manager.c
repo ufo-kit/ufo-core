@@ -115,7 +115,7 @@ const gchar* opencl_map_error(cl_int error)
 #define CHECK_ERROR(error) { \
     if (error != CL_SUCCESS) g_message("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
 
-#define DIM_HASH(d) ((d[0] << 26) | (d[1] << 13) | d[2])
+#define DIM_HASH(d) ((d[0] << 16) | d[1])
 
 static gchar *resource_manager_load_opencl_program(const gchar *filename)
 {
