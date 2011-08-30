@@ -136,8 +136,17 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
 void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer));
+    gint32 *dims = buffer->priv->dimensions;
     for (int i = 0; i < 4; i++)
-        dimensions[i] = buffer->priv->dimensions[i];
+        dimensions[i] = dims[i];
+}
+
+void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height)
+{
+    g_return_if_fail(UFO_IS_BUFFER(buffer));
+    gint32 *dims = buffer->priv->dimensions;
+    *width = dims[0];
+    *height = dims[1];
 }
 
 /**

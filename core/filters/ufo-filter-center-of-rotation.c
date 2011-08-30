@@ -36,11 +36,9 @@ static void center_of_rotation_sinograms(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
-    gint32 dims[4];
+    gint32 width, height;
     while (!ufo_buffer_is_finished(sinogram)) {
-        ufo_buffer_get_dimensions(sinogram, dims);
-        const gint32 width = dims[0];
-        const gint32 height = dims[1];
+        ufo_buffer_get_2d_dimensions(sinogram, &width, &height);
 
         float *proj_0 = ufo_buffer_get_cpu_data(sinogram, command_queue);
         float *proj_180 = proj_0 + (height-1) * width;
@@ -108,10 +106,8 @@ static void center_of_rotation_projections(UfoFilter *filter)
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
 
-    gint32 dims[4];
-    ufo_buffer_get_dimensions(input, dims);
-    const gint32 width = dims[0];
-    const gint32 height = dims[1];
+    gint32 width, height;
+    ufo_buffer_get_2d_dimensions(input, &width, &height);
 
     /* We have basically two parameters for tuning the performance: decreasing
      * max_displacement and not considering the whole images but just some of
@@ -178,25 +174,6 @@ static void deactivated(EthosPlugin *plugin)
 static void ufo_filter_center_of_rotation_initialize(UfoFilter *filter)
 {
     /* Here you can code, that is called for each newly instantiated filter */
-    /*
-    UfoFilterCenterOfRotation *self = UFO_FILTER_CENTER_OF_ROTATION(filter);
-    UfoResourceManager *manager = ufo_resource_manager();
-    GError *error = NULL;
-    self->priv->kernel = NULL;
-
-    ufo_resource_manager_add_program(manager, "foo-kernel-file.cl", &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-        return;
-    }
-
-    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "foo-kernel", &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-    }
-    */
 }
 
 /*

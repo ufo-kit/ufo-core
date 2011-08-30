@@ -101,16 +101,16 @@ static void ufo_filter_filter_process(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    gint32 dimensions[4] = { 1, 1, 1, 1 };
-    ufo_buffer_get_dimensions(input, dimensions);
+    gint32 width, height;
+    ufo_buffer_get_2d_dimensions(input, &width, &height);
 
-    UfoBuffer *filter_buffer = filter_create_data(priv, dimensions[0]);
+    UfoBuffer *filter_buffer = filter_create_data(priv, width);
     cl_mem filter_mem = (cl_mem) ufo_buffer_get_gpu_data(filter_buffer, command_queue);
 
     while (!ufo_buffer_is_finished(input)) {
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
         cl_event event;
-        size_t global_work_size[2] = {dimensions[0], dimensions[1]};
+        size_t global_work_size[2] = { width, height };
 
         clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &filter_mem);

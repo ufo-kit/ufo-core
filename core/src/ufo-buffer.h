@@ -63,6 +63,7 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue);
 
 gsize ufo_buffer_get_size(UfoBuffer *buffer);
 void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions);
+void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height);
 
 void ufo_buffer_reinterpret(UfoBuffer *self, gsize source_depth, gsize n);
 void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data, gsize n, GError **error);

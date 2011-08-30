@@ -84,10 +84,8 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
-    gint32 dims[4];
-    ufo_buffer_get_dimensions(sinogram, dims);
-    const gint32 width = dims[0];
-    const gint32 num_projections = dims[1];
+    gint32 width, num_projections;
+    ufo_buffer_get_2d_dimensions(sinogram, &width, &num_projections);
 
     /* create angle arrays */
     float *cos_tmp = g_malloc0(sizeof(float) * num_projections);

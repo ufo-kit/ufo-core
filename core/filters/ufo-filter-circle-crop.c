@@ -55,11 +55,9 @@ static void ufo_filter_circle_crop_process(UfoFilter *filter)
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    gint32 dimensions[4];
+    gint32 width, height;
     while (!ufo_buffer_is_finished(input)) {
-        ufo_buffer_get_dimensions(input, dimensions);
-        const gint32 width = dimensions[0];
-        const gint32 height = dimensions[1];
+        ufo_buffer_get_2d_dimensions(input, &width, &height);
 
         float *data = ufo_buffer_get_cpu_data(input, command_queue);
         for (int x = 0; x < width; x++) {

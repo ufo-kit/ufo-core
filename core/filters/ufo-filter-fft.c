@@ -91,12 +91,10 @@ static void ufo_filter_fft_process(UfoFilter *filter)
     int err = CL_SUCCESS;
     clFFT_Plan fft_plan = NULL;
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    gint32 dimensions[4] = { 1, 1, 1, 1 };
+    gint32 dimensions[4] = { 1, 1, 1, 1 }, width, height;
 
     while (!ufo_buffer_is_finished(input)) {
-        ufo_buffer_get_dimensions(input, dimensions);
-        const gint32 width = dimensions[0];
-        const gint32 height = dimensions[1];
+        ufo_buffer_get_2d_dimensions(input, &width, &height);
 
         /* Check if we can re-use the old FFT plan */
         if (priv->fft_size.x != pow2round(width)) {
