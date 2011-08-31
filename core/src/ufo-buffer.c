@@ -54,7 +54,7 @@ struct _UfoBufferPrivate {
     cl_ulong    time_download;
 };
 
-static void buffer_set_dimensions(UfoBufferPrivate *priv, UfoStructure structure, gint32 dimensions[4])
+static void buffer_set_dimensions(UfoBufferPrivate *priv, UfoStructure structure, const gint32 dimensions[4])
 {
     int num_elements = 1;
     for (int i = 0; i < 4; i++) {
@@ -87,7 +87,7 @@ GQuark ufo_buffer_error_quark(void)
  * \note Filters should never allocate buffers on their own using this method
  * but use the UfoResourceManager method ufo_resource_manager_request_buffer().
  */
-UfoBuffer *ufo_buffer_new(UfoStructure structure, gint32 dimensions[4])
+UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4])
 {
     UfoBuffer *buffer = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
     buffer_set_dimensions(buffer->priv, structure, dimensions);
@@ -469,13 +469,10 @@ static void ufo_buffer_finalize(GObject *gobject)
 {
     UfoBuffer *buffer = UFO_BUFFER(gobject);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
-    g_message("freeing cpu memory %p", priv->cpu_data);
     if (priv->cpu_data)
         g_free(priv->cpu_data);
     
-    g_message("freeing wait queue %p", priv->wait_events);
     g_queue_free(priv->wait_events);
-
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 

@@ -11,7 +11,8 @@ static gboolean float_eq(float n1, float n2)
 
 static void test_buffer_new(void)
 {
-    UfoBuffer *buffer = ufo_buffer_new(1000, 1000);
+    const gint32 dimensions[] = { 1000, 1000, 1, 1 };
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_2D, dimensions);
     g_assert(buffer != NULL);
     g_object_unref(buffer);
 }
@@ -21,7 +22,8 @@ static void test_buffer_new(void)
  */
 static void test_buffer_set_data(void)
 {
-    UfoBuffer *buffer = ufo_buffer_new(10, 1);
+    const gint32 dimensions[] = { 10, 1, 1, 1 };
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_1D, dimensions);
 
     GError *error = NULL;
     float test_data[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
@@ -37,7 +39,8 @@ static void test_buffer_set_data(void)
 
 static void test_buffer_set_too_much_data(void)
 {
-    UfoBuffer *buffer = ufo_buffer_new(1, 1);
+    const gint32 dimensions[] = { 1, 1, 1, 1 };
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_1D, dimensions);
 
     GError *error = NULL;
     float test_data[] = { 1.0, 2.0 };
@@ -51,7 +54,8 @@ static void test_buffer_set_too_much_data(void)
  */
 static void test_buffer_reinterpret_8bit(void)
 {
-    UfoBuffer *buffer = ufo_buffer_new(10, 1);
+    const gint32 dimensions[] = { 10, 1, 1, 1 };
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_1D, dimensions);
 
     GError *error = NULL;
     guint8 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
@@ -67,7 +71,8 @@ static void test_buffer_reinterpret_8bit(void)
 
 static void test_buffer_reinterpret_16bit(void)
 {
-    UfoBuffer *buffer = ufo_buffer_new(10, 1);
+    const gint32 dimensions[] = { 10, 1, 1, 1 };
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_1D, dimensions);
 
     GError *error = NULL;
     guint16 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
@@ -83,11 +88,9 @@ static void test_buffer_reinterpret_16bit(void)
 
 static void test_buffer_dimensions(void)
 {
-    const int in_width = 123;
-    const int in_height = 321;
-    gint32 in_dimensions[4] = { 123, 321, 1, 1 };
-
+    const gint32 in_dimensions[] = { 123, 321, 1, 1 };
     UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_2D, in_dimensions);
+
     gint32 out_dimensions[4];
     ufo_buffer_get_dimensions(buffer, out_dimensions);
 

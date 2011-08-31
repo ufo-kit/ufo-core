@@ -58,7 +58,7 @@ typedef enum {
     UFO_BUFFER_FREQUENCY /**< implies interleaved complex numbers */
 } UfoDomain;
 
-UfoBuffer *ufo_buffer_new(UfoStructure structure, gint32 dimensions[4]);
+UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4]);
 UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue);
 
 gsize ufo_buffer_get_size(UfoBuffer *buffer);
