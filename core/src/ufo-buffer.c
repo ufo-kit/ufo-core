@@ -116,8 +116,6 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
             ufo_buffer_get_cpu_data(buffer, command_queue),
             copy->priv->size,
             NULL);
-    if (!ufo_buffer_is_finished(buffer))
-        g_message("copy=%p src=%f dst=%f", copy, buffer->priv->cpu_data[0], copy->priv->cpu_data[0]);
 
     copy->priv->finished = buffer->priv->finished;
     copy->priv->state = CPU_DATA_VALID;
@@ -299,6 +297,8 @@ void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong
  * \public \memberof UfoBuffer
  *
  * \param[in] buffer UfoBuffer object
+ * \param[in] command_queue a cl_command_queue, can be NULL when data is known
+ * to reside on CPU host memory.
  * \return Pointer to a float array of valid data
  */
 float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
@@ -315,6 +315,9 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
         case GPU_DATA_VALID:
             if (priv->cpu_data == NULL)
                 priv->cpu_data = g_malloc0(priv->size);
+
+            if (command_queue == NULL)
+                return NULL;
 
             clEnqueueReadBuffer((cl_command_queue) command_queue,
                     priv->gpu_data,

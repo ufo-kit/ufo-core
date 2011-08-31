@@ -373,7 +373,6 @@ void ufo_resource_manager_call(UfoResourceManager *resource_manager,
     for (int i = 0; i < num_args; i++) {
         size = va_arg(ap, size_t);
         ptr = va_arg(ap, void *); 
-        g_message("setting %p with size %i", ptr, size);
         clSetKernelArg(kernel, i, size, ptr);
     }
     va_end(ap);
@@ -423,7 +422,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
 
     /* Find a queue that might contain buffers with a certain size */
     guint hash = DIM_HASH(dimensions);
-    GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, (gconstpointer) hash);
+    GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, GINT_TO_POINTER(hash));
 
     if (queue == NULL) {
         priv->cache_misses++;
@@ -483,13 +482,13 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
     ufo_buffer_get_dimensions(buffer, dimensions);
     guint hash = DIM_HASH(dimensions);
 
-    GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, (gconstpointer) hash);
+    GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, GINT_TO_POINTER(hash));
 
     /* FIXME: inserting a new queue _must_ happen atomically. However, this is
      * somewhat relieved as there is usually only one stage releasing a buffer. */
     if (queue == NULL) {
         queue = g_async_queue_new();
-        g_hash_table_insert(priv->cached_buffers, (gpointer) hash, queue);
+        g_hash_table_insert(priv->cached_buffers, GINT_TO_POINTER(hash), queue);
     }
 
     /* TODO: make queue limit configurable */
@@ -619,7 +618,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->opencl_programs = NULL;
     priv->opencl_build_options = g_string_new("-cl-mad-enable ");
 
-    priv->cached_buffers = g_hash_table_new(g_direct_hash, g_direct_equal);
+    priv->cached_buffers = g_hash_table_new(g_int_hash, g_int_equal);
     priv->cache_hits = 0;
     priv->cache_misses = 0;
 

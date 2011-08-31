@@ -99,6 +99,49 @@ static void test_buffer_dimensions(void)
     g_object_unref(buffer);
 }
 
+static void test_buffer_size(void)
+{
+    const gint32 in_dimensions[] = { 123, 321, 4, 1 };
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_2D, in_dimensions);
+
+    gsize num_bytes = ufo_buffer_get_size(buffer);
+    g_assert_cmpuint(num_bytes, ==, 123 * 321 * 4 * sizeof(float));
+    g_object_unref(buffer);
+}
+
+static void test_buffer_copy(void)
+{
+    const gint32 dimensions[] = { 5, 2, 1, 1 };
+    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_2D, dimensions);
+
+    GError *error = NULL;
+    float test_data[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    ufo_buffer_set_cpu_data(buffer, test_data, 10 * sizeof(float), &error);
+    g_assert(error == NULL);
+
+    UfoBuffer *copy = ufo_buffer_copy(buffer, NULL);
+
+    /* Check meta-data of copy */
+    UfoStructure buffer_structure;
+    UfoAccess buffer_access;
+    UfoDomain buffer_domain;
+    g_object_get(copy,
+        "structure", &buffer_structure, 
+        "access", &buffer_access,
+        "domain", &buffer_domain,
+        NULL);
+
+    g_assert(buffer_structure == UFO_BUFFER_2D);
+
+    /* Check contents of copy */
+    float *result = ufo_buffer_get_cpu_data(copy, NULL);
+    for (int i = 0; i < 10; i++)
+        g_assert(float_eq(test_data[i], result[i]));
+
+    g_object_unref(buffer);
+    g_object_unref(copy);
+}
+
 int main(int argc, char *argv[])
 {
     g_type_init();
@@ -111,6 +154,8 @@ int main(int argc, char *argv[])
     g_test_add_func("/buffer/set-data", test_buffer_set_data);
     g_test_add_func("/buffer/reinterpret/8bit", test_buffer_reinterpret_8bit);
     g_test_add_func("/buffer/reinterpret/16bit", test_buffer_reinterpret_16bit);
+    g_test_add_func("/buffer/size", test_buffer_size);
+    g_test_add_func("/buffer/copy", test_buffer_copy);
     g_test_run();
 
     return 0;
