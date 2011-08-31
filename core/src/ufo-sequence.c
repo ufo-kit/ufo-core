@@ -44,9 +44,7 @@ static void ufo_sequence_dispose(GObject *object)
 {
     UfoSequence *self = UFO_SEQUENCE(object);
 
-    /* FIXME: this is a really bad solution to the problem, that references are
-     * hold to individual task stages by Ethos */
-    g_list_foreach(self->priv->children, (GFunc) g_object_unref, NULL);
+    /* FIXME: we are leaking objects due to Ethos */
     g_list_foreach(self->priv->children, (GFunc) g_object_unref, NULL);
 
     if (self->priv->input_queue != NULL)

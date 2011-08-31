@@ -136,7 +136,8 @@ static void ufo_split_add_element(UfoContainer *container, UfoElement *child)
         self->priv->output_queue = g_async_queue_new();
     }
     ufo_element_set_output_queue(child, self->priv->output_queue);
-    ufo_element_set_command_queue(child, self->priv->command_queues[num_children % self->priv->num_queues]);
+    if (self->priv->num_queues > 0)
+        ufo_element_set_command_queue(child, self->priv->command_queues[num_children % self->priv->num_queues]);
 }
 
 /**
