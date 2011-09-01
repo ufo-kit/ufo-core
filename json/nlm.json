@@ -3,8 +3,7 @@
     "elements" : [
         { "type" : "filter", "plugin" : "reader",
             "properties" : {
-                "path" : "/home/matthias/data/bug/projections",
-                "count" : 20
+                "prefix" : "lena-noise"
             }
         },
         { "type" : "filter", "plugin" : "normalize" },
@@ -18,8 +17,7 @@
         },
         { "type" : "filter", "plugin" : "writer",
             "properties" : {
-                "path" : "/home/matthias/tmp",
-                "prefix" : "bug-denoised"
+                "prefix" : "lena-denoised"
             }
         }
     ]

@@ -1,7 +1,7 @@
 
 #define SEARCH_RADIUS   10
 #define NB_RADIUS       3
-#define SIGMA           8
+#define SIGMA           2
 
 #define flatten(x,y,r,w) ((y-r)*w + (x-r))
 
@@ -9,8 +9,8 @@
    and j and edge length radius */
 float dist(__global float *input, int i, int j, int radius, int image_width)
 {
-    float dist = 0.0, tmp;
-    float wsize = (2.0 * radius + 1.0);
+    float dist = 0.0f, tmp;
+    float wsize = (2.0f * radius + 1.0f);
     wsize *= wsize;
 
     const int nb_width = 2 * radius + 1;
@@ -31,8 +31,8 @@ __kernel void nlm(__global float *input, __global float *output, __local float *
     const int width = get_global_size(0);
     const int height = get_global_size(1);
 
-    float total_weight = 0.0;
-    float pixel_value = 0.0;
+    float total_weight = 0.0f;
+    float pixel_value = 0.0f;
     
     /* Compute the upper left (sx,sy) and lower right (tx, ty) corner points
        of our search window */

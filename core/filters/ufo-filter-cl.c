@@ -89,6 +89,8 @@ static void process_regular(UfoElement *element,
             2, NULL, global_work_size, local_work_size,
             0, NULL, &event);
 
+        clFinish(command_queue);
+
         ufo_resource_manager_release_buffer(manager, frame);
         g_async_queue_push(output_queue, result);
         frame = (UfoBuffer *) g_async_queue_pop(input_queue);
@@ -127,6 +129,8 @@ static void process_inplace(UfoElement *element,
             kernel,
             2, NULL, global_work_size, local_work_size,
             0, NULL, &event);
+
+        clFinish(command_queue);
 
         g_async_queue_push(output_queue, frame);
         frame = (UfoBuffer *) g_async_queue_pop(input_queue);
@@ -175,6 +179,8 @@ static void process_two_frames(UfoElement *element,
             2, NULL, global_work_size, local_work_size,
             0, NULL, &event);
 
+        clFinish(command_queue);
+
         ufo_resource_manager_release_buffer(manager, frame1);
         frame1 = frame2;
         frame2 = (UfoBuffer *) g_async_queue_pop(input_queue);
@@ -195,7 +201,6 @@ static void ufo_filter_cl_process(UfoFilter *filter)
     GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
 
     cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
-    cl_event event;
 
     UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
