@@ -618,7 +618,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->opencl_programs = NULL;
     priv->opencl_build_options = g_string_new("-cl-mad-enable ");
 
-    priv->cached_buffers = g_hash_table_new(g_int_hash, g_int_equal);
+    priv->cached_buffers = g_hash_table_new(g_direct_hash, g_direct_equal);
     priv->cache_hits = 0;
     priv->cache_misses = 0;
 
