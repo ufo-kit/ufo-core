@@ -72,7 +72,7 @@ if(SPHINX)
 
     # TODO: add DEPENDS doxygen when using CMake 2.8.4
     add_custom_target(docs
-        ${SPHINX} -b html ${CMAKE_CURRENT_BINARY_DIR}/source docs-${UFO_VERSION_STRING_SHORT} 
+        ${SPHINX} -b html ${CMAKE_CURRENT_BINARY_DIR}/source docs
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating user documentation with Sphinx" VERBATIM
         )
