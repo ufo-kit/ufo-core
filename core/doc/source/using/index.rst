@@ -39,6 +39,53 @@ As you can see we simply construct a new UfoGraph object from a JSON encoded
 pipeline.
 
 
+Writing a simple OpenCL filter
+==============================
+
+The easiest way to get started, is to write OpenCL kernels using the cl-plugin.
+We create a new file ``simple.cl``, that contains a simple kernel that inverts
+our normalized input (you can silently ignore the ``scratch`` parameter ...)::
+
+    __kernel void invert(__global float *data, __local float *scratch)
+    {
+        /* where are we? */
+        int index = get_global_id(1) * get_global_size(0) + get_global_id(0);
+        float inverted_value = 1.0f - data[index];
+        data[index] = inverted_value;
+    }
+
+Now we want to use our little kernel and write a suitable description file
+called ``simple.json``::
+
+    {
+        "type": "sequence",
+        "elements": [
+            { "type": "filter", "plugin": "reader",
+                "properties": {
+                    "prefix": "lena" 
+                }
+            },
+            { "type": "filter", "plugin": "cl",
+                "properties": {
+                    "file": "simple.cl",
+                    "kernel": "invert",
+                    "inplace": true
+                }
+            },
+            { "type": "filter", "plugin": "writer",
+                "properties": {
+                    "prefix": "foo" 
+                }
+            }
+        ]
+    }
+
+What does this tell us? We build a simple pipeline consisting of a reader, the
+cl plugin and a writer. The reader reads any TIFF files beginning with the word
+`lena` and outputs them to the cl plugin. This uses our ``simple.cl`` file to
+load the ``invert`` kernel which inverts the incoming data in-place. Finally,
+the writer writes a file prefixed with `foo`.
+
 Writing a filter in C
 =====================
 
