@@ -142,7 +142,7 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
     return buffer;
 }
 
-static void resource_manager_release_kernel(gpointer data, gpointer user_data)
+static void resource_manager_release_kernel(gpointer data)
 {
     cl_kernel kernel = (cl_kernel) data;
     clReleaseKernel(kernel);
@@ -536,13 +536,6 @@ static void ufo_resource_manager_dispose(GObject *gobject)
             100.0f * priv->cache_hits / (priv->cache_hits + priv->cache_misses));
 
     /* free resources */
-    GList *kernels = g_hash_table_get_values(priv->opencl_kernels);
-    g_list_foreach(kernels, resource_manager_release_kernel, NULL);
-    g_list_free(kernels);
-
-    GList *kernel_names = g_hash_table_get_keys(priv->opencl_kernels);
-    g_list_foreach(kernel_names, (GFunc) g_free, NULL);
-    g_list_free(kernel_names);
     g_hash_table_destroy(priv->opencl_kernels);
 
     g_list_foreach(priv->opencl_kernel_table, (GFunc) g_free, NULL);
@@ -560,7 +553,6 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     g_list_free(priv->opencl_files);
 
     g_string_free(priv->opencl_build_options, TRUE);
-
     g_hash_table_destroy(priv->cached_buffers);
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->dispose(gobject);
@@ -613,7 +605,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->download_time = 0.0f;
 
     priv->opencl_kernel_table = NULL;
-    priv->opencl_kernels = g_hash_table_new(g_str_hash, g_str_equal);
+    priv->opencl_kernels = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, resource_manager_release_kernel);
     priv->opencl_platforms = NULL;
     priv->opencl_programs = NULL;
     priv->opencl_build_options = g_string_new("-cl-mad-enable ");
@@ -631,7 +623,6 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     g_debug("Number of OpenCL platforms: %i", priv->num_platforms);
 
     /* Get devices for each available platform */
-    /* TODO: maybe merge all devices into one big list? */
     gchar *info_buffer = g_malloc0(256);
     for (int i = 0; i < priv->num_platforms; i ++) {
         cl_platform_id platform = priv->opencl_platforms[i];

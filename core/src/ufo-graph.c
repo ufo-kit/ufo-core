@@ -22,7 +22,6 @@ struct _UfoGraphPrivate {
     EthosManager        *ethos;
     JsonParser          *json_parser;
     UfoResourceManager  *resource_manager;
-    UfoElement          *root_container;
     GList               *elements;
     GHashTable          *plugin_types;   /**< maps from gchar* to GType* */
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
@@ -37,7 +36,7 @@ static void graph_add_plugin(gpointer data, gpointer user_data)
     const gchar *plugin_name = ethos_plugin_info_get_name(info);
 
     g_hash_table_insert(priv->plugin_types, 
-            (gpointer) plugin_name, 
+            (gpointer) g_strdup(plugin_name), 
             (gpointer) G_OBJECT_TYPE(plugin));
 }
 
@@ -74,7 +73,7 @@ static UfoFilter *graph_handle_json_filter(UfoGraph *self, JsonObject *object)
         JsonArray *prop_refs = json_object_get_array_member(object, "prop-refs");
         for (guint i = 0; i < json_array_get_length(prop_refs); i++) {
             const gchar *set_name = json_array_get_string_element(prop_refs, i);
-            JsonObject *prop_set = g_hash_table_lookup(self->priv->property_sets, set_name);
+            JsonObject *prop_set = g_hash_table_lookup(priv->property_sets, set_name);
             if (prop_set == NULL) {
                 g_warning("No property set '%s' in 'prop-sets'", set_name);
             }
@@ -90,9 +89,8 @@ static UfoFilter *graph_handle_json_filter(UfoGraph *self, JsonObject *object)
 
 static void graph_handle_json_sequence(UfoGraph *self, JsonObject *sequence)
 {
-    UfoResourceManager *manager = ufo_resource_manager();
     cl_command_queue *cmd_queue;
-    ufo_resource_manager_get_command_queues(manager, &cmd_queue);
+    ufo_resource_manager_get_command_queues(self->priv->resource_manager, (void **) &cmd_queue);
 
     if (json_object_has_member(sequence, "elements")) {
         UfoFilter *predecessor = NULL;
@@ -237,22 +235,9 @@ UfoGraph *ufo_graph_new()
     return graph;
 }
 
-/**
- * \brief Return the root element of the graph
- * \public \memberof UfoGraph
- *
- * In case a graph has already been load from disk via
- * ufo_graph_read_from_json() that root node is returned, otherwise a new
- * UfoSequence node is created.
- *
- * \param[in] graph A UfoGraph
- * \return A UfoContainer
- */
-UfoContainer *ufo_graph_get_root(UfoGraph *graph)
+void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter)
 {
-    if (graph->priv->root_container == NULL)
-        graph->priv->root_container = UFO_ELEMENT(ufo_sequence_new());
-    return UFO_CONTAINER(graph->priv->root_container);
+    graph->priv->elements = g_list_prepend(graph->priv->elements, filter);
 }
 
 /**
@@ -308,7 +293,6 @@ static void ufo_graph_dispose(GObject *object)
 
     GObject *objects[] = {
         G_OBJECT(priv->resource_manager),
-        G_OBJECT(priv->root_container),
         G_OBJECT(priv->json_parser),
         G_OBJECT(priv->ethos),
         NULL
@@ -318,18 +302,11 @@ static void ufo_graph_dispose(GObject *object)
     while (objects[i] != NULL)
         g_object_unref(objects[i++]);
 
-    if (priv->plugin_types) {
-        g_hash_table_destroy(priv->plugin_types);
-        priv->plugin_types = NULL;
-    }
+    g_hash_table_destroy(priv->plugin_types);
+    priv->plugin_types = NULL;
 
-    GList *property_set_names = g_hash_table_get_keys(priv->property_sets);
-    g_list_foreach(property_set_names, (GFunc) g_free, NULL);
-    g_list_free(property_set_names);
-    if (priv->property_sets) {
-        g_hash_table_destroy(priv->property_sets);
-        priv->property_sets = NULL;
-    }
+    g_hash_table_destroy(priv->property_sets);
+    priv->property_sets = NULL;
 
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);
 }
@@ -359,17 +336,17 @@ static void ufo_graph_init(UfoGraph *self)
     priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
     ethos_manager_initialize(priv->ethos);
 
-    priv->plugin_types = g_hash_table_new(g_str_hash, g_str_equal);
+    priv->plugin_types = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
     GList *plugin_info = ethos_manager_get_plugin_info(priv->ethos);
-
     g_list_foreach(plugin_info, &graph_add_plugin, priv);
     g_list_free(plugin_info);
 
     priv->resource_manager = ufo_resource_manager();
-    priv->root_container = NULL;
+    /*g_object_ref(priv->resource_manager);*/
+
     priv->elements = NULL;
     priv->json_parser = json_parser_new();
-    priv->property_sets = g_hash_table_new(g_str_hash, g_str_equal);
+    priv->property_sets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
 }
 
 

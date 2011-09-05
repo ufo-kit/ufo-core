@@ -22,8 +22,6 @@ enum {
 };
 
 struct _UfoFilterPrivate {
-    UfoResourceManager  *resource_manager;
-    GAsyncQueue         *input_queue;
     GAsyncQueue         *output_queue;
     GHashTable          *input_queues; /**< Map from char* to GAsyncQueue * */
     cl_command_queue    command_queue;
@@ -70,6 +68,20 @@ void ufo_filter_process(UfoFilter *filter)
     }
 }
 
+void ufo_filter_connect(UfoFilter *source, UfoFilter *destination)
+{
+    GAsyncQueue *queue = ufo_element_get_input_queue(UFO_ELEMENT(destination));
+    ufo_element_set_output_queue(UFO_ELEMENT(source), queue);
+}
+
+void ufo_filter_connect_by_name(UfoFilter *source, UfoFilter *destination, const gchar *name)
+{
+    GAsyncQueue *queue = g_hash_table_lookup(destination->priv->input_queues, name);
+    if (queue == NULL)
+        g_warning("%s doesn't export input queue %s", destination->priv->plugin_name, name);
+    ufo_element_set_output_queue(UFO_ELEMENT(source), queue);
+}
+
 UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter)
 {
     GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
@@ -108,7 +120,6 @@ static void ufo_filter_install_inputs(UfoFilter *self, const gchar *names[])
 {
     int i = 0;
     while (names[i] != NULL) {
-        g_message("installing input '%s'", names[i]);
         GAsyncQueue *queue = g_async_queue_new();
         g_hash_table_insert(self->priv->input_queues, g_strdup(names[i]), queue);
 
@@ -124,17 +135,11 @@ static void ufo_filter_install_inputs(UfoFilter *self, const gchar *names[])
  */
 static void ufo_filter_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 {
-    UfoFilter *self = UFO_FILTER(element);
-    g_message("%s: setting input queue", self->priv->plugin_name);
-    if (queue != NULL)
-        g_async_queue_ref(queue);
-    self->priv->input_queue = queue;
 }
 
 static void ufo_filter_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 {
     UfoFilter *self = UFO_FILTER(element);
-    g_message("%s: setting output queue", self->priv->plugin_name);
     if (queue != NULL)
         g_async_queue_ref(queue);
     self->priv->output_queue = queue;
@@ -192,18 +197,13 @@ static void ufo_filter_dispose(GObject *object)
     g_message("Time for '%s'", priv->plugin_name);
     g_message("  GPU: %.4lfs", priv->gpu_time);
 #endif
-    if (priv->input_queue) {
-        g_async_queue_unref(priv->input_queue);
-        priv->input_queue = NULL;
-    }
-    if (priv->output_queue) {
-        g_async_queue_unref(self->priv->output_queue);
-        priv->output_queue = NULL;
-    }
+
+    /* Clears keys and unrefs queues */
+    g_hash_table_destroy(priv->input_queues);
+    g_async_queue_unref(priv->output_queue);
     g_free(priv->plugin_name);
     G_OBJECT_CLASS(ufo_filter_parent_class)->dispose(object);
 }
-
 
 
 /*
@@ -242,12 +242,11 @@ static void ufo_filter_init(UfoFilter *self)
 {
     UfoFilterPrivate *priv;
     self->priv = priv = UFO_FILTER_GET_PRIVATE(self);
-    priv->input_queue = NULL;
     priv->output_queue = NULL;
     priv->command_queue = NULL;
     priv->cpu_time = 0.0f;
     priv->gpu_time = 0.0f;
     priv->input_queues = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, NULL);
+            g_free, (GDestroyNotify) g_async_queue_unref);
 }
 
