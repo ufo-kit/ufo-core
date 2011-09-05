@@ -80,28 +80,33 @@ static void ufo_sequence_add_element(UfoContainer *container, UfoElement *child)
     GList *last = g_list_last(self->priv->children);
     GAsyncQueue *prev = NULL;
 
+    GAsyncQueue *queue = ufo_element_get_input_queue(child);
+    if (queue != NULL && last != NULL) {
+        UfoElement *last_element = UFO_ELEMENT(last->data);
+        ufo_element_set_output_queue(last_element, queue);
+    }
+
+    /*
     if (last != NULL) {
-        /* We have the last element. Use its output as the input to the
-         * next element */
         UfoElement *last_element = UFO_ELEMENT(last->data);
         prev = ufo_element_get_output_queue(last_element);
     }
     else {
-        /* We have no children, so use the container's input as the input to the
-         * next element */
         prev = self->priv->input_queue;
     }
+    */
+
 
     /* Ok, we have some old output and connect it to the newly added element */
-    ufo_element_set_input_queue(child, prev);
+    /*ufo_element_set_input_queue(child, prev);*/
 
     /* Now, we create a new output that is also going to be the container's
      * real output */
-    GAsyncQueue *next = g_async_queue_new();
-    ufo_element_set_output_queue(child, next);
-    ufo_element_set_command_queue(child, self->priv->command_queue);
-    self->priv->output_queue = next;
-    self->priv->children = g_list_append(self->priv->children, child);
+    /*GAsyncQueue *next = g_async_queue_new();*/
+    /*ufo_element_set_output_queue(child, next);*/
+    /*ufo_element_set_command_queue(child, self->priv->command_queue);*/
+    /*self->priv->output_queue = next;*/
+    /*self->priv->children = g_list_append(self->priv->children, child);*/
     g_object_ref(child);
 }
 

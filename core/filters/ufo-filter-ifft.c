@@ -336,6 +336,9 @@ static void ufo_filter_ifft_class_init(UfoFilterIFFTClass *klass)
 
 static void ufo_filter_ifft_init(UfoFilterIFFT *self)
 {
+    static const gchar* input_names[] = { "input", NULL };
+    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
+
     UfoFilterIFFTPrivate *priv = self->priv = UFO_FILTER_IFFT_GET_PRIVATE(self);
     priv->ifft_dimensions = 1;
     priv->ifft_size.x = 1;

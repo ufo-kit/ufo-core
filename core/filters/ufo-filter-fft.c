@@ -300,6 +300,9 @@ static void ufo_filter_fft_class_init(UfoFilterFFTClass *klass)
 
 static void ufo_filter_fft_init(UfoFilterFFT *self)
 {
+    static const gchar* input_names[] = { "input", NULL };
+    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
+
     UfoFilterFFTPrivate *priv = self->priv = UFO_FILTER_FFT_GET_PRIVATE(self);
     priv->fft_dimensions = clFFT_1D;
     priv->fft_size.x = 1;

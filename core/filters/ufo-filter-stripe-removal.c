@@ -162,8 +162,8 @@ static void ufo_filter_stripe_removal_class_init(UfoFilterStripeRemovalClass *kl
 
 static void ufo_filter_stripe_removal_init(UfoFilterStripeRemoval *self)
 {
-    UfoFilterStripeRemovalPrivate *priv = self->priv = UFO_FILTER_STRIPE_REMOVAL_GET_PRIVATE(self);
-    priv->example = 1.0;
+    static const gchar* input_names[] = { "input", NULL };
+    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

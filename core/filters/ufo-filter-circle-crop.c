@@ -144,8 +144,8 @@ static void ufo_filter_circle_crop_class_init(UfoFilterCircleCropClass *klass)
 
 static void ufo_filter_circle_crop_init(UfoFilterCircleCrop *self)
 {
-    UfoFilterCircleCropPrivate *priv = self->priv = UFO_FILTER_CIRCLE_CROP_GET_PRIVATE(self);
-    priv->example = 1.0;
+    static const gchar* input_names[] = { "input", NULL };
+    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

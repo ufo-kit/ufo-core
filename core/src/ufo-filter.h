@@ -38,12 +38,16 @@ struct _UfoFilter {
 struct _UfoFilterClass {
     EthosPluginClass parent_class;
 
+    /* Private */
     void (*initialize) (UfoFilter *filter);
+    void (*install_inputs) (UfoFilter *filter, const gchar* names[]);
     void (*process) (UfoFilter *filter);
 };
 
 void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
 void ufo_filter_process(UfoFilter *filter);
+
+//GAsyncQueue* ufo_filter_get_input(UfoFilter *filter, const gchar *name);
 
 UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter);
 void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer);

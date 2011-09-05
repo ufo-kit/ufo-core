@@ -25,6 +25,7 @@ struct _UfoFilterPrivate {
     UfoResourceManager  *resource_manager;
     GAsyncQueue         *input_queue;
     GAsyncQueue         *output_queue;
+    GHashTable          *input_queues; /**< Map from char* to GAsyncQueue * */
     cl_command_queue    command_queue;
     gchar               *plugin_name;
     float cpu_time;
@@ -103,12 +104,28 @@ const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
     return filter->priv->plugin_name;
 }
 
+static void ufo_filter_install_inputs(UfoFilter *self, const gchar *names[])
+{
+    int i = 0;
+    while (names[i] != NULL) {
+        g_message("installing input '%s'", names[i]);
+        GAsyncQueue *queue = g_async_queue_new();
+        g_hash_table_insert(self->priv->input_queues, g_strdup(names[i]), queue);
+
+        /* Alias first parameter with "default" input */
+        if (i == 0)
+            g_hash_table_insert(self->priv->input_queues, g_strdup("default"), queue);
+        i++;
+    }
+}
+
 /* 
  * Virtual Methods
  */
 static void ufo_filter_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 {
     UfoFilter *self = UFO_FILTER(element);
+    g_message("%s: setting input queue", self->priv->plugin_name);
     if (queue != NULL)
         g_async_queue_ref(queue);
     self->priv->input_queue = queue;
@@ -117,6 +134,7 @@ static void ufo_filter_set_input_queue(UfoElement *element, GAsyncQueue *queue)
 static void ufo_filter_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 {
     UfoFilter *self = UFO_FILTER(element);
+    g_message("%s: setting output queue", self->priv->plugin_name);
     if (queue != NULL)
         g_async_queue_ref(queue);
     self->priv->output_queue = queue;
@@ -125,7 +143,10 @@ static void ufo_filter_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 static GAsyncQueue *ufo_filter_get_input_queue(UfoElement *element)
 {
     UfoFilter *self = UFO_FILTER(element);
-    return self->priv->input_queue;
+    GAsyncQueue *queue = g_hash_table_lookup(self->priv->input_queues, "default");
+    if (queue == NULL)
+        g_debug("%s doesn't export a default input queue", self->priv->plugin_name);
+    return queue;
 }
 
 static GAsyncQueue *ufo_filter_get_output_queue(UfoElement *element)
@@ -179,9 +200,10 @@ static void ufo_filter_dispose(GObject *object)
         g_async_queue_unref(self->priv->output_queue);
         priv->output_queue = NULL;
     }
-    g_free(self->priv->plugin_name);
+    g_free(priv->plugin_name);
     G_OBJECT_CLASS(ufo_filter_parent_class)->dispose(object);
 }
+
 
 
 /*
@@ -210,6 +232,7 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     gobject_class->dispose = ufo_filter_dispose;
     klass->initialize = NULL;
     klass->process = NULL;
+    klass->install_inputs = ufo_filter_install_inputs;
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoFilterPrivate));
@@ -224,5 +247,7 @@ static void ufo_filter_init(UfoFilter *self)
     priv->command_queue = NULL;
     priv->cpu_time = 0.0f;
     priv->gpu_time = 0.0f;
+    priv->input_queues = g_hash_table_new_full(g_str_hash, g_str_equal,
+            g_free, NULL);
 }
 

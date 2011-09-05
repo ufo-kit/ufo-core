@@ -40,25 +40,6 @@ static void deactivated(EthosPlugin *plugin)
 static void ufo_filter_normalize_initialize(UfoFilter *filter)
 {
     /* Here you can code, that is called for each newly instantiated filter */
-    /*
-    UfoFilterNormalize *self = UFO_FILTER_NORMALIZE(filter);
-    UfoResourceManager *manager = ufo_resource_manager();
-    GError *error = NULL;
-    self->priv->kernel = NULL;
-
-    ufo_resource_manager_add_program(manager, "foo-kernel-file.cl", &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-        return;
-    }
-
-    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "foo-kernel", &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-    }
-    */
 }
 
 /*
@@ -164,8 +145,8 @@ static void ufo_filter_normalize_class_init(UfoFilterNormalizeClass *klass)
 
 static void ufo_filter_normalize_init(UfoFilterNormalize *self)
 {
-    UfoFilterNormalizePrivate *priv = self->priv = UFO_FILTER_NORMALIZE_GET_PRIVATE(self);
-    priv->example = 1.0;
+    static const gchar* input_names[] = { "input", NULL };
+    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

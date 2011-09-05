@@ -505,10 +505,10 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
     /*g_object_unref(buffer);*/
 }
 
-void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, guint *num_queues)
+void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues)
 {
     /* FIXME: Use only first platform */
-    *num_queues = resource_manager->priv->num_devices[0];
+    /**num_queues = resource_manager->priv->num_devices[0];*/
     *command_queues = resource_manager->priv->command_queues;
 }
 
@@ -690,6 +690,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                     priv->opencl_devices[0][i],
                     queue_properties, &error);
+            g_message("queue %i: %p", i, priv->command_queues[i]);
             CHECK_ERROR(error);
 
             CHECK_ERROR(clGetDeviceInfo(priv->opencl_devices[0][i], CL_DEVICE_PROFILING_TIMER_RESOLUTION,

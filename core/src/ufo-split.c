@@ -282,7 +282,7 @@ static void ufo_split_set_command_queue(UfoElement *element, gpointer command_qu
      * need all available queues. */
     UfoResourceManager *manager = ufo_resource_manager();
     ufo_resource_manager_get_command_queues(manager,
-            (gpointer *) &self->priv->command_queues, &self->priv->num_queues);
+            (gpointer *) &self->priv->command_queues);
 }
 
 static gpointer ufo_split_get_command_queue(UfoElement *element)

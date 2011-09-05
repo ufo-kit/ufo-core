@@ -194,6 +194,9 @@ static void ufo_filter_writer_class_init(UfoFilterWriterClass *klass)
 
 static void ufo_filter_writer_init(UfoFilterWriter *self)
 {
+    static const gchar* input_names[] = { "input", NULL };
+    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
+
     self->priv = UFO_FILTER_WRITER_GET_PRIVATE(self);
     self->priv->path = g_strdup(".");
     self->priv->prefix = NULL;

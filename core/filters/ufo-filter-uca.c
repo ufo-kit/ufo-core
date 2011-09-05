@@ -176,9 +176,9 @@ static void ufo_filter_uca_class_init(UfoFilterUCAClass *klass)
 
 static void ufo_filter_uca_init(UfoFilterUCA *self)
 {
-    /* init public fields */
+    static const gchar* input_names[] = { "input", NULL };
+    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
 
-    /* init private fields */
     self->priv = UFO_FILTER_UCA_GET_PRIVATE(self);
     self->priv->cam = NULL;
     /* FIXME: what to do when u == NULL? */
