@@ -30,10 +30,17 @@ __kernel void binarize_inplace(__global float *data, __local float *scratch)
 {
     size_t index = get_global_id(1)*get_global_size(0) + get_global_id(0);
     float value = data[index];
-    if (value > 0.0032f)
-        data[index] = 1.0;
-    else
-        data[index] = 0.0;
+    data[index] = value > 0.6f ? 1.0 : 0.0;
+}
+
+__kernel void mirror(__global float *input, __global float *output, __local float *scratch)
+{
+    int idx = get_global_id(0);
+    int idy = get_global_id(1);
+    int width = get_global_size(0);
+    int height = get_global_size(1);
+
+    output[(idy * width) + idx] = input[((height-idy) * width) + (width - idx)];
 }
 
 __kernel void sub_squared_inter(__global float *frame1, __global float *frame2, __global float *result, __local float *scratch)
@@ -67,5 +74,4 @@ __kernel void mandelbrot(__global float *data, __local float *scratch)
     }
     data[index] = 1.0f - ((float) i / max_iterations);
 }
-
 
