@@ -48,7 +48,7 @@ void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
 void ufo_filter_process(UfoFilter *filter);
 
 void ufo_filter_connect(UfoFilter *source, UfoFilter *destination);
-void ufo_filter_connect_by_name(UfoFilter *source, UfoFilter *destination, const gchar *name);
+void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_name, UfoFilter *destination, const gchar *dest_name);
 
 UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter);
 void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer);
