@@ -1,0 +1,8 @@
+[UFO Plugin]
+Name=demux
+Module=${UFO_PLUGIN_LIBRARY}
+IAge=1
+Authors=John Doe
+Copyright=Public Domain
+Website=http://ufo.kit.edu
+Description=A meaningful description for this filter

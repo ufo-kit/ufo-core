@@ -95,16 +95,13 @@ void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, U
         filter_set_output_queue_with_name(UFO_ELEMENT(source), input_queue, source_output);
 }
 
-UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter)
+GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar *name)
 {
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    return g_async_queue_pop(input_queue);
-}
-
-void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer)
-{
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
-    g_async_queue_push(output_queue, buffer);
+    g_message("Request output queue %s", name);
+    GAsyncQueue *queue = g_hash_table_lookup(filter->priv->output_queues, name);
+    if (queue == NULL)
+        g_debug("%s doesn't export output queue %s", filter->priv->plugin_name, name);
+    return queue;
 }
 
 void ufo_filter_account_gpu_time(UfoFilter *filter, void **event)
@@ -146,13 +143,10 @@ static void ufo_filter_install_inputs(UfoFilter *self, const gchar *names[])
 /* 
  * Virtual Methods
  */
-static void ufo_filter_set_input_queue(UfoElement *element, GAsyncQueue *queue)
-{
-}
 
 static void ufo_filter_set_output_queue(UfoElement *element, GAsyncQueue *queue)
 {
-    filter_set_output_queue_with_name(UFO_FILTER(element), queue, "default");
+    filter_set_output_queue_with_name(element, queue, "default");
 }
 
 static GAsyncQueue *ufo_filter_get_input_queue(UfoElement *element)

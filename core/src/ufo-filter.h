@@ -47,11 +47,11 @@ struct _UfoFilterClass {
 void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
 void ufo_filter_process(UfoFilter *filter);
 
-void ufo_filter_connect(UfoFilter *source, UfoFilter *destination);
+void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination);
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_name, UfoFilter *destination, const gchar *dest_name);
 
-UfoBuffer *ufo_filter_pop_buffer(UfoFilter *filter);
-void ufo_filter_push_buffer(UfoFilter *filter, UfoBuffer *buffer);
+GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar *name);
+
 void ufo_filter_account_gpu_time(UfoFilter *filter, void **event);
 float ufo_filter_get_gpu_time(UfoFilter *filter);
 const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);

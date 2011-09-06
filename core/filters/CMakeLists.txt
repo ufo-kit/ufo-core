@@ -6,6 +6,7 @@ set(ufofilter_SRCS
     ufo-filter-center-of-rotation.c
     ufo-filter-circle-crop.c
     ufo-filter-cl.c
+    ufo-filter-demux.c
     ufo-filter-filter.c
     ufo-filter-hist.c
     ufo-filter-normalize.c
