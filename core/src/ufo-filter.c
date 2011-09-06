@@ -97,7 +97,6 @@ void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, U
 
 GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar *name)
 {
-    g_message("Request output queue %s", name);
     GAsyncQueue *queue = g_hash_table_lookup(filter->priv->output_queues, name);
     if (queue == NULL)
         g_debug("%s doesn't export output queue %s", filter->priv->plugin_name, name);

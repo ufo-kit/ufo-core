@@ -56,7 +56,6 @@ static void ufo_filter_demux_process(UfoFilter *filter)
     while (!ufo_buffer_is_finished(input)) {
         g_async_queue_push(output_queues[current], input);
         current = 1 - current;
-        g_message("pushing to %i", current);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
 
