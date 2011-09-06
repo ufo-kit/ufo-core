@@ -127,7 +127,7 @@ static void process_inplace(UfoElement *element,
 
         clerror |= clEnqueueNDRangeKernel(command_queue,
             kernel,
-            2, NULL, global_work_size, local_work_size,
+            2, NULL, global_work_size, NULL,
             0, NULL, &event);
 
         clFinish(command_queue);
@@ -152,6 +152,7 @@ static void process_two_frames(UfoElement *element,
     gint32 dimensions[4];
 
     UfoBuffer *frame1 = (UfoBuffer *) g_async_queue_pop(input_queue);
+    /* This might block if we receive just one buffer... */
     UfoBuffer *frame2 = (UfoBuffer *) g_async_queue_pop(input_queue);
 
     cl_int clerror = CL_SUCCESS;

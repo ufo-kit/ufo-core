@@ -237,6 +237,10 @@ UfoGraph *ufo_graph_new()
 
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter)
 {
+    cl_command_queue *cmd_queue;
+    ufo_resource_manager_get_command_queues(graph->priv->resource_manager, (void **) &cmd_queue);
+
+    ufo_element_set_command_queue(UFO_ELEMENT(filter), *cmd_queue);
     graph->priv->elements = g_list_prepend(graph->priv->elements, filter);
 }
 

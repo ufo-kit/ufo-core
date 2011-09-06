@@ -681,7 +681,6 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                     priv->opencl_devices[0][i],
                     queue_properties, &error);
-            g_message("queue %i: %p", i, priv->command_queues[i]);
             CHECK_ERROR(error);
 
             CHECK_ERROR(clGetDeviceInfo(priv->opencl_devices[0][i], CL_DEVICE_PROFILING_TIMER_RESOLUTION,
