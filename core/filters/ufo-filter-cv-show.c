@@ -83,31 +83,31 @@ static void ufo_filter_cv_show_process(UfoFilter *filter)
 
     gchar *window_name = g_strdup_printf("Foo-%p", filter);
     cvNamedWindow(window_name, CV_WINDOW_AUTOSIZE);
-    /*cvMoveWindow(window_name, 100, 100);*/
+    cvMoveWindow(window_name, 100, 100);
 
     int num_bins = 256;
     float range[] = {0, 255};
     float *ranges[] = { range };
-    /*CvHistogram *hist = cvCreateHist(1, &num_bins, CV_HIST_ARRAY, ranges, 1);*/
+    CvHistogram *hist = cvCreateHist(1, &num_bins, CV_HIST_ARRAY, ranges, 1);
 
     while (!ufo_buffer_is_finished(input)) {
         image->imageData = (char *) ufo_buffer_get_cpu_data(input, command_queue);
 
-        /*cvConvertImage(image, blit, 0);*/
-        /*cvShowImage(window_name, image);*/
+        cvConvertImage(image, blit, 0);
+        cvShowImage(window_name, image);
 
-        /*if (priv->show_histogram) {*/
-            /*cvCalcHist(&blit, hist, 0, 0);*/
-            /*IplImage *img_hist = draw_histogram(hist, 1.0, 1.0);*/
-            /*cvClearHist(hist);*/
-            /*cvShowImage("Histogram", img_hist);*/
-        /*}*/
-        /*cvWaitKey(10);*/
+        if (priv->show_histogram) {
+            cvCalcHist(&blit, hist, 0, 0);
+            IplImage *img_hist = draw_histogram(hist, 1.0, 1.0);
+            cvClearHist(hist);
+            cvShowImage("Histogram", img_hist);
+        }
+        cvWaitKey(30);
         
         g_async_queue_push(output_queue, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);
     }
-    /*cvWaitKey(10000);*/
+    cvWaitKey(10000);
     cvDestroyWindow(window_name);
     g_free(window_name);
 
