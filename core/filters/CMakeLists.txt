@@ -9,6 +9,7 @@ set(ufofilter_SRCS
     ufo-filter-demux.c
     ufo-filter-filter.c
     ufo-filter-hist.c
+    ufo-filter-mux.c
     ufo-filter-normalize.c
     ufo-filter-null.c
     ufo-filter-sino-generator.c
