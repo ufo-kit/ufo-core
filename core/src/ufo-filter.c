@@ -95,11 +95,19 @@ void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, U
         filter_set_output_queue_with_name(UFO_ELEMENT(source), input_queue, source_output);
 }
 
+GAsyncQueue *ufo_filter_get_input_queue_by_name(UfoFilter *filter, const gchar *name)
+{
+    GAsyncQueue *queue = g_hash_table_lookup(filter->priv->input_queues, name);
+    if (queue == NULL)
+        g_warning("%s doesn't export input queue %s", filter->priv->plugin_name, name);
+    return queue;
+}
+
 GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar *name)
 {
     GAsyncQueue *queue = g_hash_table_lookup(filter->priv->output_queues, name);
     if (queue == NULL)
-        g_debug("%s doesn't export output queue %s", filter->priv->plugin_name, name);
+        g_warning("%s doesn't export output queue %s", filter->priv->plugin_name, name);
     return queue;
 }
 

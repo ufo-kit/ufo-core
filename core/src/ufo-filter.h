@@ -50,6 +50,7 @@ void ufo_filter_process(UfoFilter *filter);
 void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination);
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_name, UfoFilter *destination, const gchar *dest_name);
 
+GAsyncQueue *ufo_filter_get_input_queue_by_name(UfoFilter *filter, const gchar *name);
 GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar *name);
 
 void ufo_filter_account_gpu_time(UfoFilter *filter, void **event);
