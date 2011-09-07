@@ -99,11 +99,14 @@ gsize ufo_buffer_get_size(UfoBuffer *buffer)
     return buffer->priv->size;
 }
 
+gint ufo_buffer_get_id(UfoBuffer *buffer)
+{
+    return buffer->priv->id;
+}
+
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
 {
-    gint id;
-    g_object_get(from, "id", &id, NULL);
-    g_object_set(to, "id", id, NULL);
+    to->priv->id = from->priv->id;
 }
 
 UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
