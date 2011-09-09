@@ -295,7 +295,6 @@ static void ufo_filter_reader_process(UfoFilter *self)
         dimensions[0] = width;
         dimensions[1] = height;
         UfoBuffer *image = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, FALSE);
-        g_object_set(image, "id", i, NULL);
 
         const guint16 bytes_per_sample = bits_per_sample >> 3;
         ufo_buffer_set_cpu_data(image, buffer, bytes_per_sample * width * height, NULL);

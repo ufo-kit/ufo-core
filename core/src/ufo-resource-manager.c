@@ -36,6 +36,7 @@ struct _UfoResourceManagerPrivate {
     GHashTable *opencl_kernels;         /**< maps from kernel string to cl_kernel */
 
     GHashTable *cached_buffers;         /**< maps from dimension hash to async queues of buffers */
+    guint current_id;                   /**< current non-assigned buffer id */
     gint cache_hits;
     gint cache_misses;
 
@@ -419,6 +420,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         gboolean prefer_gpu)
 {
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(resource_manager);
+    UfoBuffer *buffer = NULL;
 
     /* Find a queue that might contain buffers with a certain size */
     guint hash = DIM_HASH(dimensions);
@@ -426,20 +428,25 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
 
     if (queue == NULL) {
         priv->cache_misses++;
-        return resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
+        buffer = resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
+        ufo_buffer_increment_id(buffer);
     }
 
     /* Try to get a suitable buffer */
-    UfoBuffer *buffer = g_async_queue_try_pop(queue);
+    buffer = g_async_queue_try_pop(queue);
     if (buffer == NULL) {
         priv->cache_misses++;
-        return resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
+        buffer = resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
+        ufo_buffer_increment_id(buffer);
     }
 
     /* We found a suitable buffer and have to fill it with data if necessary */
     ufo_buffer_invalidate_gpu_data(buffer);
     if (data != NULL)
         ufo_buffer_set_cpu_data(buffer, data, ufo_buffer_get_size(buffer), NULL);
+    
+    /* Give our new-born buffer an initial unique id */
+    ufo_buffer_increment_id(buffer);
 
     priv->cache_hits++;
     return buffer;
@@ -503,6 +510,16 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
         clReleaseMemObject(mem);
 
     /*g_object_unref(buffer);*/
+}
+
+guint ufo_resource_manager_get_new_id(UfoResourceManager *resource_manager)
+{
+    guint id;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
+    g_static_mutex_lock(&mutex);
+    id = resource_manager->priv->current_id++;
+    g_static_mutex_unlock(&mutex);
+    return id;
 }
 
 void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues)
@@ -610,6 +627,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->opencl_programs = NULL;
     priv->opencl_build_options = g_string_new("-cl-mad-enable ");
 
+    priv->current_id = 0;
     priv->cached_buffers = g_hash_table_new(g_direct_hash, g_direct_equal);
     priv->cache_hits = 0;
     priv->cache_misses = 0;

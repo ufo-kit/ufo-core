@@ -46,6 +46,7 @@ static void ufo_filter_null_process(UfoFilter *filter)
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
     gint frames = 0;
     while (!ufo_buffer_is_finished(input)) {
+        g_message("got buffer with id = %i", ufo_buffer_get_id(input));
         frames++;
         ufo_resource_manager_release_buffer(manager, input);
         input = (UfoBuffer *) g_async_queue_pop(input_queue);

@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "ufo-buffer.h"
+#include "ufo-resource-manager.h"
 #include "ufo-enums.h"
 
 G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT);
@@ -107,6 +108,12 @@ gint ufo_buffer_get_id(UfoBuffer *buffer)
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
 {
     to->priv->id = from->priv->id;
+}
+
+void ufo_buffer_increment_id(UfoBuffer *buffer)
+{
+    guint new_id = ufo_resource_manager_get_new_id(ufo_resource_manager());
+    buffer->priv->id = new_id;
 }
 
 UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
