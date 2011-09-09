@@ -430,6 +430,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         priv->cache_misses++;
         buffer = resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
         ufo_buffer_increment_id(buffer);
+        return buffer;
     }
 
     /* Try to get a suitable buffer */
@@ -438,6 +439,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         priv->cache_misses++;
         buffer = resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
         ufo_buffer_increment_id(buffer);
+        return buffer;
     }
 
     /* We found a suitable buffer and have to fill it with data if necessary */
