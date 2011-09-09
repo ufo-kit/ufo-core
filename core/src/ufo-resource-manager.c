@@ -463,7 +463,9 @@ UfoBuffer *ufo_resource_manager_request_finish_buffer(UfoResourceManager *self)
 
 UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *manager, UfoBuffer *buffer)
 {
-    return ufo_buffer_copy(buffer, manager->priv->command_queues);
+    UfoBuffer *copy = ufo_buffer_copy(buffer, manager->priv->command_queues);
+    ufo_buffer_increment_id(copy);
+    return copy;
 }
 
 /**
