@@ -79,10 +79,10 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     UfoFilterBackproject *self = UFO_FILTER_BACKPROJECT(filter);
     UfoFilterBackprojectPrivate *priv = UFO_FILTER_BACKPROJECT_GET_PRIVATE(self);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
 
-    UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *sinogram = (UfoBuffer *) ufo_channel_pop(input_channel);
     gint32 width, num_projections;
     ufo_buffer_get_2d_dimensions(sinogram, &width, &num_projections);
 
@@ -138,7 +138,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
 
     int total = 0;
 
-    while (!ufo_buffer_is_finished(sinogram)) {
+    while (sinogram != NULL) {
         total++;
         gint32 dimensions[4] = { width, width, 1, 1 };
         UfoBuffer *slice = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, FALSE);
@@ -170,10 +170,10 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         clReleaseEvent(event);
         ufo_buffer_transfer_id(sinogram, slice);
 
-        g_async_queue_push(output_queue, slice);
+        ufo_channel_push(output_channel, slice);
 
         ufo_resource_manager_release_buffer(manager, sinogram);
-        sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
+        sinogram = ufo_channel_pop(input_channel);
     }
     
     if (priv->use_texture)
@@ -183,8 +183,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     clReleaseMemObject(sin_mem);
     clReleaseMemObject(axes_mem);
 
-    g_async_queue_push(output_queue, 
-            ufo_resource_manager_request_finish_buffer(manager));
+    ufo_channel_finish(output_channel);
 }
 
 static void ufo_filter_backproject_set_property(GObject *object,

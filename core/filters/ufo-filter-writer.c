@@ -3,7 +3,6 @@
 
 #include "ufo-filter-writer.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 #include "ufo-resource-manager.h"
 
@@ -122,15 +121,15 @@ static void ufo_filter_writer_process(UfoFilter *self)
     g_return_if_fail(UFO_IS_FILTER(self));
 
     UfoFilterWriterPrivate *priv = UFO_FILTER_WRITER_GET_PRIVATE(self);
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
-    UfoBuffer *input = UFO_BUFFER(g_async_queue_pop(input_queue));
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(self));
+    UfoChannel *input_channel = ufo_filter_get_input_channel(self);
+    UfoBuffer *input = ufo_channel_pop(input_channel);
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(self);
     GString *filename = g_string_new("");
     gint id = -1, current_frame = 0;
 
     GTimer *timer = g_timer_new();
     gint32 dimensions[4] = { 1, 1, 1, 1 };
-    while (!ufo_buffer_is_finished(input)) {
+    while (input != NULL) {
         ufo_buffer_get_dimensions(input, dimensions);
         const gint32 width = dimensions[0];
         const gint32 height = dimensions[1];
@@ -148,7 +147,7 @@ static void ufo_filter_writer_process(UfoFilter *self)
 
         ufo_resource_manager_release_buffer(ufo_resource_manager(), input);
         g_timer_stop(timer);
-        input = UFO_BUFFER(g_async_queue_pop(input_queue));
+        input = ufo_channel_pop(input_channel);
         g_timer_continue(timer);
     }
     g_timer_stop(timer);

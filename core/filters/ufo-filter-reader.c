@@ -262,8 +262,8 @@ static void ufo_filter_reader_process(UfoFilter *self)
 
     UfoFilterReaderPrivate *priv = UFO_FILTER_READER_GET_PRIVATE(self);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
-
+    UfoChannel *output_channel = ufo_filter_get_output_channel(self);
+    
     filter_read_filenames(priv);
     const guint max_count = (priv->count == -1) ? G_MAXUINT : priv->count;
     guint32 width, height;
@@ -300,15 +300,15 @@ static void ufo_filter_reader_process(UfoFilter *self)
         if (bits_per_sample < 32)
             ufo_buffer_reinterpret(image, bits_per_sample, width * height);
 
-        while (g_async_queue_length(output_queue) > 2)
+        /* Limit congestion */
+        while (ufo_channel_length(output_channel) > 2)
             ;
-        g_async_queue_push(output_queue, image);
+        ufo_channel_push(output_channel, image);
         g_free(buffer);
         filename = g_list_next(filename);
     }
     /* No more data */
-    g_async_queue_push(output_queue, 
-            ufo_resource_manager_request_finish_buffer(manager));
+    ufo_channel_finish(output_channel);
 }
 
 static void ufo_filter_reader_class_init(UfoFilterReaderClass *klass)

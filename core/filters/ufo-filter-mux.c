@@ -44,45 +44,44 @@ static void ufo_filter_mux_initialize(UfoFilter *filter)
 static void ufo_filter_mux_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    GAsyncQueue *input_queues[2] = { NULL, NULL };
-    input_queues[0] = ufo_filter_get_input_queue_by_name(filter, "input1");
-    input_queues[1] = ufo_filter_get_input_queue_by_name(filter, "input2");
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channels[2] = { NULL, NULL };
+    input_channels[0] = ufo_filter_get_input_channel_by_name(filter, "input1");
+    input_channels[1] = ufo_filter_get_input_channel_by_name(filter, "input2");
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
 
-    UfoBuffer *input1 = (UfoBuffer *) g_async_queue_pop(input_queues[0]);
-    UfoBuffer *input2 = (UfoBuffer *) g_async_queue_pop(input_queues[1]);
+    UfoBuffer *input1 = ufo_channel_pop(input_channels[0]);
+    UfoBuffer *input2 = ufo_channel_pop(input_channels[1]);
     gint id1 = ufo_buffer_get_id(input1);
     gint id2 = ufo_buffer_get_id(input2);
     
-    while (!ufo_buffer_is_finished(input1) || !ufo_buffer_is_finished(input2)) {
-        while ((id1 < id2) && !ufo_buffer_is_finished(input1)) {
-            g_async_queue_push(output_queue, input1);
-            input1 = g_async_queue_pop(input_queues[0]);
+    while ((input1 != NULL) || (input2 != NULL)) {
+        while ((id1 < id2) && (input1 != NULL)) {
+            ufo_channel_push(output_channel, input1);
+            input1 = ufo_channel_pop(input_channels[0]);
             id1 = ufo_buffer_get_id(input1);
         }
         
-        while ((id2 < id1) && !ufo_buffer_is_finished(input2)) {
-            g_async_queue_push(output_queue, input2);
-            input2 = g_async_queue_pop(input_queues[1]);
+        while ((id2 < id1) && (input2 != NULL)) {
+            ufo_channel_push(output_channel, input2);
+            input2 = ufo_channel_pop(input_channels[1]);
             id2 = ufo_buffer_get_id(input2);
         }
 
-        if (!ufo_buffer_is_finished(input1)) {
-            g_async_queue_push(output_queue, input1);
-            input1 = g_async_queue_pop(input_queues[0]);
-            id1 = ufo_buffer_get_id(input1);
+        if (input1 != NULL) {
+            ufo_channel_push(output_channel, input1);
+            input1 = ufo_channel_pop(input_channels[0]);
+            id1 = input1 == NULL ? -1 : ufo_buffer_get_id(input1);
         }
         
-        if (!ufo_buffer_is_finished(input2)) {
-            g_async_queue_push(output_queue, input2);
-            input2 = g_async_queue_pop(input_queues[1]);
-            id2 = ufo_buffer_get_id(input2);
+        if (input2 != NULL) {
+            ufo_channel_push(output_channel, input2);
+            input2 = ufo_channel_pop(input_channels[1]);
+            id2 = input2 == NULL ? -1 : ufo_buffer_get_id(input2);
         }
     }
     
     /* Discard one of the finishing buffers and push the other */
-    ufo_resource_manager_release_buffer(ufo_resource_manager(), input1);
-    g_async_queue_push(output_queue, input2);
+    ufo_channel_finish(output_channel);
 }
 
 static void ufo_filter_mux_set_property(GObject *object,

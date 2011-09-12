@@ -96,13 +96,12 @@ static void ufo_filter_uca_process(UfoFilter *self)
     g_return_if_fail(UFO_IS_FILTER(self));
     UfoFilterUCAPrivate *priv = UFO_FILTER_UCA_GET_PRIVATE(self);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(self);
 
     /* Camera subsystem could not be initialized, so flag end */
     if (priv->u == NULL) {
         g_debug("Camera system is not initialized");
-        g_async_queue_push(output_queue, 
-                ufo_resource_manager_request_finish_buffer(manager));
+        ufo_channel_finish(output_channel);
         return;
     }
 
@@ -125,15 +124,14 @@ static void ufo_filter_uca_process(UfoFilter *self)
 
         /* FIXME: don't use hardcoded 8 bits per pixel */
         ufo_buffer_reinterpret(buffer, 8, width * height);
-        while (g_async_queue_length(output_queue) > 2)
+        while (ufo_channel_length(output_channel) > 2)
             ;
-
-        g_async_queue_push(output_queue, buffer);
+        
+        ufo_channel_push(output_channel, buffer);
     }
 
     g_timer_destroy(timer);
-    g_async_queue_push(output_queue, 
-            ufo_resource_manager_request_finish_buffer(manager));
+    ufo_channel_finish(output_channel);
 }
 
 static void ufo_filter_uca_class_init(UfoFilterUCAClass *klass)

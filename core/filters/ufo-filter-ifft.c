@@ -76,16 +76,16 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterIFFTPrivate *priv = UFO_FILTER_IFFT_GET_PRIVATE(filter);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     int err = CL_SUCCESS;
     clFFT_Plan ifft_plan = NULL;
-    UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *input = ufo_channel_pop(input_channel);
     gint32 dimensions[4] = { 1, 1, 1, 1 };
 
-    while (!ufo_buffer_is_finished(input)) {
+    while (input != NULL) {
         ufo_buffer_get_dimensions(input, dimensions);
         gint32 width = dimensions[0];
         gint32 height = dimensions[1];
@@ -161,10 +161,10 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         ufo_buffer_transfer_id(input, sinogram);
         ufo_resource_manager_release_buffer(manager, input);
 
-        g_async_queue_push(output_queue, sinogram);
-        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        ufo_channel_push(output_channel, sinogram);
+        input = ufo_channel_pop(input_channel);
     }
-    g_async_queue_push(output_queue, input);
+    ufo_channel_finish(output_channel);
     clFFT_DestroyPlan(ifft_plan);
 }
 

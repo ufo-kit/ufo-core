@@ -83,16 +83,16 @@ static void ufo_filter_fft_process(UfoFilter *filter)
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterFFTPrivate *priv = UFO_FILTER_FFT_GET_PRIVATE(filter);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     int err = CL_SUCCESS;
     clFFT_Plan fft_plan = NULL;
-    UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *input = (UfoBuffer *) ufo_channel_pop(input_channel);
     gint32 dimensions[4] = { 1, 1, 1, 1 }, width, height;
 
-    while (!ufo_buffer_is_finished(input)) {
+    while (input != NULL) {
         ufo_buffer_get_2d_dimensions(input, &width, &height);
 
         /* Check if we can re-use the old FFT plan */
@@ -156,11 +156,11 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         ufo_buffer_transfer_id(input, fft_buffer);
         ufo_resource_manager_release_buffer(manager, input);
 
-        g_async_queue_push(output_queue, fft_buffer);
-        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        ufo_channel_push(output_channel, fft_buffer);
+        input = (UfoBuffer *) ufo_channel_pop(input_channel);
     }
 
-    g_async_queue_push(output_queue, input);
+    ufo_channel_finish(output_channel);
     clFFT_DestroyPlan(fft_plan);
 }
 

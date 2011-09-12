@@ -55,20 +55,20 @@ static void process_regular(UfoFilter *self,
         cl_command_queue command_queue, 
         cl_kernel kernel)
 {
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(self);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(self);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(self);
     UfoResourceManager *manager = ufo_resource_manager();
 
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
 
-    UfoBuffer *frame = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *frame = ufo_channel_pop(input_channel);
 
     cl_int clerror = CL_SUCCESS;
     cl_event event;
     gint32 dimensions[4] = { 1, 1, 1, 1 };
 
-    while (!ufo_buffer_is_finished(frame)) { 
+    while (frame != NULL) { 
         ufo_buffer_get_dimensions(frame, dimensions);
         global_work_size[0] = (size_t) dimensions[0];
         global_work_size[1] = (size_t) dimensions[1];
@@ -91,10 +91,10 @@ static void process_regular(UfoFilter *self,
         clFinish(command_queue);
 
         ufo_resource_manager_release_buffer(manager, frame);
-        g_async_queue_push(output_queue, result);
-        frame = (UfoBuffer *) g_async_queue_pop(input_queue);
+        ufo_channel_push(output_channel, result);
+        frame = ufo_channel_pop(input_channel);
     }
-    g_async_queue_push(output_queue, frame);
+    ufo_channel_finish(output_channel);
 }
 
 static void process_inplace(UfoFilter *self,
@@ -102,19 +102,19 @@ static void process_inplace(UfoFilter *self,
         cl_command_queue command_queue, 
         cl_kernel kernel)
 {
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(self);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(self);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(self);
 
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
     gint32 dimensions[4];
 
-    UfoBuffer *frame = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *frame = ufo_channel_pop(input_channel);
 
     cl_int clerror = CL_SUCCESS;
     cl_event event;
 
-    while (!ufo_buffer_is_finished(frame)) {
+    while (frame != NULL) {
         ufo_buffer_get_dimensions(frame, dimensions);
         global_work_size[0] = (size_t) dimensions[0];
         global_work_size[1] = (size_t) dimensions[1];
@@ -131,10 +131,10 @@ static void process_inplace(UfoFilter *self,
 
         clFinish(command_queue);
 
-        g_async_queue_push(output_queue, frame);
-        frame = (UfoBuffer *) g_async_queue_pop(input_queue);
+        ufo_channel_push(output_channel, frame);
+        frame = ufo_channel_pop(input_channel);
     }
-    g_async_queue_push(output_queue, frame);
+    ufo_channel_finish(output_channel);
 }
 
 static void process_two_frames(UfoFilter *self,
@@ -142,22 +142,22 @@ static void process_two_frames(UfoFilter *self,
         cl_command_queue command_queue, 
         cl_kernel kernel)
 {
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(self);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(self);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(self);
     UfoResourceManager *manager = ufo_resource_manager();
 
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
     gint32 dimensions[4];
 
-    UfoBuffer *frame1 = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *frame1 = ufo_channel_pop(input_channel);
     /* This might block if we receive just one buffer... */
-    UfoBuffer *frame2 = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *frame2 = ufo_channel_pop(input_channel);
 
     cl_int clerror = CL_SUCCESS;
     cl_event event;
 
-    while (!ufo_buffer_is_finished(frame1) && !ufo_buffer_is_finished(frame2)) {
+    while ((frame1 != NULL) && (frame2 != NULL)) {
         ufo_buffer_get_dimensions(frame1, dimensions);
         global_work_size[0] = (size_t) dimensions[0];
         global_work_size[1] = (size_t) dimensions[1];
@@ -183,10 +183,10 @@ static void process_two_frames(UfoFilter *self,
 
         ufo_resource_manager_release_buffer(manager, frame1);
         frame1 = frame2;
-        frame2 = (UfoBuffer *) g_async_queue_pop(input_queue);
-        g_async_queue_push(output_queue, result);
+        frame2 = ufo_channel_pop(input_channel);
+        ufo_channel_push(output_channel, result);
     }
-    g_async_queue_push(output_queue, ufo_resource_manager_request_finish_buffer(manager));
+    ufo_channel_finish(output_channel);
 }
 
 /*
@@ -197,7 +197,7 @@ static void ufo_filter_cl_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterClPrivate *priv = UFO_FILTER_CL_GET_PRIVATE(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
 
     cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
@@ -219,7 +219,7 @@ static void ufo_filter_cl_process(UfoFilter *filter)
         g_error_free(error);
     }
     if (!kernel) {
-        g_async_queue_push(output_queue, ufo_resource_manager_request_finish_buffer(manager));
+        ufo_channel_finish(output_channel);
         return;
     }
 

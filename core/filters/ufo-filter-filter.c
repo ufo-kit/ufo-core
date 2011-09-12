@@ -95,18 +95,18 @@ static void ufo_filter_filter_process(UfoFilter *filter)
 
     UfoFilterFilterPrivate *priv = UFO_FILTER_FILTER_GET_PRIVATE(filter);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
-    UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *input = (UfoBuffer *) ufo_channel_pop(input_channel);
     gint32 width, height;
     ufo_buffer_get_2d_dimensions(input, &width, &height);
 
     UfoBuffer *filter_buffer = filter_create_data(priv, width);
     cl_mem filter_mem = (cl_mem) ufo_buffer_get_gpu_data(filter_buffer, command_queue);
 
-    while (!ufo_buffer_is_finished(input)) {
+    while (input != NULL) {
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
         cl_event event;
         size_t global_work_size[2] = { width, height };
@@ -121,11 +121,11 @@ static void ufo_filter_filter_process(UfoFilter *filter)
         ufo_filter_account_gpu_time(filter, (void **) &event);
         clReleaseEvent(event);
         
-        g_async_queue_push(output_queue, input);
-        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        ufo_channel_push(output_channel, input);
+        input = (UfoBuffer *) ufo_channel_pop(input_channel);
     }
     ufo_resource_manager_release_buffer(manager, filter_buffer);
-    g_async_queue_push(output_queue, input);
+    ufo_channel_finish(output_channel);
 }
 
 static void ufo_filter_filter_set_property(GObject *object,

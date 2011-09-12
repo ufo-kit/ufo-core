@@ -49,11 +49,11 @@ static void ufo_filter_circle_crop_initialize(UfoFilter *filter)
 static void ufo_filter_circle_crop_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
-    UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *input = ufo_channel_pop(input_channel);
     gint32 width, height;
     while (!ufo_buffer_is_finished(input)) {
         ufo_buffer_get_2d_dimensions(input, &width, &height);
@@ -70,10 +70,10 @@ static void ufo_filter_circle_crop_process(UfoFilter *filter)
             }
         }
 
-        g_async_queue_push(output_queue, input);
-        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        ufo_channel_push(output_channel, input);
+        input = (UfoBuffer *) ufo_channel_pop(input_channel);
     }
-    g_async_queue_push(output_queue, input);
+    ufo_channel_finish(output_channel);
 }
 
 static void ufo_filter_circle_crop_set_property(GObject *object,

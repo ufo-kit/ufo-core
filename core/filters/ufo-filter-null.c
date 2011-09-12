@@ -39,15 +39,15 @@ static void ufo_filter_null_initialize(UfoFilter *filter)
 static void ufo_filter_null_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
     UfoResourceManager *manager = ufo_resource_manager();
 
-    UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *input = ufo_channel_pop(input_channel);
     gint frames = 0;
-    while (!ufo_buffer_is_finished(input)) {
+    while (input != NULL) {
         frames++;
         ufo_resource_manager_release_buffer(manager, input);
-        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        input = ufo_channel_pop(input_channel);
     }
     g_message("processed %i frames", frames);
 }

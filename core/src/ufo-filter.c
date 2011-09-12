@@ -5,7 +5,6 @@
 #include "config.h"
 #include "ufo-filter.h"
 
-
 G_DEFINE_TYPE(UfoFilter,
               ufo_filter, 
               ETHOS_TYPE_PLUGIN)
@@ -18,32 +17,31 @@ enum {
 };
 
 struct _UfoFilterPrivate {
-    GHashTable          *output_queues; /**< Map from char* to GAsyncQueue * */
-    GHashTable          *input_queues;  /**< Map from char* to GAsyncQueue * */
+    GHashTable          *output_channels; /**< Map from *char to *UfoChannel */
+    GHashTable          *input_channels;  /**< Map from *char to *UfoChannel */
     cl_command_queue    command_queue;
     gchar               *plugin_name;
     float cpu_time;
     float gpu_time;
 };
 
-static void filter_set_output_queue(UfoFilter *self, const gchar *name, GAsyncQueue *queue)
+static void filter_set_output_channel(UfoFilter *self, const gchar *name, UfoChannel *channel)
 {
-    GAsyncQueue *old_queue = g_hash_table_lookup(self->priv->output_queues, name);
-    if (old_queue != NULL)
-        g_hash_table_remove(self->priv->output_queues, name);
+    UfoChannel *old_channel = g_hash_table_lookup(self->priv->output_channels, name);
+    if (old_channel != NULL)
+        g_hash_table_remove(self->priv->output_channels, name);
 
-    g_hash_table_insert(self->priv->output_queues, g_strdup(name), queue);
-    g_async_queue_ref(queue);
+    g_hash_table_insert(self->priv->output_channels, g_strdup(name), channel);
+    ufo_channel_ref(channel);
 }
 
-static void filter_set_input_queue(UfoFilter *self, const gchar *name, GAsyncQueue *queue)
+static void filter_set_input_channel(UfoFilter *self, const gchar *name, UfoChannel *channel)
 {
-    GAsyncQueue *old_queue = g_hash_table_lookup(self->priv->input_queues, name);
-    if (old_queue != NULL)
-        g_hash_table_remove(self->priv->input_queues, name);
+    UfoChannel *old_channel = g_hash_table_lookup(self->priv->input_channels, name);
+    if (old_channel != NULL)
+        g_hash_table_remove(self->priv->input_channels, name);
 
-    g_hash_table_insert(self->priv->input_queues, g_strdup(name), queue);
-    g_async_queue_ref(queue);
+    g_hash_table_insert(self->priv->input_channels, g_strdup(name), channel);
 }
 
 
@@ -91,42 +89,42 @@ void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination)
 
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, UfoFilter *destination, const gchar *dest_input)
 {
-    GAsyncQueue *queue_in = ufo_filter_get_input_queue_by_name(destination, dest_input); 
-    GAsyncQueue *queue_out = ufo_filter_get_output_queue_by_name(source, source_output);
+    UfoChannel *channel_in = ufo_filter_get_input_channel_by_name(destination, dest_input); 
+    UfoChannel *channel_out = ufo_filter_get_output_channel_by_name(source, source_output);
     
-    if ((queue_in == NULL) && (queue_out == NULL)) {
-        GAsyncQueue *queue = g_async_queue_new();
-        filter_set_output_queue(source, source_output, queue);
-        filter_set_input_queue(destination, dest_input, queue);
+    if ((channel_in == NULL) && (channel_out == NULL)) {
+        UfoChannel *channel = ufo_channel_new();
+        filter_set_output_channel(source, source_output, channel);
+        filter_set_input_channel(destination, dest_input, channel);
     }
-    else if (queue_in == NULL)
-        filter_set_input_queue(destination, dest_input, queue_out); 
-    else if (queue_out == NULL)
-        filter_set_output_queue(source, source_output, queue_in); 
+    else if (channel_in == NULL)
+        filter_set_input_channel(destination, dest_input, channel_out); 
+    else if (channel_out == NULL)
+        filter_set_output_channel(source, source_output, channel_in); 
 }
 
-GAsyncQueue *ufo_filter_get_input_queue_by_name(UfoFilter *filter, const gchar *name)
+UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar *name)
 {
-    GAsyncQueue *queue = g_hash_table_lookup(filter->priv->input_queues, name);
-    return queue;
+    UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, name);
+    return channel;
 }
 
-GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar *name)
+UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar *name)
 {
-    GAsyncQueue *queue = g_hash_table_lookup(filter->priv->output_queues, name);
-    return queue;
+    UfoChannel *channel = g_hash_table_lookup(filter->priv->output_channels, name);
+    return channel;
 }
 
-GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *filter)
+UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter)
 {
-    GAsyncQueue *queue = g_hash_table_lookup(filter->priv->input_queues, "default");
-    return queue;
+    UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, "default");
+    return channel;
 }
 
-GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *filter)
+UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter)
 {
-    GAsyncQueue *queue = g_hash_table_lookup(filter->priv->output_queues, "default");
-    return queue;
+    UfoChannel *channel = g_hash_table_lookup(filter->priv->output_channels, "default");
+    return channel;
 }
 
 void ufo_filter_account_gpu_time(UfoFilter *filter, void **event)
@@ -175,9 +173,9 @@ static void ufo_filter_dispose(GObject *object)
     g_message("  GPU: %.4lfs", priv->gpu_time);
 #endif
 
-    /* Clears keys and unrefs queues */
-    g_hash_table_destroy(priv->input_queues);
-    g_hash_table_destroy(priv->output_queues);
+    /* Clears keys and unrefs channels */
+    g_hash_table_destroy(priv->input_channels);
+    g_hash_table_destroy(priv->output_channels);
     g_free(priv->plugin_name);
     G_OBJECT_CLASS(ufo_filter_parent_class)->dispose(object);
 }
@@ -205,9 +203,9 @@ static void ufo_filter_init(UfoFilter *self)
     priv->command_queue = NULL;
     priv->cpu_time = 0.0f;
     priv->gpu_time = 0.0f;
-    priv->input_queues = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, (GDestroyNotify) g_async_queue_unref);
-    priv->output_queues = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, (GDestroyNotify) g_async_queue_unref);
+    priv->input_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
+            g_free, (GDestroyNotify) g_object_unref);
+    priv->output_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
+            g_free, (GDestroyNotify) g_object_unref);
 }
 

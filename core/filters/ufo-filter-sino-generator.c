@@ -50,8 +50,8 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterSinoGeneratorPrivate *priv = UFO_FILTER_SINO_GENERATOR_GET_PRIVATE(filter);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     /* We pop the very first image, to determine the size w*h of a projection.
@@ -59,7 +59,7 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
      * num_projections and width w */
     gint32 width, height, sino_width, dimensions[4];
     guint received = 1;
-    UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *input = ufo_channel_pop(input_channel);
     ufo_buffer_get_dimensions(input, dimensions);
     width = dimensions[0];
     height = dimensions[1];
@@ -85,17 +85,16 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
             memcpy(dst, src + i*sino_width, bytes_per_line);
         }
         ufo_resource_manager_release_buffer(manager, input);
-        input = ufo_filter_pop_buffer(filter);
+        input = ufo_channel_pop(input_channel);
         received++;
     }
     
     /* Second step: push them one by one */
     for (gint i = 0; i < num_sinos; i++)
-        g_async_queue_push(output_queue, sinograms[i]);
+        ufo_channel_push(output_channel, sinograms[i]);
 
     /* Third step: complete */
-    g_async_queue_push(output_queue, 
-            ufo_resource_manager_request_finish_buffer(manager));
+    ufo_channel_finish(output_channel);
 }
 
 static void ufo_filter_sino_generator_set_property(GObject *object,

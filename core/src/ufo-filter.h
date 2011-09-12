@@ -6,6 +6,7 @@
 
 #include "ufo-resource-manager.h"
 #include "ufo-buffer.h"
+#include "ufo-channel.h"
 
 #define UFO_TYPE_FILTER             (ufo_filter_get_type())
 #define UFO_FILTER(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_FILTER, UfoFilter))
@@ -50,10 +51,10 @@ gpointer ufo_filter_get_command_queue(UfoFilter *filter);
 void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination);
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_name, UfoFilter *destination, const gchar *dest_name);
 
-GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *filter);
-GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *filter);
-GAsyncQueue *ufo_filter_get_input_queue_by_name(UfoFilter *filter, const gchar *name);
-GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar *name);
+UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter);
+UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter);
+UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar *name);
+UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar *name);
 
 void ufo_filter_account_gpu_time(UfoFilter *filter, void **event);
 float ufo_filter_get_gpu_time(UfoFilter *filter);

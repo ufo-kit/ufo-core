@@ -30,13 +30,13 @@ static GParamSpec *center_of_rotation_properties[N_PROPERTIES] = { NULL, };
 
 static void center_of_rotation_sinograms(UfoFilter *filter)
 {
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
-    UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
+    UfoBuffer *sinogram = ufo_channel_pop(input_channel);
     gint32 width, height;
-    while (!ufo_buffer_is_finished(sinogram)) {
+    while (sinogram != NULL) {
         ufo_buffer_get_2d_dimensions(sinogram, &width, &height);
 
         float *proj_0 = ufo_buffer_get_cpu_data(sinogram, command_queue);
@@ -75,34 +75,34 @@ static void center_of_rotation_sinograms(UfoFilter *filter)
 
         g_free(scores);
 
-        g_async_queue_push(output_queue, sinogram);
-        sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
+        ufo_channel_push(output_channel, sinogram);
+        sinogram = ufo_channel_pop(input_channel);
     }
-    g_async_queue_push(output_queue, sinogram);
+    ufo_channel_finish(output_channel);
 }
 
 static void center_of_rotation_projections(UfoFilter *filter)
 {
     UfoFilterCenterOfRotationPrivate *priv = UFO_FILTER_CENTER_OF_ROTATION_GET_PRIVATE(filter);
-    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
-    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     UfoBuffer *input = NULL;
 
     cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
-    input = (UfoBuffer *) g_async_queue_pop(input_queue);
+    input = ufo_channel_pop(input_channel);
     float *proj_0 = ufo_buffer_get_cpu_data(input, command_queue);
     float *proj_180 = NULL;
     int counter = 0;
 
     /* Take all buffers until we got the opposite projection */
-    input = (UfoBuffer *) g_async_queue_pop(input_queue);
-    while (!ufo_buffer_is_finished(input)) {
+    input = ufo_channel_pop(input_channel);
+    while (input != NULL) {
         if (ABS((counter++ * priv->angle_step) - 180.0f) < 0.001f) {
             proj_180 = ufo_buffer_get_cpu_data(input, command_queue); 
             break;
         }
-        g_async_queue_push(output_queue, input);
-        input = (UfoBuffer *) g_async_queue_pop(input_queue);
+        ufo_channel_push(output_channel, input);
+        input = ufo_channel_pop(input_channel);
     }
 
     gint32 width, height;
@@ -149,14 +149,14 @@ static void center_of_rotation_projections(UfoFilter *filter)
     g_free(scores);
 
     /* Push the 180° projection */
-    g_async_queue_push(output_queue, input);
+    ufo_channel_push(output_channel, input);
 
     /* Push any following projections */
     do {
-        input = (UfoBuffer *) g_async_queue_pop(input_queue);
-        g_async_queue_push(output_queue, input);
+        input = ufo_channel_pop(input_channel);
+        ufo_channel_push(output_channel, input);
     }
-    while (!ufo_buffer_is_finished(input));
+    while (input != NULL);
 }
 
 static void activated(EthosPlugin *plugin)
