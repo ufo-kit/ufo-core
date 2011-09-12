@@ -128,8 +128,6 @@ static void ufo_filter_mux_class_init(UfoFilterMuxClass *klass)
 
 static void ufo_filter_mux_init(UfoFilterMux *self)
 {
-    static const gchar* input_names[] = { "input1", "input2", NULL };
-    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

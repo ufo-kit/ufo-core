@@ -98,8 +98,6 @@ static void ufo_filter_null_class_init(UfoFilterNullClass *klass)
 
 static void ufo_filter_null_init(UfoFilterNull *self)
 {
-    static const gchar* input_names[] = { "input", NULL };
-    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)

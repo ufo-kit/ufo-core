@@ -101,10 +101,8 @@ static void graph_handle_json_sequence(UfoGraph *self, JsonObject *sequence)
             ufo_element_set_command_queue(UFO_ELEMENT(current), *cmd_queue);
 
             /* Connect predecessor's output with current input */
-            if (predecessor != NULL) {
-                GAsyncQueue *queue = ufo_element_get_input_queue(UFO_ELEMENT(current));
-                ufo_element_set_output_queue(UFO_ELEMENT(predecessor), queue); 
-            }
+            if (predecessor != NULL)
+                ufo_filter_connect_to(predecessor, current);
             predecessor = current;
         }
     }

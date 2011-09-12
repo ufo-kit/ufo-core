@@ -344,9 +344,6 @@ static void ufo_filter_cl_class_init(UfoFilterClClass *klass)
 
 static void ufo_filter_cl_init(UfoFilterCl *self)
 {
-    static const gchar* input_names[] = { "input", NULL };
-    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
-
     UfoFilterClPrivate *priv = self->priv = UFO_FILTER_CL_GET_PRIVATE(self);
     priv->file_name = NULL;
     priv->kernel_name = NULL;

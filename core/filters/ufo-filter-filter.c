@@ -193,9 +193,6 @@ static void ufo_filter_filter_class_init(UfoFilterFilterClass *klass)
 
 static void ufo_filter_filter_init(UfoFilterFilter *self)
 {
-    static const gchar* input_names[] = { "input", NULL };
-    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
-
     UfoFilterFilterPrivate *priv = self->priv = UFO_FILTER_FILTER_GET_PRIVATE(self);
     priv->kernel = NULL;
     priv->filter_type = FILTER_RAMP;

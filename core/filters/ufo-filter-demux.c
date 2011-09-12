@@ -208,9 +208,6 @@ static void ufo_filter_demux_class_init(UfoFilterDemuxClass *klass)
 
 static void ufo_filter_demux_init(UfoFilterDemux *self)
 {
-    static const gchar* input_names[] = { "input", NULL };
-    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
-    
     UfoFilterDemuxPrivate *priv = UFO_FILTER_DEMUX_GET_PRIVATE(self);
     self->priv = priv;
     priv->mode = COPY_NA;

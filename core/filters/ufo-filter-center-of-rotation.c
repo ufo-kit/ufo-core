@@ -281,9 +281,6 @@ static void ufo_filter_center_of_rotation_class_init(UfoFilterCenterOfRotationCl
 
 static void ufo_filter_center_of_rotation_init(UfoFilterCenterOfRotation *self)
 {
-    static const gchar* input_names[] = { "input", NULL };
-    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
-
     UfoFilterCenterOfRotationPrivate *priv = self->priv = UFO_FILTER_CENTER_OF_ROTATION_GET_PRIVATE(self);
     priv->angle_step = 1.0;
     priv->use_sinograms = FALSE;

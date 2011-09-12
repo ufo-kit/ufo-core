@@ -145,8 +145,6 @@ static void ufo_filter_normalize_class_init(UfoFilterNormalizeClass *klass)
 
 static void ufo_filter_normalize_init(UfoFilterNormalize *self)
 {
-    static const gchar* input_names[] = { "input", NULL };
-    UFO_FILTER_GET_CLASS(self)->install_inputs(UFO_FILTER(self), input_names);
 }
 
 G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
