@@ -6,6 +6,7 @@ set(ufofilter_SRCS
     ufo-filter-center-of-rotation.c
     ufo-filter-circle-crop.c
     ufo-filter-cl.c
+    ufo-filter-complex.c
     ufo-filter-demux.c
     ufo-filter-filter.c
     ufo-filter-hist.c
@@ -20,6 +21,7 @@ set(ufofilter_KERNELS
     backproject.cl
     fft.cl
     filter.cl
+    complex.cl
     )
 
 set(ufofilter_LIBS

@@ -57,7 +57,7 @@ static void ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter)
     GError *error = NULL;
     self->priv->kernel = NULL;
 
-    ufo_resource_manager_add_program(manager, "foo-kernel-file.cl", &error);
+    ufo_resource_manager_add_program(manager, "foo-kernel-file.cl", NULL, &error);
     if (error != NULL) {
         g_warning("%s", error->message);
         g_error_free(error);
