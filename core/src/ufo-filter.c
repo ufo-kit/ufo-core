@@ -204,7 +204,7 @@ static void ufo_filter_init(UfoFilter *self)
     priv->cpu_time = 0.0f;
     priv->gpu_time = 0.0f;
     priv->input_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, (GDestroyNotify) g_object_unref);
+            g_free, NULL);
     priv->output_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
             g_free, (GDestroyNotify) g_object_unref);
 }

@@ -13,8 +13,6 @@ cmake_minimum_required(VERSION 2.8)
 # configure unit tests
 set(TEST_BINARIES
     buffer
-    sequence
-    split
     )
 
 foreach(binary ${TEST_BINARIES})
