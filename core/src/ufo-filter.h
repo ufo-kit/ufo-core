@@ -37,19 +37,21 @@ struct _UfoFilter {
 
 struct _UfoFilterClass {
     EthosPluginClass parent_class;
-
-    /* Private */
-    void (*initialize) (UfoFilter *filter);
-    void (*install_inputs) (UfoFilter *filter, const gchar* names[]);
+    
     void (*process) (UfoFilter *filter);
+    void (*initialize) (UfoFilter *filter);
 };
 
 void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
 void ufo_filter_process(UfoFilter *filter);
+void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue);
+gpointer ufo_filter_get_command_queue(UfoFilter *filter);
 
 void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination);
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_name, UfoFilter *destination, const gchar *dest_name);
 
+GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *filter);
+GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *filter);
 GAsyncQueue *ufo_filter_get_input_queue_by_name(UfoFilter *filter, const gchar *name);
 GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar *name);
 

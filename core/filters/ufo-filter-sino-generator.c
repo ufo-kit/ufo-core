@@ -5,7 +5,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-sino-generator.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterSinoGeneratorPrivate {
@@ -51,9 +50,9 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterSinoGeneratorPrivate *priv = UFO_FILTER_SINO_GENERATOR_GET_PRIVATE(filter);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     /* We pop the very first image, to determine the size w*h of a projection.
      * We then have to allocate h sinogram buffers with a height of

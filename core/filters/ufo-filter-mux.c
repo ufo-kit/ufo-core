@@ -4,7 +4,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-mux.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterMuxPrivate {
@@ -48,7 +47,7 @@ static void ufo_filter_mux_process(UfoFilter *filter)
     GAsyncQueue *input_queues[2] = { NULL, NULL };
     input_queues[0] = ufo_filter_get_input_queue_by_name(filter, "input1");
     input_queues[1] = ufo_filter_get_input_queue_by_name(filter, "input2");
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
 
     UfoBuffer *input1 = (UfoBuffer *) g_async_queue_pop(input_queues[0]);
     UfoBuffer *input2 = (UfoBuffer *) g_async_queue_pop(input_queues[1]);

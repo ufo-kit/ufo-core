@@ -4,7 +4,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-stripe-removal.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterStripeRemovalPrivate {
@@ -41,25 +40,6 @@ static void deactivated(EthosPlugin *plugin)
 static void ufo_filter_stripe_removal_initialize(UfoFilter *filter)
 {
     /* Here you can code, that is called for each newly instantiated filter */
-    /*
-    UfoFilterStripeRemoval *self = UFO_FILTER_STRIPE_REMOVAL(filter);
-    UfoResourceManager *manager = ufo_resource_manager();
-    GError *error = NULL;
-    self->priv->kernel = NULL;
-
-    ufo_resource_manager_add_program(manager, "foo-kernel-file.cl", &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-        return;
-    }
-
-    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "foo-kernel", &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-    }
-    */
 }
 
 /*
@@ -69,9 +49,9 @@ static void ufo_filter_stripe_removal_initialize(UfoFilter *filter)
 static void ufo_filter_stripe_removal_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
     gint32 dimensions[4] = { 1, 1, 1, 1 };

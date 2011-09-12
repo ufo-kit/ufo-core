@@ -5,7 +5,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-cv-show.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterCvShowPrivate {
@@ -68,9 +67,9 @@ static IplImage *draw_histogram(CvHistogram *hist, float scale_x, float scale_y)
 static void ufo_filter_cv_show_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
     UfoFilterCvShow *self = UFO_FILTER_CV_SHOW(filter);
     UfoFilterCvShowPrivate *priv = UFO_FILTER_CV_SHOW_GET_PRIVATE(self);
 

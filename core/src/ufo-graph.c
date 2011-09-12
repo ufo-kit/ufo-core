@@ -98,7 +98,7 @@ static void graph_handle_json_sequence(UfoGraph *self, JsonObject *sequence)
         for (int i = 0; i < json_array_get_length(elements); i++) {
             JsonNode *node = json_array_get_element(elements, i);     
             UfoFilter *current = graph_handle_json_filter(self, json_node_get_object(node));
-            ufo_element_set_command_queue(UFO_ELEMENT(current), *cmd_queue);
+            ufo_filter_set_command_queue(current, *cmd_queue);
 
             /* Connect predecessor's output with current input */
             if (predecessor != NULL)
@@ -147,7 +147,7 @@ static void graph_build(UfoGraph *self, JsonNode *node)
 
 static gpointer graph_process_thread(gpointer data)
 {
-    ufo_element_process(UFO_ELEMENT(data));
+    ufo_filter_process(UFO_FILTER(data));
     return NULL;
 }
 
@@ -202,7 +202,7 @@ void ufo_graph_run(UfoGraph *graph)
     GList *threads = NULL;
     GError *error = NULL;
     for (guint i = 0; i < g_list_length(priv->elements); i++) {
-        UfoElement *child = UFO_ELEMENT(g_list_nth_data(priv->elements, i));
+        UfoFilter *child = UFO_FILTER(g_list_nth_data(priv->elements, i));
         threads = g_list_append(threads,
                 g_thread_create(graph_process_thread, child, TRUE, &error));
     }
@@ -238,7 +238,7 @@ void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter)
     cl_command_queue *cmd_queue;
     ufo_resource_manager_get_command_queues(graph->priv->resource_manager, (void **) &cmd_queue);
 
-    ufo_element_set_command_queue(UFO_ELEMENT(filter), *cmd_queue);
+    ufo_filter_set_command_queue(filter, *cmd_queue);
     graph->priv->elements = g_list_prepend(graph->priv->elements, filter);
 }
 

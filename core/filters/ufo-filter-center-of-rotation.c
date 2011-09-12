@@ -4,7 +4,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-center-of-rotation.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterCenterOfRotationPrivate {
@@ -31,9 +30,9 @@ static GParamSpec *center_of_rotation_properties[N_PROPERTIES] = { NULL, };
 
 static void center_of_rotation_sinograms(UfoFilter *filter)
 {
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     gint32 width, height;
@@ -85,11 +84,11 @@ static void center_of_rotation_sinograms(UfoFilter *filter)
 static void center_of_rotation_projections(UfoFilter *filter)
 {
     UfoFilterCenterOfRotationPrivate *priv = UFO_FILTER_CENTER_OF_ROTATION_GET_PRIVATE(filter);
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
     UfoBuffer *input = NULL;
 
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
     input = (UfoBuffer *) g_async_queue_pop(input_queue);
     float *proj_0 = ufo_buffer_get_cpu_data(input, command_queue);
     float *proj_180 = NULL;

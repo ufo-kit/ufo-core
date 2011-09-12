@@ -6,7 +6,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-ifft.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterIFFTPrivate {
@@ -77,9 +76,9 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoFilterIFFTPrivate *priv = UFO_FILTER_IFFT_GET_PRIVATE(filter);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     int err = CL_SUCCESS;
     clFFT_Plan ifft_plan = NULL;

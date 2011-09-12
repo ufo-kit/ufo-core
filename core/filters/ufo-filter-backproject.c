@@ -5,7 +5,6 @@
 #include "config.h"
 #include "ufo-filter-backproject.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 #include "ufo-resource-manager.h"
 
@@ -80,8 +79,8 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     UfoFilterBackproject *self = UFO_FILTER_BACKPROJECT(filter);
     UfoFilterBackprojectPrivate *priv = UFO_FILTER_BACKPROJECT_GET_PRIVATE(self);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
 
     UfoBuffer *sinogram = (UfoBuffer *) g_async_queue_pop(input_queue);
     gint32 width, num_projections;
@@ -102,7 +101,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     const float offset_y = -priv->axis_position;
 
     cl_context context = (cl_context) ufo_resource_manager_get_context(manager);
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
     cl_mem_flags flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
     cl_mem cos_mem = clCreateBuffer(context, flags, sizeof(float) * num_projections, cos_tmp, NULL);
     cl_mem sin_mem = clCreateBuffer(context, flags, sizeof(float) * num_projections, sin_tmp, NULL);

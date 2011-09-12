@@ -3,7 +3,6 @@
 
 #include "ufo-filter-uca.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 #include "ufo-resource-manager.h"
 
@@ -97,7 +96,7 @@ static void ufo_filter_uca_process(UfoFilter *self)
     g_return_if_fail(UFO_IS_FILTER(self));
     UfoFilterUCAPrivate *priv = UFO_FILTER_UCA_GET_PRIVATE(self);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
 
     /* Camera subsystem could not be initialized, so flag end */
     if (priv->u == NULL) {
@@ -107,7 +106,7 @@ static void ufo_filter_uca_process(UfoFilter *self)
         return;
     }
 
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(self));
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(self);
     struct uca_camera *cam = priv->cam;
 
     uint32_t width, height;

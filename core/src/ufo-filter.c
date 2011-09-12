@@ -4,15 +4,11 @@
 
 #include "config.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 
-static void ufo_element_iface_init(UfoElementInterface *iface);
 
-G_DEFINE_TYPE_WITH_CODE(UfoFilter,
-                        ufo_filter, 
-                        ETHOS_TYPE_PLUGIN,
-                        G_IMPLEMENT_INTERFACE(UFO_TYPE_ELEMENT,
-                                              ufo_element_iface_init));
+G_DEFINE_TYPE(UfoFilter,
+              ufo_filter, 
+              ETHOS_TYPE_PLUGIN)
 
 #define UFO_FILTER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER, UfoFilterPrivate))
 
@@ -121,6 +117,18 @@ GAsyncQueue *ufo_filter_get_output_queue_by_name(UfoFilter *filter, const gchar 
     return queue;
 }
 
+GAsyncQueue *ufo_filter_get_input_queue(UfoFilter *filter)
+{
+    GAsyncQueue *queue = g_hash_table_lookup(filter->priv->input_queues, "default");
+    return queue;
+}
+
+GAsyncQueue *ufo_filter_get_output_queue(UfoFilter *filter)
+{
+    GAsyncQueue *queue = g_hash_table_lookup(filter->priv->output_queues, "default");
+    return queue;
+}
+
 void ufo_filter_account_gpu_time(UfoFilter *filter, void **event)
 {
 #ifdef WITH_PROFILING
@@ -143,59 +151,20 @@ const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
     return filter->priv->plugin_name;
 }
 
+void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue)
+{
+    filter->priv->command_queue = command_queue;
+}
+
+gpointer ufo_filter_get_command_queue(UfoFilter *filter)
+{
+    return filter->priv->command_queue;
+}
+
 
 /* 
  * Virtual Methods
  */
-
-static void ufo_filter_set_output_queue(UfoElement *element, GAsyncQueue *queue)
-{
-    /* filter_set_output_queue(element, queue, "default"); */
-    g_message("deprecated");
-}
-
-static GAsyncQueue *ufo_filter_get_input_queue(UfoElement *element)
-{
-    UfoFilter *self = UFO_FILTER(element);
-    GAsyncQueue *queue = g_hash_table_lookup(self->priv->input_queues, "default");
-    return queue;
-}
-
-static GAsyncQueue *ufo_filter_get_output_queue(UfoElement *element)
-{
-    UfoFilter *self = UFO_FILTER(element);
-    GAsyncQueue *queue = g_hash_table_lookup(self->priv->output_queues, "default");
-    return queue;
-}
-
-static void ufo_filter_set_command_queue(UfoElement *element, gpointer command_queue)
-{
-    UfoFilter *self = UFO_FILTER(element);
-    self->priv->command_queue = command_queue;
-}
-
-static gpointer ufo_filter_get_command_queue(UfoElement *element)
-{
-    UfoFilter *self = UFO_FILTER(element);
-    return self->priv->command_queue;
-}
-
-static float ufo_filter_get_time_spent(UfoElement *element)
-{
-    UfoFilter *self = UFO_FILTER(element);
-    return self->priv->cpu_time;
-}
-
-static void ufo_filter_iface_process(UfoElement *element)
-{
-    UfoFilter *self = UFO_FILTER(element);
-    ufo_filter_process(self);
-}
-
-static void ufo_filter_finished(UfoElement *self)
-{
-    g_message("filter: received finished signal");
-}
 
 static void ufo_filter_dispose(GObject *object)
 {
@@ -217,21 +186,6 @@ static void ufo_filter_dispose(GObject *object)
 /*
  * Type/Class Initialization
  */
-static void ufo_element_iface_init(UfoElementInterface *iface)
-{
-    /* virtual methods */
-    iface->process = ufo_filter_iface_process;
-    iface->set_output_queue = ufo_filter_set_output_queue;
-    iface->set_command_queue = ufo_filter_set_command_queue;
-    iface->get_input_queue = ufo_filter_get_input_queue;
-    iface->get_output_queue = ufo_filter_get_output_queue;
-    iface->get_command_queue = ufo_filter_get_command_queue;
-    iface->get_time_spent = ufo_filter_get_time_spent;
-
-    /* signals */
-    iface->finished = ufo_filter_finished;
-}
-
 static void ufo_filter_class_init(UfoFilterClass *klass)
 {
     /* override GObject methods */

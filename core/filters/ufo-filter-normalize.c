@@ -3,7 +3,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-normalize.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterNormalizePrivate {
@@ -49,9 +48,9 @@ static void ufo_filter_normalize_initialize(UfoFilter *filter)
 static void ufo_filter_normalize_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
     gint32 dimensions[4] = {1, 1, 1, 1};

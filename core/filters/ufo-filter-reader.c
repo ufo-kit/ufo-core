@@ -4,7 +4,6 @@
 
 #include "ufo-filter-reader.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 #include "ufo-resource-manager.h"
 
@@ -263,7 +262,7 @@ static void ufo_filter_reader_process(UfoFilter *self)
 
     UfoFilterReaderPrivate *priv = UFO_FILTER_READER_GET_PRIVATE(self);
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(self));
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
 
     filter_read_filenames(priv);
     const guint max_count = (priv->count == -1) ? G_MAXUINT : priv->count;

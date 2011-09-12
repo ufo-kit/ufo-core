@@ -4,7 +4,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-cl.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterClPrivate {
@@ -51,13 +50,13 @@ static void ufo_filter_cl_initialize(UfoFilter *filter)
     /*UfoFilterCl *self = UFO_FILTER_CL(filter);*/
 }
 
-static void process_regular(UfoElement *element,
+static void process_regular(UfoFilter *self,
         UfoFilterClPrivate *priv, 
         cl_command_queue command_queue, 
         cl_kernel kernel)
 {
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(element);
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(element);
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(self);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
     UfoResourceManager *manager = ufo_resource_manager();
 
     size_t local_work_size[2] = { 16, 16 };
@@ -98,13 +97,13 @@ static void process_regular(UfoElement *element,
     g_async_queue_push(output_queue, frame);
 }
 
-static void process_inplace(UfoElement *element,
+static void process_inplace(UfoFilter *self,
         UfoFilterClPrivate *priv, 
         cl_command_queue command_queue, 
         cl_kernel kernel)
 {
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(element);
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(element);
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(self);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
 
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
@@ -138,13 +137,13 @@ static void process_inplace(UfoElement *element,
     g_async_queue_push(output_queue, frame);
 }
 
-static void process_two_frames(UfoElement *element,
+static void process_two_frames(UfoFilter *self,
         UfoFilterClPrivate *priv, 
         cl_command_queue command_queue, 
         cl_kernel kernel)
 {
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(element);
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(element);
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(self);
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(self);
     UfoResourceManager *manager = ufo_resource_manager();
 
     size_t local_work_size[2] = { 16, 16 };
@@ -197,11 +196,10 @@ static void process_two_frames(UfoElement *element,
 static void ufo_filter_cl_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    UfoElement *element = UFO_ELEMENT(filter);
     UfoFilterClPrivate *priv = UFO_FILTER_CL_GET_PRIVATE(filter);
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *output_queue = ufo_filter_get_output_queue(filter);
 
-    cl_command_queue command_queue = (cl_command_queue) ufo_element_get_command_queue(UFO_ELEMENT(filter));
+    cl_command_queue command_queue = (cl_command_queue) ufo_filter_get_command_queue(filter);
 
     UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
@@ -226,11 +224,11 @@ static void ufo_filter_cl_process(UfoFilter *filter)
     }
 
     if (priv->interframe)
-        process_two_frames(element, priv, command_queue, kernel);
+        process_two_frames(filter, priv, command_queue, kernel);
     else if (priv->inplace)
-        process_inplace(element, priv, command_queue, kernel);
+        process_inplace(filter, priv, command_queue, kernel);
     else
-        process_regular(element, priv, command_queue, kernel);
+        process_regular(filter, priv, command_queue, kernel);
     
     clReleaseKernel(kernel);
 }

@@ -4,7 +4,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-demux.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 typedef enum {
@@ -33,7 +32,7 @@ static GParamSpec *demux_properties[N_PROPERTIES] = { NULL, };
 
 static void filter_demux_process_simple(UfoFilterDemux *self)
 {
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(UFO_FILTER(self));
 
     GAsyncQueue *output_queues[2] = { NULL, NULL };
     output_queues[0] = ufo_filter_get_output_queue_by_name(UFO_FILTER(self), "output1");
@@ -55,7 +54,7 @@ static void filter_demux_process_simple(UfoFilterDemux *self)
 static void filter_demux_process_copy_same(UfoFilterDemux *self)
 {
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(UFO_FILTER(self));
 
     GAsyncQueue *output_queues[2] = { NULL, NULL };
     output_queues[0] = ufo_filter_get_output_queue_by_name(UFO_FILTER(self), "output1");
@@ -81,7 +80,7 @@ static void filter_demux_process_copy_same(UfoFilterDemux *self)
 static void filter_demux_process_copy_delayed(UfoFilterDemux *self)
 {
     UfoResourceManager *manager = ufo_resource_manager();
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(self));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(UFO_FILTER(self));
 
     GAsyncQueue *output_queues[2] = { NULL, NULL };
     output_queues[0] = ufo_filter_get_output_queue_by_name(UFO_FILTER(self), "output1");

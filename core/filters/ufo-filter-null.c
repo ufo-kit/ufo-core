@@ -4,7 +4,6 @@
 #include "ufo-resource-manager.h"
 #include "ufo-filter-null.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilterNullPrivate {
@@ -40,7 +39,7 @@ static void ufo_filter_null_initialize(UfoFilter *filter)
 static void ufo_filter_null_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
+    GAsyncQueue *input_queue = ufo_filter_get_input_queue(filter);
     UfoResourceManager *manager = ufo_resource_manager();
 
     UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
