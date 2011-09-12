@@ -157,7 +157,7 @@ Introspection) files can be generated at build time. Any language that supports
 GObject Introspection and the ``gir``/``typelib`` format is thus able to
 integrate UFO.
 
-
+:e 
 Generating Introspection Files
 ------------------------------
 
@@ -197,4 +197,36 @@ this::
     graph = Ufo.Graph()
     graph.read_from_json("some-graph.json")
     graph.run()
+    
+    
+Multithreading for data parallelism
+===================================
 
+Each filter is executed in its own thread thus allowing some form of implicit
+task parallelism. This property is especially useful as image processing
+pipelines usually consist of a mixture of I/O and CPU bound filters
+(readers/writers vs. actual computation).
+
+On the other hand, if you intend to increase throughput with data parallelism,
+you can do so in two ways. The easiest is to connect several instances in the
+same way like this::
+
+    reader = graph.get_filter('reader')
+    long_computation1 = graph.get_filter('long_computation')
+    long_computation2 = graph.get_filter('long_computation')
+    graph.add_filter(reader)
+    graph.add_filter(long_computation1)
+    graph.add_filter(long_computation2)
+    reader.connect_to(long_computation1)
+    reader.connect_to(long_computation2)
+    
+This is totally fine if you don't expect the final order to be the same as the
+one from the reader. If you have to be sure that the order is correct, you can
+use the mux/demux filter pair::
+
+    reader.connect_to(demux)
+    demux.connect_by_name('output1', long_computation1, 'default')
+    demux.connect_by_name('output2', long_computation2, 'default')
+    long_computation1.connect_by_name('default', mux, 'input1')
+    long_computation2.connect_by_name('default', mux, 'input2')
+    

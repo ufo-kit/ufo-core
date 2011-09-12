@@ -15,7 +15,6 @@ SKELETON_C="""#include <gmodule.h>
 #include "ufo-resource-manager.h"
 #include "ufo-filter-${prefix_hyphen}.h"
 #include "ufo-filter.h"
-#include "ufo-element.h"
 #include "ufo-buffer.h"
 
 struct _UfoFilter${prefix_camel}Private {
@@ -80,19 +79,11 @@ static void ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter)
 static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    GAsyncQueue *input_queue = ufo_element_get_input_queue(UFO_ELEMENT(filter));
-    GAsyncQueue *output_queue = ufo_element_get_output_queue(UFO_ELEMENT(filter));
+    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
+    UfoBuffer *input = ufo_channel_pop(input_channel);
 
-    while (1) {
-        UfoBuffer *input = (UfoBuffer *) g_async_queue_pop(input_queue);
-
-        /* We forward a finished buffer, to let succeeding filters know about
-         * the end of computation. */
-        if (ufo_buffer_is_finished(input)) {
-            g_async_queue_push(output_queue, input);
-            break;
-        }
-
+    while (input != NULL) {
         /* Use the input here and push any output that's created. In the case of
          * a source filter, you wouldn't pop data from the input_queue but just
          * generate data with ufo_resource_manager_request_buffer() and push
@@ -100,7 +91,8 @@ static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
          * release all incoming buffers from input_queue with
          * ufo_resource_manager_release_buffer() for further re-use. */
 
-        g_async_queue_push(output_queue, input);
+        ufo_channel_push(output_channel, input);
+        input = ufo_channel_pop(input_channel);
     }
 }
 
