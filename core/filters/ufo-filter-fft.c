@@ -99,7 +99,7 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         if (priv->fft_size.x != pow2round(width)) {
             priv->fft_size.x = pow2round(width);
             if (priv->fft_dimensions == clFFT_2D)
-                priv->fft_size.y = priv->fft_size.x; //pow2round(height);
+                priv->fft_size.y = pow2round(height);
             clFFT_DestroyPlan(fft_plan);
             fft_plan = NULL;
         }
@@ -115,6 +115,7 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         /* 1. Spread data for interleaved FFT */
         UfoBuffer *fft_buffer = NULL;
         
+        /* Create a new buffer large enough to hold complex numbers */
         dimensions[0] = 2 * priv->fft_size.x;
         dimensions[1] = priv->fft_dimensions == clFFT_1D ? height : priv->fft_size.y;
         fft_buffer = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, FALSE);

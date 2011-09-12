@@ -1,3 +1,1 @@
-#cmakedefine HAVE_FFTW      1
-#cmakedefine HAVE_OCLFFT    1
 #cmakedefine WITH_PROFILING 1
