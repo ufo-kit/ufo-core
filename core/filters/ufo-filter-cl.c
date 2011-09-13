@@ -7,7 +7,6 @@
 #include "ufo-buffer.h"
 
 struct _UfoFilterClPrivate {
-    /* add your private data here */
     cl_kernel kernel;
     gchar *file_name;
     gchar *kernel_name;
@@ -64,7 +63,6 @@ static void process_regular(UfoFilter *self,
 
     UfoBuffer *frame = ufo_channel_pop(input_channel);
 
-    cl_int clerror = CL_SUCCESS;
     cl_event event;
     gint32 dimensions[4] = { 1, 1, 1, 1 };
 
@@ -77,18 +75,18 @@ static void process_regular(UfoFilter *self,
         cl_mem frame_mem = (cl_mem) ufo_buffer_get_gpu_data(frame, command_queue);
         cl_mem result_mem = (cl_mem) ufo_buffer_get_gpu_data(result, command_queue);
 
-        clerror  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame_mem);
-        clerror |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &result_mem);
-        clerror |= clSetKernelArg(kernel, 2, sizeof(float)*local_work_size[0]*local_work_size[1], NULL);
+        CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame_mem));
+        CHECK_ERROR(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &result_mem));
+        CHECK_ERROR(clSetKernelArg(kernel, 2, sizeof(float)*local_work_size[0]*local_work_size[1], NULL));
 
         /* XXX: For AMD CPU, a clFinish must be issued before enqueuing the
          * kernel. This should be moved to a ufo_kernel_launch method. */
-        clerror |= clEnqueueNDRangeKernel(command_queue,
+        CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
             kernel,
             2, NULL, global_work_size, local_work_size,
-            0, NULL, &event);
+            0, NULL, &event));
 
-        clFinish(command_queue);
+        CHECK_ERROR(clFinish(command_queue));
 
         ufo_resource_manager_release_buffer(manager, frame);
         ufo_channel_push(output_channel, result);
@@ -151,7 +149,6 @@ static void process_two_frames(UfoFilter *self,
     /* This might block if we receive just one buffer... */
     UfoBuffer *frame2 = ufo_channel_pop(input_channel);
 
-    cl_int clerror = CL_SUCCESS;
     cl_event event;
 
     while ((frame1 != NULL) && (frame2 != NULL)) {
@@ -164,19 +161,19 @@ static void process_two_frames(UfoFilter *self,
         cl_mem frame2_mem = (cl_mem) ufo_buffer_get_gpu_data(frame2, command_queue);
         cl_mem result_mem = (cl_mem) ufo_buffer_get_gpu_data(result, command_queue);
 
-        clerror  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame1_mem);
-        clerror |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &frame2_mem);
-        clerror |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &result_mem);
-        clerror |= clSetKernelArg(kernel, 3, sizeof(float)*local_work_size[0]*local_work_size[1], NULL);
+        CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame1_mem));
+        CHECK_ERROR(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &frame2_mem));
+        CHECK_ERROR(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &result_mem));
+        CHECK_ERROR(clSetKernelArg(kernel, 3, sizeof(float)*local_work_size[0]*local_work_size[1], NULL));
 
         /* XXX: For AMD CPU, a clFinish must be issued before enqueuing the
          * kernel. This should be moved to a ufo_kernel_launch method. */
-        clerror |= clEnqueueNDRangeKernel(command_queue,
+        CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
             kernel,
             2, NULL, global_work_size, local_work_size,
-            0, NULL, &event);
+            0, NULL, &event));
 
-        clFinish(command_queue);
+        CHECK_ERROR(clFinish(command_queue));
 
         ufo_resource_manager_release_buffer(manager, frame1);
         frame1 = frame2;
@@ -266,7 +263,6 @@ static void ufo_filter_cl_get_property(GObject *object,
 {
     UfoFilterCl *self = UFO_FILTER_CL(object);
 
-    /* Handle all properties accordingly */
     switch (property_id) {
         case PROP_FILE_NAME:
             g_value_set_string(value, self->priv->file_name);
@@ -299,7 +295,6 @@ static void ufo_filter_cl_class_init(UfoFilterClClass *klass)
     filter_class->initialize = ufo_filter_cl_initialize;
     filter_class->process = ufo_filter_cl_process;
 
-    /* install properties */
     cl_properties[PROP_FILE_NAME] = 
         g_param_spec_string("file",
             "File in which the kernel resides",
@@ -333,7 +328,6 @@ static void ufo_filter_cl_class_init(UfoFilterClClass *klass)
     g_object_class_install_property(gobject_class, PROP_INPLACE, cl_properties[PROP_INPLACE]);
     g_object_class_install_property(gobject_class, PROP_INTERFRAME, cl_properties[PROP_INTERFRAME]);
 
-    /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilterClPrivate));
 }
 

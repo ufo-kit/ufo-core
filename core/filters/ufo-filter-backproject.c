@@ -111,7 +111,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     g_free(sin_tmp);
     g_free(axes_tmp);
 
-    cl_int err = CL_SUCCESS;
+    cl_int errcode = CL_SUCCESS;
     cl_mem texture = NULL;
     cl_kernel kernel = NULL;
 
@@ -122,19 +122,20 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         texture = clCreateImage2D(context,
                 CL_MEM_READ_ONLY,
                 &image_format, width, num_projections, 
-                0, NULL, &err);
+                0, NULL, &errcode);
         kernel = priv->texture_kernel;
     }
     else
         kernel = priv->normal_kernel;
 
-    err = clSetKernelArg(kernel, 0, sizeof(gint32), &num_projections);
-    err = clSetKernelArg(kernel, 1, sizeof(gint32), &width);
-    err = clSetKernelArg(kernel, 2, sizeof(gint32), &offset_x);
-    err = clSetKernelArg(kernel, 3, sizeof(gint32), &offset_y);
-    err = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *) &cos_mem);
-    err = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *) &sin_mem);
-    err = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *) &axes_mem);
+    errcode |= clSetKernelArg(kernel, 0, sizeof(gint32), &num_projections);
+    errcode |= clSetKernelArg(kernel, 1, sizeof(gint32), &width);
+    errcode |= clSetKernelArg(kernel, 2, sizeof(gint32), &offset_x);
+    errcode |= clSetKernelArg(kernel, 3, sizeof(gint32), &offset_y);
+    errcode |= clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *) &cos_mem);
+    errcode |= clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *) &sin_mem);
+    errcode |= clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *) &axes_mem);
+    CHECK_ERROR(errcode);
 
     int total = 0;
 
@@ -152,22 +153,23 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
         if (priv->use_texture) {
             size_t dest_origin[3] = { 0, 0, 0 };
             size_t dest_region[3] = { width, num_projections, 1 };
-            clEnqueueCopyBufferToImage(command_queue,
+            CHECK_ERROR(clEnqueueCopyBufferToImage(command_queue,
                     sinogram_mem, texture, 0, dest_origin, dest_region,
-                    0, NULL, &event);
-            err = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *) &texture);
+                    0, NULL, &event));
+            errcode |= clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *) &texture);
         }
         else
-            err = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *) &sinogram_mem);
+            errcode |= clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *) &sinogram_mem);
 
-        err = clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *) &slice_mem);
+        errcode |= clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *) &slice_mem);
+        CHECK_ERROR(errcode);
 
-        err = clEnqueueNDRangeKernel(command_queue, kernel,
+        CHECK_ERROR(clEnqueueNDRangeKernel(command_queue, kernel,
                 2, NULL, global_work_size, local_work_size,
-                0, NULL, &event);
+                0, NULL, &event));
 
         ufo_filter_account_gpu_time(filter, (void **) &event);
-        clReleaseEvent(event);
+        CHECK_ERROR(clReleaseEvent(event));
         ufo_buffer_transfer_id(sinogram, slice);
 
         ufo_channel_push(output_channel, slice);
@@ -179,9 +181,9 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
     if (priv->use_texture)
         clReleaseMemObject(texture);
 
-    clReleaseMemObject(cos_mem);
-    clReleaseMemObject(sin_mem);
-    clReleaseMemObject(axes_mem);
+    CHECK_ERROR(clReleaseMemObject(cos_mem));
+    CHECK_ERROR(clReleaseMemObject(sin_mem));
+    CHECK_ERROR(clReleaseMemObject(axes_mem));
 
     ufo_channel_finish(output_channel);
 }
