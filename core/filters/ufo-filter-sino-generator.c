@@ -77,7 +77,7 @@ static void ufo_filter_sino_generator_process(UfoFilter *filter)
                 UFO_BUFFER_2D, dimensions, NULL, FALSE);
 
     /* First step: collect all projections and build sinograms */
-    while ((received < priv->num_projections) || (!ufo_buffer_is_finished(input))) {
+    while ((received < priv->num_projections) || (input != NULL)) {
         float *src = ufo_buffer_get_cpu_data(input, command_queue);
         for (gint i = 0; i < num_sinos; i++) {
             float *dst = ufo_buffer_get_cpu_data(sinograms[i], command_queue);

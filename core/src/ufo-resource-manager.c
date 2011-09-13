@@ -449,15 +449,6 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
     return buffer;
 }
 
-UfoBuffer *ufo_resource_manager_request_finish_buffer(UfoResourceManager *self)
-{
-    gint dims[4] = {1,1,1,1};
-    UfoBuffer *buffer = ufo_buffer_new(UFO_BUFFER_1D, dims);
-    /* TODO: make "finished" constructable? How to do ufo_buffer_new? */
-    g_object_set(buffer, "finished", TRUE, NULL);
-    return buffer;
-}
-
 UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *manager, UfoBuffer *buffer)
 {
     UfoBuffer *copy = ufo_buffer_copy(buffer, manager->priv->command_queues);

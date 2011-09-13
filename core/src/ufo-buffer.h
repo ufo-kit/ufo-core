@@ -81,8 +81,6 @@ void ufo_buffer_get_transfer_time(UfoBuffer *self, gulong *upload_time, gulong *
 
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to);
 
-gboolean ufo_buffer_is_finished(UfoBuffer *self);
-
 GType ufo_buffer_get_type(void);
 
 G_END_DECLS

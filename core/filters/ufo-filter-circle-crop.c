@@ -55,7 +55,7 @@ static void ufo_filter_circle_crop_process(UfoFilter *filter)
 
     UfoBuffer *input = ufo_channel_pop(input_channel);
     gint32 width, height;
-    while (!ufo_buffer_is_finished(input)) {
+    while (input != NULL) {
         ufo_buffer_get_2d_dimensions(input, &width, &height);
 
         float *data = ufo_buffer_get_cpu_data(input, command_queue);

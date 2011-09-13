@@ -19,7 +19,6 @@ enum UfoBufferError {
 enum {
     PROP_0,
     PROP_ID,
-    PROP_FINISHED,
     PROP_ACCESS,
     PROP_DOMAIN,
     PROP_STRUCTURE,
@@ -44,8 +43,7 @@ struct _UfoBufferPrivate {
     UfoAccess   access;
     UfoDomain   domain;
     UfoStructure structure;
-
-    gboolean    finished;
+    
     datastates  state;
     float       *cpu_data;
     cl_mem      gpu_data;
@@ -129,7 +127,6 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
         ufo_buffer_set_cpu_data(copy, buffer->priv->cpu_data, buffer->priv->size, NULL);
     
     copy->priv->state = buffer->priv->state;
-    copy->priv->finished = buffer->priv->finished;
     return copy;
 }
 
@@ -403,21 +400,6 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
     return priv->gpu_data;
 }
 
-/**
- * \brief Return if buffer is denotes finishing of computation
- * \public \memberof UfoBuffer
- *
- * \param[in] buffer A UfoBuffer
- * \return TRUE if buffer just denotes that end of computation is reached, else
- *      FALSE
- */
-gboolean ufo_buffer_is_finished(UfoBuffer *buffer)
-{
-    gboolean finished = FALSE;
-    g_object_get(buffer, "finished", &finished, NULL);
-    return finished;
-}
-
 /* 
  * Virtual Methods 
  */
@@ -431,9 +413,6 @@ static void ufo_filter_set_property(GObject *object,
     switch (property_id) {
         case PROP_ID:
             buffer->priv->id = g_value_get_int(value);
-            break;
-        case PROP_FINISHED:
-            buffer->priv->finished = g_value_get_boolean(value);
             break;
         case PROP_ACCESS:
             buffer->priv->access = g_value_get_flags(value);
@@ -460,9 +439,6 @@ static void ufo_filter_get_property(GObject *object,
     switch (property_id) {
         case PROP_ID:
             g_value_set_int(value, buffer->priv->id);
-            break;
-        case PROP_FINISHED:
-            g_value_set_boolean(value, buffer->priv->finished);
             break;
         case PROP_ACCESS:
             g_value_set_flags(value, buffer->priv->access);
@@ -512,13 +488,6 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
             0,
             G_PARAM_READWRITE);
 
-    buffer_properties[PROP_FINISHED] = 
-        g_param_spec_boolean("finished",
-            "Is last buffer with invalid data and no one follows",
-            "Get finished prop",
-            FALSE,
-            G_PARAM_READWRITE);
-
     buffer_properties[PROP_ACCESS] = 
         g_param_spec_flags("access",
             "Access restrictions",
@@ -544,7 +513,6 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
             G_PARAM_READWRITE);
 
     g_object_class_install_property(gobject_class, PROP_ID, buffer_properties[PROP_ID]);
-    g_object_class_install_property(gobject_class, PROP_FINISHED, buffer_properties[PROP_FINISHED]);
     g_object_class_install_property(gobject_class, PROP_ACCESS, buffer_properties[PROP_ACCESS]);
     g_object_class_install_property(gobject_class, PROP_STRUCTURE, buffer_properties[PROP_STRUCTURE]);
     g_object_class_install_property(gobject_class, PROP_DOMAIN, buffer_properties[PROP_DOMAIN]);
@@ -570,7 +538,6 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->downloads = 0;
     priv->id = -1;
     priv->state = NO_DATA;
-    priv->finished = FALSE;
     priv->access = UFO_BUFFER_READWRITE;
     priv->domain = UFO_BUFFER_SPACE;
     priv->structure = UFO_BUFFER_2D;

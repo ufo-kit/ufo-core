@@ -55,7 +55,7 @@ static void ufo_filter_stripe_removal_process(UfoFilter *filter)
 
     UfoBuffer *input = ufo_channel_pop(input_channel);
     gint32 dimensions[4] = { 1, 1, 1, 1 };
-    while (!ufo_buffer_is_finished(input)) {
+    while (input != NULL) {
         ufo_buffer_get_dimensions(input, dimensions);
         const gint32 width = dimensions[0];
         const gint32 height = dimensions[1];
