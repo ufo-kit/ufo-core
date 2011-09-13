@@ -41,6 +41,7 @@ UfoResourceManager *ufo_resource_manager();
 gboolean ufo_resource_manager_add_program(UfoResourceManager *self, const gchar *filename, const gchar *options, GError **error);
 gpointer ufo_resource_manager_get_kernel(UfoResourceManager *self, const gchar *kernel, GError **error);
 gpointer ufo_resource_manager_get_context(UfoResourceManager *self);
+gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memobj);
 size_t ufo_resource_manager_get_profiling_resolution(UfoResourceManager *self);
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, UfoStructure structure, gint32 dimensions[4], float *data, gboolean prefer_gpu);
 UfoBuffer *ufo_resource_manager_request_finish_buffer(UfoResourceManager *self);
