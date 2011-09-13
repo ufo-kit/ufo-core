@@ -116,15 +116,22 @@ void ufo_buffer_increment_id(UfoBuffer *buffer)
 
 UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
 {
-    UfoBuffer *copy = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
     UfoResourceManager *manager = ufo_resource_manager();
+    UfoBuffer *copy = NULL;
+    if (buffer->priv->state == GPU_DATA_VALID) {
+        copy = ufo_resource_manager_request_buffer(manager, 
+                    buffer->priv->structure, buffer->priv->dimensions, NULL, TRUE);
 
-    buffer_set_dimensions(copy->priv, buffer->priv->structure, buffer->priv->dimensions);
-
-    if (buffer->priv->state == GPU_DATA_VALID)
-        copy->priv->gpu_data = ufo_resource_manager_memdup(manager, buffer->priv->gpu_data);
-    else if (buffer->priv->state == CPU_DATA_VALID)
+        if (copy->priv->gpu_data == NULL)
+            copy->priv->gpu_data = ufo_resource_manager_memdup(manager, buffer->priv->gpu_data);
+        else
+            ufo_resource_manager_memcpy(manager, copy->priv->gpu_data, buffer->priv->gpu_data, buffer->priv->size);
+    }
+    else if (buffer->priv->state == CPU_DATA_VALID) {
+        copy = ufo_resource_manager_request_buffer(manager, 
+                    buffer->priv->structure, buffer->priv->dimensions, NULL, FALSE);
         ufo_buffer_set_cpu_data(copy, buffer->priv->cpu_data, buffer->priv->size, NULL);
+    }
     
     copy->priv->state = buffer->priv->state;
     return copy;
@@ -323,16 +330,16 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
         case GPU_DATA_VALID:
             if (priv->cpu_data == NULL)
                 priv->cpu_data = g_malloc0(priv->size);
-
+            
             if (command_queue == NULL)
                 return NULL;
 
-            clEnqueueReadBuffer((cl_command_queue) command_queue,
+            CHECK_ERROR(clEnqueueReadBuffer((cl_command_queue) command_queue,
                     priv->gpu_data,
                     CL_TRUE, 
                     0, priv->size,
                     priv->cpu_data,
-                    0, NULL, &event);
+                    0, NULL, &event));
 
 #ifdef WITH_PROFILING
             clWaitForEvents(1, &event);
@@ -340,7 +347,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
             priv->time_download += end - start;
 #endif
-            clReleaseEvent(event);
+            CHECK_ERROR(clReleaseEvent(event));
 
             priv->state = CPU_DATA_VALID;
             priv->downloads++;
@@ -371,12 +378,15 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
 
     switch (priv->state) {
         case CPU_DATA_VALID:
-            clEnqueueWriteBuffer((cl_command_queue) command_queue,
+            if (priv->gpu_data == NULL)
+                priv->gpu_data = ufo_resource_manager_memalloc(ufo_resource_manager(), priv->size);
+
+            CHECK_ERROR(clEnqueueWriteBuffer((cl_command_queue) command_queue,
                     priv->gpu_data,
                     CL_TRUE,
                     0, priv->size,
                     priv->cpu_data,
-                    0, NULL, &event);
+                    0, NULL, &event));
 
 #ifdef WITH_PROFILING
             clWaitForEvents(1, &event);
@@ -384,7 +394,7 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
             priv->time_upload += end - start;
 #endif
-            clReleaseEvent(event);
+            CHECK_ERROR(clReleaseEvent(event));
             priv->state = GPU_DATA_VALID;
             priv->uploads++;
             break;

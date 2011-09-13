@@ -111,9 +111,6 @@ static void process_inplace(UfoFilter *self,
 
     UfoBuffer *frame = ufo_channel_pop(input_channel);
 
-    cl_int clerror = CL_SUCCESS;
-    cl_event event;
-
     while (frame != NULL) {
         ufo_buffer_get_dimensions(frame, dimensions);
         global_work_size[0] = (size_t) dimensions[0];
@@ -121,15 +118,15 @@ static void process_inplace(UfoFilter *self,
 
         cl_mem frame_mem = (cl_mem) ufo_buffer_get_gpu_data(frame, command_queue);
 
-        clerror  = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame_mem);
-        clerror |= clSetKernelArg(kernel, 1, sizeof(float)*local_work_size[0]*local_work_size[1], NULL);
+        CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame_mem));
+        CHECK_ERROR(clSetKernelArg(kernel, 1, sizeof(float)*local_work_size[0]*local_work_size[1], NULL));
 
-        clerror |= clEnqueueNDRangeKernel(command_queue,
+        CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
             kernel,
             2, NULL, global_work_size, NULL,
-            0, NULL, &event);
+            0, NULL, NULL));
 
-        clFinish(command_queue);
+        CHECK_ERROR(clFinish(command_queue));
 
         ufo_channel_push(output_channel, frame);
         frame = ufo_channel_pop(input_channel);
