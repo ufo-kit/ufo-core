@@ -17,6 +17,10 @@ typedef struct _UfoResourceManager           UfoResourceManager;
 typedef struct _UfoResourceManagerClass      UfoResourceManagerClass;
 typedef struct _UfoResourceManagerPrivate    UfoResourceManagerPrivate;
 
+const gchar* opencl_map_error(int error);
+
+#define CHECK_ERROR(error) { \
+    if ((error) != CL_SUCCESS) g_message("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
 
 /**
  * \class UfoResourceManager

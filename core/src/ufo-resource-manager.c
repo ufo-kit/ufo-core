@@ -44,7 +44,7 @@ struct _UfoResourceManagerPrivate {
     float download_time;
 };
 
-static const gchar* opencl_error_msgs[] = {
+const gchar* opencl_error_msgs[] = {
     "CL_SUCCESS",
     "CL_DEVICE_NOT_FOUND",
     "CL_DEVICE_NOT_AVAILABLE",
@@ -104,7 +104,7 @@ static const gchar* opencl_error_msgs[] = {
  * \return A string containing a human-readable constant or NULL if error is
  *      invalid
  */
-const gchar* opencl_map_error(cl_int error)
+const gchar* opencl_map_error(int error)
 {
     if (error >= -14)
         return opencl_error_msgs[-error];
@@ -112,9 +112,6 @@ const gchar* opencl_map_error(cl_int error)
         return opencl_error_msgs[-error-15];
     return NULL;
 }
-
-#define CHECK_ERROR(error) { \
-    if (error != CL_SUCCESS) g_message("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
 
 #define DIM_HASH(d) ((d[0] << 16) | d[1])
 
