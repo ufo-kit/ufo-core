@@ -522,12 +522,13 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
 
     GAsyncQueue *queue = g_hash_table_lookup(priv->cached_buffers, GINT_TO_POINTER(hash));
 
-    /* FIXME: inserting a new queue _must_ happen atomically. However, this is
-     * somewhat relieved as there is usually only one stage releasing a buffer. */
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
+    g_static_mutex_lock(&mutex);
     if (queue == NULL) {
         queue = g_async_queue_new();
         g_hash_table_insert(priv->cached_buffers, GINT_TO_POINTER(hash), queue);
     }
+    g_static_mutex_unlock(&mutex);
 
     /* TODO: make queue limit configurable */
     if (g_async_queue_length(queue) < 8) {
@@ -540,7 +541,7 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
     if (mem != NULL)
         CHECK_ERROR(clReleaseMemObject(mem));
 
-    /*g_object_unref(buffer);*/
+    g_object_unref(buffer);
 }
 
 guint ufo_resource_manager_get_new_id(UfoResourceManager *resource_manager)

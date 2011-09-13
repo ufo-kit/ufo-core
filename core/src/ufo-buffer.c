@@ -462,6 +462,8 @@ static void ufo_buffer_finalize(GObject *gobject)
     if (priv->cpu_data)
         g_free(priv->cpu_data);
     
+    priv->cpu_data = NULL;
+    
     g_queue_free(priv->wait_events);
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
