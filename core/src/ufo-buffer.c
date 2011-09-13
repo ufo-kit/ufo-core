@@ -119,16 +119,17 @@ void ufo_buffer_increment_id(UfoBuffer *buffer)
 UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBuffer *copy = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
+    UfoResourceManager *manager = ufo_resource_manager();
 
     buffer_set_dimensions(copy->priv, buffer->priv->structure, buffer->priv->dimensions);
-    g_assert(copy->priv->cpu_data == NULL);
-    ufo_buffer_set_cpu_data(copy,
-            ufo_buffer_get_cpu_data(buffer, command_queue),
-            copy->priv->size,
-            NULL);
 
+    if (buffer->priv->state == GPU_DATA_VALID)
+        copy->priv->gpu_data = ufo_resource_manager_memdup(manager, buffer->priv->gpu_data);
+    else if (buffer->priv->state == CPU_DATA_VALID)
+        ufo_buffer_set_cpu_data(copy, buffer->priv->cpu_data, buffer->priv->size, NULL);
+    
+    copy->priv->state = buffer->priv->state;
     copy->priv->finished = buffer->priv->finished;
-    copy->priv->state = CPU_DATA_VALID;
     return copy;
 }
 

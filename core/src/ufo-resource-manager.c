@@ -475,9 +475,10 @@ gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memob
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
     size_t size = 0, global_work_size;
     cl_int errcode = CL_SUCCESS;
-    cl_mem mem = (cl_mem) mem;
+    cl_mem mem = (cl_mem) memobj;
     CHECK_ERROR(clGetMemObjectInfo(mem, CL_MEM_SIZE, sizeof(size_t), &size, NULL));
-    cl_mem dup = clCreateBuffer(priv->opencl_context, CL_MEM_READ_WRITE, size, NULL, NULL);
+    cl_mem dup = clCreateBuffer(priv->opencl_context, CL_MEM_READ_WRITE, size, NULL, &errcode);
+    CHECK_ERROR(errcode);
     
     static const char* dup_kernel_src = 
         "__kernel void mem_dup(__global float* in, __global float *out) {" \

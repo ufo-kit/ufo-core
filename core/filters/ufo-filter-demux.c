@@ -85,8 +85,12 @@ static void filter_demux_process_copy_delayed(UfoFilterDemux *self)
     while (input1 != NULL) {
         ufo_channel_push(output_channels[0], input1);
         UfoBuffer *input2 = ufo_channel_pop(input_channel);
-        input1 = ufo_resource_manager_copy_buffer(manager, input2);
-        ufo_channel_push(output_channels[1], input2);
+        if (input2 != NULL) {
+            input1 = ufo_resource_manager_copy_buffer(manager, input2);
+            ufo_channel_push(output_channels[1], input2);
+        }
+        else
+            input1 = NULL;
     }
 
     ufo_channel_finish(output_channels[0]);
