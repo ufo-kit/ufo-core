@@ -84,6 +84,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
     clFFT_Plan ifft_plan = NULL;
     UfoBuffer *input = ufo_channel_pop(input_channel);
     gint32 dimensions[4] = { 1, 1, 1, 1 };
+    gint32 batch_size;
 
     while (input != NULL) {
         ufo_buffer_get_dimensions(input, dimensions);
@@ -93,7 +94,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         if (priv->ifft_size.x != width / 2) {
             priv->ifft_size.x = width / 2;
             if (priv->ifft_dimensions == clFFT_2D)
-                priv->ifft_size.y = height;
+                priv->ifft_size.y = height + 1;
             clFFT_DestroyPlan(ifft_plan);
             ifft_plan = NULL;
         }
@@ -105,49 +106,40 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                 clFFT_InterleavedComplexFormat, &err);
         }
 
-        cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
+        cl_mem mem_fft = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
         cl_event event;
         cl_event wait_on_event;
 
         /* 1. Inverse FFT */
         if (priv->ifft_dimensions == clFFT_1D)
-            clFFT_ExecuteInterleaved(command_queue,
-                    ifft_plan, height, clFFT_Inverse, 
-                    fft_buffer_mem, fft_buffer_mem,
-                    0, NULL, &wait_on_event);
+            batch_size = height;
         else
-            clFFT_ExecuteInterleaved(command_queue,
-                    ifft_plan, 1, clFFT_Inverse, 
-                    fft_buffer_mem, fft_buffer_mem,
-                    0, NULL, &wait_on_event);
+            batch_size = 1;
+        
+        clFFT_ExecuteInterleaved(command_queue,
+                ifft_plan, height, clFFT_Inverse, 
+                mem_fft, mem_fft,
+                0, NULL, &wait_on_event);
 
         /* XXX: FFT execution does _not_ return event */
         /*ufo_filter_account_gpu_time(filter, &wait_on_event);*/
-
         /* 2. Pack interleaved complex numbers */
         size_t global_work_size[2];
-        global_work_size[0] = priv->ifft_size.x;
 
         width = (priv->final_width == -1) ? priv->ifft_size.x : priv->final_width;
         height = (priv->final_height == -1) ? height : priv->final_height;
         dimensions[0] = width;
         dimensions[1] = height;
-        UfoBuffer *sinogram = ufo_resource_manager_request_buffer(manager,
+        UfoBuffer *result = ufo_resource_manager_request_buffer(manager,
                 UFO_BUFFER_2D, dimensions, NULL, FALSE);
+        
+        global_work_size[0] = priv->ifft_size.x;
         global_work_size[1] = height;
 
-        cl_mem sinogram_mem = (cl_mem) ufo_buffer_get_gpu_data(sinogram, command_queue);
-        clSetKernelArg(priv->normalize_kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
-        clEnqueueNDRangeKernel(command_queue,
-                priv->normalize_kernel,
-                2, NULL, global_work_size, NULL,
-                0, NULL, &event);
+        cl_mem mem_result = (cl_mem) ufo_buffer_get_gpu_data(result, command_queue);
 
-        ufo_filter_account_gpu_time(filter, (void **) &event);
-        clReleaseEvent(event);
-
-        clSetKernelArg(priv->pack_kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
-        clSetKernelArg(priv->pack_kernel, 1, sizeof(cl_mem), (void *) &sinogram_mem);
+        clSetKernelArg(priv->pack_kernel, 0, sizeof(cl_mem), (void *) &mem_fft);
+        clSetKernelArg(priv->pack_kernel, 1, sizeof(cl_mem), (void *) &mem_result);
         clSetKernelArg(priv->pack_kernel, 2, sizeof(int), &width);
 
         clEnqueueNDRangeKernel(command_queue,
@@ -158,10 +150,10 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         ufo_filter_account_gpu_time(filter, (void **) &event);
         clReleaseEvent(event);
 
-        ufo_buffer_transfer_id(input, sinogram);
+        ufo_buffer_transfer_id(input, result);
         ufo_resource_manager_release_buffer(manager, input);
 
-        ufo_channel_push(output_channel, sinogram);
+        ufo_channel_push(output_channel, result);
         input = ufo_channel_pop(input_channel);
     }
     ufo_channel_finish(output_channel);
