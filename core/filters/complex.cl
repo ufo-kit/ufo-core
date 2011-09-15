@@ -1,15 +1,15 @@
 
 __kernel void c_add(__global float *in1, __global float *in2, __global float *out)
 {
-    int idx = 2 * (get_global_id(1) * get_global_size(0) + get_global_id(0));
+    int idx = get_global_id(1) * 2 * get_global_size(0) + 2 * get_global_id(0);
     
     out[idx] = in1[idx] + in2[idx];
-    out[idx+1] = in1[idx+1] + in2[idx];
+    out[idx+1] = in1[idx+1] + in2[idx+1];
 }
 
 __kernel void c_mul(__global float *in1, __global float *in2, __global float *out)
 {
-    int idx = 2 * (get_global_id(1) * get_global_size(0) + get_global_id(0));
+    int idx = get_global_id(1) * 2 * get_global_size(0) + 2 * get_global_id(0);
     const float a = in1[idx];
     const float b = in1[idx+1];
     const float c = in2[idx];
@@ -21,7 +21,7 @@ __kernel void c_mul(__global float *in1, __global float *in2, __global float *ou
 
 __kernel void c_div(__global float *in1, __global float *in2, __global float *out)
 {
-    int idx = 2 * (get_global_id(1) * get_global_size(0) + get_global_id(0));
+    int idx = get_global_id(1) * 2 * get_global_size(0) + 2 * get_global_id(0);
     const float a = in1[idx];
     const float b = in1[idx+1];
     const float c = in2[idx];

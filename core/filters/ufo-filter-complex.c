@@ -98,7 +98,7 @@ static void ufo_filter_complex_process(UfoFilter *filter)
         
         mem_a = ufo_buffer_get_gpu_data(a, cmd_queue);
         mem_b = ufo_buffer_get_gpu_data(b, cmd_queue);
-        mem_r = ufo_buffer_get_gpu_data(a, cmd_queue);
+        mem_r = ufo_buffer_get_gpu_data(r, cmd_queue);
         
         /* Each thread processes the real and the imaginary part */
         global_work_size[0] = wa / 2;

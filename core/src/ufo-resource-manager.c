@@ -165,7 +165,7 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv
     cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
     if ((data != NULL) && (prefer_gpu))
         mem_flags |= CL_MEM_COPY_HOST_PTR;
-
+    
     cl_int errcode;
     cl_mem buffer_mem = clCreateBuffer(priv->opencl_context,
             mem_flags, 
