@@ -69,7 +69,7 @@ static void process_regular(UfoFilter *self,
         ufo_buffer_get_dimensions(frame, dimensions);
         global_work_size[0] = (size_t) dimensions[0];
         global_work_size[1] = (size_t) dimensions[1];
-
+        
         UfoBuffer *result = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, TRUE);
         cl_mem frame_mem = (cl_mem) ufo_buffer_get_gpu_data(frame, command_queue);
         cl_mem result_mem = (cl_mem) ufo_buffer_get_gpu_data(result, command_queue);

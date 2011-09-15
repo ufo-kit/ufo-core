@@ -26,7 +26,10 @@ __kernel void c_div(__global float *in1, __global float *in2, __global float *ou
     const float b = in1[idx+1];
     const float c = in2[idx];
     const float d = in2[idx+1];
-    const float divisor = c*c + d*d;
+    float divisor = c*c + d*d;
+    
+    if (divisor == 0.0f)
+        divisor = 0.000000001f;
     
     out[idx] = (a*c + b*d) / divisor;
     out[idx+1] = (b*c - a*d) / divisor;
