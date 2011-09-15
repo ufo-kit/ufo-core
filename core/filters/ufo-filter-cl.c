@@ -58,7 +58,6 @@ static void process_regular(UfoFilter *self,
     UfoChannel *output_channel = ufo_filter_get_output_channel(self);
     UfoResourceManager *manager = ufo_resource_manager();
 
-    size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
 
     UfoBuffer *frame = ufo_channel_pop(input_channel);
@@ -77,13 +76,13 @@ static void process_regular(UfoFilter *self,
 
         CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame_mem));
         CHECK_ERROR(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &result_mem));
-        CHECK_ERROR(clSetKernelArg(kernel, 2, sizeof(float)*local_work_size[0]*local_work_size[1], NULL));
+        CHECK_ERROR(clSetKernelArg(kernel, 2, sizeof(float)*16*16, NULL));
 
         /* XXX: For AMD CPU, a clFinish must be issued before enqueuing the
          * kernel. This should be moved to a ufo_kernel_launch method. */
         CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
             kernel,
-            2, NULL, global_work_size, local_work_size,
+            2, NULL, global_work_size, NULL,
             0, NULL, &event));
 
         CHECK_ERROR(clFinish(command_queue));
