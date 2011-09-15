@@ -40,14 +40,25 @@ __kernel void mirror(__global float *input, __global float *output, __local floa
     int width = get_global_size(0);
     int height = get_global_size(1);
 
-    output[(idy * width) + idx] = input[((height-idy) * width) + (width - idx)];
+    output[(idy * width) + idx] = input[((height-idy+1) * width) + (width - idx)];
 }
 
-__kernel void sub_squared_inter(__global float *frame1, __global float *frame2, __global float *result, __local float *scratch)
+__kernel void fftshift(__global float *input, __global float *output, __local float *scratch)
 {
-    size_t index = get_global_id(1)*get_global_size(0) + get_global_id(0);
-    float diff = frame1[index] - frame2[index];
-    result[index] = diff * diff;
+    int idx = get_global_id(0);
+    int idy = get_global_id(1);
+    int width = get_global_size(0);
+    int height = get_global_size(1);
+    int src_index = (idy + height / 2) * width + idx + width / 2;
+    
+    if ((idx >= width / 2) && (idy < height / 2))
+        src_index = (idy + height / 2) * width + idx - width / 2;
+    else if ((idx < width / 2) && (idy >= height / 2))
+        src_index = (idy - height / 2) * width + idx + width / 2;
+    else if ((idx >= width / 2) && (idy >= height / 2))
+        src_index = (idy - height / 2) * width + idx - width / 2;
+            
+    output[(idy * width) + idx] = input[src_index];
 }
 
 __kernel void mandelbrot(__global float *data, __local float *scratch)
@@ -74,4 +85,5 @@ __kernel void mandelbrot(__global float *data, __local float *scratch)
     }
     data[index] = 1.0f - ((float) i / max_iterations);
 }
+
 

@@ -94,7 +94,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         if (priv->ifft_size.x != width / 2) {
             priv->ifft_size.x = width / 2;
             if (priv->ifft_dimensions == clFFT_2D)
-                priv->ifft_size.y = height + 1;
+                priv->ifft_size.y = height;
             clFFT_DestroyPlan(ifft_plan);
             ifft_plan = NULL;
         }
@@ -117,7 +117,7 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
             batch_size = 1;
         
         clFFT_ExecuteInterleaved(command_queue,
-                ifft_plan, height, clFFT_Inverse, 
+                ifft_plan, batch_size, clFFT_Inverse, 
                 mem_fft, mem_fft,
                 0, NULL, &wait_on_event);
 
