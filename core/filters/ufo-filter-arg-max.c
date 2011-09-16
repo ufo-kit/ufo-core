@@ -85,8 +85,6 @@ static void ufo_filter_arg_max_set_property(GObject *object,
     const GValue    *value,
     GParamSpec      *pspec)
 {
-    UfoFilterArgMax *self = UFO_FILTER_ARG_MAX(object);
-
     switch (property_id) {
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -99,8 +97,6 @@ static void ufo_filter_arg_max_get_property(GObject *object,
     GValue      *value,
     GParamSpec  *pspec)
 {
-    UfoFilterArgMax *self = UFO_FILTER_ARG_MAX(object);
-
     switch (property_id) {
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
