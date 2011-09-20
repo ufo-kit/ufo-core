@@ -157,7 +157,6 @@ Introspection) files can be generated at build time. Any language that supports
 GObject Introspection and the ``gir``/``typelib`` format is thus able to
 integrate UFO.
 
-:e 
 Generating Introspection Files
 ------------------------------
 
@@ -166,7 +165,10 @@ With a simple ::
 
     make install
 
-all necessary files are installed in the correct locations.
+all necessary files are installed in the correct locations. You can make sure
+that everything is built correctly, by running::
+
+    make gir
 
 
 Using GObject Introspection
