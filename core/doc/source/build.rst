@@ -6,12 +6,30 @@ Building UFO from Source
 UFO has only a few hard source dependencies, namely
 
   - `GLib 2.0 <http://developer.gnome.org/glib/stable/>`_ and
+  - `Ethos 0.2.2 <http://git.dronelabs.com/ethos/about/>`_
   - a valid OpenCL installation.
 
 Furthermore it is convenient to build the framework and accompanying
 documentation with a recent version of `CMake <http://cmake.org>`_, `Doxygen
 <http://doxygen.org>`_ and `Sphinx <http://sphinx.pocoo.org>`_. The current
 distributed version control system in use, is `Bazaar <bazaar.canonical.com>`_.
+
+Building Dependencies
+---------------------
+
+If you want to use language bindings you need to install libethos with GObject
+introspection support enabled::
+
+  $ cd <path-to-ethos>
+  $ ./configure --enable-introspection
+  $ make
+  $ make install
+  
+OpenCL development files must be installed in order to build UFO. However, we
+cannot give general advices as installation procedures vary between different
+vendors. However, our CMake build facility is in most cases intelligent enough
+to find header files and libraries.
+
 
 Checking out the Code
 ---------------------
@@ -52,6 +70,7 @@ to create a plain old Doxygen documentation of the API and afterwards create
 
 If you have a fairly recent CMake version, this command will pull in the `Breathe`
 Doxygen-to-Sphinx bridge via Git and include API references in the final output.
+However, this target will only be available when Sphinx is installed.
 
 You can then proceed to build installation packages in ``RPM`` and ``DEB``
 format by issueing ::
