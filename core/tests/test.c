@@ -10,7 +10,8 @@ int main(int argc, char const* argv[])
     if (argc >= 2)
         ufo_graph_read_from_json(graph, argv[1], &error);
     else
-        ufo_graph_read_from_json(graph, "test.json", &error);
+        return 0;
+
     if (error) {
         g_error("Error: %s", error->message);
         g_error_free(error);
