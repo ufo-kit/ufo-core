@@ -10,10 +10,11 @@ typedef enum {
     OP_ADD = 0,
     OP_MUL,
     OP_DIV,
+    OP_CONJ,
     OP_N
 } ComplexOperation;
 
-static const gchar *operation_map[] = { "add", "mul", "div" };
+static const gchar *operation_map[] = { "add", "mul", "div", "conj" };
 
 struct _UfoFilterComplexPrivate {
      cl_kernel kernels[OP_N];
@@ -61,14 +62,12 @@ static void ufo_filter_complex_initialize(UfoFilter *filter)
     self->priv->kernels[OP_ADD] = ufo_resource_manager_get_kernel(manager, "c_add", &error);
     self->priv->kernels[OP_MUL] = ufo_resource_manager_get_kernel(manager, "c_mul", &error);
     self->priv->kernels[OP_DIV] = ufo_resource_manager_get_kernel(manager, "c_div", &error);
+    self->priv->kernels[OP_CONJ] = ufo_resource_manager_get_kernel(manager, "c_conj", &error);
 }
 
-static void ufo_filter_complex_process(UfoFilter *filter)
+static void ufo_filter_complex_binary(UfoFilter *filter, cl_kernel kernel)
 {
-    g_return_if_fail(UFO_IS_FILTER(filter));
-    
     UfoResourceManager *manager = ufo_resource_manager();
-    UfoFilterComplex *self = UFO_FILTER_COMPLEX(filter);
 
     UfoChannel *input_channel_a = ufo_filter_get_input_channel_by_name(filter, "input1");
     UfoChannel *input_channel_b = ufo_filter_get_input_channel_by_name(filter, "input2");
@@ -79,7 +78,6 @@ static void ufo_filter_complex_process(UfoFilter *filter)
     gint wa, ha, wb, hb;
     gint dimensions[4] = { 1, 1, 1, 1 };
     
-    cl_kernel kernel = self->priv->kernels[self->priv->operation];
     cl_command_queue cmd_queue = ufo_filter_get_command_queue(filter);
     cl_mem mem_a, mem_b, mem_r;
     cl_event wait_event;
@@ -120,6 +118,52 @@ static void ufo_filter_complex_process(UfoFilter *filter)
         b = ufo_channel_pop(input_channel_b);
     }
     ufo_channel_finish(output_channel);
+}
+
+static void ufo_filter_complex_unary(UfoFilter* filter, cl_kernel kernel)
+{
+    UfoChannel *input_channel = ufo_filter_get_input_channel_by_name(filter, "default");
+    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
+    
+    cl_command_queue cmd_queue = ufo_filter_get_command_queue(filter);
+    cl_mem mem;
+    cl_event wait_event;
+    gint width, height;
+    
+    size_t global_work_size[2] = { 0, 0 };
+
+    UfoBuffer *input = ufo_channel_pop(input_channel);
+    
+    while (input != NULL) {
+        ufo_buffer_get_2d_dimensions(input, &width, &height);
+        mem = ufo_buffer_get_gpu_data(input, cmd_queue);
+        
+        /* Each thread processes the real and the imaginary part */
+        global_work_size[0] = width / 2;
+        global_work_size[1] = height;
+        clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &mem);
+        clEnqueueNDRangeKernel(cmd_queue, kernel,
+                2, NULL, global_work_size, NULL,
+                0, NULL, &wait_event);
+
+        ufo_buffer_set_wait_event(input, wait_event);
+        /* ufo_filter_account_gpu_time(filter, (void **) &event); */
+
+        ufo_channel_push(output_channel, input);
+        input = ufo_channel_pop(input_channel);
+    }
+    ufo_channel_finish(output_channel);
+}
+
+static void ufo_filter_complex_process(UfoFilter *filter)
+{
+    UfoFilterComplexPrivate *priv = UFO_FILTER_COMPLEX_GET_PRIVATE(filter);
+    cl_kernel kernel = priv->kernels[priv->operation];
+    
+    if (priv->operation == OP_CONJ) 
+        ufo_filter_complex_unary(filter, kernel); 
+    else
+        ufo_filter_complex_binary(filter, kernel);
 }
 
 static void ufo_filter_complex_set_property(GObject *object,
@@ -180,8 +224,8 @@ static void ufo_filter_complex_class_init(UfoFilterComplexClass *klass)
     /* install properties */
     complex_properties[PROP_OP] = 
         g_param_spec_string("operation",
-            "Complex operation from [\"add\", \"mul\", \"div\"]",
-            "Complex operation from [\"add\", \"mul\", \"div\"]",
+            "Complex operation from [\"add\", \"mul\", \"div\", \"conj\"]",
+            "Complex operation from [\"add\", \"mul\", \"div\", \"conj\"]",
             "add",
             G_PARAM_READWRITE);
 

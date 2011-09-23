@@ -35,3 +35,8 @@ __kernel void c_div(__global float *in1, __global float *in2, __global float *ou
     out[idx+1] = (b*c - a*d) / divisor;
 }
 
+__kernel void c_conj(__global float *data)
+{
+    int idx = get_global_id(1) * 2 * get_global_size(0) + 2 * get_global_id(0);
+    data[idx+1] = -data[idx+1];
+}

@@ -276,6 +276,8 @@ void *ufo_buffer_get_cl_mem(UfoBuffer *buffer)
 
 void ufo_buffer_set_wait_event(UfoBuffer *buffer, gpointer event)
 {
+    if (buffer->priv->event != NULL)
+        CHECK_ERROR(clReleaseEvent(buffer->priv->event));
     buffer->priv->event = (cl_event) event;
 }
 

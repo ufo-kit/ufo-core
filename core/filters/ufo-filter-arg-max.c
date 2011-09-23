@@ -73,6 +73,9 @@ static void ufo_filter_arg_max_process(UfoFilter *filter)
             }
         }
         g_message("Maximum at <%i,%i,%i,%i>", index[0], index[1], index[2], index[3]);
+        gint dx = index[0] > 0 ? dims[0] - index[0] : 0;
+        gint dy = index[1];
+        g_message("Change <%i, %i>", dx, dy);
 
         ufo_channel_push(output_channel, input);
         input = ufo_channel_pop(input_channel);
