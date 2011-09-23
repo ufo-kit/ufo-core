@@ -7,58 +7,30 @@ UFO's Application Programming Interface
 Overview
 ========
 
-UFOs main purpose is to build streaming setups for fast image processing. To
-describe these setups there are three important abstract definitions: `Split`_,
-`Sequence`_ and `Filters`_. Due to the fact, that GObject only allows single
-inheritance we have to make the following important observation: an `Element`
-interface provides a `process` method which is implemented only by `Filters`,
-`Sequences` and `Splits`. `Sequences` and `Splits` are sub-classes of
-`Containers`_ which contain further `Elements`. 
+UFOs main purpose is to build streaming setups for fast image processing. Each
+setup consists of a `Graph`_ that contains several `Filter` nodes. Each Filter
+is characterized by its kernel task and the number of its input and output
+`Channels`_. A Filter is added to the Graph by creating a new plugin
+instance with :c:func:`ufo_graph_get_filter()`. A connection between two
+Filters can be established either implicitly
+(:c:func:`ufo_filter_connect_to()`) or explicitly
+(:c:func:`ufo_filter_connect_by_name()`) which is mandatory for filters with
+more than one in- or output.
 
-Each `Element` must implement the `process` method. The `process` behaviour of a
-filter is clear: it may process some input and may generate some output. The
-main purpose of `process` for `Sequences` and `Splits` is to start its children
-and distribute incoming work.
+Because, each Filter is derived from the `GObject` base class, the properties
+are set with :c:func:`g_object_set()`.
 
-The main entry point for the whole computation is a `Graph`_ which holds a
-reference to the very first root `Container`.
-
-
-Elements
+Channels
 ========
 
-Defined in ``ufo-element.h``
-
-.. doxygenclass:: UfoElement
+.. doxygenclass:: UfoChannel
     :project: ufo
-    :members: 
+    :members:
 
 Filters
--------
+=======
 
 .. doxygenclass:: UfoFilter
-    :project: ufo
-    :members:
-
-Containers
-----------
-
-.. doxygenclass:: UfoContainer
-    :project: ufo
-    :members:
-
-Sequence
-~~~~~~~~
-
-.. doxygenclass:: UfoSequence
-    :project: ufo
-    :members:
-
-
-Split
-~~~~~
-
-.. doxygenclass:: UfoSplit
     :project: ufo
     :members:
 

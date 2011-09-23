@@ -251,9 +251,9 @@ void ufo_graph_run(UfoGraph *graph)
     }
     
     /* Round-robin */
-    for (int i = 0; i < n; i++) {
-        ufo_filter_set_command_queue(filters[i], cmd_queues[(i+1) % num_queues]); 
-    }
+    /* for (int i = 0; i < n; i++) { */
+    /*     ufo_filter_set_command_queue(filters[i], cmd_queues[(i+1) % num_queues]); */ 
+    /* } */
 
     g_thread_init(NULL);
     GTimer *timer = g_timer_new();
