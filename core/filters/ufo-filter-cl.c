@@ -11,7 +11,7 @@ struct _UfoFilterClPrivate {
     gchar *file_name;
     gchar *kernel_name;
     gboolean inplace;
-    gboolean interframe;
+    gboolean combine;
 };
 
 GType ufo_filter_cl_get_type(void) G_GNUC_CONST;
@@ -25,7 +25,7 @@ enum {
     PROP_FILE_NAME,
     PROP_KERNEL,
     PROP_INPLACE,
-    PROP_INTERFRAME,
+    PROP_COMBINE,
     N_PROPERTIES
 };
 
@@ -132,37 +132,39 @@ static void process_inplace(UfoFilter *self,
     ufo_channel_finish(output_channel);
 }
 
-static void process_two_frames(UfoFilter *self,
+static void process_combine(UfoFilter *self,
         UfoFilterClPrivate *priv, 
         cl_command_queue command_queue, 
         cl_kernel kernel)
 {
-    UfoChannel *input_channel = ufo_filter_get_input_channel(self);
+    UfoChannel *input_a, *input_b;
     UfoChannel *output_channel = ufo_filter_get_output_channel(self);
     UfoResourceManager *manager = ufo_resource_manager();
+    
+    input_a = ufo_filter_get_input_channel_by_name(self, "input1");
+    input_b = ufo_filter_get_input_channel_by_name(self, "input2");
 
     size_t local_work_size[2] = { 16, 16 };
     size_t global_work_size[2];
     gint32 dimensions[4];
 
-    UfoBuffer *frame1 = ufo_channel_pop(input_channel);
-    /* This might block if we receive just one buffer... */
-    UfoBuffer *frame2 = ufo_channel_pop(input_channel);
+    UfoBuffer *a = ufo_channel_pop(input_a);
+    UfoBuffer *b = ufo_channel_pop(input_b);
 
     cl_event event;
 
-    while ((frame1 != NULL) && (frame2 != NULL)) {
-        ufo_buffer_get_dimensions(frame1, dimensions);
+    while ((a != NULL) && (b != NULL)) {
+        ufo_buffer_get_dimensions(a, dimensions);
         global_work_size[0] = (size_t) dimensions[0];
         global_work_size[1] = (size_t) dimensions[1];
 
         UfoBuffer *result = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, TRUE);
-        cl_mem frame1_mem = (cl_mem) ufo_buffer_get_gpu_data(frame1, command_queue);
-        cl_mem frame2_mem = (cl_mem) ufo_buffer_get_gpu_data(frame2, command_queue);
+        cl_mem a_mem = (cl_mem) ufo_buffer_get_gpu_data(a, command_queue);
+        cl_mem b_mem = (cl_mem) ufo_buffer_get_gpu_data(b, command_queue);
         cl_mem result_mem = (cl_mem) ufo_buffer_get_gpu_data(result, command_queue);
 
-        CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame1_mem));
-        CHECK_ERROR(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &frame2_mem));
+        CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &a_mem));
+        CHECK_ERROR(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &b_mem));
         CHECK_ERROR(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &result_mem));
         CHECK_ERROR(clSetKernelArg(kernel, 3, sizeof(float)*local_work_size[0]*local_work_size[1], NULL));
 
@@ -173,9 +175,12 @@ static void process_two_frames(UfoFilter *self,
             2, NULL, global_work_size, local_work_size,
             0, NULL, &event));
 
-        ufo_resource_manager_release_buffer(manager, frame1);
-        frame1 = frame2;
-        frame2 = ufo_channel_pop(input_channel);
+        ufo_resource_manager_release_buffer(manager, a);
+        ufo_resource_manager_release_buffer(manager, b);
+        a = ufo_channel_pop(input_a);
+        b = ufo_channel_pop(input_b);
+        
+        ufo_buffer_set_wait_event(result, event);
         ufo_channel_push(output_channel, result);
     }
     ufo_channel_finish(output_channel);
@@ -215,8 +220,8 @@ static void ufo_filter_cl_process(UfoFilter *filter)
         return;
     }
 
-    if (priv->interframe)
-        process_two_frames(filter, priv, command_queue, kernel);
+    if (priv->combine)
+        process_combine(filter, priv, command_queue, kernel);
     else if (priv->inplace)
         process_inplace(filter, priv, command_queue, kernel);
     else
@@ -230,23 +235,23 @@ static void ufo_filter_cl_set_property(GObject *object,
     const GValue    *value,
     GParamSpec      *pspec)
 {
-    UfoFilterCl *self = UFO_FILTER_CL(object);
+    UfoFilterClPrivate *priv = UFO_FILTER_CL_GET_PRIVATE(object);
 
     /* Handle all properties accordingly */
     switch (property_id) {
         case PROP_FILE_NAME:
-            g_free(self->priv->file_name);
-            self->priv->file_name = g_strdup(g_value_get_string(value));
+            g_free(priv->file_name);
+            priv->file_name = g_strdup(g_value_get_string(value));
             break;
         case PROP_KERNEL:
-            g_free(self->priv->kernel_name);
-            self->priv->kernel_name = g_strdup(g_value_get_string(value));
+            g_free(priv->kernel_name);
+            priv->kernel_name = g_strdup(g_value_get_string(value));
             break;
         case PROP_INPLACE:
-            self->priv->inplace = g_value_get_boolean(value);
+            priv->inplace = g_value_get_boolean(value);
             break;
-        case PROP_INTERFRAME:
-            self->priv->interframe = g_value_get_boolean(value);
+        case PROP_COMBINE:
+            priv->combine = g_value_get_boolean(value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -259,20 +264,20 @@ static void ufo_filter_cl_get_property(GObject *object,
     GValue      *value,
     GParamSpec  *pspec)
 {
-    UfoFilterCl *self = UFO_FILTER_CL(object);
+    UfoFilterClPrivate *priv = UFO_FILTER_CL_GET_PRIVATE(object);
 
     switch (property_id) {
         case PROP_FILE_NAME:
-            g_value_set_string(value, self->priv->file_name);
+            g_value_set_string(value, priv->file_name);
             break;
         case PROP_KERNEL:
-            g_value_set_string(value, self->priv->kernel_name);
+            g_value_set_string(value, priv->kernel_name);
             break;
         case PROP_INPLACE:
-            g_value_set_boolean(value, self->priv->inplace);
+            g_value_set_boolean(value, priv->inplace);
             break;
-        case PROP_INTERFRAME:
-            g_value_set_boolean(value, self->priv->interframe);
+        case PROP_COMBINE:
+            g_value_set_boolean(value, priv->combine);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -314,8 +319,8 @@ static void ufo_filter_cl_class_init(UfoFilterClClass *klass)
             TRUE,
             G_PARAM_READWRITE);
 
-    cl_properties[PROP_INTERFRAME] = 
-        g_param_spec_boolean("interframe",
+    cl_properties[PROP_COMBINE] = 
+        g_param_spec_boolean("combine",
             "Use two frames as an input for a function",
             "Use two frames as an input for a function",
             FALSE,
@@ -324,7 +329,7 @@ static void ufo_filter_cl_class_init(UfoFilterClClass *klass)
     g_object_class_install_property(gobject_class, PROP_FILE_NAME, cl_properties[PROP_FILE_NAME]);
     g_object_class_install_property(gobject_class, PROP_KERNEL, cl_properties[PROP_KERNEL]);
     g_object_class_install_property(gobject_class, PROP_INPLACE, cl_properties[PROP_INPLACE]);
-    g_object_class_install_property(gobject_class, PROP_INTERFRAME, cl_properties[PROP_INTERFRAME]);
+    g_object_class_install_property(gobject_class, PROP_COMBINE, cl_properties[PROP_COMBINE]);
 
     g_type_class_add_private(gobject_class, sizeof(UfoFilterClPrivate));
 }
