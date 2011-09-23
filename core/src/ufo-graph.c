@@ -25,7 +25,16 @@ struct _UfoGraphPrivate {
     GList               *elements;
     GHashTable          *plugin_types;   /**< maps from gchar* to GType* */
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
+    gchar               *paths;
 };
+
+enum {
+    PROP_0,
+    PROP_PATHS,
+    N_PROPERTIES
+};
+
+static GParamSpec *graph_properties[N_PROPERTIES] = { NULL, };
 
 
 static void graph_add_plugin(gpointer data, gpointer user_data)
@@ -360,7 +369,69 @@ static void ufo_graph_dispose(GObject *object)
     g_hash_table_destroy(priv->property_sets);
     priv->property_sets = NULL;
 
+    g_free(priv->paths);
+    priv->paths = NULL;
+
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);
+}
+
+static GObject *ufo_graph_constructor(GType gtype, guint n_properties, GObjectConstructParam *properties)
+{
+    GObject *object = G_OBJECT_CLASS(ufo_graph_parent_class)->constructor(gtype, n_properties, properties);
+    if (!object)
+        return NULL;
+
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
+
+    gchar *paths = g_strconcat(priv->paths, ":/usr/local/lib64/ufo:../filters", NULL);
+    gchar **plugin_dirs = g_strsplit(paths, ":", 0);
+
+    priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
+    ethos_manager_initialize(priv->ethos);
+
+    priv->plugin_types = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+    GList *plugin_info = ethos_manager_get_plugin_info(priv->ethos);
+    g_list_foreach(plugin_info, &graph_add_plugin, priv);
+    g_list_free(plugin_info);
+    g_strfreev(plugin_dirs);
+    g_free(paths);
+    
+    return object;
+}
+
+static void ufo_graph_set_property(GObject *object,
+    guint           property_id,
+    const GValue    *value,
+    GParamSpec      *pspec)
+{
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
+    
+    switch (property_id) {
+        case PROP_PATHS:
+            g_free(priv->paths);
+            priv->paths = g_strdup(g_value_get_string(value));
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            break;
+    }
+}
+
+static void ufo_graph_get_property(GObject *object,
+    guint       property_id,
+    GValue      *value,
+    GParamSpec  *pspec)
+{
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
+
+    switch (property_id) {
+        case PROP_PATHS:
+            g_value_set_string(value, priv->paths);
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            break;
+    }
 }
 
 /*
@@ -370,7 +441,19 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
 {
     /* override methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+    gobject_class->set_property = ufo_graph_set_property;
+    gobject_class->get_property = ufo_graph_get_property;
     gobject_class->dispose = ufo_graph_dispose;
+    gobject_class->constructor = ufo_graph_constructor;
+    
+    graph_properties[PROP_PATHS] = 
+        g_param_spec_string("paths",
+            "List of :-separated paths pointing to possible filter locations",
+            "List of :-separated paths pointing to possible filter locations",
+            ".",
+            G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+    
+    g_object_class_install_property(gobject_class, PROP_PATHS, graph_properties[PROP_PATHS]);
 
     /* install private data */
     g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
@@ -381,24 +464,15 @@ static void ufo_graph_init(UfoGraph *self)
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
 
-    /* TODO: determine directories in a better way */
-    gchar *plugin_dirs[] = { "../filters", NULL };
-
-    /* Initialize Ethos and load all plugins that can be found */
-    priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);
-    ethos_manager_initialize(priv->ethos);
-
-    priv->plugin_types = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-    GList *plugin_info = ethos_manager_get_plugin_info(priv->ethos);
-    g_list_foreach(plugin_info, &graph_add_plugin, priv);
-    g_list_free(plugin_info);
-
     priv->resource_manager = ufo_resource_manager();
     /*g_object_ref(priv->resource_manager);*/
 
     priv->elements = NULL;
     priv->json_parser = json_parser_new();
     priv->property_sets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+    priv->paths = NULL;
+    priv->ethos = NULL;
+    priv->plugin_types = NULL;
 }
 
 
