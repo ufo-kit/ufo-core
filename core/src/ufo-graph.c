@@ -68,8 +68,6 @@ static UfoFilter *graph_handle_json_filter(UfoGraph *self, JsonObject *object)
         return NULL;
     }
 
-    priv->elements = g_list_prepend(priv->elements, filter);
-
     /* We can define "properties" for each filter ... */
     if (json_object_has_member(object, "properties")) {
         JsonObject *prop_object = json_object_get_object_member(object, "properties");
@@ -296,11 +294,6 @@ UfoGraph *ufo_graph_new()
     return graph;
 }
 
-void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter)
-{
-    graph->priv->elements = g_list_prepend(graph->priv->elements, filter);
-}
-
 /**
  * ufo_graph_get_filter_names:
  * 
@@ -340,6 +333,7 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
      * instead of creating a new one */
     UfoFilter *filter = UFO_FILTER(g_object_new(type_id, NULL));
     ufo_filter_initialize(filter, plugin_name);
+    graph->priv->elements = g_list_prepend(graph->priv->elements, filter);
     return filter;
 }
 
