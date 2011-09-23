@@ -50,6 +50,7 @@ gpointer ufo_filter_get_command_queue(UfoFilter *filter);
 
 void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination);
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_name, UfoFilter *destination, const gchar *dest_name);
+gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination);
 
 UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter);
 UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter);

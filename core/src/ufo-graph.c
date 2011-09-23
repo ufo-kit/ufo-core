@@ -89,16 +89,12 @@ static UfoFilter *graph_handle_json_filter(UfoGraph *self, JsonObject *object)
 
 static void graph_handle_json_sequence(UfoGraph *self, JsonObject *sequence)
 {
-    cl_command_queue *cmd_queue;
-    ufo_resource_manager_get_command_queues(self->priv->resource_manager, (void **) &cmd_queue);
-
     if (json_object_has_member(sequence, "elements")) {
         UfoFilter *predecessor = NULL;
         JsonArray *elements = json_object_get_array_member(sequence, "elements");
         for (int i = 0; i < json_array_get_length(elements); i++) {
             JsonNode *node = json_array_get_element(elements, i);     
             UfoFilter *current = graph_handle_json_filter(self, json_node_get_object(node));
-            ufo_filter_set_command_queue(current, *cmd_queue);
 
             /* Connect predecessor's output with current input */
             if (predecessor != NULL)
@@ -194,6 +190,64 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
 void ufo_graph_run(UfoGraph *graph)
 {
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
+    
+    /* Build adjacency matrix */
+    int n = g_list_length(priv->elements);
+    UfoFilter *filters[n]; /* mapping from UfoFilter to N */
+    int connections[n][n];  /* adjacency matrix */
+    int out_degree[n], in_degree[n];
+    
+    for (int i = 0; i < n; i++) {
+        filters[i] = UFO_FILTER(g_list_nth_data(priv->elements, i));
+        in_degree[i] = 0;
+        out_degree[i] = 0;
+    }
+    
+    for (int from = 0; from < n; from++) {
+        UfoFilter *source = UFO_FILTER(g_list_nth_data(priv->elements, from)); 
+        for (int to = 0; to < n; to++) {
+            UfoFilter *dest = UFO_FILTER(g_list_nth_data(priv->elements, to)); 
+            connections[from][to] = ufo_filter_connected(source, dest) ? 1 : 0;
+        }
+    }
+    
+    for (int from = 0; from < n; from++) {
+        for (int to = 0; to < n; to++) {
+            out_degree[from] += connections[from][to];
+            in_degree[from] += connections[to][from];
+        }
+    }
+    
+    /* Use the graph for statical analysis */
+    for (int i = 0; i < n; i++) {
+        if (in_degree[i] == 0 && out_degree[i] == 0)
+            g_error("Filter %i is not connected to any other filter", i);
+    }
+    
+    /* Find source/sink nodes */
+    int source, sink;
+    for (int i = 0; i < n; i++) {
+        if (in_degree[i] == 0)
+            source = i;
+        if (out_degree[i] == 0)
+            sink = i;
+    }
+        
+    /* Assign GPUs to filters */
+    cl_command_queue *cmd_queues;
+    int num_queues;
+    ufo_resource_manager_get_command_queues(graph->priv->resource_manager, (void **) &cmd_queues, &num_queues); 
+
+    /* Single GPU assignment */
+    for (int i = 0; i < n; i++) {
+        ufo_filter_set_command_queue(filters[i], cmd_queues[0]);
+    }
+    
+    /* Round-robin */
+    for (int i = 0; i < n; i++) {
+        ufo_filter_set_command_queue(filters[i], cmd_queues[(i+1) % num_queues]); 
+    }
+
     g_thread_init(NULL);
     GTimer *timer = g_timer_new();
     g_timer_start(timer);
@@ -235,10 +289,6 @@ UfoGraph *ufo_graph_new()
 
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter)
 {
-    cl_command_queue *cmd_queue;
-    ufo_resource_manager_get_command_queues(graph->priv->resource_manager, (void **) &cmd_queue);
-
-    ufo_filter_set_command_queue(filter, *cmd_queue);
     graph->priv->elements = g_list_prepend(graph->priv->elements, filter);
 }
 

@@ -103,6 +103,19 @@ void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, U
         filter_set_output_channel(source, source_output, channel_in); 
 }
 
+gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
+{
+    GList *output_channels = g_hash_table_get_values(source->priv->output_channels);
+    GList *input_channels = g_hash_table_get_values(destination->priv->input_channels);
+    for (int i = 0; i < g_list_length(output_channels); i++) {
+        gpointer channel = g_list_nth_data(output_channels, i);
+        for (int j = 0; j < g_list_length(input_channels); j++)
+            if (channel == g_list_nth_data(input_channels, j))
+                return TRUE;
+    }
+    return FALSE;
+}
+
 UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar *name)
 {
     UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, name);

@@ -134,11 +134,12 @@ static void ufo_filter_fft_process(UfoFilter *filter)
         clEnqueueNDRangeKernel(command_queue,
                 priv->kernel, 
                 2, NULL, global_work_size, NULL, 
-                0, NULL, &wait_on_event);
+                0, NULL, &event);
         
         ufo_filter_account_gpu_time(filter, (void **) &wait_on_event);
 
         /* FIXME: we should wait for previous computations */
+        CHECK_ERROR(clWaitForEvents(1, &event));
         if (priv->fft_dimensions == clFFT_1D)
             clFFT_ExecuteInterleaved(command_queue,
                 fft_plan, height, clFFT_Forward, 
@@ -152,7 +153,7 @@ static void ufo_filter_fft_process(UfoFilter *filter)
 
         /* XXX: FFT execution does _not_ return event */
         /*ufo_filter_account_gpu_time(filter, (void **) &event);*/
-        /*clReleaseEvent(event);*/
+        CHECK_ERROR(clFinish(command_queue));
 
         ufo_buffer_transfer_id(input, fft_buffer);
         ufo_resource_manager_release_buffer(manager, input);

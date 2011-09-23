@@ -107,7 +107,6 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         }
 
         cl_mem mem_fft = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
-        cl_event event;
         cl_event wait_on_event;
 
         /* 1. Inverse FFT */
@@ -116,12 +115,23 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
         else
             batch_size = 1;
         
+        /* XXX: clFFT_ExecuteInterleaved does not respect given events nor does
+         * it return an event object. Therefore, we:
+         *
+         *  1. wait explicitly on incoming events,
+         *  2. we force and wait for command queue termination after enqueuing
+         *  the kernel.
+         */
+        cl_event event = ufo_buffer_get_wait_event(input);
+        clWaitForEvents(1, &event);
+        clReleaseEvent(event);
         clFFT_ExecuteInterleaved(command_queue,
                 ifft_plan, batch_size, clFFT_Inverse, 
                 mem_fft, mem_fft,
-                0, NULL, &wait_on_event);
+                0, NULL, NULL);
+        
+        clFinish(command_queue);
 
-        /* XXX: FFT execution does _not_ return event */
         /*ufo_filter_account_gpu_time(filter, &wait_on_event);*/
         /* 2. Pack interleaved complex numbers */
         size_t global_work_size[2];
@@ -148,7 +158,8 @@ static void ufo_filter_ifft_process(UfoFilter *filter)
                 0, NULL, &event);
 
         ufo_filter_account_gpu_time(filter, (void **) &event);
-        clReleaseEvent(event);
+        /* clReleaseEvent(event); */
+        ufo_buffer_set_wait_event(result, event);
 
         ufo_buffer_transfer_id(input, result);
         ufo_resource_manager_release_buffer(manager, input);

@@ -82,7 +82,7 @@ static void ufo_filter_complex_process(UfoFilter *filter)
     cl_kernel kernel = self->priv->kernels[self->priv->operation];
     cl_command_queue cmd_queue = ufo_filter_get_command_queue(filter);
     cl_mem mem_a, mem_b, mem_r;
-    cl_event event;
+    cl_event wait_event;
     
     size_t global_work_size[2] = { 0, 0 };
 
@@ -108,10 +108,10 @@ static void ufo_filter_complex_process(UfoFilter *filter)
         clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *) &mem_r);
         clEnqueueNDRangeKernel(cmd_queue, kernel,
                 2, NULL, global_work_size, NULL,
-                0, NULL, &event);
+                0, NULL, &wait_event);
 
-        ufo_filter_account_gpu_time(filter, (void **) &event);
-        clReleaseEvent(event);
+        ufo_buffer_set_wait_event(r, wait_event);
+        /* ufo_filter_account_gpu_time(filter, (void **) &event); */
 
         ufo_channel_push(output_channel, r);
         ufo_resource_manager_release_buffer(manager, a);

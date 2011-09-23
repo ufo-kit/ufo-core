@@ -73,6 +73,7 @@ static void process_regular(UfoFilter *self,
         UfoBuffer *result = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, TRUE);
         cl_mem frame_mem = (cl_mem) ufo_buffer_get_gpu_data(frame, command_queue);
         cl_mem result_mem = (cl_mem) ufo_buffer_get_gpu_data(result, command_queue);
+        cl_event wait_event = (cl_event) ufo_buffer_get_wait_event(frame);
 
         CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame_mem));
         CHECK_ERROR(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *) &result_mem));
@@ -83,10 +84,9 @@ static void process_regular(UfoFilter *self,
         CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
             kernel,
             2, NULL, global_work_size, NULL,
-            0, NULL, &event));
+            1, &wait_event, &event));
 
-        CHECK_ERROR(clFinish(command_queue));
-
+        ufo_buffer_set_wait_event(frame, event);
         ufo_resource_manager_release_buffer(manager, frame);
         ufo_channel_push(output_channel, result);
         frame = ufo_channel_pop(input_channel);
@@ -107,12 +107,14 @@ static void process_inplace(UfoFilter *self,
     gint32 dimensions[4];
 
     UfoBuffer *frame = ufo_channel_pop(input_channel);
+    cl_event event;
 
     while (frame != NULL) {
         ufo_buffer_get_dimensions(frame, dimensions);
         global_work_size[0] = (size_t) dimensions[0];
         global_work_size[1] = (size_t) dimensions[1];
 
+        cl_event wait_event = (cl_event) ufo_buffer_get_wait_event(frame);
         cl_mem frame_mem = (cl_mem) ufo_buffer_get_gpu_data(frame, command_queue);
 
         CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame_mem));
@@ -121,10 +123,9 @@ static void process_inplace(UfoFilter *self,
         CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
             kernel,
             2, NULL, global_work_size, NULL,
-            0, NULL, NULL));
+            1, &wait_event, &event));
 
-        CHECK_ERROR(clFinish(command_queue));
-
+        ufo_buffer_set_wait_event(frame, event);
         ufo_channel_push(output_channel, frame);
         frame = ufo_channel_pop(input_channel);
     }
@@ -171,8 +172,6 @@ static void process_two_frames(UfoFilter *self,
             kernel,
             2, NULL, global_work_size, local_work_size,
             0, NULL, &event));
-
-        CHECK_ERROR(clFinish(command_queue));
 
         ufo_resource_manager_release_buffer(manager, frame1);
         frame1 = frame2;

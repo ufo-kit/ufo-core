@@ -105,21 +105,21 @@ static void ufo_filter_filter_process(UfoFilter *filter)
 
     UfoBuffer *filter_buffer = filter_create_data(priv, width);
     cl_mem filter_mem = (cl_mem) ufo_buffer_get_gpu_data(filter_buffer, command_queue);
-
+    cl_event event;
+        
     while (input != NULL) {
         cl_mem fft_buffer_mem = (cl_mem) ufo_buffer_get_gpu_data(input, command_queue);
-        cl_event event;
         size_t global_work_size[2] = { width, height };
 
         clSetKernelArg(priv->kernel, 0, sizeof(cl_mem), (void *) &fft_buffer_mem);
         clSetKernelArg(priv->kernel, 1, sizeof(cl_mem), (void *) &filter_mem);
-        clEnqueueNDRangeKernel(command_queue,
+        CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
                 priv->kernel, 
                 2, NULL, global_work_size, NULL, 
-                0, NULL, &event);
+                0, NULL, &event));
 
         ufo_filter_account_gpu_time(filter, (void **) &event);
-        clReleaseEvent(event);
+        ufo_buffer_set_wait_event(input, event);
         
         ufo_channel_push(output_channel, input);
         input = (UfoBuffer *) ufo_channel_pop(input_channel);
@@ -133,9 +133,6 @@ static void ufo_filter_filter_set_property(GObject *object,
     const GValue    *value,
     GParamSpec      *pspec)
 {
-    /*UfoFilterFilter *self = UFO_FILTER_FILTER(object);*/
-
-    /* Handle all properties accordingly */
     switch (property_id) {
         case PROP_FILTER_TYPE:
             break;
@@ -150,9 +147,6 @@ static void ufo_filter_filter_get_property(GObject *object,
     GValue      *value,
     GParamSpec  *pspec)
 {
-    /*UfoFilterFilter *self = UFO_FILTER_FILTER(object);*/
-
-    /* Handle all properties accordingly */
     switch (property_id) {
         case PROP_FILTER_TYPE:
             g_value_set_string(value, "ramp");

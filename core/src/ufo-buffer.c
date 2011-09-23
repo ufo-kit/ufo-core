@@ -47,7 +47,7 @@ struct _UfoBufferPrivate {
     datastates  state;
     float       *cpu_data;
     cl_mem      gpu_data;
-    GQueue      *wait_events;
+    cl_event    event;
     
     cl_ulong    time_upload;
     cl_ulong    time_download;
@@ -274,19 +274,16 @@ void *ufo_buffer_get_cl_mem(UfoBuffer *buffer)
     return buffer->priv->gpu_data;
 }
 
-/**
- * \brief Add a cl_event object on which the buffer has to wait when up or
- * downloading data to or from the GPU.
- * \public \memberof UfoBuffer
- *
- * \param[in] buffer A UfoBuffer
- * \param[in] event A cl_event object
- */
-void ufo_buffer_wait_on_event(UfoBuffer *buffer, gpointer event)
+void ufo_buffer_set_wait_event(UfoBuffer *buffer, gpointer event)
 {
-    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
-    /* FIXME: does this need to be thread-safe? */
-    g_queue_push_tail(priv->wait_events, event);
+    buffer->priv->event = (cl_event) event;
+}
+
+gpointer ufo_buffer_get_wait_event(UfoBuffer *buffer)
+{
+    gpointer event = buffer->priv->event;
+    buffer->priv->event = NULL;
+    return event;
 }
 
 /**
@@ -474,7 +471,6 @@ static void ufo_buffer_finalize(GObject *gobject)
     
     priv->cpu_data = NULL;
     
-    g_queue_free(priv->wait_events);
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
@@ -553,7 +549,7 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->access = UFO_BUFFER_READWRITE;
     priv->domain = UFO_BUFFER_SPACE;
     priv->structure = UFO_BUFFER_2D;
-    priv->wait_events = g_queue_new();
+    priv->event = NULL;
     priv->time_upload = 0;
     priv->time_download = 0;
 }

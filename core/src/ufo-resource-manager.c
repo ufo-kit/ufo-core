@@ -563,10 +563,10 @@ guint ufo_resource_manager_get_new_id(UfoResourceManager *resource_manager)
     return id;
 }
 
-void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues)
+void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, int *num_queues)
 {
     /* FIXME: Use only first platform */
-    /**num_queues = resource_manager->priv->num_devices[0];*/
+    *num_queues = resource_manager->priv->num_devices[0];
     *command_queues = resource_manager->priv->command_queues;
 }
 

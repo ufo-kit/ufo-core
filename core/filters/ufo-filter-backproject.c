@@ -170,6 +170,7 @@ static void ufo_filter_backproject_process(UfoFilter *filter)
 
         ufo_filter_account_gpu_time(filter, (void **) &event);
         CHECK_ERROR(clReleaseEvent(event));
+        CHECK_ERROR(clFlush(command_queue));
         ufo_buffer_transfer_id(sinogram, slice);
 
         ufo_channel_push(output_channel, slice);

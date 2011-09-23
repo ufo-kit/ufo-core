@@ -49,7 +49,6 @@ UfoBuffer *ufo_channel_pop(UfoChannel *channel);
 void ufo_channel_push(UfoChannel *channel, UfoBuffer *buffer);
 gint ufo_channel_length(UfoChannel *channel);
 
-
 GType ufo_channel_get_type(void);
 
 G_END_DECLS
