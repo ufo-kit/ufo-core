@@ -468,7 +468,7 @@ void ufo_resource_manager_memcpy(UfoResourceManager *manager, gpointer memdst, g
     
     static const char* dup_kernel_src = 
         "__kernel void mem_dup(__global float* in, __global float *out) {" \
-        "   int idx = get_global_id(0); out[idx] = idx; }";
+        "   int idx = get_global_id(0); out[idx] = in[idx]; }";
     static cl_kernel dup_kernel = NULL;
     static cl_program dup_program = NULL;
     
