@@ -82,11 +82,28 @@ void ufo_filter_process(UfoFilter *filter)
     }
 }
 
+/**
+ * \brief Connect filter using default input and output.
+ * \public \memberof UfoFilter
+ *
+ * \param source Source UfoFilter
+ * \param destination Destination Ufofilter
+ */
 void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination)
 {
     ufo_filter_connect_by_name(source, "default", destination, "default");
 }
 
+
+/**
+ * \brief Connect filter with named input and output
+ * \public \memberof UfoFilter
+ *
+ * \param source Source UfoFilter
+ * \param source_output Name of the source output channel
+ * \param destination Destination Ufofilter
+ * \param dest_input Name of the destination input channel
+ */
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, UfoFilter *destination, const gchar *dest_input)
 {
     UfoChannel *channel_in = ufo_filter_get_input_channel_by_name(destination, dest_input); 
@@ -103,6 +120,14 @@ void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, U
         filter_set_output_channel(source, source_output, channel_in); 
 }
 
+/**
+ * \brief Check if two filters are connected
+ * \public \memberof UfoFilter
+ *
+ * \param source Source UfoFilter
+ * \param destination Destination Ufofilter
+ * \return TRUE if source is connected with destination else FALSE
+ */
 gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
 {
     GList *output_channels = g_hash_table_get_values(source->priv->output_channels);
@@ -116,24 +141,54 @@ gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
     return FALSE;
 }
 
+/**
+ * \brief Get named input channel
+ * \public \memberof UfoFilter
+ * 
+ * \param filter UfoFilter object
+ * \param name Name of the input channel
+ * \return NULL if no such channel exists, otherwise pointer to UfoChannel object
+ */
 UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar *name)
 {
     UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, name);
     return channel;
 }
 
+/**
+ * \brief Get named output channel
+ * \public \memberof UfoFilter
+ * 
+ * \param filter UfoFilter object
+ * \param name Name of the output channel
+ * \return NULL if no such channel exists, otherwise pointer to UfoChannel object
+ */
 UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar *name)
 {
     UfoChannel *channel = g_hash_table_lookup(filter->priv->output_channels, name);
     return channel;
 }
 
+/**
+ * \brief Get default input channel
+ * \public \memberof UfoFilter
+ * 
+ * \param filter UfoFilter object
+ * \return NULL if no such channel exists, otherwise pointer to UfoChannel object
+ */
 UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter)
 {
     UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, "default");
     return channel;
 }
 
+/**
+ * \brief Get named output channel
+ * \public \memberof UfoFilter
+ * 
+ * \param filter UfoFilter object
+ * \return NULL if no such channel exists, otherwise pointer to UfoChannel object
+ */
 UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter)
 {
     UfoChannel *channel = g_hash_table_lookup(filter->priv->output_channels, "default");
@@ -157,16 +212,38 @@ float ufo_filter_get_gpu_time(UfoFilter *filter)
     return filter->priv->gpu_time;
 }
 
+/**
+ * \brief Get canonical name of the filter
+ * \public \memberof UfoFilter
+ * 
+ * \param filter UfoFilter object
+ * \return NUL-terminated string owned by the filter
+ */
 const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
 {
     return filter->priv->plugin_name;
 }
 
+/**
+ * \brief Set OpenCL command queue to use for OpenCL kernels
+ * \public \memberof UfoFilter
+ * \note The command queue is usually set by UfoGraph and should not be changed
+ * by client code
+ *
+ * \param filter UfoFilter object
+ */
 void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue)
 {
     filter->priv->command_queue = command_queue;
 }
 
+/**
+ * \brief Get OpenCL command queue associated with a filter
+ * \public \memberof UfoFilter
+ * \note This function should only be called by a derived Filter implementation
+ * \param filter UfoFilter object
+ * \return OpenCL command queue
+ */
 gpointer ufo_filter_get_command_queue(UfoFilter *filter)
 {
     return filter->priv->command_queue;

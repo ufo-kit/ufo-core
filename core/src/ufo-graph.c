@@ -169,6 +169,25 @@ GQuark ufo_graph_error_quark(void)
 /* 
  * Public Interface
  */
+
+/**
+ * \brief Create a new UfoGraph instance
+ * \public \memberof UfoGraph
+ *
+ * Because resources (especially those belonging to the GPU) should only be
+ * allocated once, we allow only one graph at a time. Thus the graph is a
+ * singleton.
+ *
+ * \return A UfoGraph
+ */
+UfoGraph *ufo_graph_new()
+{
+    static UfoGraph *graph = NULL;
+    if (graph == NULL)
+        graph = UFO_GRAPH(g_object_new(UFO_TYPE_GRAPH, NULL));
+    return graph;
+}
+
 /**
  * \brief Read a JSON configuration file to build a static UfoGraph
  * \public \memberof UfoGraph
@@ -274,24 +293,6 @@ void ufo_graph_run(UfoGraph *graph)
     g_message("Processing finished after %3.5f seconds", 
             g_timer_elapsed(timer, NULL));
     g_timer_destroy(timer);
-}
-
-/**
- * \brief Create a new UfoGraph instance
- * \public \memberof UfoGraph
- *
- * Because resources (especially those belonging to the GPU) should only be
- * allocated once, we allow only one graph at a time. Thus the graph is a
- * singleton.
- *
- * \return A UfoGraph
- */
-UfoGraph *ufo_graph_new()
-{
-    static UfoGraph *graph = NULL;
-    if (graph == NULL)
-        graph = UFO_GRAPH(g_object_new(UFO_TYPE_GRAPH, NULL));
-    return graph;
 }
 
 /**
