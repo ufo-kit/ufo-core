@@ -63,6 +63,7 @@ static void process_regular(UfoFilter *self,
     UfoBuffer *frame = ufo_channel_pop(input_channel);
 
     cl_event event;
+    cl_int num_events;
     gint32 dimensions[4] = { 1, 1, 1, 1 };
 
     while (frame != NULL) { 
@@ -81,10 +82,11 @@ static void process_regular(UfoFilter *self,
 
         /* XXX: For AMD CPU, a clFinish must be issued before enqueuing the
          * kernel. This should be moved to a ufo_kernel_launch method. */
+        num_events = wait_event == NULL ? 0 : 1;
         CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
             kernel,
             2, NULL, global_work_size, NULL,
-            1, &wait_event, &event));
+            num_events, &wait_event, &event));
 
         ufo_buffer_set_wait_event(frame, event);
         ufo_resource_manager_release_buffer(manager, frame);
@@ -108,6 +110,7 @@ static void process_inplace(UfoFilter *self,
 
     UfoBuffer *frame = ufo_channel_pop(input_channel);
     cl_event event;
+    cl_int num_events;
 
     while (frame != NULL) {
         ufo_buffer_get_dimensions(frame, dimensions);
@@ -120,10 +123,11 @@ static void process_inplace(UfoFilter *self,
         CHECK_ERROR(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *) &frame_mem));
         CHECK_ERROR(clSetKernelArg(kernel, 1, sizeof(float)*local_work_size[0]*local_work_size[1], NULL));
 
+        num_events = wait_event == NULL ? 0 : 1;
         CHECK_ERROR(clEnqueueNDRangeKernel(command_queue,
             kernel,
             2, NULL, global_work_size, NULL,
-            1, &wait_event, &event));
+            num_events, &wait_event, &event));
 
         ufo_buffer_set_wait_event(frame, event);
         ufo_channel_push(output_channel, frame);
