@@ -683,7 +683,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
     /* Get devices for each available platform */
     gchar *info_buffer = g_malloc0(256);
-    for (int i = 0; i < priv->num_platforms; i ++) {
+    for (int i = 0; i < priv->num_platforms; i++) {
         cl_platform_id platform = priv->opencl_platforms[i];
 
         CHECK_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_NAME, 256, info_buffer, NULL));
@@ -691,8 +691,11 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
         CHECK_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_VENDOR, 256, info_buffer, NULL));
         g_debug(" Vendor...........: %s", info_buffer);
+
         if (g_str_has_prefix(info_buffer, "NVIDIA"))
-            g_string_append(priv->opencl_build_options, "-cl-nv-verbose ");
+            g_string_append(priv->opencl_build_options, "-cl-nv-verbose -DVENDOR=NVIDIA");
+        else if (g_str_has_prefix(info_buffer, "Advanced Micro Devices"))
+            g_string_append(priv->opencl_build_options, "-DVENDOR=AMD");
 
         CHECK_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_VERSION, 256, info_buffer, NULL));
         g_debug(" Version..........: %s", info_buffer);

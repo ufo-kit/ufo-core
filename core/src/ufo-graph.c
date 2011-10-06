@@ -252,6 +252,7 @@ void ufo_graph_run(UfoGraph *graph)
     
     /* Find source/sink nodes */
     int source, sink;
+    source = sink = -1;
     for (int i = 0; i < n; i++) {
         if (in_degree[i] == 0)
             source = i;
