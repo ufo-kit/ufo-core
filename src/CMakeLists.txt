@@ -67,7 +67,6 @@ else()
     set (LIB_SUFFIX "")
 endif()
 
-
 set(LIB_INSTALL_DIR "lib${LIB_SUFFIX}")
 
 include_directories(
@@ -99,3 +98,5 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc DESTINATION lib/pkgconfig)
+
+add_subdirectory(bindings)

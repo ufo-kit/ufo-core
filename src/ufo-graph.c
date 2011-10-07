@@ -379,7 +379,7 @@ static GObject *ufo_graph_constructor(GType gtype, guint n_properties, GObjectCo
 
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
 
-    gchar *paths = g_strconcat(priv->paths, ":/usr/local/lib64/ufo:../filters", NULL);
+    gchar *paths = g_strconcat(priv->paths, ":/usr/local/lib/ufo", NULL);
     gchar **plugin_dirs = g_strsplit(paths, ":", 0);
 
     priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);

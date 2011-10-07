@@ -29,9 +29,9 @@ add_custom_target(gtest
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test.json ${CMAKE_CURRENT_BINARY_DIR}/test.json)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test.js ${CMAKE_CURRENT_BINARY_DIR}/test.js)
 
-add_executable(foobar-c test.c)
-add_test(foobar-c foobar-c)
-target_link_libraries(foobar-c ufo ${GLIB2_LIBRARIES})
+add_executable(runjson test.c)
+add_test(runjson runjson)
+target_link_libraries(runjson ufo ${GLIB2_LIBRARIES})
 
 if (VALA_FOUND)
     add_custom_target(foobar-vala ALL 

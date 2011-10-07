@@ -6,11 +6,17 @@ int main(int argc, char const* argv[])
 {
     g_type_init();
     GError *error = NULL;
-    UfoGraph *graph = ufo_graph_new();
-    if (argc >= 2)
-        ufo_graph_read_from_json(graph, argv[1], &error);
-    else
+    if (argc < 2) {
+        g_print("Usage: runjson FILE [FILTER-PATHS]\n");
         return 0;
+    }
+    UfoGraph *graph = NULL;
+    if (argc == 2)
+        graph = ufo_graph_new();
+    else
+        graph = g_object_new(UFO_TYPE_GRAPH, "paths", argv[2], NULL);
+
+    ufo_graph_read_from_json(graph, argv[1], &error);
 
     if (error) {
         g_error("Error: %s", error->message);

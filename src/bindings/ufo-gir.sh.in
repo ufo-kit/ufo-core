@@ -1,0 +1,25 @@
+#!/bin/sh
+
+@INTROSPECTION_SCANNER@ \
+    --namespace=Ufo \
+    --nsversion=@UFO_VERSION_STRING_SHORT@ \
+    --library-path=@DEST_DIR@ \
+    --library=ufo \
+    --include=GObject-2.0 \
+    --include=Ethos-1.0 \
+    --no-libtool \
+    -I@OPENCL_INCLUDE_DIRS@ \
+    -I@ETHOS_INC_DIR@ \
+    -o @GIR_PREFIX@.gir \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-channel.c \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-channel.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-graph.c \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-graph.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-buffer.c \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-buffer.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-filter.c \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-filter.h \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-resource-manager.c \
+    @CMAKE_CURRENT_SOURCE_DIR@/../ufo-resource-manager.h
+
+@INTROSPECTION_COMPILER@ -o @GIR_PREFIX@.typelib @GIR_PREFIX@.gir
