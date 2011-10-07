@@ -393,7 +393,8 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
             priv->time_upload += end - start;
 #endif
-            CHECK_ERROR(clReleaseEvent(event));
+            if (event)
+                CHECK_ERROR(clReleaseEvent(event));
             priv->state = GPU_DATA_VALID;
             priv->uploads++;
             break;

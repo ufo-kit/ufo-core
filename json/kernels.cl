@@ -1,4 +1,5 @@
-__constant float mask[9] = { 0.125, 0.125, 0.125, 0.125, 0.5, 0.125, 0.125, 0.125, 0.125 };
+__constant float mask[9] = { -1.0f, 0.0f, 1.0f, -2.0f, 0.0f, 2.0f, -1.0f, 0.0f, 1.0f };
+
 
 __kernel void convolution(__global float *input, __global float *output, __local float *scratch)
 {
@@ -7,9 +8,6 @@ __kernel void convolution(__global float *input, __global float *output, __local
     size_t width = get_global_size(0);
     size_t height = get_global_size(1);
     size_t index = idy*width + idx;
-
-    scratch[get_local_id(1)*get_local_size(0) + get_local_id(0)] = input[index];
-    barrier(CLK_LOCAL_MEM_FENCE);
 
     /* FIXME: Sum up stuff from shared memory */
 
@@ -31,6 +29,16 @@ __kernel void binarize_inplace(__global float *data, __local float *scratch)
     size_t index = get_global_id(1)*get_global_size(0) + get_global_id(0);
     float value = data[index];
     data[index] = value > 0.6f ? 1.0 : 0.0;
+}
+
+__kernel void cosine_window_2d_inplace(__global float *data, __local float *scratch)
+{
+    int idx = get_global_id(0);
+    int idy = get_global_id(1);
+    int index = get_global_id(1)*get_global_size(0) + get_global_id(0);
+    int width = get_global_size(0);
+    int height = get_global_size(1);
+    data[index] *= cos(-M_PI_2 + M_PI * idx/width) * cos(-M_PI_2 + M_PI*idy/height);
 }
 
 __kernel void mirror(__global float *input, __global float *output, __local float *scratch)
@@ -71,8 +79,8 @@ __kernel void mandelbrot(__global float *data, __local float *scratch)
 
     const int max_iterations = 200;
 
-    float re = (float) (idx-width/2) * 0.001f;
-    float im = (float) (idy-height/2) * 0.001f; 
+    float re = (float) (idx-width/2-100) * 0.005f;
+    float im = (float) (idy-height/2) * 0.005f; 
 
     float x = 0.0f, y = 0.0f, xt, yt;
     int i = 0;
