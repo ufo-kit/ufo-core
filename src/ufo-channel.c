@@ -31,16 +31,35 @@ UfoChannel *ufo_channel_new(void)
     return channel;
 }
 
+/**
+ * \brief Reference a channel if to be used as an output
+ * \public \memberof UfoChannel
+ *
+ * \param[in] channel Channel to be referenced
+ */
 void ufo_channel_ref(UfoChannel *channel)
 {
     g_atomic_int_inc(&channel->priv->ref_count);
 }
 
+/**
+ * \brief Finish using this channel and notify subsequent filters that no more
+ * data can be expected
+ * \public \memberof UfoChannel
+ *
+ * \param[in] channel Channel to be finished
+ */
 void ufo_channel_finish(UfoChannel *channel)
 {
     channel->priv->finished = g_atomic_int_dec_and_test(&channel->priv->ref_count);
 }
 
+/**
+ * \brief Query number of currently placed buffers in this buffer
+ * \public \memberof UfoChannel
+ *
+ * \param[in] UfoChannel
+ */
 gint ufo_channel_length(UfoChannel *channel)
 {
     return g_async_queue_length(channel->priv->queue);
@@ -70,6 +89,13 @@ UfoBuffer *ufo_channel_pop(UfoChannel *channel)
     return buffer;
 }
 
+/**
+ * \brief Push data into a channel
+ * \public \memberof UfoChannel
+ *
+ * \param[in] channel UfoChannel to push data into
+ * \param[in] buffer UfoBuffer to be pushed into channel
+ */
 void ufo_channel_push(UfoChannel *channel, UfoBuffer *buffer)
 {
     g_async_queue_push(channel->priv->queue, buffer);

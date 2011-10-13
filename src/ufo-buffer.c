@@ -93,27 +93,66 @@ UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4])
     return buffer;
 }
 
+/**
+ * \brief Get size of internal data in bytes 
+ * \public \memberof UfoBuffer
+ * \return Size of data
+ */
 gsize ufo_buffer_get_size(UfoBuffer *buffer)
 {
     return buffer->priv->size;
 }
 
+/**
+ * \brief Get internal identification
+ * \public \memberof UfoBuffer
+ * \return unique and monotone id
+ */
 gint ufo_buffer_get_id(UfoBuffer *buffer)
 {
     return buffer->priv->id;
 }
 
-void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
-{
-    to->priv->id = from->priv->id;
-}
-
+/**
+ * \brief Assign a buffer a new id
+ * \public \memberof UfoBuffer
+ *
+ * This method is currently used by UfoResourceManager to re-order cached and
+ * requested buffers.
+ *
+ * \param[in] buffer A UfoBuffer that is getting the currently highest id
+ */
 void ufo_buffer_increment_id(UfoBuffer *buffer)
 {
     guint new_id = ufo_resource_manager_get_new_id(ufo_resource_manager());
     buffer->priv->id = new_id;
 }
 
+/**
+ * \brief Transfer id from one buffer to another
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] from UfoBuffer whose id is copied
+ * \param[in] to UfoBuffer who gets this id
+ *
+ * \warning Do _not_ keep using the from buffer, because the identical id might
+ * cause problems
+ */
+void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
+{
+    to->priv->id = from->priv->id;
+}
+
+/**
+ * \brief Deep-copy a buffer
+ * \public \memberof UfoBuffer
+ *
+ * This creates a new UfoBuffer instance with a copy of CPU and GPU data if necessary.
+ *
+ * \param[in] buffer UfoBuffer to be copied
+ * \param[in] command_queue A cl_command_queue
+ * \return A copy of buffer
+ */
 UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoResourceManager *manager = ufo_resource_manager();
@@ -143,8 +182,7 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
  * \public \memberof UfoBuffer
  *
  * \param[in] buffer A UfoBuffer
- * \param[out] width Width of the buffer
- * \param[out] height Height of the buffer
+ * \param[out] dimensions array with four elements
  */
 void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions)
 {
@@ -154,6 +192,14 @@ void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions)
         dimensions[i] = dims[i];
 }
 
+/**
+ * \brief Convenience function to retrieve dimension of buffer
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer A UfoBuffer
+ * \param[out] width Width of the buffer
+ * \param[out] height Height of the buffer
+ */
 void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer));
@@ -213,6 +259,14 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
     priv->state = CPU_DATA_VALID;
 }
 
+/**
+ * \brief Invalidate state of a buffer
+ *
+ * Data won't be synchronized between CPU and GPU and must be re-set again with
+ * ufo_buffer_set_cpu_data.
+ *
+ * \param[in] buffer UfoBuffer object
+ */
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 {
     buffer->priv->state = NO_DATA;
@@ -289,17 +343,11 @@ gpointer ufo_buffer_get_wait_event(UfoBuffer *buffer)
 }
 
 /**
- * \brief Get statistics on how often data was copied to and from GPU devices
+ * \brief Get statistics on how long data was copied to and from GPU devices
  * \param[in] buffer A UfoBuffer
- * \param[out] uploads Number of transfers to GPU
- * \param[out] downloads Number of transfers from GPU
+ * \param[out] upload_time Time taken for transfers to GPU
+ * \param[out] download_time Time taken for transfers from GPU
  */
-void ufo_buffer_get_transfer_statistics(UfoBuffer *buffer, gint *uploads, gint *downloads)
-{
-    *uploads = buffer->priv->uploads;
-    *downloads = buffer->priv->downloads;
-}
-
 void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong *download_time)
 {
     *upload_time = buffer->priv->time_upload; 
