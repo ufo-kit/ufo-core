@@ -29,6 +29,8 @@ if(SPHINX)
         source/filters.rst
         source/glossary.rst
         source/install.rst
+        source/install-linux.rst
+        source/install-mac.rst
         source/json.rst
         source/using/index.rst
         source/whatsnew/0.1.rst

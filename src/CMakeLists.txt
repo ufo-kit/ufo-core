@@ -61,7 +61,7 @@ set(ufocore_SRCS ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 # --- Target ------------------------------------------------------------------
 get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
 
-if (${LIB64} STREQUAL "TRUE")
+if (${LIB64} STREQUAL "TRUE" AND UNIX)
     set (LIB_SUFFIX 64)
 else()
     set (LIB_SUFFIX "")

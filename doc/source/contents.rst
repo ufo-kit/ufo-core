@@ -7,6 +7,8 @@ UFO Documentation contents
     whatsnew/0.1.rst
     build.rst
     install.rst
+    install-linux.rst
+    install-mac.rst
     using/index.rst
     api.rst
     json.rst
