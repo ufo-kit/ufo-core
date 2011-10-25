@@ -10,12 +10,16 @@ import string
 import textwrap
 
 SKELETON_C="""#include <gmodule.h>
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
 #include <CL/cl.h>
+#endif
 
-#include "ufo-resource-manager.h"
+#include <ufo/ufo-resource-manager.h>
+#include <ufo/ufo-filter.h>
+#include <ufo/ufo-buffer.h>
 #include "ufo-filter-${prefix_hyphen}.h"
-#include "ufo-filter.h"
-#include "ufo-buffer.h"
 
 struct _UfoFilter${prefix_camel}Private {
     /* add your private data here */
@@ -179,7 +183,7 @@ SKELETON_H="""#ifndef __UFO_FILTER_${prefix_upper}_H
 #include <glib.h>
 #include <glib-object.h>
 
-#include "ufo-filter.h"
+#include <ufo/ufo-filter.h>
 
 #define UFO_TYPE_FILTER_${prefix_upper}             (ufo_filter_${prefix_underscore}_get_type())
 #define UFO_FILTER_${prefix_upper}(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}))
