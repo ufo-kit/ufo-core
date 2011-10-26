@@ -540,7 +540,7 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
     g_static_mutex_unlock(&mutex);
 
     /* TODO: make queue limit configurable */
-    if (g_async_queue_length(queue) < 8) {
+    if (g_async_queue_length(queue) < 4) {
         ufo_buffer_invalidate_gpu_data(buffer);
         g_async_queue_push(queue, buffer);
         return;
