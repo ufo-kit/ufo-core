@@ -102,6 +102,10 @@ UfoBuffer *ufo_channel_pop(UfoChannel *channel)
  */
 void ufo_channel_push(UfoChannel *channel, UfoBuffer *buffer)
 {
+    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
+    while (g_async_queue_length(priv->queue) > 4)
+        g_usleep(10000); /* sleep for 10ms */
+
     g_async_queue_push(channel->priv->queue, buffer);
 }
 
