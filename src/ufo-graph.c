@@ -2,6 +2,8 @@
 #include <ethos/ethos.h>
 #include <json-glib/json-glib.h>
 
+#include "config.h"
+
 #include "ufo-graph.h"
 #include "ufo-sequence.h"
 #include "ufo-split.h"
@@ -307,15 +309,13 @@ GList *ufo_graph_get_filter_names(UfoGraph *graph)
 }
 
 /**
- * \brief Return the UfoFilter object belonging to a certain libfilter{name}.so
- * \public \memberof UfoGraph
+ * ufo_graph_get_filter:
+ * 
+ * @graph: a #UfoGraph
+ * @plugin_name: name of the plugin
+ * @error: return location for a GError or NULL
  *
- * \param[in] graph A UfoGraph
- * \param[in] plugin_name The name of the plugin, most likely the {name} part of
- * libfilter{name}.so
- * \param[out] error in case the filter could not be found
- *
- * \return A UfoFilter instance
+ * Returns: (transfer full): a #UfoFilter
  */
 UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error)
 {
@@ -379,7 +379,7 @@ static GObject *ufo_graph_constructor(GType gtype, guint n_properties, GObjectCo
 
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
 
-    gchar *paths = g_strconcat(priv->paths, ":/usr/local/lib/ufo", NULL);
+    gchar *paths = g_strconcat(priv->paths, LIB_FILTER_DIR, NULL);
     gchar **plugin_dirs = g_strsplit(paths, ":", 0);
 
     priv->ethos = ethos_manager_new_full("UFO", plugin_dirs);

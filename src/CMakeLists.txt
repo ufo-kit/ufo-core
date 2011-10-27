@@ -30,10 +30,7 @@ set(ufocore_LIBS
     ${JSON_GLIB_LIBRARIES}
     )
 
-
-# --- Generate config.h -------------------------------------------------------
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
+# --- Add enum generation targets ---------------------------------------------
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
   COMMAND ${GLIB2_MKENUMS}
@@ -98,5 +95,8 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc DESTINATION lib/pkgconfig)
+
+# --- Generate config.h -------------------------------------------------------
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 add_subdirectory(bindings)
