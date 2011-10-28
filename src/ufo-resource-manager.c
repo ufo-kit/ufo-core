@@ -231,13 +231,19 @@ gboolean ufo_resource_manager_add_program(
 
     gchar *buffer = resource_manager_load_opencl_program(filename);
     if (buffer == NULL) {
-        g_set_error(error,
-                UFO_RESOURCE_MANAGER_ERROR,
-                UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
-                "Failed to open file: %s",
-                filename);
-        g_static_mutex_unlock(&mutex);
-        return FALSE;
+        gchar *lib_filename = g_strdup_printf("%s/%s", LIB_FILTER_DIR, filename);
+        buffer = resource_manager_load_opencl_program(lib_filename);
+        g_free(lib_filename);
+
+        if (buffer == NULL) {
+            g_set_error(error,
+                    UFO_RESOURCE_MANAGER_ERROR,
+                    UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
+                    "Could not open %s",
+                    filename);
+            g_static_mutex_unlock(&mutex);
+            return FALSE;
+        }
     }
     priv->opencl_files = g_list_append(priv->opencl_files, g_strdup(filename));
 
