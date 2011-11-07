@@ -34,6 +34,7 @@ struct _UfoGraphClass {
 UfoGraph *ufo_graph_new();
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error);
 void ufo_graph_run(UfoGraph *self);
+guint ufo_graph_get_number_of_gpus(UfoGraph *graph);
 GList *ufo_graph_get_filter_names(UfoGraph *graph);
 UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name, GError **error);
 

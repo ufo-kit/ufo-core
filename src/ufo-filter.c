@@ -238,7 +238,8 @@ const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
  */
 void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue)
 {
-    filter->priv->command_queue = command_queue;
+    if (filter->priv->command_queue == NULL)
+        filter->priv->command_queue = command_queue;
 }
 
 /**
@@ -253,6 +254,17 @@ gpointer ufo_filter_get_command_queue(UfoFilter *filter)
     return filter->priv->command_queue;
 }
 
+void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu)
+{
+    UfoResourceManager *manager = ufo_resource_manager();
+    int num_queues;
+    cl_command_queue *cmd_queues;
+    ufo_resource_manager_get_command_queues(manager, (void **) &cmd_queues, &num_queues); 
+    if (gpu < num_queues)
+        filter->priv->command_queue = cmd_queues[gpu];
+    else
+        g_warning("Invalid GPU");
+}
 
 /* 
  * Virtual Methods

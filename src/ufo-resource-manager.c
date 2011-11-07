@@ -157,13 +157,13 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv
         UfoStructure structure,
         gint32 dimensions[4],
         float *data,
-        gboolean prefer_gpu)
+        cl_command_queue queue)
 {
     UfoBuffer *buffer = ufo_buffer_new(structure, dimensions);
     const gsize num_bytes = ufo_buffer_get_size(buffer);
 
     cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
-    if ((data != NULL) && (prefer_gpu))
+    if ((data != NULL) && (queue != NULL))
         mem_flags |= CL_MEM_COPY_HOST_PTR;
     
     cl_int errcode;
@@ -174,7 +174,8 @@ static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv
     CHECK_ERROR(errcode);
 
     ufo_buffer_set_cl_mem(buffer, buffer_mem);
-    if ((data) && (!prefer_gpu))
+
+    if ((data) && (queue == NULL))
         ufo_buffer_set_cpu_data(buffer, data, num_bytes, NULL);
 
     return buffer;
@@ -415,7 +416,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
         UfoStructure structure,
         gint32 dimensions[4],
         float *data,
-        gboolean prefer_gpu)
+        gpointer command_queue)
 {
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(resource_manager);
     UfoBuffer *buffer = NULL;
@@ -426,7 +427,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
 
     if (queue == NULL) {
         priv->cache_misses++;
-        buffer = resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
+        buffer = resource_manager_create_buffer(priv, structure, dimensions, data, command_queue);
         ufo_buffer_increment_id(buffer);
         return buffer;
     }
@@ -435,7 +436,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_mana
     buffer = g_async_queue_try_pop(queue);
     if (buffer == NULL) {
         priv->cache_misses++;
-        buffer = resource_manager_create_buffer(priv, structure, dimensions, data, prefer_gpu);
+        buffer = resource_manager_create_buffer(priv, structure, dimensions, data, command_queue);
         ufo_buffer_increment_id(buffer);
         return buffer;
     }
@@ -509,7 +510,6 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
     }
     g_static_mutex_unlock(&mutex);
 
-    /* TODO: make queue limit configurable */
     if (g_async_queue_length(queue) < 4) {
         ufo_buffer_invalidate_gpu_data(buffer);
         g_async_queue_push(queue, buffer);
@@ -545,6 +545,11 @@ size_t ufo_resource_manager_get_profiling_resolution(UfoResourceManager *resourc
     /* FIXME: as we don't know on which device a certain kernel was executed we
      * just return the first timer resolution. */
     return resource_manager->priv->resolutions[0];
+}
+
+guint ufo_resource_manager_get_number_of_gpus(UfoResourceManager *resource_manager)
+{
+    return resource_manager->priv->num_devices[0];
 }
 
 
