@@ -467,48 +467,12 @@ gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size)
     return mem;
 }
 
-void ufo_resource_manager_memcpy(UfoResourceManager *manager, gpointer memdst, gpointer memsrc, gsize size)
-{
-    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
-    cl_int errcode = CL_SUCCESS;
-    
-    static const char* dup_kernel_src = 
-        "__kernel void mem_dup(__global float* in, __global float *out) {" \
-        "   int idx = get_global_id(0); out[idx] = in[idx]; }";
-    static cl_kernel dup_kernel = NULL;
-    static cl_program dup_program = NULL;
-    
-    if (dup_kernel == NULL) {
-        dup_program = clCreateProgramWithSource(priv->opencl_context, 1, 
-                (const char **) &dup_kernel_src, NULL, &errcode);
-        CHECK_ERROR(errcode);
-
-        errcode = clBuildProgram(dup_program, 
-                priv->num_devices[0], 
-                priv->opencl_devices[0],
-                "",
-                NULL, NULL);
-        CHECK_ERROR(errcode);
-        
-        dup_kernel = clCreateKernel(dup_program, "mem_dup", &errcode); 
-        CHECK_ERROR(errcode);
-    }
-
-    size_t global_work_size = size / sizeof(float);
-    CHECK_ERROR(clSetKernelArg(dup_kernel, 0, sizeof(cl_mem), (void *) &memsrc));
-    CHECK_ERROR(clSetKernelArg(dup_kernel, 1, sizeof(cl_mem), (void *) &memdst));
-    CHECK_ERROR(clEnqueueNDRangeKernel(priv->command_queues[0],
-                dup_kernel, 
-                1, NULL, &global_work_size, NULL, 0, NULL, NULL));
-}
-
 gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memobj)
 {
     size_t size = 0;
     cl_mem mem = (cl_mem) memobj;
     CHECK_ERROR(clGetMemObjectInfo(mem, CL_MEM_SIZE, sizeof(size_t), &size, NULL));
     cl_mem dup = ufo_resource_manager_memalloc(manager, size);
-    ufo_resource_manager_memcpy(manager, dup, mem, size);
     return dup;
 }
 

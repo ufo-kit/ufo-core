@@ -167,8 +167,10 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
 
         if (copy->priv->gpu_data == NULL)
             copy->priv->gpu_data = ufo_resource_manager_memdup(manager, buffer->priv->gpu_data);
-        else
-            ufo_resource_manager_memcpy(manager, copy->priv->gpu_data, buffer->priv->gpu_data, buffer->priv->size);
+
+        cl_event *event = NULL;
+        clEnqueueCopyBuffer(command_queue, buffer->priv->gpu_data, copy->priv->gpu_data, 0, 0, buffer->priv->size, 0, NULL, event);
+        ufo_buffer_set_wait_event(copy, *event);
     }
     else if (buffer->priv->state == CPU_DATA_VALID) {
         copy = ufo_resource_manager_request_buffer(manager, 
