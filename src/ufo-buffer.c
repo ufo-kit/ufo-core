@@ -51,7 +51,10 @@ struct _UfoBufferPrivate {
     datastates  state;
     float       *cpu_data;
     cl_mem      gpu_data;
-    cl_event    event;
+
+    cl_event    *events;
+    cl_uint     current_event_index; /**< index of currently available event position */
+    cl_uint     num_total_events;   /**< total amount of events we can keep */
     
     cl_ulong    time_upload;
     cl_ulong    time_download;
@@ -163,14 +166,15 @@ UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
     UfoBuffer *copy = NULL;
     if (buffer->priv->state == GPU_DATA_VALID) {
         copy = ufo_resource_manager_request_buffer(manager, 
-                    buffer->priv->structure, buffer->priv->dimensions, NULL, command_queue);
+                buffer->priv->structure, buffer->priv->dimensions, NULL, command_queue);
 
         if (copy->priv->gpu_data == NULL)
             copy->priv->gpu_data = ufo_resource_manager_memdup(manager, buffer->priv->gpu_data);
 
-        cl_event *event = NULL;
-        clEnqueueCopyBuffer(command_queue, buffer->priv->gpu_data, copy->priv->gpu_data, 0, 0, buffer->priv->size, 0, NULL, event);
-        ufo_buffer_set_wait_event(copy, *event);
+        cl_event event;
+        CHECK_ERROR(clEnqueueCopyBuffer(command_queue, buffer->priv->gpu_data, 
+                    copy->priv->gpu_data, 0, 0, buffer->priv->size, 0, NULL, &event));
+        ufo_buffer_attach_event(copy, event);
     }
     else if (buffer->priv->state == CPU_DATA_VALID) {
         copy = ufo_resource_manager_request_buffer(manager, 
@@ -334,18 +338,31 @@ void *ufo_buffer_get_cl_mem(UfoBuffer *buffer)
     return buffer->priv->gpu_data;
 }
 
-void ufo_buffer_set_wait_event(UfoBuffer *buffer, gpointer event)
+void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
 {
-    if (buffer->priv->event != NULL)
-        CHECK_ERROR(clReleaseEvent(buffer->priv->event));
-    buffer->priv->event = (cl_event) event;
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+
+    priv->events[priv->current_event_index++] = (cl_event) event;
+
+    if (priv->current_event_index == priv->num_total_events) {
+        g_message("Reallocating event array\n");
+        priv->num_total_events *= 2;
+        priv->events = g_realloc(priv->events, priv->num_total_events * sizeof(cl_event));
+    }
 }
 
-gpointer ufo_buffer_get_wait_event(UfoBuffer *buffer)
+void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_events)
 {
-    gpointer event = buffer->priv->event;
-    buffer->priv->event = NULL;
-    return event;
+    *num_events = buffer->priv->current_event_index;
+    *events = (gpointer *) buffer->priv->events;
+}
+
+void ufo_buffer_clear_events(UfoBuffer *buffer)
+{
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+    for (int i = 0; i < priv->current_event_index; i++)
+        clReleaseEvent(priv->events[i]);
+    priv->current_event_index = 0;
 }
 
 /**
@@ -387,12 +404,15 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
             if (command_queue == NULL)
                 return NULL;
 
-            CHECK_ERROR(clEnqueueReadBuffer((cl_command_queue) command_queue,
+            CHECK_ERROR(clEnqueueReadBuffer(command_queue,
                     priv->gpu_data,
                     CL_TRUE, 
                     0, priv->size,
                     priv->cpu_data,
-                    0, NULL, &event));
+                    priv->current_event_index, priv->events, &event));
+
+            /* TODO: Can we release the events here? */
+            priv->current_event_index = 0;
 
 #ifdef WITH_PROFILING
             clWaitForEvents(1, &event);
@@ -400,7 +420,6 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
             priv->time_download += end - start;
 #endif
-            CHECK_ERROR(clReleaseEvent(event));
 
             priv->state = CPU_DATA_VALID;
             priv->downloads++;
@@ -413,6 +432,7 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
 
     return priv->cpu_data;
 }
+
 
 /**
  * \brief Get OpenCL memory object that is used to up and download data.
@@ -436,7 +456,7 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
 
             CHECK_ERROR(clEnqueueWriteBuffer((cl_command_queue) command_queue,
                     priv->gpu_data,
-                    CL_TRUE,
+                    CL_FALSE,
                     0, priv->size,
                     priv->cpu_data,
                     0, NULL, &event));
@@ -449,6 +469,7 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
 #endif
             if (event)
                 CHECK_ERROR(clReleaseEvent(event));
+
             priv->state = GPU_DATA_VALID;
             priv->uploads++;
             break;
@@ -527,6 +548,7 @@ static void ufo_buffer_finalize(GObject *gobject)
         g_free(priv->cpu_data);
     
     priv->cpu_data = NULL;
+    g_free(priv->events);
     
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
@@ -606,7 +628,11 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->access = UFO_BUFFER_READWRITE;
     priv->domain = UFO_BUFFER_SPACE;
     priv->structure = UFO_BUFFER_2D;
-    priv->event = NULL;
+
+    priv->current_event_index = 0;
+    priv->num_total_events = 8;
+    priv->events = g_malloc0(priv->num_total_events * sizeof(cl_event));
+
     priv->time_upload = 0;
     priv->time_download = 0;
 }
