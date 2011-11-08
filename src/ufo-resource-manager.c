@@ -280,24 +280,23 @@ gboolean ufo_resource_manager_add_program(
     if (options)
         g_free(build_options);
 
-    const int LOG_SIZE = 4096;
-    gchar* log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
-    CHECK_ERROR(clGetProgramBuildInfo(program, priv->opencl_devices[0][0], 
-            CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void*) log, NULL));
-    g_print("\n=== Build log for %s===%s\n\n", filename, log);
-
     if (errcode != CL_SUCCESS) {
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
                 UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
                 "Failed to build OpenCL program");
+
+        const int LOG_SIZE = 4096;
+        gchar* log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
+        CHECK_ERROR(clGetProgramBuildInfo(program, priv->opencl_devices[0][0], 
+            CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void*) log, NULL));
+
         g_print("\n=== Build log for %s===%s\n\n", filename, log);
         g_free(log);
         g_free(buffer);
         g_static_mutex_unlock(&mutex);
         return FALSE;
     }
-    g_free(log);
 
     /* Create all kernels in the program source and map their function names to
      * the corresponding cl_kernel object */
