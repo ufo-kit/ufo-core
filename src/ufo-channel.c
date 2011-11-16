@@ -19,8 +19,8 @@ struct _UfoChannelPrivate {
     GAsyncQueue *queue;
 
     UfoBuffer *buffers[2]; /* For now, just double buffering */
-    guint current_output;
     GAsyncQueue *input_queue;
+    GAsyncQueue *output_queue;
 };
 
 
@@ -60,7 +60,8 @@ void ufo_channel_ref(UfoChannel *channel)
  */
 void ufo_channel_finish(UfoChannel *channel)
 {
-    channel->priv->finished = g_atomic_int_dec_and_test(&channel->priv->ref_count);
+    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
+    priv->finished = g_atomic_int_dec_and_test(&priv->ref_count);
 }
 
 /**
@@ -120,8 +121,15 @@ void ufo_channel_push(UfoChannel *channel, UfoBuffer *buffer)
 static void ufo_channel_finalize(GObject *gobject)
 {
     UfoChannel *channel = UFO_CHANNEL(gobject);
-    g_async_queue_unref(channel->priv->queue);
-    g_async_queue_unref(channel->priv->input_queue);
+    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
+
+    UfoResourceManager *manager = ufo_resource_manager();
+    ufo_resource_manager_release_buffer(manager, priv->buffers[0]);
+    ufo_resource_manager_release_buffer(manager, priv->buffers[1]);
+    
+    g_async_queue_unref(priv->queue);
+    g_async_queue_unref(priv->input_queue);
+    g_async_queue_unref(priv->output_queue);
     G_OBJECT_CLASS(ufo_channel_parent_class)->finalize(gobject);
 }
 
@@ -135,27 +143,45 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint width, guint
     gint32 dimensions[4] = { width, height, 1, 1 };
     priv->buffers[0] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
     priv->buffers[1] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
+
+    /* Place both buffers in queue to be consumed by producer */
+    g_async_queue_push(priv->output_queue, priv->buffers[0]);
+    g_async_queue_push(priv->output_queue, priv->buffers[1]);
 }
 
 UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    if (priv->finished)
-        return NULL;
-    return g_async_queue_pop(priv->input_queue);
+    UfoBuffer *buffer = NULL;
+    GTimeVal end_time;
+
+    while ((!priv->finished) || (g_async_queue_length(priv->input_queue) > 0)) {
+        g_get_current_time(&end_time);
+        g_time_val_add(&end_time, 1000);
+        buffer = g_async_queue_timed_pop(priv->input_queue, &end_time);
+        if (buffer != NULL)
+            return buffer;
+    }
+    return buffer;
 }
 
 UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    UfoBuffer *buffer = priv->buffers[priv->current_output];
-    priv->current_output = 1 - priv->current_output;
-    return buffer;
+    return g_async_queue_pop(priv->output_queue);
+}
+
+void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
+{
+    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
+    g_assert((buffer == priv->buffers[0]) || (buffer == priv->buffers[1]));
+    g_async_queue_push(priv->output_queue, buffer);
 }
 
 void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
+    g_assert((buffer == priv->buffers[0]) || (buffer == priv->buffers[1]));
     g_async_queue_push(priv->input_queue, buffer);
 }
 
@@ -181,6 +207,6 @@ static void ufo_channel_init(UfoChannel *channel)
     priv->ref_count = 0;
     priv->finished = FALSE;
     priv->buffers[0] = priv->buffers[1] = NULL;
-    priv->current_output = 0;
     priv->input_queue = g_async_queue_new();
+    priv->output_queue = g_async_queue_new();
 }

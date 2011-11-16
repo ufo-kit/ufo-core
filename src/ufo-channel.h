@@ -52,8 +52,8 @@ gint ufo_channel_length(UfoChannel *channel);
 void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint width, guint height);
 UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel);
 UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel);
-void ufo_channel_finalize_buffer(UfoChannel *channel, UfoBuffer *);
-
+void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer);
+void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer);
 
 GType ufo_channel_get_type(void);
 
