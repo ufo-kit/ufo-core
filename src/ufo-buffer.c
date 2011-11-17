@@ -279,7 +279,7 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
  */
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 {
-    buffer->priv->state = NO_DATA;
+    buffer->priv->state = CPU_DATA_VALID;
 }
 
 /**

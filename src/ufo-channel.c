@@ -136,11 +136,10 @@ static void ufo_channel_finalize(GObject *gobject)
 /**
  * \note Not thread-safe
  */
-void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint width, guint height)
+void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[4])
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
     UfoResourceManager *manager = ufo_resource_manager();
-    gint32 dimensions[4] = { width, height, 1, 1 };
     priv->buffers[0] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
     priv->buffers[1] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
 

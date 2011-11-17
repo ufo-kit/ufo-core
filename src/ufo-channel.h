@@ -45,11 +45,9 @@ UfoChannel *ufo_channel_new(void);
 void ufo_channel_ref(UfoChannel *channel);
 
 void ufo_channel_finish(UfoChannel *channel);
-UfoBuffer *ufo_channel_pop(UfoChannel *channel);
-void ufo_channel_push(UfoChannel *channel, UfoBuffer *buffer);
 gint ufo_channel_length(UfoChannel *channel);
 
-void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint width, guint height);
+void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[4]);
 UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel);
 UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel);
 void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer);

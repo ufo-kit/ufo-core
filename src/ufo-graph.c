@@ -252,16 +252,6 @@ void ufo_graph_run(UfoGraph *graph)
             g_error("Filter %i is not connected to any other filter", i);
     }
     
-    /* Find source/sink nodes */
-    int source, sink;
-    source = sink = -1;
-    for (int i = 0; i < n; i++) {
-        if (in_degree[i] == 0)
-            source = i;
-        if (out_degree[i] == 0)
-            sink = i;
-    }
-        
     /* Assign GPUs to filters */
     cl_command_queue *cmd_queues;
     int num_queues;
