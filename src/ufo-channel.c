@@ -18,7 +18,8 @@ struct _UfoChannelPrivate {
     gboolean finished;
     GAsyncQueue *queue;
 
-    UfoBuffer *buffers[2]; /* For now, just double buffering */
+    UfoBuffer **buffers;
+    guint num_buffers;
     GAsyncQueue *input_queue;
     GAsyncQueue *output_queue;
 };
@@ -124,8 +125,10 @@ static void ufo_channel_finalize(GObject *gobject)
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
 
     UfoResourceManager *manager = ufo_resource_manager();
-    ufo_resource_manager_release_buffer(manager, priv->buffers[0]);
-    ufo_resource_manager_release_buffer(manager, priv->buffers[1]);
+    
+    for (int i = 0; i < priv->num_buffers; i++)
+        ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
+    g_free(priv->buffers);
     
     g_async_queue_unref(priv->queue);
     g_async_queue_unref(priv->input_queue);
@@ -140,12 +143,13 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
     UfoResourceManager *manager = ufo_resource_manager();
-    priv->buffers[0] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
-    priv->buffers[1] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
+    priv->num_buffers = priv->ref_count + 1;
 
-    /* Place both buffers in queue to be consumed by producer */
-    g_async_queue_push(priv->output_queue, priv->buffers[0]);
-    g_async_queue_push(priv->output_queue, priv->buffers[1]);
+    priv->buffers = g_malloc0(priv->num_buffers * sizeof(UfoBuffer *));
+    for (int i = 0; i < priv->num_buffers; i++) {
+        priv->buffers[i] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
+        g_async_queue_push(priv->output_queue, priv->buffers[i]);
+    }
 }
 
 UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
@@ -205,7 +209,7 @@ static void ufo_channel_init(UfoChannel *channel)
     priv->queue = g_async_queue_new();
     priv->ref_count = 0;
     priv->finished = FALSE;
-    priv->buffers[0] = priv->buffers[1] = NULL;
+    priv->buffers = NULL;
     priv->input_queue = g_async_queue_new();
     priv->output_queue = g_async_queue_new();
 }
