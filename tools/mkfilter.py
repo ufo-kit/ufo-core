@@ -85,19 +85,30 @@ static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
     UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
-    UfoBuffer *input = ufo_channel_pop(input_channel);
+    UfoBuffer *input = ufo_channel_get_input_buffer(input_channel);
+
+    /* If you provide any output, you must allocate output buffers of the
+       appropriate size */
+    gint32 dimensions[4] = { 256, 256, 1, 1 };
+    ufo_channel_allocate_output_buffers(output_channel, dimensions);
 
     while (input != NULL) {
-        /* Use the input here and push any output that's created. In the case of
-         * a source filter, you wouldn't pop data from the input_queue but just
-         * generate data with ufo_resource_manager_request_buffer() and push
-         * that into output_queue. On the other hand, a sink filter would
-         * release all incoming buffers from input_queue with
-         * ufo_resource_manager_release_buffer() for further re-use. */
+        /* Use the input here */
 
-        ufo_channel_push(output_channel, input);
-        input = ufo_channel_pop(input_channel);
+        /* If you use OpenCL to compute the output, make sure to call
+           ufo_buffer_attach_event(output, event) */
+
+        /* If you don't read the input and don't modify the output any more,
+           you have to finalize the buffers. */
+        ufo_channel_finalize_input_buffer(input_channel, input);
+        ufo_channel_finalize_output_buffer(output_channel, output);
+
+        /* Get new input */
+        input = ufo_channel_get_input_buffer(input_channel);
     }
+
+    /* Tell subsequent filters, that we are finished */
+    ufo_channel_finish(output_channel);
 }
 
 static void ufo_filter_${prefix_underscore}_set_property(GObject *object,

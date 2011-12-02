@@ -345,7 +345,7 @@ void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
     priv->events[priv->current_event_index++] = (cl_event) event;
 
     if (priv->current_event_index == priv->num_total_events) {
-        g_message("Reallocating event array\n");
+        g_debug("Reallocating event array\n");
         priv->num_total_events *= 2;
         priv->events = g_realloc(priv->events, priv->num_total_events * sizeof(cl_event));
     }
@@ -467,8 +467,9 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
             clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
             priv->time_upload += end - start;
 #endif
-            if (event)
-                CHECK_ERROR(clReleaseEvent(event));
+            ufo_buffer_attach_event(buffer, event);
+            /* if (event) */
+            /*     CHECK_ERROR(clReleaseEvent(event)); */
 
             priv->state = GPU_DATA_VALID;
             priv->uploads++;
