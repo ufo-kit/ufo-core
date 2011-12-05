@@ -455,7 +455,7 @@ static void ufo_graph_init(UfoGraph *self)
     self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
 
     priv->resource_manager = ufo_resource_manager();
-    /*g_object_ref(priv->resource_manager);*/
+    g_object_ref(priv->resource_manager);
 
     priv->elements = NULL;
     priv->json_parser = json_parser_new();
