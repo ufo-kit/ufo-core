@@ -345,9 +345,9 @@ void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
     priv->events[priv->current_event_index++] = (cl_event) event;
 
     if (priv->current_event_index == priv->num_total_events) {
-        g_debug("Reallocating event array\n");
         priv->num_total_events *= 2;
         priv->events = g_realloc(priv->events, priv->num_total_events * sizeof(cl_event));
+        g_debug("Reallocated event array to %i elements\n", priv->num_total_events);
     }
 }
 
@@ -409,9 +409,11 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
                     CL_TRUE, 
                     0, priv->size,
                     priv->cpu_data,
-                    priv->current_event_index, priv->events, &event));
+                    0, NULL, NULL));
+                    /* priv->current_event_index, priv->events, &event)); */
 
             /* TODO: Can we release the events here? */
+            ufo_buffer_clear_events(buffer);
             priv->current_event_index = 0;
 
 #ifdef WITH_PROFILING

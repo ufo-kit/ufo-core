@@ -141,15 +141,28 @@ static void ufo_channel_finalize(GObject *gobject)
  */
 void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[4])
 {
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
+    g_static_mutex_lock(&mutex);
+
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
+
+    if (priv->buffers != NULL) {
+        /* Buffers are already allocated by another thread, so leave here */
+        g_static_mutex_unlock(&mutex);
+        return;
+    }
+
     UfoResourceManager *manager = ufo_resource_manager();
-    priv->num_buffers = priv->ref_count + 1;
+
+    /* Allocate as many buffers as we have threads */
+    priv->num_buffers = priv->ref_count + 2;
 
     priv->buffers = g_malloc0(priv->num_buffers * sizeof(UfoBuffer *));
     for (int i = 0; i < priv->num_buffers; i++) {
         priv->buffers[i] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
         g_async_queue_push(priv->output_queue, priv->buffers[i]);
     }
+    g_static_mutex_unlock(&mutex);
 }
 
 UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
@@ -177,14 +190,20 @@ UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel)
 void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    g_assert((buffer == priv->buffers[0]) || (buffer == priv->buffers[1]));
+    gboolean is_ours = FALSE;
+    for (int i = 0; i < priv->num_buffers; i++) 
+        is_ours = is_ours || (buffer == priv->buffers[i]);
+    g_assert(is_ours);
     g_async_queue_push(priv->output_queue, buffer);
 }
 
 void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    g_assert((buffer == priv->buffers[0]) || (buffer == priv->buffers[1]));
+    gboolean is_ours = FALSE;
+    for (int i = 0; i < priv->num_buffers; i++) 
+        is_ours = is_ours || (buffer == priv->buffers[i]);
+    g_assert(is_ours);
     g_async_queue_push(priv->input_queue, buffer);
 }
 
