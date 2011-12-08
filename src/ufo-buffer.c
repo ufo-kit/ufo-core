@@ -231,7 +231,12 @@ void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *heig
  */
 void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
 {
-    buffer->priv->gpu_data = (cl_mem) mem;
+    UfoBufferPrivate *priv = buffer->priv;
+    if (priv->gpu_data != NULL)
+        clReleaseMemObject(priv->gpu_data);
+
+    priv->gpu_data = (cl_mem) mem;
+    priv->state = GPU_DATA_VALID;
 }
 
 /**

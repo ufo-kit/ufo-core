@@ -155,7 +155,7 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[
     UfoResourceManager *manager = ufo_resource_manager();
 
     /* Allocate as many buffers as we have threads */
-    priv->num_buffers = priv->ref_count + 2;
+    priv->num_buffers = priv->ref_count + 1;
 
     priv->buffers = g_malloc0(priv->num_buffers * sizeof(UfoBuffer *));
     for (int i = 0; i < priv->num_buffers; i++) {
