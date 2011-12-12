@@ -48,7 +48,6 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *self, const gchar *
 gpointer ufo_resource_manager_get_context(UfoResourceManager *self);
 gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memobj);
 gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size);
-size_t ufo_resource_manager_get_profiling_resolution(UfoResourceManager *self);
 guint ufo_resource_manager_get_number_of_gpus(UfoResourceManager *resource_manager);
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, UfoStructure structure, gint32 dimensions[4], float *data, gpointer command_queue);
 UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *self, UfoBuffer *buffer);

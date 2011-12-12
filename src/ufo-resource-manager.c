@@ -26,7 +26,6 @@ struct _UfoResourceManagerPrivate {
     cl_uint *num_devices;               /**< Number of OpenCL devices per platform id */
     cl_device_id **opencl_devices;      /**< Array of OpenCL devices per platform id */
     cl_command_queue *command_queues;   /**< Array of command queues per device */
-    size_t *resolutions;                /**< Array of timer resolutions (per ns) per device */
 
     gchar *paths;                       /**< Colon-separated string with paths to kernel files */
     GList *opencl_files;
@@ -580,13 +579,6 @@ void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manage
     *command_queues = resource_manager->priv->command_queues;
 }
 
-size_t ufo_resource_manager_get_profiling_resolution(UfoResourceManager *resource_manager)
-{
-    /* FIXME: as we don't know on which device a certain kernel was executed we
-     * just return the first timer resolution. */
-    return resource_manager->priv->resolutions[0];
-}
-
 guint ufo_resource_manager_get_number_of_gpus(UfoResourceManager *resource_manager)
 {
     return resource_manager->priv->num_devices[0];
@@ -643,12 +635,10 @@ static void ufo_resource_manager_finalize(GObject *gobject)
     g_free(priv->opencl_devices);
     g_free(priv->opencl_platforms);
     g_free(priv->command_queues);
-    g_free(priv->resolutions);
 
     priv->num_devices = NULL;
     priv->opencl_devices = NULL;
     priv->opencl_platforms = NULL;
-    priv->resolutions = NULL;
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->finalize(gobject);
 }
@@ -750,16 +740,12 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
         CHECK_ERROR(errcode);
 
         priv->command_queues = g_malloc0(priv->num_devices[0] * sizeof(cl_command_queue));
-        priv->resolutions = g_malloc0(priv->num_devices[0] * sizeof(size_t));
 
         for (int i = 0; i < priv->num_devices[0]; i++) {
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                     priv->opencl_devices[0][i],
                     queue_properties, &errcode);
             CHECK_ERROR(errcode);
-
-            CHECK_ERROR(clGetDeviceInfo(priv->opencl_devices[0][i], CL_DEVICE_PROFILING_TIMER_RESOLUTION,
-                    sizeof(size_t), &priv->resolutions[i], NULL));
         }
     }
 }
