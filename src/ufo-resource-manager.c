@@ -26,8 +26,9 @@ struct _UfoResourceManagerPrivate {
     cl_uint *num_devices;               /**< Number of OpenCL devices per platform id */
     cl_device_id **opencl_devices;      /**< Array of OpenCL devices per platform id */
     cl_command_queue *command_queues;   /**< Array of command queues per device */
-    size_t *resolutions;              /**< Array of timer resolutions (per ns) per device */
+    size_t *resolutions;                /**< Array of timer resolutions (per ns) per device */
 
+    gchar *paths;                       /**< Colon-separated string with paths to kernel files */
     GList *opencl_files;
     GList *opencl_kernel_table;
     GList *opencl_programs;
@@ -152,6 +153,24 @@ static void resource_manager_release_program(gpointer data, gpointer user_data)
     CHECK_ERROR(clReleaseProgram(program));
 }
 
+static gchar *resource_manager_find_path(UfoResourceManagerPrivate* priv,
+        const gchar *filename)
+{
+    gchar **path_list = g_strsplit(priv->paths, ":", 0);
+    int i = 0;
+    while (path_list[i] != NULL) {
+        gchar *path = g_strdup_printf("%s/%s", path_list[i], filename);
+        if (g_file_test(path, G_FILE_TEST_EXISTS)) {
+            g_strfreev(path_list);
+            return path;
+        }
+        g_free(path);
+        i++;
+    }
+
+    g_strfreev(path_list);
+    return NULL;
+}
 
 static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv,
         UfoStructure structure,
@@ -204,6 +223,21 @@ UfoResourceManager *ufo_resource_manager()
 }
 
 /**
+ * \brief Add include paths where to find OpenCL files
+ * \public \memberof UfoResourceManager
+ * \param[in] paths List of colon-separated paths
+ *
+ * \note Paths are appended and have less priority on search
+ */
+void ufo_resource_manager_add_paths(UfoResourceManager *resource_manager, const gchar *paths)
+{
+    UfoResourceManagerPrivate *priv = resource_manager->priv;
+    gchar *new_paths = g_strdup_printf("%s:%s", priv->paths, paths);
+    g_free(priv->paths);
+    priv->paths = new_paths;
+}
+
+/**
  * \brief Adds an OpenCL program and loads all kernels in that file
  * \param[in] resource_manager A UfoResourceManager
  * \param[in] filename File containing valid OpenCL code
@@ -230,22 +264,29 @@ gboolean ufo_resource_manager_add_program(
         return TRUE;
     }
 
-    gchar *buffer = resource_manager_load_opencl_program(filename);
-    if (buffer == NULL) {
-        gchar *lib_filename = g_strdup_printf("%s/%s", LIB_FILTER_DIR, filename);
-        buffer = resource_manager_load_opencl_program(lib_filename);
-        g_free(lib_filename);
-
-        if (buffer == NULL) {
-            g_set_error(error,
-                    UFO_RESOURCE_MANAGER_ERROR,
-                    UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
-                    "Could not open %s",
-                    filename);
-            g_static_mutex_unlock(&mutex);
-            return FALSE;
-        }
+    gchar *path = resource_manager_find_path(priv, filename);
+    if (path == NULL) {
+        g_set_error(error,
+                UFO_RESOURCE_MANAGER_ERROR,
+                UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
+                "Could not find %s",
+                filename);
+        g_static_mutex_unlock(&mutex);
+        return FALSE;
     }
+
+    gchar *buffer = resource_manager_load_opencl_program(path);
+    g_free(path);
+    if (buffer == NULL) {
+        g_set_error(error,
+                UFO_RESOURCE_MANAGER_ERROR,
+                UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
+                "Could not open %s",
+                filename);
+        g_static_mutex_unlock(&mutex);
+        return FALSE;
+    }
+
     priv->opencl_files = g_list_append(priv->opencl_files, g_strdup(filename));
 
     int errcode = CL_SUCCESS;
@@ -635,6 +676,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->upload_time = 0.0f;
     priv->download_time = 0.0f;
 
+    priv->paths = g_strdup_printf(".");
     priv->opencl_kernel_table = NULL;
     priv->opencl_kernels = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, resource_manager_release_kernel);
     priv->opencl_platforms = NULL;

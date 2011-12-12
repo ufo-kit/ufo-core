@@ -42,6 +42,7 @@ struct _UfoResourceManagerClass {
 };
 
 UfoResourceManager *ufo_resource_manager();
+void ufo_resource_manager_add_paths(UfoResourceManager *self, const gchar *paths);
 gboolean ufo_resource_manager_add_program(UfoResourceManager *self, const gchar *filename, const gchar *options, GError **error);
 gpointer ufo_resource_manager_get_kernel(UfoResourceManager *self, const gchar *kernel, GError **error);
 gpointer ufo_resource_manager_get_context(UfoResourceManager *self);
