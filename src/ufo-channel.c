@@ -16,7 +16,6 @@ G_DEFINE_TYPE(UfoChannel, ufo_channel, G_TYPE_OBJECT);
 struct _UfoChannelPrivate {
     gint ref_count;
     gboolean finished;
-    GAsyncQueue *queue;
 
     UfoBuffer **buffers;
     guint num_buffers;
@@ -65,56 +64,6 @@ void ufo_channel_finish(UfoChannel *channel)
     priv->finished = g_atomic_int_dec_and_test(&priv->ref_count);
 }
 
-/**
- * \brief Query number of currently placed buffers in this buffer
- * \public \memberof UfoChannel
- *
- * \param[in] UfoChannel
- */
-gint ufo_channel_length(UfoChannel *channel)
-{
-    return g_async_queue_length(channel->priv->queue);
-}
-
-/**
- * \brief Pop data from the channel
- * \public \memberof UfoChannel
- *
- * \return A UfoBuffer object or NULL if no more data is going to be put into
- * the queue.
- */
-UfoBuffer *ufo_channel_pop(UfoChannel *channel)
-{
-    UfoBuffer *buffer = NULL;
-    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    GTimeVal end_time;
-    
-    while (!priv->finished || (g_async_queue_length(priv->queue) > 0)) {
-        g_get_current_time(&end_time);
-        g_time_val_add(&end_time, 10000);
-        buffer = g_async_queue_timed_pop(priv->queue, &end_time);
-        if (buffer != NULL)
-            return buffer;
-    }
-    
-    return buffer;
-}
-
-/**
- * \brief Push data into a channel
- * \public \memberof UfoChannel
- *
- * \param[in] channel UfoChannel to push data into
- * \param[in] buffer UfoBuffer to be pushed into channel
- */
-void ufo_channel_push(UfoChannel *channel, UfoBuffer *buffer)
-{
-    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    while (g_async_queue_length(priv->queue) > 4)
-        g_usleep(10000); /* sleep for 10ms */
-
-    g_async_queue_push(channel->priv->queue, buffer);
-}
 
 /* 
  * Virtual Methods 
@@ -130,7 +79,6 @@ static void ufo_channel_finalize(GObject *gobject)
         ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
     g_free(priv->buffers);
     
-    g_async_queue_unref(priv->queue);
     g_async_queue_unref(priv->input_queue);
     g_async_queue_unref(priv->output_queue);
     G_OBJECT_CLASS(ufo_channel_parent_class)->finalize(gobject);
@@ -225,7 +173,6 @@ static void ufo_channel_init(UfoChannel *channel)
 {
     UfoChannelPrivate *priv;
     channel->priv = priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    priv->queue = g_async_queue_new();
     priv->ref_count = 0;
     priv->finished = FALSE;
     priv->buffers = NULL;
