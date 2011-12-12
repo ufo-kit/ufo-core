@@ -546,10 +546,12 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
+#ifdef WITH_PROFILING
     g_message("Memory transfer time between host and device");
     g_message("  To Device: %.4lfs", priv->upload_time);
     g_message("  To Host..: %.4lfs", priv->download_time);
     g_message("  Total....: %.4lfs", priv->upload_time + priv->download_time);
+#endif
 
     /* free resources */
     g_hash_table_destroy(priv->opencl_kernels);

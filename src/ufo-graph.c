@@ -262,11 +262,6 @@ void ufo_graph_run(UfoGraph *graph)
         ufo_filter_set_command_queue(filters[i], cmd_queues[0]);
     }
     
-    /* Round-robin */
-    /* for (int i = 0; i < n; i++) { */
-    /*     ufo_filter_set_command_queue(filters[i], cmd_queues[(i+1) % num_queues]); */ 
-    /* } */
-
     g_thread_init(NULL);
     GTimer *timer = g_timer_new();
     g_timer_start(timer);
@@ -342,16 +337,9 @@ static void ufo_graph_dispose(GObject *object)
     UfoGraph *self = UFO_GRAPH(object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(self);
 
-    GObject *objects[] = {
-        G_OBJECT(priv->resource_manager),
-        G_OBJECT(priv->json_parser),
-        G_OBJECT(priv->ethos),
-        NULL
-    };
 
-    int i = 0;
-    while (objects[i] != NULL)
-        g_object_unref(objects[i++]);
+    g_object_unref(G_OBJECT(priv->json_parser));
+    g_object_unref(G_OBJECT(priv->ethos));
 
     g_hash_table_destroy(priv->plugin_types);
     priv->plugin_types = NULL;
@@ -362,6 +350,8 @@ static void ufo_graph_dispose(GObject *object)
     g_free(priv->paths);
     priv->paths = NULL;
 
+    g_list_free(priv->elements);
+    g_object_unref(G_OBJECT(priv->resource_manager));
     G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);
 }
 
@@ -456,7 +446,6 @@ static void ufo_graph_init(UfoGraph *self)
     self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
 
     priv->resource_manager = ufo_resource_manager();
-    g_object_ref(priv->resource_manager);
 
     priv->elements = NULL;
     priv->json_parser = json_parser_new();

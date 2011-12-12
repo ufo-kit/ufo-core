@@ -68,9 +68,9 @@ void ufo_channel_finish(UfoChannel *channel)
 /* 
  * Virtual Methods 
  */
-static void ufo_channel_finalize(GObject *gobject)
+static void ufo_channel_finalize(GObject *object)
 {
-    UfoChannel *channel = UFO_CHANNEL(gobject);
+    UfoChannel *channel = UFO_CHANNEL(object);
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
 
     UfoResourceManager *manager = ufo_resource_manager();
@@ -81,7 +81,7 @@ static void ufo_channel_finalize(GObject *gobject)
     
     g_async_queue_unref(priv->input_queue);
     g_async_queue_unref(priv->output_queue);
-    G_OBJECT_CLASS(ufo_channel_parent_class)->finalize(gobject);
+    G_OBJECT_CLASS(ufo_channel_parent_class)->finalize(object);
 }
 
 /**
