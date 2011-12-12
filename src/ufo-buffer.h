@@ -60,7 +60,7 @@ typedef enum {
 } UfoDomain;
 
 UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4]);
-UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue);
+void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue);
 
 void ufo_buffer_increment_id(UfoBuffer *buffer);
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to);

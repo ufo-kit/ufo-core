@@ -119,7 +119,8 @@ static void test_buffer_copy(void)
     ufo_buffer_set_cpu_data(buffer, test_data, 10 * sizeof(float), &error);
     g_assert(error == NULL);
 
-    UfoBuffer *copy = ufo_buffer_copy(buffer, NULL);
+    UfoBuffer *copy = ufo_buffer_new(UFO_BUFFER_2D, dimensions);
+    ufo_buffer_copy(buffer, copy, NULL);
 
     /* Check meta-data of copy */
     UfoStructure buffer_structure;

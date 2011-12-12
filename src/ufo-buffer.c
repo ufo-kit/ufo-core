@@ -151,39 +151,30 @@ void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
 }
 
 /**
- * \brief Deep-copy a buffer
+ * \brief Copy the content of one buffer into another
  * \public \memberof UfoBuffer
  *
  * This creates a new UfoBuffer instance with a copy of CPU and GPU data if necessary.
  *
- * \param[in] buffer UfoBuffer to be copied
+ * \param[in] from UfoBuffer to be copied
+ * \param[in] to UfoBuffer to be copied into
  * \param[in] command_queue A cl_command_queue
- * \return A copy of buffer
  */
-UfoBuffer *ufo_buffer_copy(UfoBuffer *buffer, gpointer command_queue)
+void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
 {
     UfoResourceManager *manager = ufo_resource_manager();
-    UfoBuffer *copy = NULL;
-    if (buffer->priv->state == GPU_DATA_VALID) {
-        copy = ufo_resource_manager_request_buffer(manager, 
-                buffer->priv->structure, buffer->priv->dimensions, NULL, command_queue);
-
-        if (copy->priv->gpu_data == NULL)
-            copy->priv->gpu_data = ufo_resource_manager_memdup(manager, buffer->priv->gpu_data);
+    if (from->priv->state == GPU_DATA_VALID) {
+        to->priv->gpu_data = ufo_resource_manager_memdup(manager, from->priv->gpu_data);
 
         cl_event event;
-        CHECK_ERROR(clEnqueueCopyBuffer(command_queue, buffer->priv->gpu_data, 
-                    copy->priv->gpu_data, 0, 0, buffer->priv->size, 0, NULL, &event));
-        ufo_buffer_attach_event(copy, event);
+        CHECK_ERROR(clEnqueueCopyBuffer(command_queue, from->priv->gpu_data, 
+                    to->priv->gpu_data, 0, 0, from->priv->size, 0, NULL, &event));
+        ufo_buffer_attach_event(to, event);
     }
-    else if (buffer->priv->state == CPU_DATA_VALID) {
-        copy = ufo_resource_manager_request_buffer(manager, 
-                    buffer->priv->structure, buffer->priv->dimensions, NULL, FALSE);
-        ufo_buffer_set_cpu_data(copy, buffer->priv->cpu_data, buffer->priv->size, NULL);
-    }
+    else if (from->priv->state == CPU_DATA_VALID)
+        ufo_buffer_set_cpu_data(to, from->priv->cpu_data, from->priv->size, NULL);
     
-    copy->priv->state = buffer->priv->state;
-    return copy;
+    to->priv->state = from->priv->state;
 }
 
 
@@ -401,6 +392,10 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
 
     switch (priv->state) {
         case CPU_DATA_VALID:
+            /* This can be the case, when a buffer's device memory was invalidated
+             * but no host memory has been allocated before. */
+            if (priv->cpu_data == NULL)
+                priv->cpu_data = g_malloc0(priv->size);
             break;
         case GPU_DATA_VALID:
             if (priv->cpu_data == NULL)
