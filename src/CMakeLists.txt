@@ -66,7 +66,6 @@ endif()
 
 set(LIB_SUFFIX "")
 set(LIB_INSTALL_DIR "lib${LIB_SUFFIX}")
-message("LIB_INSTALL_DIR = ${LIB64}")
 
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
