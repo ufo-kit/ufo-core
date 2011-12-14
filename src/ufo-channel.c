@@ -85,7 +85,11 @@ static void ufo_channel_finalize(GObject *object)
 }
 
 /**
- * \note Not thread-safe
+ * \brief Allocate outgoing buffers with given dimensions
+ * \public \memberof UfoChannel
+ *
+ * \param[in] channel An UfoChannel
+ * \param[in] dimensions Size of the buffers
  */
 void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[4])
 {
@@ -113,6 +117,16 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[
     g_static_mutex_unlock(&mutex);
 }
 
+/**
+ * \brief Retrieve incoming buffer
+ * \public \memberof UfoChannel
+ *
+ * This method blocks execution as long as no new input buffer is readily
+ * processed by the preceding filter.
+ *
+ * \param[in] channel An UfoChannel
+ * \return An input buffer
+ */
 UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
@@ -129,12 +143,34 @@ UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
     return buffer;
 }
 
+/**
+ * \brief Retrieve outgoing buffer
+ * \public \memberof UfoChannel
+ *
+ * This method blocks execution as long as no new output buffer is readily
+ * processed by the subsequent filter.
+ *
+ * \param[in] channel An UfoChannel
+ * \return An output buffer
+ */
 UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
     return g_async_queue_pop(priv->output_queue);
 }
 
+/**
+ * \brief Mark input buffer to be used again
+ * \public \memberof UfoChannel
+ *
+ * An input buffer is owned by a filter by calling
+ * ufo_channel_get_input_buffer() and has to be released again with this method,
+ * so that a preceding filter can use it again as an output.
+ *
+ * \param[in] channel An UfoChannel
+ * \param[in] buffer The buffer that was acquired with
+ * ufo_channel_get_input_buffer()
+ */
 void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
@@ -145,6 +181,18 @@ void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
     g_async_queue_push(priv->output_queue, buffer);
 }
 
+/**
+ * \brief Mark output buffer to be used again
+ * \public \memberof UfoChannel
+ *
+ * An output buffer is owned by a filter by calling
+ * ufo_channel_get_output_buffer() and has to be released again with this method,
+ * so that a subsequent filter can use it as an input.
+ *
+ * \param[in] channel An UfoChannel
+ * \param[in] buffer The buffer that was acquired with
+ * ufo_channel_get_output_buffer()
+ */
 void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);

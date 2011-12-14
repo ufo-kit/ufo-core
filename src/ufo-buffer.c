@@ -85,13 +85,13 @@ GQuark ufo_buffer_error_quark(void)
  * \brief Create a new buffer with given dimensions
  * \public \memberof UfoBuffer
  *
- * \param[in] width Width of the two-dimensional buffer
- * \param[in] height Height of the two-dimensional buffer
+ * \param[in] dimensions 4-d array containing length of each dimension
  *
  * \return Buffer with allocated memory
  *
  * \note Filters should never allocate buffers on their own using this method
- * but use the UfoResourceManager method ufo_resource_manager_request_buffer().
+ * but use the UfoResourceManager method ufo_resource_manager_request_buffer()
+ * or ufo_channel_allocate_output_buffers() for outgoing data.
  */
 UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4])
 {
@@ -153,8 +153,6 @@ void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
 /**
  * \brief Copy the content of one buffer into another
  * \public \memberof UfoBuffer
- *
- * This creates a new UfoBuffer instance with a copy of CPU and GPU data if necessary.
  *
  * \param[in] from UfoBuffer to be copied
  * \param[in] to UfoBuffer to be copied into
@@ -234,8 +232,8 @@ void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
  * \brief Fill buffer with data
  * \public \memberof UfoBuffer
  *
- * This method does not take the ownership of data, it just copies the data off
- * of it because we never know if there is enough memory to hold floats of that
+ * This method does not take ownership of data, it just copies the data off of
+ * it because we never know if there is enough memory to hold floats of that
  * data.
  *
  * \param[in] buffer A UfoBuffer to fill the data with
@@ -334,6 +332,14 @@ void *ufo_buffer_get_cl_mem(UfoBuffer *buffer)
     return buffer->priv->gpu_data;
 }
 
+/**
+ * \brief Attach an OpenCL event to a buffer that must be finished before
+ * anything else can be done with this buffer
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer UfoBuffer object
+ * \param[in] event A valid OpenCL event
+ */
 void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -347,12 +353,26 @@ void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
     }
 }
 
+/**
+ * \brief Return events currently associated with a buffer
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer UfoBuffer object
+ * \param[out] events Pointer to poiner of events
+ * \param[out] num_events Number of events that can be accessed
+ */
 void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_events)
 {
     *num_events = buffer->priv->current_event_index;
     *events = (gpointer *) buffer->priv->events;
 }
 
+/**
+ * \brief Clear and release events associated with a buffer
+ * \public \memberof UfoBuffer
+ *
+ * \param[in] buffer UfoBuffer object
+ */
 void ufo_buffer_clear_events(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);

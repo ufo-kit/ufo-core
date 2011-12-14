@@ -26,12 +26,16 @@ Building Dependencies
 ---------------------
 
 If you want to use language bindings you need to install libethos with GObject
-introspection support enabled::
+introspection support enabled ::
 
   $ cd <path-to-ethos>
   $ ./configure --enable-introspection
   $ make
   $ make install
+
+Recent GLib versions deprecated the `G_CONST_RETURN` symbol. This is a reason
+why the compilation of Ethos might fail. In this case, replace all occurences of
+`G_CONST_RETURN` with `const`.
   
 OpenCL development files must be installed in order to build UFO. However, we
 cannot give general advices as installation procedures vary between different
@@ -43,7 +47,7 @@ Checking out the Code
 ---------------------
 
 In an empty directory, issue the following commands to retrieve the current HEAD
-of the source::
+of the source ::
 
   $ bzr clone bzr+ssh://<user>@ufo.kit.edu/vogelgesang/ufo
 
@@ -52,7 +56,7 @@ Configuration and Compilation
 -----------------------------
 
 Change into another empty `build` directory and issue the following commands to
-configure::
+configure ::
 
   $ cmake <path-to-ufo>
 
@@ -63,7 +67,7 @@ If other dependencies are not satisified, the relevant filter plugins will not
 be built.
 
 You can adjust some build parameters later on by using the ``ccmake`` tool in
-the build directory::
+the build directory ::
 
   $ ccmake .
 
@@ -89,6 +93,10 @@ format by issueing ::
 
   $ make packages
 
+To install the library and `pkg-config` files, issue ::
+
+  $ make install
+  $ ldconfig
 
 First Test
 ----------
