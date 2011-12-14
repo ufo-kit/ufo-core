@@ -150,16 +150,24 @@ static void resource_manager_release_program(gpointer data, gpointer user_data)
 static gchar *resource_manager_find_path(UfoResourceManagerPrivate* priv,
         const gchar *filename)
 {
+    /* Check first if filename is already a path */
+    if (g_path_is_absolute(filename)) {
+        if (g_file_test(filename, G_FILE_TEST_EXISTS))
+            return g_strdup(filename);
+        else
+            return NULL;
+    }
+
+    /* If it is not a path, search in all paths that were added */
     gchar **path_list = g_strsplit(priv->paths, ":", 0);
-    int i = 0;
-    while (path_list[i] != NULL) {
-        gchar *path = g_strdup_printf("%s/%s", path_list[i], filename);
+    gchar **p = path_list;
+    while (*p != NULL) {
+        gchar *path = g_strdup_printf("%s/%s", *(p++), filename);
         if (g_file_test(path, G_FILE_TEST_EXISTS)) {
             g_strfreev(path_list);
             return path;
         }
         g_free(path);
-        i++;
     }
 
     g_strfreev(path_list);
@@ -233,6 +241,12 @@ void ufo_resource_manager_add_paths(UfoResourceManager *resource_manager, const 
 
 /**
  * \brief Adds an OpenCL program and loads all kernels in that file
+ * \public \memberof UfoResourceManager
+ *
+ * If the filename is a full relative or absolute path (e.g.
+ * /home/user/kernel.cl) it is loaded as it is otherwise it is searched for in
+ * all paths that were added using ufo_resource_manager_add_paths().
+ *
  * \param[in] resource_manager A UfoResourceManager
  * \param[in] filename File containing valid OpenCL code
  * \param[in] options Additional build options such as "-DX=Y", can be NULL
