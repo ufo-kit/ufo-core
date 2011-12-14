@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 2.6)
 project(ufo)
 
-set(UFO_VERSION_MAJOR "0")
-set(UFO_VERSION_MINOR "1")
-set(UFO_VERSION_PATCH "0")
-set(UFO_VERSION_STRING_LONG "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}.${UFO_VERSION_PATCH}")
-set(UFO_VERSION_STRING_SHORT "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}")
+set(TARNAME "libufo")
+set(UFO_API_VERSION "0.1.0")
+set(UFO_ABI_VERSION "0.1.0")
+set(UFO_ABI_MAJOR_VERSION "0")
+
+set(PACKAGE_VERSION "0.1.0")
+set(PACKAGE_NAME "${TARNAME}")
+set(PACKAGE_TARNAME "${TARNAME}")
+set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
+set(PACKAGE_BUGREPORT "http://ufo.kit.edu/ufo/newticket")
 
 enable_testing()
 
@@ -41,6 +46,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}
     )
 
 add_definitions("-std=c99 -Wall -fPIC")
+add_definitions(-DG_LOG_DOMAIN="Ufo")
 
 add_subdirectory(src)
 add_subdirectory(doc)

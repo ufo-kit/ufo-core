@@ -73,6 +73,11 @@ include_directories(
     )
 
 add_library(ufo SHARED ${ufocore_SRCS})
+
+set_target_properties(ufo PROPERTIES
+    VERSION ${UFO_ABI_VERSION}
+    SOVERSION ${UFO_ABI_MAJOR_VERSION})
+
 target_link_libraries(ufo ${ufocore_LIBS})
 
 install(TARGETS ufo 
