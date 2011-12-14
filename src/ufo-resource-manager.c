@@ -162,7 +162,7 @@ static gchar *resource_manager_find_path(UfoResourceManagerPrivate* priv,
     gchar **path_list = g_strsplit(priv->paths, ":", 0);
     gchar **p = path_list;
     while (*p != NULL) {
-        gchar *path = g_strdup_printf("%s/%s", *(p++), filename);
+        gchar *path = g_strdup_printf("%s%c%s", *(p++), G_DIR_SEPARATOR, filename);
         if (g_file_test(path, G_FILE_TEST_EXISTS)) {
             g_strfreev(path_list);
             return path;
