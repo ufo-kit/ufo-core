@@ -9,16 +9,9 @@
 #include "config.h"
 #include "ufo-filter.h"
 
-G_DEFINE_TYPE(UfoFilter,
-              ufo_filter, 
-              ETHOS_TYPE_PLUGIN)
+G_DEFINE_TYPE(UfoFilter, ufo_filter, G_TYPE_OBJECT)
 
 #define UFO_FILTER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER, UfoFilterPrivate))
-
-enum {
-    FINISHED,
-    LAST_SIGNAL
-};
 
 struct _UfoFilterPrivate {
     GHashTable          *output_channels; /**< Map from *char to *UfoChannel */
@@ -49,9 +42,6 @@ static void filter_set_input_channel(UfoFilter *self, const gchar *name, UfoChan
 }
 
 
-/* 
- * Public Interface
- */
 /**
  * \brief Initializes the concrete UfoFilter with a UfoResourceManager. 
  * \public \memberof UfoFilter
@@ -292,13 +282,11 @@ static void ufo_filter_dispose(GObject *object)
  */
 static void ufo_filter_class_init(UfoFilterClass *klass)
 {
-    /* override GObject methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->dispose = ufo_filter_dispose;
     klass->initialize = NULL;
     klass->process = NULL;
 
-    /* install private data */
     g_type_class_add_private(klass, sizeof(UfoFilterPrivate));
 }
 

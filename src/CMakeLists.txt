@@ -6,6 +6,7 @@ set(ufocore_SRCS
     ufo-graph.c
     ufo-buffer.c
     ufo-filter.c
+    ufo-plugin-manager.c
     ufo-resource-manager.c
     )
 
@@ -14,6 +15,7 @@ set(ufocore_HDRS
     ufo-graph.h
     ufo-buffer.h
     ufo-filter.h
+    ufo-plugin-manager.h
     ufo-resource-manager.h
     )
 

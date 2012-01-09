@@ -41,17 +41,7 @@ enum {
 
 static GParamSpec *${prefix_underscore}_properties[N_PROPERTIES] = { NULL, };
 
-static void activated(EthosPlugin *plugin)
-{
-}
 
-static void deactivated(EthosPlugin *plugin)
-{
-}
-
-/* 
- * virtual methods 
- */
 static void ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter)
 {
     /* Here you can code, that is called for each newly instantiated filter */
@@ -150,13 +140,10 @@ static void ufo_filter_${prefix_underscore}_get_property(GObject *object,
 static void ufo_filter_${prefix_underscore}_class_init(UfoFilter${prefix_camel}Class *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-    EthosPluginClass *plugin_class = ETHOS_PLUGIN_CLASS(klass);
     UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
 
     gobject_class->set_property = ufo_filter_${prefix_underscore}_set_property;
     gobject_class->get_property = ufo_filter_${prefix_underscore}_get_property;
-    plugin_class->activated = activated;
-    plugin_class->deactivated = deactivated;
     filter_class->initialize = ufo_filter_${prefix_underscore}_initialize;
     filter_class->process = ufo_filter_${prefix_underscore}_process;
 
@@ -182,7 +169,7 @@ static void ufo_filter_${prefix_underscore}_init(UfoFilter${prefix_camel} *self)
     priv->example = 1.0;
 }
 
-G_MODULE_EXPORT EthosPlugin *ethos_plugin_register(void)
+G_MODULE_EXPORT UfoFilter *ufo_filter_plugin_new(void)
 {
     return g_object_new(UFO_TYPE_FILTER_${prefix_upper}, NULL);
 }
@@ -210,17 +197,12 @@ typedef struct _UfoFilter${prefix_camel}Private    UfoFilter${prefix_camel}Priva
 struct _UfoFilter${prefix_camel} {
     UfoFilter parent_instance;
 
-    /* private */
     UfoFilter${prefix_camel}Private *priv;
 };
 
 struct _UfoFilter${prefix_camel}Class {
     UfoFilterClass parent_class;
 };
-
-/* virtual public methods */
-
-/* non-virtual public methods */
 
 GType ufo_filter_${prefix_underscore}_get_type(void);
 

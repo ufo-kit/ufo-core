@@ -17,7 +17,6 @@ enum UfoResourceManagerError {
 };
 
 struct _UfoResourceManagerPrivate {
-    /* OpenCL related */
     cl_uint num_platforms;
     cl_platform_id *opencl_platforms;
 
@@ -545,10 +544,8 @@ guint ufo_resource_manager_get_number_of_gpus(UfoResourceManager *resource_manag
 }
 
 
-/* 
- * Virtual Methods
- */
-static void ufo_resource_manager_dispose(GObject *gobject)
+
+static void ufo_resource_manager_finalize(GObject *gobject)
 {
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
@@ -560,8 +557,10 @@ static void ufo_resource_manager_dispose(GObject *gobject)
     g_message("  Total....: %.4lfs", priv->upload_time + priv->download_time);
 #endif
 
-    /* free resources */
     g_hash_table_destroy(priv->opencl_kernels);
+
+    g_list_foreach(priv->opencl_files, (GFunc) g_free, NULL);
+    g_list_free(priv->opencl_files);
 
     g_list_foreach(priv->opencl_kernel_table, (GFunc) g_free, NULL);
     g_list_free(priv->opencl_kernel_table);
@@ -574,18 +573,7 @@ static void ufo_resource_manager_dispose(GObject *gobject)
 
     CHECK_ERROR(clReleaseContext(priv->opencl_context));
 
-    g_list_foreach(priv->opencl_files, (GFunc) g_free, NULL);
-    g_list_free(priv->opencl_files);
-
     g_string_free(priv->opencl_build_options, TRUE);
-
-    G_OBJECT_CLASS(ufo_resource_manager_parent_class)->dispose(gobject);
-}
-
-static void ufo_resource_manager_finalize(GObject *gobject)
-{
-    UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
-    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
     for (guint i = 0; i < priv->num_platforms; i ++)
         g_free(priv->opencl_devices[i]);
@@ -596,23 +584,18 @@ static void ufo_resource_manager_finalize(GObject *gobject)
     g_free(priv->command_queues);
 
     priv->num_devices = NULL;
+    priv->opencl_kernels = NULL;
     priv->opencl_devices = NULL;
     priv->opencl_platforms = NULL;
 
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->finalize(gobject);
 }
 
-/*
- * Type/Class Initialization
- */
 static void ufo_resource_manager_class_init(UfoResourceManagerClass *klass)
 {
-    /* override GObject methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-    gobject_class->dispose = ufo_resource_manager_dispose;
     gobject_class->finalize = ufo_resource_manager_finalize;
 
-    /* install private data */
     g_type_class_add_private(klass, sizeof(UfoResourceManagerPrivate));
 }
 

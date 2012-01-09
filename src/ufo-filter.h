@@ -2,7 +2,6 @@
 #define __UFO_FILTER_H
 
 #include <glib-object.h>
-#include <ethos/ethos.h>
 
 #include "ufo-resource-manager.h"
 #include "ufo-buffer.h"
@@ -30,14 +29,14 @@ typedef struct _UfoFilterPrivate    UfoFilterPrivate;
  * <b>Properties</b>
  */
 struct _UfoFilter {
-    EthosPlugin parent_instance;
+    GObject parent;
 
     /* private */
     UfoFilterPrivate *priv;
 };
 
 struct _UfoFilterClass {
-    EthosPluginClass parent_class;
+    GObjectClass parent;
     
     void (*process) (UfoFilter *filter);
     void (*initialize) (UfoFilter *filter);
