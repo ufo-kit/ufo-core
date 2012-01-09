@@ -6,7 +6,6 @@
     --library-path=@DEST_DIR@ \
     --library=ufo \
     --include=GObject-2.0 \
-    --include=Ethos-1.0 \
     -I@OPENCL_INCLUDE_DIRS@ \
     -I@ETHOS_INC_DIR@ \
     -o @GIR_PREFIX@.gir \

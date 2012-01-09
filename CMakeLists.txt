@@ -36,6 +36,7 @@ find_package(GObjectIntrospection)
 find_package(Vala)
 pkg_check_modules(GLIB2 glib-2.0>=2.24 REQUIRED)
 pkg_check_modules(GOBJECT2 gobject-2.0>=2.24 REQUIRED)
+pkg_check_modules(GMODULE2 gmodule-2.0>=2.24 REQUIRED)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/src
