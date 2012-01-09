@@ -57,7 +57,7 @@ UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar 
 UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar *name);
 
 void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu);
-void ufo_filter_account_gpu_time(UfoFilter *filter, void **event);
+void ufo_filter_account_gpu_time(UfoFilter *filter, gpointer event);
 float ufo_filter_get_gpu_time(UfoFilter *filter);
 const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);
 

@@ -51,6 +51,7 @@ UfoPluginManager *ufo_plugin_manager_new(void)
 
 /**
  * ufo_plugin_manager_add_paths: Add paths from which to search for modules
+ * @manager: A #UfoPluginManager
  * @paths: (in): string with colon-separated list of absolute paths
  */
 void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
@@ -65,6 +66,7 @@ void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
 
 /**
  * ufo_plugin_manager_get_filter: Load a UfoFilter module and return an instance
+ * @manager: A #UfoPluginManager
  * @returns: UfoFilter or NULL if module cannot be found
  */
 UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name)

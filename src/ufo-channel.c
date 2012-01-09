@@ -24,15 +24,12 @@ struct _UfoChannelPrivate {
 };
 
 
-/* 
- * Public Interface
- */
-
 /**
- * \brief Create a new channel
- * \public \memberof UfoChannel
+ * ufo_channel_new:
  *
- * \return UfoChannel object
+ * Creates a new #UfoChannel.
+ *
+ * Return value: A new #UfoChannel
  */
 UfoChannel *ufo_channel_new(void)
 {
@@ -41,10 +38,10 @@ UfoChannel *ufo_channel_new(void)
 }
 
 /**
- * \brief Reference a channel if to be used as an output
- * \public \memberof UfoChannel
- *
- * \param[in] channel Channel to be referenced
+ * ufo_channel_ref:
+ * @channel: A #UfoChannel
+ * 
+ * Reference a channel if to be used as an output
  */
 void ufo_channel_ref(UfoChannel *channel)
 {
@@ -52,11 +49,11 @@ void ufo_channel_ref(UfoChannel *channel)
 }
 
 /**
- * \brief Finish using this channel and notify subsequent filters that no more
- * data can be expected
- * \public \memberof UfoChannel
+ * ufo_channel_finish:
+ * @channel: A #UfoChannel
  *
- * \param[in] channel Channel to be finished
+ * Finish using this channel and notify subsequent filters that no more
+ * data can be expected
  */
 void ufo_channel_finish(UfoChannel *channel)
 {
@@ -64,32 +61,12 @@ void ufo_channel_finish(UfoChannel *channel)
     priv->finished = g_atomic_int_dec_and_test(&priv->ref_count);
 }
 
-
-/* 
- * Virtual Methods 
- */
-static void ufo_channel_finalize(GObject *object)
-{
-    UfoChannel *channel = UFO_CHANNEL(object);
-    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-
-    UfoResourceManager *manager = ufo_resource_manager();
-    
-    for (int i = 0; i < priv->num_buffers; i++)
-        ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
-    g_free(priv->buffers);
-    
-    g_async_queue_unref(priv->input_queue);
-    g_async_queue_unref(priv->output_queue);
-    G_OBJECT_CLASS(ufo_channel_parent_class)->finalize(object);
-}
-
 /**
- * \brief Allocate outgoing buffers with given dimensions
- * \public \memberof UfoChannel
+ * ufo_channel_allocate_output_buffers:
+ * @channel: A #UfoChannel
+ * @dimensions: (in) (array): Size of the buffers
  *
- * \param[in] channel An UfoChannel
- * \param[in] dimensions Size of the buffers
+ * Allocate outgoing buffers with given dimensions
  */
 void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[4])
 {
@@ -118,14 +95,13 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[
 }
 
 /**
- * \brief Retrieve incoming buffer
- * \public \memberof UfoChannel
+ * ufo_channel_get_input_buffer:
+ * @channel: A #UfoChannel
  *
  * This method blocks execution as long as no new input buffer is readily
  * processed by the preceding filter.
  *
- * \param[in] channel An UfoChannel
- * \return An input buffer
+ * Return value: The next #UfoBuffer input
  */
 UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
 {
@@ -144,14 +120,13 @@ UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
 }
 
 /**
- * \brief Retrieve outgoing buffer
- * \public \memberof UfoChannel
+ * ufo_channel_get_output_buffer:
+ * @channel: A #UfoChannel
  *
  * This method blocks execution as long as no new output buffer is readily
  * processed by the subsequent filter.
  *
- * \param[in] channel An UfoChannel
- * \return An output buffer
+ * Return value: The next #UfoBuffer for output
  */
 UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel)
 {
@@ -160,16 +135,13 @@ UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel)
 }
 
 /**
- * \brief Mark input buffer to be used again
- * \public \memberof UfoChannel
+ * ufo_channel_finalize_input_buffer:
+ * @channel: A #UfoChannel
+ * @buffer: The #UfoBuffer input acquired with ufo_channel_get_input_buffer()
  *
  * An input buffer is owned by a filter by calling
  * ufo_channel_get_input_buffer() and has to be released again with this method,
  * so that a preceding filter can use it again as an output.
- *
- * \param[in] channel An UfoChannel
- * \param[in] buffer The buffer that was acquired with
- * ufo_channel_get_input_buffer()
  */
 void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
@@ -182,16 +154,13 @@ void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
 }
 
 /**
- * \brief Mark output buffer to be used again
- * \public \memberof UfoChannel
+ * ufo_channel_finalize_output_buffer:
+ * @channel: A #UfoChannel
+ * @buffer: The #UfoBuffer input acquired with ufo_channel_get_output_buffer()
  *
  * An output buffer is owned by a filter by calling
  * ufo_channel_get_output_buffer() and has to be released again with this method,
  * so that a subsequent filter can use it as an input.
- *
- * \param[in] channel An UfoChannel
- * \param[in] buffer The buffer that was acquired with
- * ufo_channel_get_output_buffer()
  */
 void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
@@ -203,17 +172,34 @@ void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer)
     g_async_queue_push(priv->input_queue, buffer);
 }
 
+static void ufo_channel_dispose(GObject *object)
+{
+    UfoChannel *channel = UFO_CHANNEL(object);
+    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
 
-/*
- * Type/Class Initialization
- */
+    UfoResourceManager *manager = ufo_resource_manager();
+    
+    for (int i = 0; i < priv->num_buffers; i++)
+        ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
+}
+
+static void ufo_channel_finalize(GObject *object)
+{
+    UfoChannel *channel = UFO_CHANNEL(object);
+    UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
+
+    g_free(priv->buffers);
+    g_async_queue_unref(priv->input_queue);
+    g_async_queue_unref(priv->output_queue);
+    G_OBJECT_CLASS(ufo_channel_parent_class)->finalize(object);
+}
+
 static void ufo_channel_class_init(UfoChannelClass *klass)
 {
-    /* override methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+    gobject_class->dispose = ufo_channel_dispose;
     gobject_class->finalize = ufo_channel_finalize;
 
-    /* install private data */
     g_type_class_add_private(klass, sizeof(UfoChannelPrivate));
 }
 

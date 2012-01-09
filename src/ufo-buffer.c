@@ -76,22 +76,16 @@ GQuark ufo_buffer_error_quark(void)
     return g_quark_from_static_string("ufo-buffer-error-quark");
 }
 
-
-/* 
- * Public Interface
- */
-
 /**
- * \brief Create a new buffer with given dimensions
- * \public \memberof UfoBuffer
+ * ufo_buffer_new:
+ * @structure: The type of this buffer.
+ * @dimensions: 4-d array containing length of each dimension
  *
- * \param[in] dimensions 4-d array containing length of each dimension
- *
- * \return Buffer with allocated memory
- *
- * \note Filters should never allocate buffers on their own using this method
+ * Filters should never allocate buffers on their own using this method
  * but use the UfoResourceManager method ufo_resource_manager_request_buffer()
  * or ufo_channel_allocate_output_buffers() for outgoing data.
+ *
+ * Return value: A #UfoBuffer with allocated memory.
  */
 UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4])
 {
@@ -101,9 +95,12 @@ UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4])
 }
 
 /**
- * \brief Get size of internal data in bytes 
- * \public \memberof UfoBuffer
- * \return Size of data
+ * ufo_buffer_get_size:
+ * @buffer: A #UfoBuffer.
+ *
+ * Get size of internal data in bytes.
+ *
+ * Return value: Size of data
  */
 gsize ufo_buffer_get_size(UfoBuffer *buffer)
 {
@@ -111,9 +108,12 @@ gsize ufo_buffer_get_size(UfoBuffer *buffer)
 }
 
 /**
- * \brief Get internal identification
- * \public \memberof UfoBuffer
- * \return unique and monotone id
+ * ufo_buffer_get_id:
+ * @buffer: A #UfoBuffer.
+ *
+ * Get internal identification.
+ *
+ * Return value: unique and monotone id
  */
 gint ufo_buffer_get_id(UfoBuffer *buffer)
 {
@@ -121,29 +121,11 @@ gint ufo_buffer_get_id(UfoBuffer *buffer)
 }
 
 /**
- * \brief Assign a buffer a new id
- * \public \memberof UfoBuffer
+ * ufo_buffer_transfer_id:
+ * @from: A #UfoBuffer whose id is copied.
+ * @to: UfoBuffer who gets this id
  *
- * This method is currently used by UfoResourceManager to re-order cached and
- * requested buffers.
- *
- * \param[in] buffer A UfoBuffer that is getting the currently highest id
- */
-void ufo_buffer_increment_id(UfoBuffer *buffer)
-{
-    guint new_id = ufo_resource_manager_get_new_id(ufo_resource_manager());
-    buffer->priv->id = new_id;
-}
-
-/**
- * \brief Transfer id from one buffer to another
- * \public \memberof UfoBuffer
- *
- * \param[in] from UfoBuffer whose id is copied
- * \param[in] to UfoBuffer who gets this id
- *
- * \warning Do _not_ keep using the from buffer, because the identical id might
- * cause problems
+ * Transfer id from one buffer to another.
  */
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
 {
@@ -151,12 +133,12 @@ void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
 }
 
 /**
- * \brief Copy the content of one buffer into another
- * \public \memberof UfoBuffer
+ * ufo_buffer_copy:
+ * @from: A #UfoBuffer to copy from.
+ * @to: A #UfoBuffer to copy into.
+ * @command_queue: A cl_command_queue.
  *
- * \param[in] from UfoBuffer to be copied
- * \param[in] to UfoBuffer to be copied into
- * \param[in] command_queue A cl_command_queue
+ * Copy the content of one buffer into another.
  */
 void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
 {
@@ -177,11 +159,11 @@ void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
 
 
 /**
- * \brief Retrieve dimension of buffer
- * \public \memberof UfoBuffer
+ * ufo_buffer_get_dimensions:
+ * @buffer: A #UfoBuffer.
+ * @dimensions: (array): array with four elements
  *
- * \param[in] buffer A UfoBuffer
- * \param[out] dimensions array with four elements
+ * Retrieve dimension of buffer.
  */
 void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions)
 {
@@ -192,12 +174,12 @@ void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions)
 }
 
 /**
- * \brief Convenience function to retrieve dimension of buffer
- * \public \memberof UfoBuffer
+ * ufo_buffer_get_2d_dimensions:
+ * @buffer: A #UfoBuffer.
+ * @width: (out): Location to store the width of the buffer
+ * @height: (out): Location to store the height of the buffer
  *
- * \param[in] buffer A UfoBuffer
- * \param[out] width Width of the buffer
- * \param[out] height Height of the buffer
+ * Convenience function to retrieve dimension of buffer.
  */
 void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height)
 {
@@ -208,15 +190,13 @@ void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *heig
 }
 
 /**
- * \brief Associate the buffer with a given OpenCL memory object
- * \public \memberof UfoBuffer
+ * ufo_buffer_create_gpu_buffer:
+ * @buffer: A #UfoBuffer.
+ * @mem: A cl_mem object that the host memory is synchronized with.
  *
- * \param[in] buffer A UfoBuffer
- * \param[in] mem The OpenCL memory object, that the host memory is synchronized
- *      with
- *
- * \note This does not actually copy the data from host to device. Same as
- *      ufo_buffer_new(), users should stay away from calling this on their own.
+ * Associate the buffer with a given OpenCL memory object.  This does not
+ * actually copy the data from host to device. Same as ufo_buffer_new(), users
+ * should stay away from calling this on their own.
  */
 void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
 {
@@ -229,25 +209,23 @@ void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
 }
 
 /**
- * \brief Fill buffer with data
- * \public \memberof UfoBuffer
+ * ufo_buffer_set_cpu_data:
+ * @buffer: A #UfoBuffer.
+ * @data: User supplied data
+ * @num_bytes: Size of data in bytes
+ * @error: Pointer to GError*
  *
- * This method does not take ownership of data, it just copies the data off of
- * it because we never know if there is enough memory to hold floats of that
- * data.
- *
- * \param[in] buffer A UfoBuffer to fill the data with
- * \param[in] data User supplied data
- * \param[in] n Size of data in bytes
- * \param[in] error Pointer to GError*
+ * Fill buffer with data. This method does not take ownership of data, it just
+ * copies the data off of it because we never know if there is enough memory to
+ * hold floats of that data.
  */
-void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **error)
+void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error)
 {
     UfoBufferPrivate *priv = buffer->priv;
     if (data == NULL)
         return;
 
-    if (n > priv->size) {
+    if (num_bytes > priv->size) {
         if (error != NULL) {
             g_set_error(error,
                     UFO_BUFFER_ERROR,
@@ -259,17 +237,16 @@ void ufo_buffer_set_cpu_data(UfoBuffer *buffer, float *data, gsize n, GError **e
     if (priv->cpu_data == NULL) 
         priv->cpu_data = g_malloc0(priv->size);
 
-    memcpy(priv->cpu_data, data, n);
+    memcpy(priv->cpu_data, data, num_bytes);
     priv->state = CPU_DATA_VALID;
 }
 
 /**
- * \brief Invalidate state of a buffer
+ * ufo_buffer_invalidate_gpu_data:
+ * @buffer: A #UfoBuffer.
  *
- * Data won't be synchronized between CPU and GPU and must be re-set again with
- * ufo_buffer_set_cpu_data.
- *
- * \param[in] buffer UfoBuffer object
+ * Invalidate state of a buffer so that Data won't be synchronized between CPU
+ * and GPU and must be re-set again with ufo_buffer_set_cpu_data.
  */
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 {
@@ -277,19 +254,17 @@ void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 }
 
 /**
- * \brief Spread raw data without increasing the contrast
- * \public \memberof UfoBuffer
+ * ufo_buffer_reinterpret:
+ * @buffer: A #UfoBuffer.
+ * @source_depth: The number of bits that make up the original integer data type.  
+ * @num_pixels: Number of pixels to consider
  *
  * The fundamental data type of a UfoBuffer is one single-precision floating
  * point per pixel. To increase performance it is possible to load arbitrary
  * integer data with ufo_buffer_set_cpu_data() and convert that data with this
  * method.
- *
- * \param[in] buffer UfoBuffer object
- * \param[in] source_depth The number of bits that make up the original integer data type.  
- * \param[in] n Number of data elements to consider
  */
-void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize n)
+void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels)
 {
     float *dst = buffer->priv->cpu_data;
     /* To save a memory allocation and several copies, we process data from back
@@ -297,22 +272,22 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize n)
      * the 32-bit target buffer. The processor cache should not be a problem. */
     if (source_depth == 8) {
         guint8 *src = (guint8 *) buffer->priv->cpu_data;
-        for (int index = (n-1); index >= 0; index--)
+        for (int index = (num_pixels-1); index >= 0; index--)
             dst[index] = src[index] / 255.0;
     }
     else if (source_depth == 16) {
         guint16 *src = (guint16 *) buffer->priv->cpu_data;
-        for (int index = (n-1); index >= 0; index--)
+        for (int index = (num_pixels-1); index >= 0; index--)
             dst[index] = src[index] / 65535.0;
     }
 }
 
 /**
- * \brief Set OpenCL memory object that is used to up and download data.
- * \public \memberof UfoBuffer
+ * ufo_buffer_set_cl_mem:
+ * @buffer: A #UfoBuffer.
+ * @mem: A cl_mem object.
  *
- * \param[in] buffer UfoBuffer object
- * \param[in] mem OpenCL memory object to be associated with this UfoBuffer
+ * Set OpenCL memory object that is used to up and download data.
  */
 void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
 {
@@ -320,12 +295,12 @@ void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
 }
 
 /**
- * \brief Return associated OpenCL memory object without synchronizing with CPU
- * memory.
- * \public \memberof UfoBuffer
+ * ufo_buffer_get_cl_mem:
+ * @buffer: A #UfoBuffer.
+ * 
+ * Return associated OpenCL memory object without synchronizing with CPU memory.
  *
- * \param[in] buffer UfoBuffer object
- * \return OpenCL memory object associated with this UfoBuffer
+ * Return value: A cl_mem object associated with this #UfoBuffer.
  */
 void *ufo_buffer_get_cl_mem(UfoBuffer *buffer)
 {
@@ -333,12 +308,12 @@ void *ufo_buffer_get_cl_mem(UfoBuffer *buffer)
 }
 
 /**
- * \brief Attach an OpenCL event to a buffer that must be finished before
- * anything else can be done with this buffer
- * \public \memberof UfoBuffer
+ * ufo_buffer_attach_event:
+ * @buffer: A #UfoBuffer.
+ * @event: A cl_event object.
  *
- * \param[in] buffer UfoBuffer object
- * \param[in] event A valid OpenCL event
+ * Attach an OpenCL event to a buffer that must be finished before anything else
+ * can be done with this buffer.
  */
 void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
 {
@@ -354,12 +329,13 @@ void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
 }
 
 /**
- * \brief Return events currently associated with a buffer
- * \public \memberof UfoBuffer
+ * ufo_buffer_get_events:
+ * @buffer: A #UfoBuffer.
+ * @events: (out) (transfer none): Location to store pointer of events.
+ * @num_events: (out): Location to store the length of the event array.
  *
- * \param[in] buffer UfoBuffer object
- * \param[out] events Pointer to poiner of events
- * \param[out] num_events Number of events that can be accessed
+ * Return events currently associated with a buffer but don't release them from
+ * this buffer.
  */
 void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_events)
 {
@@ -368,10 +344,10 @@ void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_even
 }
 
 /**
- * \brief Clear and release events associated with a buffer
- * \public \memberof UfoBuffer
+ * ufo_buffer_clear_events:
+ * @buffer: A #UfoBuffer.
  *
- * \param[in] buffer UfoBuffer object
+ * Clear and release events associated with a buffer
  */
 void ufo_buffer_clear_events(UfoBuffer *buffer)
 {
@@ -382,10 +358,12 @@ void ufo_buffer_clear_events(UfoBuffer *buffer)
 }
 
 /**
- * \brief Get statistics on how long data was copied to and from GPU devices
- * \param[in] buffer A UfoBuffer
- * \param[out] upload_time Time taken for transfers to GPU
- * \param[out] download_time Time taken for transfers from GPU
+ * ufo_buffer_get_transfer_time:
+ * @buffer: A #UfoBuffer.
+ * @upload_time: (out): Location to store the upload time.
+ * @download_time: (out): Location to store the download time.
+ *
+ * Get statistics on how long data was copied to and from GPU devices.
  */
 void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong *download_time)
 {
@@ -393,14 +371,15 @@ void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong
     *download_time = buffer->priv->time_download; 
 }
 
-/*
- * \brief Get raw pixel data in a flat array (row-column format)
- * \public \memberof UfoBuffer
+/**
+ * ufo_buffer_get_cpu_data:
+ * @buffer: A #UfoBuffer.
+ * @command_queue: A cl_command_queue object that is used to access the device
+ * memory.
  *
- * \param[in] buffer UfoBuffer object
- * \param[in] command_queue a cl_command_queue, can be NULL when data is known
- * to reside on CPU host memory.
- * \return Pointer to a float array of valid data
+ * Get raw pixel data in a flat array (row-column format).
+ *
+ * Return value: (transfer none): Pointer to a float array of valid data.
  */
 float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
 {
@@ -457,11 +436,14 @@ float* ufo_buffer_get_cpu_data(UfoBuffer *buffer, gpointer command_queue)
 
 
 /**
- * \brief Get OpenCL memory object that is used to up and download data.
- * \public \memberof UfoBuffer
+ * ufo_buffer_get_gpu_data:
+ * @buffer: A #UfoBuffer
+ * @command_queue: A cl_command_queue object that is used to access the device
+ * memory.
  *
- * \param[in] buffer UfoBuffer object
- * \return OpenCL memory object associated with this UfoBuffer
+ * Get OpenCL memory object that is used to up and download data.
+ *
+ * Return value: OpenCL memory object associated with this #UfoBuffer.
  */
 gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
 {
@@ -508,9 +490,6 @@ gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue)
     return priv->gpu_data;
 }
 
-/* 
- * Virtual Methods 
- */
 static void ufo_filter_set_property(GObject *object,
     guint           property_id,
     const GValue    *value,
@@ -576,19 +555,13 @@ static void ufo_buffer_finalize(GObject *gobject)
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
-
-/*
- * Type/Class Initialization
- */
 static void ufo_buffer_class_init(UfoBufferClass *klass)
 {
-    /* override methods */
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->set_property = ufo_filter_set_property;
     gobject_class->get_property = ufo_filter_get_property;
     gobject_class->finalize = ufo_buffer_finalize;
 
-    /* install properties */
     buffer_properties[PROP_ID] = 
         g_param_spec_int("id",
             "ID of this buffer",
@@ -627,13 +600,6 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
     g_object_class_install_property(gobject_class, PROP_STRUCTURE, buffer_properties[PROP_STRUCTURE]);
     g_object_class_install_property(gobject_class, PROP_DOMAIN, buffer_properties[PROP_DOMAIN]);
 
-    /* TODO: use this when updating to GObject 2.26
-    g_object_class_install_properties(gobject_class,
-            N_PROPERTIES,
-            buffer_properties);
-    */
-
-    /* install private data */
     g_type_class_add_private(klass, sizeof(UfoBufferPrivate));
 }
 

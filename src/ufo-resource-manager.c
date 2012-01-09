@@ -543,8 +543,6 @@ guint ufo_resource_manager_get_number_of_gpus(UfoResourceManager *resource_manag
     return resource_manager->priv->num_devices[0];
 }
 
-
-
 static void ufo_resource_manager_finalize(GObject *gobject)
 {
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);

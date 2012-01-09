@@ -157,16 +157,16 @@ GQuark ufo_graph_error_quark(void)
 
 
 /**
- * \brief Create a new UfoGraph instance
- * \public \memberof UfoGraph
+ * ufo_graph_new:
+ * Create a new #UfoGraph.
  *
  * Because resources (especially those belonging to the GPU) should only be
  * allocated once, we allow only one graph at a time. Thus the graph is a
  * singleton.
  *
- * \return A UfoGraph
+ * Return value: A #UfoGraph.
  */
-UfoGraph *ufo_graph_new()
+UfoGraph *ufo_graph_new(void)
 {
     static UfoGraph *graph = NULL;
     if (graph == NULL)
@@ -175,13 +175,12 @@ UfoGraph *ufo_graph_new()
 }
 
 /**
- * \brief Read a JSON configuration file to build a static UfoGraph
- * \public \memberof UfoGraph
- * \param[in] graph A UfoGraph instance
- * \param[in] filename Path and filename to the JSON file
- * \param[out] error Indicates error in case of failed file loading or parsing
- * \return A UfoGraph object build from the JSON description or NULL if JSON
- * file could not be parsed
+ * ufo_graph_read_from_json:
+ * @graph: A #UfoGraph.
+ * @filename: Path and filename to the JSON file
+ * @error: Indicates error in case of failed file loading or parsing
+ *
+ * Read a JSON configuration file to fill the filter structure of #UfoGraph.
  */
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error)
 {
@@ -194,10 +193,11 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
 }
 
 /**
- * \brief Start execution of all UfoElements in the UfoGraph until no more data
- * is produced
- * \public \memberof UfoGraph
- * \param[in] graph The UfoGraph to be executed
+ * ufo_graph_run:
+ * @graph: A #UfoGraph.
+ *
+ * Start execution of all UfoElements in the UfoGraph until no more data is
+ * produced
  */
 void ufo_graph_run(UfoGraph *graph)
 {
@@ -279,12 +279,13 @@ GList *ufo_graph_get_filter_names(UfoGraph *graph)
 
 /**
  * ufo_graph_get_filter:
- * 
  * @graph: a #UfoGraph
  * @plugin_name: name of the plugin
  * @error: return location for a GError or NULL
  *
- * Returns: (transfer full): a #UfoFilter
+ * Instantiate a new filter from a given plugin.
+ *
+ * Return value: (transfer full): a #UfoFilter
  */
 UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error)
 {
@@ -304,6 +305,14 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
     return filter;
 }
 
+/**
+ * ufo_graph_get_number_of_gpus:
+ * @graph: A #UfoGraph
+ *
+ * Query the number of used GPUs
+ *
+ * Return value: Number of GPUs
+ */
 guint ufo_graph_get_number_of_gpus(UfoGraph *graph)
 {
     return ufo_resource_manager_get_number_of_gpus(graph->priv->resource_manager);
@@ -405,6 +414,12 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
     gobject_class->dispose = ufo_graph_finalize;
     gobject_class->constructor = ufo_graph_constructor;
     
+    /**
+     * UfoGraph:paths:
+     *
+     * List of colon-separated paths pointing to possible filter and kernel file
+     * locations.
+     */
     graph_properties[PROP_PATHS] = 
         g_param_spec_string("paths",
             "List of :-separated paths pointing to possible filter locations",

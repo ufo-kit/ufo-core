@@ -62,7 +62,6 @@ typedef enum {
 UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4]);
 void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue);
 
-void ufo_buffer_increment_id(UfoBuffer *buffer);
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to);
 
 gsize ufo_buffer_get_size(UfoBuffer *buffer);
