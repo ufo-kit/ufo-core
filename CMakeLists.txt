@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 project(ufo)
 
 set(TARNAME "libufo")
+set(UFO_GIR_VERSION "0.1")
 set(UFO_API_VERSION "0.1.0")
 set(UFO_ABI_VERSION "0.1.0")
 set(UFO_ABI_MAJOR_VERSION "0")
