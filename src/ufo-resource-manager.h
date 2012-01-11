@@ -22,18 +22,9 @@ const gchar* opencl_map_error(int error);
 #define CHECK_ERROR(error) { \
     if ((error) != CL_SUCCESS) g_message("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
 
-/**
- * \class UfoResourceManager
- * \brief Manages GPU and UfoBuffer resources
- *
- * <b>Signals</b>
- *
- * <b>Properties</b>
- */
 struct _UfoResourceManager {
     GObject parent_instance;
 
-    /* private */
     UfoResourceManagerPrivate *priv;
 };
 
@@ -42,17 +33,18 @@ struct _UfoResourceManagerClass {
 };
 
 UfoResourceManager *ufo_resource_manager();
+
 void ufo_resource_manager_add_paths(UfoResourceManager *self, const gchar *paths);
 gboolean ufo_resource_manager_add_program(UfoResourceManager *self, const gchar *filename, const gchar *options, GError **error);
 gpointer ufo_resource_manager_get_kernel(UfoResourceManager *self, const gchar *kernel, GError **error);
 gpointer ufo_resource_manager_get_context(UfoResourceManager *self);
+void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, int *num_queues);
+guint ufo_resource_manager_get_number_of_devices(UfoResourceManager *resource_manager);
+
 gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memobj);
 gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size);
-guint ufo_resource_manager_get_number_of_gpus(UfoResourceManager *resource_manager);
-UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, UfoStructure structure, gint32 dimensions[4], float *data, gpointer command_queue);
-/* UfoBuffer *ufo_resource_manager_copy_buffer(UfoResourceManager *self, UfoBuffer *buffer); */
+UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, int num_dims, const int *dim_size, float *data, gpointer command_queue);
 void ufo_resource_manager_release_buffer(UfoResourceManager *self, UfoBuffer *buffer);
-void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, int *num_queues);
 guint ufo_resource_manager_get_new_id(UfoResourceManager *resource_manager);
 
 GType ufo_resource_manager_get_type(void);

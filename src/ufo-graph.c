@@ -306,16 +306,16 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
 }
 
 /**
- * ufo_graph_get_number_of_gpus:
+ * ufo_graph_get_number_of_devices:
  * @graph: A #UfoGraph
  *
- * Query the number of used GPUs
+ * Query the number of used acceleration devices such as GPUs
  *
- * Return value: Number of GPUs
+ * Return value: Number of devices
  */
-guint ufo_graph_get_number_of_gpus(UfoGraph *graph)
+guint ufo_graph_get_number_of_devices(UfoGraph *graph)
 {
-    return ufo_resource_manager_get_number_of_gpus(graph->priv->resource_manager);
+    return ufo_resource_manager_get_number_of_devices(graph->priv->resource_manager);
 }
 
 static void ufo_graph_dispose(GObject *object)

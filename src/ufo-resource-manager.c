@@ -173,46 +173,15 @@ static gchar *resource_manager_find_path(UfoResourceManagerPrivate* priv,
     return NULL;
 }
 
-static UfoBuffer *resource_manager_create_buffer(UfoResourceManagerPrivate* priv,
-        UfoStructure structure,
-        gint32 dimensions[4],
-        float *data,
-        cl_command_queue queue)
-{
-    UfoBuffer *buffer = ufo_buffer_new(structure, dimensions);
-    const gsize num_bytes = ufo_buffer_get_size(buffer);
-
-    cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
-    if ((data != NULL) && (queue != NULL))
-        mem_flags |= CL_MEM_COPY_HOST_PTR;
-    
-    cl_int errcode;
-    cl_mem buffer_mem = clCreateBuffer(priv->opencl_context,
-            mem_flags, 
-            num_bytes,
-            data, &errcode);
-    CHECK_ERROR(errcode);
-
-    ufo_buffer_set_cl_mem(buffer, buffer_mem);
-
-    if ((data) && (queue == NULL))
-        ufo_buffer_set_cpu_data(buffer, data, num_bytes, NULL);
-
-    return buffer;
-}
-
 GQuark ufo_resource_manager_error_quark(void)
 {
     return g_quark_from_static_string("ufo-resource-manager-error-quark");
 }
 
-/* 
- * Public Interface
- */
 /**
- * \brief Return a UfoResourceManager instance
- * \public \memberof UfoResourceManager
- * \return A UfoResourceManager
+ * ufo_resource_manager: Create a new #UfoResourceManager instance.
+ *
+ * Return value: A new #UfoResourceManager
  */
 UfoResourceManager *ufo_resource_manager()
 {
@@ -224,11 +193,12 @@ UfoResourceManager *ufo_resource_manager()
 }
 
 /**
- * \brief Add include paths where to find OpenCL files
- * \public \memberof UfoResourceManager
- * \param[in] paths List of colon-separated paths
+ * ufo_resource_manager_add_paths:
+ * @resource_manager: A #UfoResourceManager
+ * @paths: A string with a list of colon-separated paths
  *
- * \note Paths are appended and have less priority on search
+ * Each path is used when searching for kernel files using
+ * ufo_resource_manager_add_program() in that order that they are passed.
  */
 void ufo_resource_manager_add_paths(UfoResourceManager *resource_manager, const gchar *paths)
 {
@@ -239,19 +209,18 @@ void ufo_resource_manager_add_paths(UfoResourceManager *resource_manager, const 
 }
 
 /**
- * \brief Adds an OpenCL program and loads all kernels in that file
- * \public \memberof UfoResourceManager
+ * ufo_resource_manager_add_program:
+ * @resource_manager: A #UfoResourceManager
+ * @filename: Name or path of an ASCII-encoded kernel file 
+ * @options: (in) (allow-none): Additional build options such as "-DX=Y", or NULL
+ * @error: Return locatation for a GError, or NULL
  *
- * If the filename is a full relative or absolute path (e.g.
- * /home/user/kernel.cl) it is loaded as it is otherwise it is searched for in
- * all paths that were added using ufo_resource_manager_add_paths().
+ * Opens, loads and builds an OpenCL kernel file either by an absolute path or
+ * by looking up the file in all directories specified by
+ * ufo_resource_manager_add_paths(). After successfully building the program,
+ * individual kernels can be accessed using ufo_resource_manager_get_kernel().
  *
- * \param[in] resource_manager A UfoResourceManager
- * \param[in] filename File containing valid OpenCL code
- * \param[in] options Additional build options such as "-DX=Y", can be NULL
- * \param[out] error Pointer to a GError* 
- * \public \memberof UfoResourceManager
- * \return TRUE on success else FALSE
+ * Return value: TRUE on success, FALSE if an error occurred
  */
 gboolean ufo_resource_manager_add_program(
         UfoResourceManager *resource_manager, 
@@ -374,14 +343,14 @@ gboolean ufo_resource_manager_add_program(
 }
 
 /**
- * \brief Retrieve a loaded OpenCL kernel
- * \public \memberof UfoResourceManager
- * \param[in] resource_manager A UfoResourceManager
- * \param[in] kernel_name Zero-delimited string of the kernel name
- * \param[out] error Pointer to a GError* 
- * \note The kernel must be contained in one of the files that has been
- *      previously loaded with ufo_resource_manager_add_program()
- * \return A cl_kernel object
+ * ufo_resource_manager_get_kernel:
+ * @resource_manager: A #UfoResourceManager
+ * @kernel_name: Name of a kernel 
+ * @error: Return location for a GError, or NULL
+ *
+ * Returns a kernel that has been previously loaded with ufo_resource_manager_add_program()
+ *
+ * Return value: The cl_kernel object identified by the kernel name
  */
 gpointer ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, const gchar *kernel_name, GError **error)
 {
@@ -429,13 +398,13 @@ void ufo_resource_manager_call(UfoResourceManager *resource_manager,
 }
 
 /**
- * \brief Return an OpenCL context object
+ * ufo_resource_manager_get_context:
+ * @resource_manager: A #UfoResourceManager
  *
- * This method can be used to initialize third-party libraries like Apple's FFT
- * library.
+ * Returns the OpenCL context object that is used by the resource manager. This
+ * context can be used to initialize othe third-party libraries.
  *
- * \param[in] resource_manager A UfoResourceManager
- * \return A cl_context object
+ * Return value: A cl_context object.
  */
 gpointer ufo_resource_manager_get_context(UfoResourceManager *resource_manager)
 {
@@ -443,40 +412,55 @@ gpointer ufo_resource_manager_get_context(UfoResourceManager *resource_manager)
 }
 
 /**
- * \brief Request a UfoBuffer with a given size
- * \public \memberof UfoResourceManager
- * \param[in] resource_manager A UfoResourceManager
- * \param[in] width Width of the buffer
- * \param[in] height Height of the buffer
- * \param[in] data Initial floating point data array with at least width*height
- *      size. If data is NULL, nothing is copied onto a device. If non-floating
- *      point types have to be uploaded, use ufo_buffer_set_cpu_data() and
- *      ufo_buffer_reinterpret() on the return UfoBuffer.
+ * ufo_resource_manager_request_buffer:
+ * @resource_manager: A #UfoResourceManager
+ * @num_dims: (in): Number of dimensions
+ * @dim_size: (in) (array): Size of each dimension
+ * @data: (in) (allow-none): Data used to initialize the buffer with, or NULL
+ * @command_queue: (in) (allow-none): If data should be copied onto the device,
+ * a cl_command_queue must be provide, or NULL
  *
- * \return A UfoBuffer object
+ * Creates a new #UfoBuffer and initializes it with data on demand. If
+ * non-floating point data have to be uploaded, use ufo_buffer_set_host_array()
+ * and ufo_buffer_reinterpret() on the #UfoBuffer.
  *
- * \note If you don't intend to use the buffer or won't push it again to the
- *      next UfoElement, it has to be released with
- *      ufo_resource_manager_release_buffer()
+ * Return value: A new #UfoBuffer with the given dimensions
  */
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, 
-        UfoStructure structure,
-        gint32 dimensions[4],
-        float *data,
-        gpointer command_queue)
+        int num_dims, const int *dim_size, float *data, gpointer command_queue)
 {
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(resource_manager);
+    UfoBuffer *buffer = ufo_buffer_new(num_dims, dim_size);
+    const gsize num_bytes = ufo_buffer_get_size(buffer);
 
-    UfoBuffer *buffer = resource_manager_create_buffer(priv, structure, dimensions, data, command_queue);
-        /* ufo_buffer_increment_id(buffer); */
-
-    if (data != NULL)
-        ufo_buffer_set_cpu_data(buffer, data, ufo_buffer_get_size(buffer), NULL);
+    cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
+    if ((data != NULL) && (command_queue != NULL))
+        mem_flags |= CL_MEM_COPY_HOST_PTR;
     
-    /* Give our new-born buffer an initial unique id */
+    cl_int errcode;
+    cl_mem buffer_mem = clCreateBuffer(priv->opencl_context,
+            mem_flags, 
+            num_bytes,
+            data, &errcode);
+    CHECK_ERROR(errcode);
+
+    ufo_buffer_set_cl_mem(buffer, buffer_mem);
+
+    if ((data) && (command_queue == NULL))
+        ufo_buffer_set_host_array(buffer, data, num_bytes, NULL);
+
     return buffer;
 }
 
+/**
+ * ufo_resource_manager_memalloc:
+ * @manager: A #UfoResourceManager
+ * @size: Size of cl_mem in bytes
+ *
+ * Allocates a new cl_mem object with the given size.
+ *
+ * Return value: A cl_mem object
+ */
 gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size)
 {
     cl_int errcode = CL_SUCCESS;
@@ -485,6 +469,15 @@ gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size)
     return mem;
 }
 
+/**
+ * ufo_resource_manager_memdup:
+ * @manager: A #UfoResourceManager
+ * @memobj: A cl_mem object
+ *
+ * Creates a new cl_mem object with the same size as a given cl_mem object.
+ *
+ * Return value: A new cl_mem object
+ */
 gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memobj)
 {
     size_t size = 0;
@@ -495,13 +488,13 @@ gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memob
 }
 
 /**
- * \brief Release a UfoBuffer for further use
- * \public \memberof UfoResourceManager
+ * ufo_resource_manager_release_buffer:
+ * @manager: A #UfoResourceManager
+ * @buffer: A #UfoBuffer
  *
- * \param[in] resource_manager A UfoResourceManager
- * \param[in] buffer A UfoBuffer
+ * Release the memory of this buffer.
  */
-void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, UfoBuffer *buffer)
+void ufo_resource_manager_release_buffer(UfoResourceManager *manager, UfoBuffer *buffer)
 {
 #ifdef WITH_PROFILING
     gulong upload_time, download_time;
@@ -509,10 +502,6 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *resource_manager, U
     priv->upload_time += upload_time / 1000000000.0;
     priv->download_time += download_time / 1000000000.0;
 #endif
-
-    /* Find a suitable queue */
-    gint32 dimensions[4];
-    ufo_buffer_get_dimensions(buffer, dimensions);
 
     cl_mem mem = (cl_mem) ufo_buffer_get_cl_mem(buffer);
     if (mem != NULL)
@@ -531,16 +520,31 @@ guint ufo_resource_manager_get_new_id(UfoResourceManager *resource_manager)
     return id;
 }
 
-void ufo_resource_manager_get_command_queues(UfoResourceManager *resource_manager, gpointer *command_queues, int *num_queues)
+/**
+ * @ufo_resource_manager_get_command_queues:
+ * @manager: A #UfoResourceManager
+ * @command_queues: (out) (transfer: none): Sets pointer to command_queues array
+ * @num_queues: (out): Number of queues
+ *
+ * Return the number and actual command queues.
+ */
+void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpointer *command_queues, int *num_queues)
 {
     /* FIXME: Use only first platform */
-    *num_queues = resource_manager->priv->num_devices[0];
-    *command_queues = resource_manager->priv->command_queues;
+    *num_queues = manager->priv->num_devices[0];
+    *command_queues = manager->priv->command_queues;
 }
 
-guint ufo_resource_manager_get_number_of_gpus(UfoResourceManager *resource_manager)
+/**
+ * @ufo_resource_manager_get_number_of_devices:
+ * @manager: A #UfoResourceManager
+ *
+ * Return value: Number of acceleration devices such as GPUs used by the
+ * resource manager.
+ */
+guint ufo_resource_manager_get_number_of_devices(UfoResourceManager *manager)
 {
-    return resource_manager->priv->num_devices[0];
+    return manager->priv->num_devices[0];
 }
 
 static void ufo_resource_manager_finalize(GObject *gobject)

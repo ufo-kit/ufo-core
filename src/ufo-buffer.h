@@ -59,24 +59,27 @@ typedef enum {
     UFO_BUFFER_HISTOGRAM
 } UfoDomain;
 
-UfoBuffer *ufo_buffer_new(UfoStructure structure, const gint32 dimensions[4]);
+UfoBuffer *ufo_buffer_new(int num_dims, const int *dim_size);
+void ufo_buffer_set_dimensions(UfoBuffer *buffer, int num_dims, const int *dim_size);
+
 void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue);
 
 void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to);
 
 gsize ufo_buffer_get_size(UfoBuffer *buffer);
 gint ufo_buffer_get_id(UfoBuffer *buffer);
-void ufo_buffer_get_dimensions(UfoBuffer *buffer, gint32 *dimensions);
+void ufo_buffer_get_dimensions(UfoBuffer *buffer, int *num_dims, int **dim_size);
 void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height);
 
 void ufo_buffer_reinterpret(UfoBuffer *self, gsize source_depth, gsize n);
-void ufo_buffer_set_cpu_data(UfoBuffer *self, float *data, gsize n, GError **error);
-float* ufo_buffer_get_cpu_data(UfoBuffer *self, gpointer command_queue);
+void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error);
+float* ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue);
 
-gpointer ufo_buffer_get_gpu_data(UfoBuffer *self, gpointer command_queue);
+/* gpointer ufo_buffer_get_gpu_data(UfoBuffer *self, gpointer command_queue); */
+gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue);
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *self);
 void ufo_buffer_set_cl_mem(UfoBuffer *self, gpointer mem);
-void* ufo_buffer_get_cl_mem(UfoBuffer *buffer);
+gpointer ufo_buffer_get_cl_mem(UfoBuffer *buffer);
 void ufo_buffer_get_transfer_time(UfoBuffer *self, gulong *upload_time, gulong *download_time);
 
 void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event);

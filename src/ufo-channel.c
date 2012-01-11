@@ -68,7 +68,7 @@ void ufo_channel_finish(UfoChannel *channel)
  *
  * Allocate outgoing buffers with given dimensions
  */
-void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[4])
+void ufo_channel_allocate_output_buffers(UfoChannel *channel, int num_dims, const int *dim_size)
 {
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
     g_static_mutex_lock(&mutex);
@@ -88,10 +88,26 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, gint32 dimensions[
 
     priv->buffers = g_malloc0(priv->num_buffers * sizeof(UfoBuffer *));
     for (int i = 0; i < priv->num_buffers; i++) {
-        priv->buffers[i] = ufo_resource_manager_request_buffer(manager, UFO_BUFFER_2D, dimensions, NULL, NULL);
+        priv->buffers[i] = ufo_resource_manager_request_buffer(manager, num_dims, dim_size, NULL, NULL);
         g_async_queue_push(priv->output_queue, priv->buffers[i]);
     }
     g_static_mutex_unlock(&mutex);
+}
+
+/**
+ * ufo_channel_allocate_output_buffers_like:
+ * @channel: A #UfoChannel
+ * @buffer: A #UfoBuffer whose dimensions should be used for the output buffers
+ *
+ * Allocate outgoing buffers with dimensions given by @buffer.
+ */
+void ufo_channel_allocate_output_buffers_like(UfoChannel *channel, UfoBuffer *buffer)
+{
+    int num_dims = 0;
+    int *dim_size = NULL;
+    ufo_buffer_get_dimensions(buffer, &num_dims, &dim_size);
+    ufo_channel_allocate_output_buffers(channel, num_dims, dim_size);
+    g_free(dim_size);
 }
 
 /**
