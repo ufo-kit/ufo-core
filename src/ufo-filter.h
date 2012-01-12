@@ -18,20 +18,9 @@ typedef struct _UfoFilter           UfoFilter;
 typedef struct _UfoFilterClass      UfoFilterClass;
 typedef struct _UfoFilterPrivate    UfoFilterPrivate;
 
-/**
- * \class UfoFilter
- * \brief Abstract and encapsulated unit of computation
- * \extends EthosPlugin
- * \implements UfoElement
- *
- * <b>Signals</b>
- *
- * <b>Properties</b>
- */
 struct _UfoFilter {
     GObject parent;
 
-    /* private */
     UfoFilterPrivate *priv;
 };
 

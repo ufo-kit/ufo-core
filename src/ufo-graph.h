@@ -30,7 +30,9 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
 void ufo_graph_run(UfoGraph *self);
 guint ufo_graph_get_number_of_devices(UfoGraph *graph);
 GList *ufo_graph_get_filter_names(UfoGraph *graph);
+
 UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name, GError **error);
+void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name);
 
 GType ufo_graph_get_type(void);
 

@@ -299,10 +299,20 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
                 plugin_name);
         return NULL;
     }
-    ufo_filter_initialize(filter, plugin_name);
-    priv->elements = g_slist_prepend(priv->elements, filter);
 
+    ufo_graph_add_filter(graph, filter, plugin_name);
     return filter;
+}
+
+/**
+ * ufo_graph_add_filter:
+ * @graph: A #UfoGraph
+ * @filter: A filter that the graph should care for
+ */
+void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
+{
+    ufo_filter_initialize(filter, name);
+    graph->priv->elements = g_slist_prepend(graph->priv->elements, filter);
 }
 
 /**

@@ -88,7 +88,6 @@ void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination)
     ufo_filter_connect_by_name(source, "default", destination, "default");
 }
 
-
 /**
  * ufo_filter_connect_by_name:
  * @source: Source #UfoFilter
