@@ -1,4 +1,11 @@
 
+/**
+ * SECTION:ufo-plugin-manager
+ * @Short_description: A manager to load an UfoFilter from a shared object
+ * @Title: UfoPluginManager
+ *
+ * Foo
+ */
 #include <gmodule.h>
 #include "ufo-plugin-manager.h"
 
@@ -41,7 +48,9 @@ static gchar *plugin_manager_get_path(UfoPluginManagerPrivate *priv, const gchar
 }
 
 /**
- * ufo_filter_plugin_new: Create a new plugin manager object
+ * ufo_plugin_manager_new:
+ *
+ * Create a new plugin manager object
  */
 UfoPluginManager *ufo_plugin_manager_new(void)
 {
@@ -50,9 +59,11 @@ UfoPluginManager *ufo_plugin_manager_new(void)
 }
 
 /**
- * ufo_plugin_manager_add_paths: Add paths from which to search for modules
+ * ufo_plugin_manager_add_paths: 
  * @manager: A #UfoPluginManager
  * @paths: (in): string with colon-separated list of absolute paths
+ *
+ * Add paths from which to search for modules
  */
 void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
 {
@@ -65,9 +76,14 @@ void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
 }
 
 /**
- * ufo_plugin_manager_get_filter: Load a UfoFilter module and return an instance
+ * ufo_plugin_manager_get_filter: 
  * @manager: A #UfoPluginManager
- * @returns: UfoFilter or NULL if module cannot be found
+ * @name: Name of the plugin.
+ *
+ * Load a #UfoFilter module and return an instance. The shared object name is
+ * constructed as "@name.so".
+ *
+ * Return value: UfoFilter or NULL if module cannot be found
  */
 UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name)
 {

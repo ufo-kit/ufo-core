@@ -18,26 +18,26 @@ typedef struct _UfoChannelClass      UfoChannelClass;
 typedef struct _UfoChannelPrivate    UfoChannelPrivate;
 
 /**
- * \class UfoChannel
- * \brief Abstract data container
+ * UfoChannel:
  *
- * Abstract data container that holds either valid GPU data or CPU data.
- *
- * <b>Signals</b>
- *
- * <b>Properties</b>
- *
- *  - <tt>"finished" : gboolean</tt> — If TRUE, buffer does not contain any
- *      useful data but specifies that no more data is following.
+ * Data transport channel between two #UfoFilter objects. The contents of the
+ * #UfoChannel structure are private and should only be accessed via the
+ * provided API.
  */
 struct _UfoChannel {
+    /*< private >*/
     GObject parent_instance;
 
-    /* private */
     UfoChannelPrivate *priv;
 };
 
+/**
+ * UfoChannelClass:
+ *
+ * #UfoChannel class
+ */
 struct _UfoChannelClass {
+    /*< private >*/
     GObjectClass parent_class;
 };
 
@@ -45,7 +45,6 @@ UfoChannel *ufo_channel_new(void);
 void ufo_channel_ref(UfoChannel *channel);
 
 void ufo_channel_finish(UfoChannel *channel);
-gint ufo_channel_length(UfoChannel *channel);
 
 void ufo_channel_allocate_output_buffers(UfoChannel *channel, int num_dims, const int *dim_size);
 void ufo_channel_allocate_output_buffers_like(UfoChannel *channel, UfoBuffer *buffer);

@@ -1,3 +1,9 @@
+/**
+ * SECTION:ufo-filter
+ * @Short_description: Single unit of computation
+ * @Title: UfoFilter
+ */
+
 #include <glib.h>
 #include <gmodule.h>
 #ifdef __APPLE__

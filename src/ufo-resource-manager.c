@@ -1,3 +1,9 @@
+/**
+ * SECTION:ufo-resource-manager
+ * @Short_description: Manage OpenCL resources
+ * @Title: UfoResourceManager
+ */
+
 #include <glib.h>
 #include <stdio.h>
 
@@ -179,7 +185,9 @@ GQuark ufo_resource_manager_error_quark(void)
 }
 
 /**
- * ufo_resource_manager: Create a new #UfoResourceManager instance.
+ * ufo_resource_manager: 
+ *
+ * Create a new #UfoResourceManager instance.
  *
  * Return value: A new #UfoResourceManager
  */
@@ -194,15 +202,15 @@ UfoResourceManager *ufo_resource_manager()
 
 /**
  * ufo_resource_manager_add_paths:
- * @resource_manager: A #UfoResourceManager
+ * @manager: A #UfoResourceManager
  * @paths: A string with a list of colon-separated paths
  *
  * Each path is used when searching for kernel files using
  * ufo_resource_manager_add_program() in that order that they are passed.
  */
-void ufo_resource_manager_add_paths(UfoResourceManager *resource_manager, const gchar *paths)
+void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *paths)
 {
-    UfoResourceManagerPrivate *priv = resource_manager->priv;
+    UfoResourceManagerPrivate *priv = manager->priv;
     gchar *new_paths = g_strdup_printf("%s:%s", priv->paths, paths);
     g_free(priv->paths);
     priv->paths = new_paths;
@@ -210,7 +218,7 @@ void ufo_resource_manager_add_paths(UfoResourceManager *resource_manager, const 
 
 /**
  * ufo_resource_manager_add_program:
- * @resource_manager: A #UfoResourceManager
+ * @manager: A #UfoResourceManager
  * @filename: Name or path of an ASCII-encoded kernel file 
  * @options: (in) (allow-none): Additional build options such as "-DX=Y", or NULL
  * @error: Return locatation for a GError, or NULL
@@ -223,12 +231,12 @@ void ufo_resource_manager_add_paths(UfoResourceManager *resource_manager, const 
  * Return value: TRUE on success, FALSE if an error occurred
  */
 gboolean ufo_resource_manager_add_program(
-        UfoResourceManager *resource_manager, 
+        UfoResourceManager *manager, 
         const gchar *filename, 
         const gchar *options,
         GError **error)
 {
-    UfoResourceManagerPrivate *priv = resource_manager->priv;
+    UfoResourceManagerPrivate *priv = manager->priv;
 
     /* programs might be added multiple times if this is not locked */
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
@@ -344,7 +352,7 @@ gboolean ufo_resource_manager_add_program(
 
 /**
  * ufo_resource_manager_get_kernel:
- * @resource_manager: A #UfoResourceManager
+ * @manager: A #UfoResourceManager
  * @kernel_name: Name of a kernel 
  * @error: Return location for a GError, or NULL
  *
@@ -352,10 +360,9 @@ gboolean ufo_resource_manager_add_program(
  *
  * Return value: The cl_kernel object identified by the kernel name
  */
-gpointer ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, const gchar *kernel_name, GError **error)
+gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gchar *kernel_name, GError **error)
 {
-    UfoResourceManager *self = resource_manager;
-    cl_kernel kernel = (cl_kernel) g_hash_table_lookup(self->priv->opencl_kernels, kernel_name);
+    cl_kernel kernel = (cl_kernel) g_hash_table_lookup(manager->priv->opencl_kernels, kernel_name);
     if (kernel == NULL) {
         g_set_error(error,
                 UFO_RESOURCE_MANAGER_ERROR,
@@ -367,7 +374,7 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *resource_manager, c
     return kernel;
 }
 
-void ufo_resource_manager_call(UfoResourceManager *resource_manager, 
+void ufo_resource_manager_call(UfoResourceManager *manager, 
         const gchar *kernel_name, 
         void *command_queue,
         uint32_t work_dim,
@@ -375,7 +382,7 @@ void ufo_resource_manager_call(UfoResourceManager *resource_manager,
         size_t *local_work_size,
         ...)
 {
-    cl_kernel kernel = (cl_kernel) g_hash_table_lookup(resource_manager->priv->opencl_kernels, kernel_name);
+    cl_kernel kernel = (cl_kernel) g_hash_table_lookup(manager->priv->opencl_kernels, kernel_name);
     if (kernel == NULL)
         return;
 
@@ -399,21 +406,21 @@ void ufo_resource_manager_call(UfoResourceManager *resource_manager,
 
 /**
  * ufo_resource_manager_get_context:
- * @resource_manager: A #UfoResourceManager
+ * @manager: A #UfoResourceManager
  *
  * Returns the OpenCL context object that is used by the resource manager. This
  * context can be used to initialize othe third-party libraries.
  *
  * Return value: A cl_context object.
  */
-gpointer ufo_resource_manager_get_context(UfoResourceManager *resource_manager)
+gpointer ufo_resource_manager_get_context(UfoResourceManager *manager)
 {
-    return resource_manager->priv->opencl_context; 
+    return manager->priv->opencl_context; 
 }
 
 /**
  * ufo_resource_manager_request_buffer:
- * @resource_manager: A #UfoResourceManager
+ * @manager: A #UfoResourceManager
  * @num_dims: (in): Number of dimensions
  * @dim_size: (in) (array): Size of each dimension
  * @data: (in) (allow-none): Data used to initialize the buffer with, or NULL
@@ -426,10 +433,10 @@ gpointer ufo_resource_manager_get_context(UfoResourceManager *resource_manager)
  *
  * Return value: A new #UfoBuffer with the given dimensions
  */
-UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *resource_manager, 
+UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *manager, 
         int num_dims, const int *dim_size, float *data, gpointer command_queue)
 {
-    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(resource_manager);
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
     UfoBuffer *buffer = ufo_buffer_new(num_dims, dim_size);
     const gsize num_bytes = ufo_buffer_get_size(buffer);
 
@@ -510,20 +517,20 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *manager, UfoBuffer 
     g_object_unref(buffer);
 }
 
-guint ufo_resource_manager_get_new_id(UfoResourceManager *resource_manager)
+guint ufo_resource_manager_get_new_id(UfoResourceManager *manager)
 {
     guint id;
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
     g_static_mutex_lock(&mutex);
-    id = resource_manager->priv->current_id++;
+    id = manager->priv->current_id++;
     g_static_mutex_unlock(&mutex);
     return id;
 }
 
 /**
- * @ufo_resource_manager_get_command_queues:
+ * ufo_resource_manager_get_command_queues:
  * @manager: A #UfoResourceManager
- * @command_queues: (out) (transfer: none): Sets pointer to command_queues array
+ * @command_queues: (out): Sets pointer to command_queues array
  * @num_queues: (out): Number of queues
  *
  * Return the number and actual command queues.
@@ -536,7 +543,7 @@ void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpoint
 }
 
 /**
- * @ufo_resource_manager_get_number_of_devices:
+ * ufo_resource_manager_get_number_of_devices:
  * @manager: A #UfoResourceManager
  *
  * Return value: Number of acceleration devices such as GPUs used by the

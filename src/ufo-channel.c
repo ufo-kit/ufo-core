@@ -1,3 +1,9 @@
+/**
+ * SECTION:ufo-channel
+ * @Short_description: Data transport between two Filters
+ * @Title: UfoChannel
+ */
+
 #include <string.h>
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
@@ -64,7 +70,8 @@ void ufo_channel_finish(UfoChannel *channel)
 /**
  * ufo_channel_allocate_output_buffers:
  * @channel: A #UfoChannel
- * @dimensions: (in) (array): Size of the buffers
+ * @num_dims: (in): Number of dimensions
+ * @dim_size: (in) (array): Size of the buffers
  *
  * Allocate outgoing buffers with given dimensions
  */

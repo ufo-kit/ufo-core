@@ -17,14 +17,27 @@ typedef struct _UfoPluginManager           UfoPluginManager;
 typedef struct _UfoPluginManagerClass      UfoPluginManagerClass;
 typedef struct _UfoPluginManagerPrivate    UfoPluginManagerPrivate;
 
+/**
+ * UfoPluginManager:
+ *
+ * Creates #UfoFilter instances by loading corresponding shared objects. The
+ * contents of the #UfoPluginManager structure are private and should only be
+ * accessed via the provided API.
+ */
 struct _UfoPluginManager {
+    /*< private >*/
     GObject parent_instance;
 
-    /* private */
     UfoPluginManagerPrivate *priv;
 };
 
+/**
+ * UfoPluginManagerClass:
+ *
+ * #UfoPluginManager class
+ */
 struct _UfoPluginManagerClass {
+    /*< private >*/
     GObjectClass parent_class;
 };
 

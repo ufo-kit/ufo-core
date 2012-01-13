@@ -3,8 +3,8 @@ project(ufo)
 
 set(TARNAME "libufo")
 set(UFO_GIR_VERSION "0.1")
-set(UFO_API_VERSION "0.1.0")
-set(UFO_ABI_VERSION "0.1.0")
+set(UFO_API_VERSION "0.1")
+set(UFO_ABI_VERSION "0.1")
 set(UFO_ABI_MAJOR_VERSION "0")
 
 set(PACKAGE_VERSION "0.1.0")
@@ -50,6 +50,6 @@ add_definitions("-std=c99 -Wall -fPIC")
 add_definitions(-DG_LOG_DOMAIN="Ufo")
 
 add_subdirectory(src)
-add_subdirectory(doc)
+add_subdirectory(docs)
 add_subdirectory(tests)
 

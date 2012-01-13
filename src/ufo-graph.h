@@ -2,7 +2,7 @@
 #define __UFO_GRAPH_H
 
 #include <glib-object.h>
-#include "ufo-container.h"
+#include "ufo-filter.h"
 
 #define UFO_TYPE_GRAPH             (ufo_graph_get_type())
 #define UFO_GRAPH(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_GRAPH, UfoGraph))
@@ -15,23 +15,36 @@ typedef struct _UfoGraph           UfoGraph;
 typedef struct _UfoGraphClass      UfoGraphClass;
 typedef struct _UfoGraphPrivate    UfoGraphPrivate;
 
+/**
+ * UfoGraph:
+ *
+ * Main object for organizing filters. The contents of the #UfoGraph structure
+ * are private and should only be accessed via the provided API.
+ */
 struct _UfoGraph {
+    /*< private >*/
     GObject parent_instance;
 
     UfoGraphPrivate *priv;
 };
 
+/**
+ * UfoGraphClass:
+ *
+ * #UfoGraph class
+ */
 struct _UfoGraphClass {
+    /*< private >*/
     GObjectClass parent_class;
 };
 
-UfoGraph *ufo_graph_new();
+UfoGraph *ufo_graph_new(void);
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error);
-void ufo_graph_run(UfoGraph *self);
+void ufo_graph_run(UfoGraph *graph);
 guint ufo_graph_get_number_of_devices(UfoGraph *graph);
 GList *ufo_graph_get_filter_names(UfoGraph *graph);
 
-UfoFilter *ufo_graph_get_filter(UfoGraph *self, const gchar *plugin_name, GError **error);
+UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error);
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name);
 
 GType ufo_graph_get_type(void);

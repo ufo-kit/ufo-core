@@ -1,13 +1,16 @@
+/**
+ * SECTION:ufo-graph
+ * @Short_description: Organize filters
+ * @Title: UfoGraph
+ */
+
 #include <glib.h>
 #include <json-glib/json-glib.h>
 
 #include "config.h"
 
 #include "ufo-graph.h"
-#include "ufo-sequence.h"
-#include "ufo-split.h"
 #include "ufo-resource-manager.h"
-#include "ufo-element.h"
 #include "ufo-plugin-manager.h"
 
 G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
@@ -158,11 +161,10 @@ GQuark ufo_graph_error_quark(void)
 
 /**
  * ufo_graph_new:
- * Create a new #UfoGraph.
  *
- * Because resources (especially those belonging to the GPU) should only be
- * allocated once, we allow only one graph at a time. Thus the graph is a
- * singleton.
+ * Create a new #UfoGraph. Because resources (especially those belonging to the
+ * GPU) should only be allocated once, we allow only one graph at a time. Thus
+ * the graph is a singleton.
  *
  * Return value: A #UfoGraph.
  */
@@ -269,6 +271,7 @@ void ufo_graph_run(UfoGraph *graph)
 
 /**
  * ufo_graph_get_filter_names:
+ * @graph: A #UfoGraph
  * 
  * Return value: (element-type utf8) (transfer none): list of constants.
  */
@@ -308,6 +311,10 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
  * ufo_graph_add_filter:
  * @graph: A #UfoGraph
  * @filter: A filter that the graph should care for
+ * @name: A human-readable name
+ *
+ * In the case that a filter was not created using ufo_graph_get_filter() but in
+ * a different place, you have to register the filter with this method.
  */
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
 {

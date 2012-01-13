@@ -18,15 +18,30 @@ typedef struct _UfoFilter           UfoFilter;
 typedef struct _UfoFilterClass      UfoFilterClass;
 typedef struct _UfoFilterPrivate    UfoFilterPrivate;
 
+/**
+ * UfoFilter:
+ *
+ * Creates #UfoFilter instances by loading corresponding shared objects. The
+ * contents of the #UfoFilter structure are private and should only be
+ * accessed via the provided API.
+ */
 struct _UfoFilter {
+    /*< private >*/
     GObject parent;
 
     UfoFilterPrivate *priv;
 };
 
+/**
+ * UfoFilterClass:
+ * 
+ * #UfoFilter class
+ */
 struct _UfoFilterClass {
+    /*< private >*/
     GObjectClass parent;
     
+    /*< public >*/
     void (*process) (UfoFilter *filter);
     void (*initialize) (UfoFilter *filter);
 };
@@ -37,7 +52,7 @@ void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue);
 gpointer ufo_filter_get_command_queue(UfoFilter *filter);
 
 void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination);
-void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_name, UfoFilter *destination, const gchar *dest_name);
+void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, UfoFilter *destination, const gchar *dest_input);
 gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination);
 
 UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter);

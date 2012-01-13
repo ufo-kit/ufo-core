@@ -1,3 +1,9 @@
+/**
+ * SECTION:ufo-buffer
+ * @Short_description: Represents n-dimensional data
+ * @Title: UfoBuffer
+ */
+
 #include <string.h>
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
@@ -76,9 +82,11 @@ GQuark ufo_buffer_error_quark(void)
 }
 
 /**
- * ufo_buffer_new: Create a new buffer with the given dimensions
+ * ufo_buffer_new: 
  * @num_dims: (in): Number of dimensions
  * @dim_size: (in) (array): Size of each dimension
+ *
+ * Create a new buffer with the given dimensions.
  *
  * Return value: A new #UfoBuffer with the given dimensions.
  */
@@ -90,10 +98,12 @@ UfoBuffer *ufo_buffer_new(int num_dims, const int *dim_size)
 }
 
 /**
- * ufo_buffer_set_dimensions: Specify size of this nd-array
+ * ufo_buffer_set_dimensions:
  * @buffer: A #UfoBuffer
  * @num_dims: (in): Number of dimensions
  * @dim_size: (in) (array): Size of each dimension
+ *
+ * Specify the size of this nd-array.
  */
 void ufo_buffer_set_dimensions(UfoBuffer *buffer, int num_dims, const int *dim_size)
 {
@@ -114,6 +124,7 @@ void ufo_buffer_set_dimensions(UfoBuffer *buffer, int num_dims, const int *dim_s
 
 /**
  * ufo_buffer_get_dimensions:
+ * @buffer: A #UfoBuffer
  * @num_dims: (out): Location to store the number of dimensions.
  * @dim_size: (out): Location to store the dimensions. If *dim_size is NULL
  * enough space is allocated to hold num_dims elements and should be freed with
@@ -137,7 +148,7 @@ void ufo_buffer_get_dimensions(UfoBuffer *buffer, int *num_dims, int **dim_size)
 
 /**
  * ufo_buffer_get_size:
- * @buffer: A #UfoBuffer.
+ * @buffer: A #UfoBuffer
  *
  * Get size of internal data in bytes.
  *
@@ -150,7 +161,7 @@ gsize ufo_buffer_get_size(UfoBuffer *buffer)
 
 /**
  * ufo_buffer_get_id:
- * @buffer: A #UfoBuffer.
+ * @buffer: A #UfoBuffer
  *
  * Get internal identification.
  *

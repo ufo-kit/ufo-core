@@ -17,26 +17,25 @@ typedef struct _UfoBufferClass      UfoBufferClass;
 typedef struct _UfoBufferPrivate    UfoBufferPrivate;
 
 /**
- * \class UfoBuffer
- * \brief Abstract data container
+ * UfoBuffer:
  *
- * Abstract data container that holds either valid GPU data or CPU data.
- *
- * <b>Signals</b>
- *
- * <b>Properties</b>
- *
- *  - <tt>"finished" : gboolean</tt> — If TRUE, buffer does not contain any
- *      useful data but specifies that no more data is following.
+ * Represents n-dimensional data. The contents of the #UfoBuffer structure are
+ * private and should only be accessed via the provided API.
  */
 struct _UfoBuffer {
+    /*< private >*/
     GObject parent_instance;
 
-    /* private */
     UfoBufferPrivate *priv;
 };
 
+/**
+ * UfoBufferClass:
+ *
+ * #UfoBuffer class
+ */
 struct _UfoBufferClass {
+    /*< private >*/
     GObjectClass parent_class;
 };
 
@@ -45,13 +44,6 @@ typedef enum {
     UFO_BUFFER_WRITEABLE = 1 << 1,
     UFO_BUFFER_READWRITE = (UFO_BUFFER_READABLE | UFO_BUFFER_WRITEABLE)
 } UfoAccess;
-
-typedef enum {
-    UFO_BUFFER_1D,
-    UFO_BUFFER_2D,
-    UFO_BUFFER_3D,
-    UFO_BUFFER_4D
-} UfoStructure;
 
 typedef enum {
     UFO_BUFFER_SPACE,
@@ -71,16 +63,16 @@ gint ufo_buffer_get_id(UfoBuffer *buffer);
 void ufo_buffer_get_dimensions(UfoBuffer *buffer, int *num_dims, int **dim_size);
 void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height);
 
-void ufo_buffer_reinterpret(UfoBuffer *self, gsize source_depth, gsize n);
+void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels);
 void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error);
 float* ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue);
 
-/* gpointer ufo_buffer_get_gpu_data(UfoBuffer *self, gpointer command_queue); */
+/* gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue); */
 gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue);
-void ufo_buffer_invalidate_gpu_data(UfoBuffer *self);
-void ufo_buffer_set_cl_mem(UfoBuffer *self, gpointer mem);
+void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer);
+void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem);
 gpointer ufo_buffer_get_cl_mem(UfoBuffer *buffer);
-void ufo_buffer_get_transfer_time(UfoBuffer *self, gulong *upload_time, gulong *download_time);
+void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong *download_time);
 
 void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event);
 void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_events);
