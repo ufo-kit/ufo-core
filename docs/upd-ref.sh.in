@@ -2,4 +2,6 @@
 
 gtkdoc-scan --module=Ufo --source-dir=${CMAKE_CURRENT_SOURCE_DIR}/../src
 gtkdoc-mkdb --module=Ufo --source-dir=${CMAKE_CURRENT_SOURCE_DIR}/../src --output-format=xml
-gtkdoc-mkhtml Ufo Ufo-docs.xml
+mkdir -p html
+cd html
+gtkdoc-mkhtml Ufo ../Ufo-docs.xml

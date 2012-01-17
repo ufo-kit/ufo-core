@@ -1,7 +1,7 @@
 
 /**
  * SECTION:ufo-plugin-manager
- * @Short_description: A manager to load an UfoFilter from a shared object
+ * @Short_description: Load an UfoFilter from a shared object
  * @Title: UfoPluginManager
  *
  * Foo

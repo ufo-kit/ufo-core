@@ -10,10 +10,27 @@ if(GTK_DOC_FOUND)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/upd-ref.sh.in
         ${CMAKE_CURRENT_BINARY_DIR}/upd-ref.sh)
 
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Ufo-docs.xml.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Ufo-docs.xml)
+
     add_custom_target(reference 
         sh ${CMAKE_CURRENT_BINARY_DIR}/upd-ref.sh
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS ${ufocore_SRCS})
+
+    set(doc_root "${CMAKE_CURRENT_BINARY_DIR}/html")
+    file(GLOB ref_files "${doc_root}/*.html")
+    set(ref_files 
+        ${ref_files} 
+        "${doc_root}/style.css"
+        "${doc_root}/Ufo.devhelp"
+        "${doc_root}/Ufo.devhelp2")
+    file(GLOB img_files "${doc_root}/*.png")
+
+    install(FILES 
+        ${ref_files} 
+        ${img_files} 
+        DESTINATION /usr/share/gtk-doc/html/Ufo)
 endif(GTK_DOC_FOUND)
 
 if(SPHINX)
