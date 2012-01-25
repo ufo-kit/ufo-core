@@ -235,7 +235,7 @@ void ufo_graph_run(UfoGraph *graph)
     /* Use the graph for statical analysis */
     for (int i = 0; i < n; i++) {
         if (in_degree[i] == 0 && out_degree[i] == 0)
-            g_error("Filter %i is not connected to any other filter", i);
+            g_warning("Filter %i is not connected to any other filter", i);
     }
     
     /* Assign GPUs to filters */

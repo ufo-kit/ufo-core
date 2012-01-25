@@ -76,17 +76,16 @@ static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
     UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
     UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     UfoBuffer *input = ufo_channel_get_input_buffer(input_channel);
+    UfoBuffer *output = NULL;
 
     /* If you provide any output, you must allocate output buffers of the
        appropriate size */
-    gint32 dimensions[4] = { 256, 256, 1, 1 };
-    ufo_channel_allocate_output_buffers(output_channel, dimensions);
+    gint32 dimensions[2] = { 256, 256 };
+    ufo_channel_allocate_output_buffers(output_channel, 2, dimensions);
 
     while (input != NULL) {
         /* Use the input here */
-
-        /* If you use OpenCL to compute the output, make sure to call
-           ufo_buffer_attach_event(output, event) */
+        output = ufo_channel_get_output_buffer(output_channel);
 
         /* If you don't read the input and don't modify the output any more,
            you have to finalize the buffers. */
@@ -209,15 +208,6 @@ GType ufo_filter_${prefix_underscore}_get_type(void);
 #endif
 """
 
-SKELETON_PLUGIN="""[UFO Plugin]
-Name=${prefix_lower}
-Module=$${UFO_PLUGIN_LIBRARY}
-IAge=1
-Authors=John Doe
-Copyright=Public Domain
-Website=http://ufo.kit.edu
-Description=A meaningful description for this filter"""
-
 if __name__ == '__main__':
     filter_name = raw_input("Name of the new filter in CamelCase (e.g. MySuperFilter): ")
 
@@ -239,8 +229,7 @@ if __name__ == '__main__':
 
     filename_map = { 
             ("ufo-filter-%s.c" % filter_hyphen) : SKELETON_C, 
-            ("ufo-filter-%s.h" % filter_hyphen) : SKELETON_H,
-            ("%s.ufo-plugin.in" % filter_hyphen) : SKELETON_PLUGIN }
+            ("ufo-filter-%s.h" % filter_hyphen) : SKELETON_H }
     for filename in filename_map.keys():
         template = string.Template(filename_map[filename])
         source = template.substitute(prefix_underscore=filter_underscore,

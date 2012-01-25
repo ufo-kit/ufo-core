@@ -80,6 +80,8 @@ void ufo_filter_process(UfoFilter *filter)
         filter->priv->cpu_time = g_timer_elapsed(timer, NULL);
         g_timer_destroy(timer);
     }
+    else
+        g_warning("UfoFilter::process not implemented");
 }
 
 /**
