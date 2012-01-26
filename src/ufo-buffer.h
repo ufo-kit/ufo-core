@@ -51,8 +51,8 @@ typedef enum {
     UFO_BUFFER_HISTOGRAM
 } UfoDomain;
 
-UfoBuffer *ufo_buffer_new(int num_dims, const int *dim_size);
-void ufo_buffer_set_dimensions(UfoBuffer *buffer, int num_dims, const int *dim_size);
+UfoBuffer *ufo_buffer_new(guint num_dims, const guint *dim_size);
+void ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_size);
 
 void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue);
 
@@ -60,8 +60,8 @@ void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to);
 
 gsize ufo_buffer_get_size(UfoBuffer *buffer);
 gint ufo_buffer_get_id(UfoBuffer *buffer);
-void ufo_buffer_get_dimensions(UfoBuffer *buffer, int *num_dims, int **dim_size);
-void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height);
+void ufo_buffer_get_dimensions(UfoBuffer *buffer, guint *num_dims, guint **dim_size);
+void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height);
 
 void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels);
 void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error);

@@ -38,21 +38,16 @@ enum {
 static GParamSpec *buffer_properties[N_PROPERTIES] = { NULL, };
 
 typedef enum {
-    CPU_DATA_VALID,
-    GPU_DATA_VALID
-} datastates;
-
-typedef enum {
     NO_DATA = 0,
     HOST_ARRAY_VALID,
     DEVICE_ARRAY_VALID
 } data_location;
 
 typedef struct {
-    int num_dims;
-    float *data;
-    int dim_size[32];
-    int dim_stride[32];
+    guint num_dims;
+    gfloat *data;
+    guint dim_size[32];
+    guint dim_stride[32];
 } nd_array;
 
 struct _UfoBufferPrivate {
@@ -60,10 +55,8 @@ struct _UfoBufferPrivate {
     cl_mem          device_array;
     data_location   location;
 
-    gsize       size;   /**< size of buffer in bytes */
-    gint        uploads;
-    gint        downloads;
     gint        id;     /**< unique id that is passed to the transformed buffer */
+    gsize       size;   /**< size of buffer in bytes */
 
     UfoAccess   access;
     UfoDomain   domain;
@@ -90,7 +83,7 @@ GQuark ufo_buffer_error_quark(void)
  *
  * Return value: A new #UfoBuffer with the given dimensions.
  */
-UfoBuffer *ufo_buffer_new(int num_dims, const int *dim_size)
+UfoBuffer *ufo_buffer_new(guint num_dims, const guint *dim_size)
 {
     UfoBuffer *buffer = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
     ufo_buffer_set_dimensions(buffer, num_dims, dim_size);
@@ -105,7 +98,7 @@ UfoBuffer *ufo_buffer_new(int num_dims, const int *dim_size)
  *
  * Specify the size of this nd-array.
  */
-void ufo_buffer_set_dimensions(UfoBuffer *buffer, int num_dims, const int *dim_size)
+void ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_size)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
     priv->size = sizeof(float);
@@ -132,7 +125,7 @@ void ufo_buffer_set_dimensions(UfoBuffer *buffer, int num_dims, const int *dim_s
  *
  * Retrieve dimensions of buffer.
  */
-void ufo_buffer_get_dimensions(UfoBuffer *buffer, int *num_dims, int **dim_size)
+void ufo_buffer_get_dimensions(UfoBuffer *buffer, guint *num_dims, guint **dim_size)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
 
@@ -141,9 +134,9 @@ void ufo_buffer_get_dimensions(UfoBuffer *buffer, int *num_dims, int **dim_size)
 
     *num_dims = priv->host_array.num_dims;
     if (*dim_size == NULL)
-        *dim_size = g_malloc0(sizeof(int) * (*num_dims));
+        *dim_size = g_malloc0(sizeof(guint) * (*num_dims));
 
-    g_memmove(*dim_size, priv->host_array.dim_size, sizeof(int) * (*num_dims));
+    g_memmove(*dim_size, priv->host_array.dim_size, sizeof(guint) * (*num_dims));
 }
 
 /**
@@ -218,7 +211,7 @@ void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
  *
  * Convenience function to retrieve dimension of buffer.
  */
-void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, gint32 *width, gint32 *height)
+void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer));
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -600,8 +593,6 @@ static void ufo_buffer_init(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv;
     buffer->priv = priv = UFO_BUFFER_GET_PRIVATE(buffer);
-    priv->uploads = 0;
-    priv->downloads = 0;
     priv->id = -1;
 
     priv->device_array = NULL;

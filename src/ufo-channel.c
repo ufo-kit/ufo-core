@@ -23,8 +23,8 @@ struct _UfoChannelPrivate {
     gint ref_count;
     gboolean finished;
 
-    UfoBuffer **buffers;
     guint num_buffers;
+    UfoBuffer **buffers;
     GAsyncQueue *input_queue;
     GAsyncQueue *output_queue;
 };
@@ -75,7 +75,7 @@ void ufo_channel_finish(UfoChannel *channel)
  *
  * Allocate outgoing buffers with given dimensions
  */
-void ufo_channel_allocate_output_buffers(UfoChannel *channel, int num_dims, const int *dim_size)
+void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint num_dims, const guint *dim_size)
 {
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
     g_static_mutex_lock(&mutex);
@@ -110,8 +110,8 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, int num_dims, cons
  */
 void ufo_channel_allocate_output_buffers_like(UfoChannel *channel, UfoBuffer *buffer)
 {
-    int num_dims = 0;
-    int *dim_size = NULL;
+    guint num_dims = 0;
+    guint *dim_size = NULL;
     ufo_buffer_get_dimensions(buffer, &num_dims, &dim_size);
     ufo_channel_allocate_output_buffers(channel, num_dims, dim_size);
     g_free(dim_size);

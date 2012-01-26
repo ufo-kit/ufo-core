@@ -11,7 +11,7 @@ static gboolean float_eq(float n1, float n2)
 
 static void test_buffer_new(void)
 {
-    const int dimensions[] = { 1000, 1000 };
+    const guint dimensions[] = { 1000, 1000 };
     UfoBuffer *buffer = ufo_buffer_new(2, dimensions);
     g_assert(buffer != NULL);
     g_object_unref(buffer);
@@ -22,7 +22,7 @@ static void test_buffer_new(void)
  */
 static void test_buffer_set_data(void)
 {
-    const int dimensions = 10;
+    const guint dimensions = 10;
     UfoBuffer *buffer = ufo_buffer_new(1, &dimensions);
 
     GError *error = NULL;
@@ -40,7 +40,7 @@ static void test_buffer_set_data(void)
 
 static void test_buffer_set_too_much_data(void)
 {
-    const int dimensions = 1;
+    const guint dimensions = 1;
     UfoBuffer *buffer = ufo_buffer_new(1, &dimensions);
 
     GError *error = NULL;
@@ -55,7 +55,7 @@ static void test_buffer_set_too_much_data(void)
  */
 static void test_buffer_reinterpret_8bit(void)
 {
-    const int dimensions = 10;
+    const guint dimensions = 10;
     UfoBuffer *buffer = ufo_buffer_new(1, &dimensions);
 
     GError *error = NULL;
@@ -72,7 +72,7 @@ static void test_buffer_reinterpret_8bit(void)
 
 static void test_buffer_reinterpret_16bit(void)
 {
-    const gint32 dimensions = 10;
+    const guint dimensions = 10;
     UfoBuffer *buffer = ufo_buffer_new(1, &dimensions);
 
     GError *error = NULL;
@@ -89,18 +89,18 @@ static void test_buffer_reinterpret_16bit(void)
 
 static void test_buffer_dimensions(void)
 {
-    const int in_dimensions[] = { 123, 321 };
+    const guint in_dimensions[] = { 123, 321 };
     UfoBuffer *buffer = ufo_buffer_new(2, in_dimensions);
 
-    int num_dims = 0;
-    int *out_dimensions = NULL;
+    guint num_dims = 0;
+    guint *out_dimensions = NULL;
     ufo_buffer_get_dimensions(buffer, &num_dims, &out_dimensions);
     g_assert(num_dims == 2);
 
     for (int i = 0; i < num_dims; i++)
         g_assert_cmpuint(in_dimensions[i], ==, out_dimensions[i]);
 
-    int width = 0, height = 0;
+    guint width = 0, height = 0;
     ufo_buffer_get_2d_dimensions(buffer, &width, &height);
     g_assert(width == in_dimensions[0]);
     g_assert(height == in_dimensions[1]);
@@ -111,7 +111,7 @@ static void test_buffer_dimensions(void)
 
 static void test_buffer_size(void)
 {
-    const gint32 in_dimensions[] = { 123, 321, 4 };
+    const guint in_dimensions[] = { 123, 321, 4 };
     UfoBuffer *buffer = ufo_buffer_new(3, in_dimensions);
 
     gsize num_bytes = ufo_buffer_get_size(buffer);
@@ -121,7 +121,7 @@ static void test_buffer_size(void)
 
 static void test_buffer_copy(void)
 {
-    const gint32 dimensions[] = { 5, 2 };
+    const guint dimensions[] = { 5, 2 };
     UfoBuffer *buffer = ufo_buffer_new(2, dimensions);
 
     GError *error = NULL;

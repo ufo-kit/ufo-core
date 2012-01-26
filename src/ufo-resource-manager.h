@@ -56,7 +56,7 @@ guint ufo_resource_manager_get_number_of_devices(UfoResourceManager *manager);
 
 gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memobj);
 gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size);
-UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *manager, int num_dims, const int *dim_size, float *data, gpointer command_queue);
+UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *manager, guint num_dims, const guint *dim_size, gfloat *data, gpointer command_queue);
 void ufo_resource_manager_release_buffer(UfoResourceManager *manager, UfoBuffer *buffer);
 guint ufo_resource_manager_get_new_id(UfoResourceManager *manager);
 

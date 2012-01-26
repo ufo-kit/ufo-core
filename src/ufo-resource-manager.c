@@ -434,7 +434,7 @@ gpointer ufo_resource_manager_get_context(UfoResourceManager *manager)
  * Return value: A new #UfoBuffer with the given dimensions
  */
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *manager, 
-        int num_dims, const int *dim_size, float *data, gpointer command_queue)
+        guint num_dims, const guint *dim_size, gfloat *data, gpointer command_queue)
 {
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
     UfoBuffer *buffer = ufo_buffer_new(num_dims, dim_size);
