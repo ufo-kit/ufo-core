@@ -31,6 +31,7 @@ struct _UfoFilterPrivate {
 static void filter_set_output_channel(UfoFilter *self, const gchar *name, UfoChannel *channel)
 {
     UfoChannel *old_channel = g_hash_table_lookup(self->priv->output_channels, name);
+
     if (old_channel != NULL)
         g_hash_table_remove(self->priv->output_channels, name);
 
@@ -41,6 +42,7 @@ static void filter_set_output_channel(UfoFilter *self, const gchar *name, UfoCha
 static void filter_set_input_channel(UfoFilter *self, const gchar *name, UfoChannel *channel)
 {
     UfoChannel *old_channel = g_hash_table_lookup(self->priv->input_channels, name);
+
     if (old_channel != NULL)
         g_hash_table_remove(self->priv->input_channels, name);
 
@@ -61,6 +63,7 @@ void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name)
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
     priv->plugin_name = g_strdup(plugin_name);
+
     if (UFO_FILTER_GET_CLASS(filter)->initialize != NULL)
         UFO_FILTER_GET_CLASS(filter)->initialize(filter);
 }
@@ -107,18 +110,18 @@ void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination)
  */
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, UfoFilter *destination, const gchar *dest_input)
 {
-    UfoChannel *channel_in = ufo_filter_get_input_channel_by_name(destination, dest_input); 
+    UfoChannel *channel_in = ufo_filter_get_input_channel_by_name(destination, dest_input);
     UfoChannel *channel_out = ufo_filter_get_output_channel_by_name(source, source_output);
-    
+
     if ((channel_in == NULL) && (channel_out == NULL)) {
         UfoChannel *channel = ufo_channel_new();
         filter_set_output_channel(source, source_output, channel);
         filter_set_input_channel(destination, dest_input, channel);
     }
     else if (channel_in == NULL)
-        filter_set_input_channel(destination, dest_input, channel_out); 
+        filter_set_input_channel(destination, dest_input, channel_out);
     else if (channel_out == NULL)
-        filter_set_output_channel(source, source_output, channel_in); 
+        filter_set_output_channel(source, source_output, channel_in);
 }
 
 /**
@@ -134,12 +137,15 @@ gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
 {
     GList *output_channels = g_hash_table_get_values(source->priv->output_channels);
     GList *input_channels = g_hash_table_get_values(destination->priv->input_channels);
+
     for (int i = 0; i < g_list_length(output_channels); i++) {
         gpointer channel = g_list_nth_data(output_channels, i);
+
         for (int j = 0; j < g_list_length(input_channels); j++)
             if (channel == g_list_nth_data(input_channels, j))
                 return TRUE;
     }
+
     return FALSE;
 }
 
@@ -176,7 +182,7 @@ UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar
  * @filter: A #UfoFilter.
  *
  * Get default input channel
- * 
+ *
  * Return value: NULL if no such channel exists, otherwise the #UfoChannel object.
  */
 UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter)
@@ -202,7 +208,7 @@ UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter)
 /**
  * ufo_filter_account_gpu_time:
  * @filter: A #UfoFilter.
- * @event: Pointer to a valid cl_event 
+ * @event: Pointer to a valid cl_event
  *
  * If profiling is enabled, it uses the event to account the execution time of
  * this event with this filter.
@@ -259,7 +265,7 @@ void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue)
 /**
  * ufo_filter_get_command_queue:
  * @filter: A #UfoFilter.
- * 
+ *
  * Get OpenCL command queue associated with a filter. This function should only
  * be called by a derived Filter implementation
  *
@@ -282,8 +288,8 @@ void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu)
     UfoResourceManager *manager = ufo_resource_manager();
     int num_queues = 0;
     cl_command_queue *cmd_queues = NULL;
+    ufo_resource_manager_get_command_queues(manager, (void **) &cmd_queues, &num_queues);
 
-    ufo_resource_manager_get_command_queues(manager, (void **) &cmd_queues, &num_queues); 
     if (gpu < num_queues)
         filter->priv->command_queue = cmd_queues[gpu];
     else
@@ -298,7 +304,6 @@ static void ufo_filter_finalize(GObject *object)
     g_message("Time for '%s'", priv->plugin_name);
     g_message("  GPU: %.4lfs", priv->gpu_time);
 #endif
-
     /* Clears keys and unrefs channels */
     g_hash_table_destroy(priv->input_channels);
     g_hash_table_destroy(priv->output_channels);
@@ -312,7 +317,6 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     gobject_class->finalize = ufo_filter_finalize;
     klass->initialize = NULL;
     klass->process = NULL;
-
     g_type_class_add_private(klass, sizeof(UfoFilterPrivate));
 }
 
@@ -324,8 +328,8 @@ static void ufo_filter_init(UfoFilter *self)
     priv->cpu_time = 0.0f;
     priv->gpu_time = 0.0f;
     priv->input_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, NULL);
+                           g_free, NULL);
     priv->output_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, (GDestroyNotify) g_object_unref);
+                            g_free, (GDestroyNotify) g_object_unref);
 }
 

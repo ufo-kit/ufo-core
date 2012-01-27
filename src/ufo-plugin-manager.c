@@ -38,8 +38,10 @@ static gchar *plugin_manager_get_path(UfoPluginManagerPrivate *priv, const gchar
 
     while (p != NULL) {
         gchar *path = g_strdup_printf("%s%c%s", (gchar *) p->data, G_DIR_SEPARATOR, name);
+
         if (g_file_test(path, G_FILE_TEST_EXISTS))
             return path;
+
         g_free(path);
         p = g_slist_next(p);
     }
@@ -59,7 +61,7 @@ UfoPluginManager *ufo_plugin_manager_new(void)
 }
 
 /**
- * ufo_plugin_manager_add_paths: 
+ * ufo_plugin_manager_add_paths:
  * @manager: A #UfoPluginManager
  * @paths: (in): string with colon-separated list of absolute paths
  *
@@ -70,13 +72,15 @@ void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE(manager);
     gchar **path_list = g_strsplit(paths, ":", 0);
     gchar **p = path_list;
+
     while (*p != NULL)
         priv->search_paths = g_slist_append(priv->search_paths, g_strdup(*(p++)));
+
     g_strfreev(path_list);
 }
 
 /**
- * ufo_plugin_manager_get_filter: 
+ * ufo_plugin_manager_get_filter:
  * @manager: A #UfoPluginManager
  * @name: Name of the plugin.
  *
@@ -94,30 +98,36 @@ UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar 
     if (name == NULL)
         return NULL;
 
-    func = g_hash_table_lookup(priv->filter_funcs, name); 
-    if (func != NULL) 
-        return (*func)(); 
+    func = g_hash_table_lookup(priv->filter_funcs, name);
+
+    if (func != NULL)
+        return (*func)();
 
     /* No suitable function found, let's find the module */
     gchar *module_name = g_strdup_printf("%s.so", name);
     gchar *path = plugin_manager_get_path(priv, module_name);
     g_free(module_name);
+
     if (path == NULL)
         return NULL;
 
     module = g_module_open(path, G_MODULE_BIND_LAZY);
     g_free(path);
+
     if (!module) {
         g_error("%s", g_module_error());
         return NULL;
     }
 
     func = g_malloc0(sizeof(GetFilterFunc));
+
     if (!g_module_symbol(module, "ufo_filter_plugin_new", (gpointer *) func)) {
-        g_error("%s", g_module_error()); 
+        g_error("%s", g_module_error());
         g_free(func);
+
         if (!g_module_close(module))
             g_warning("%s", g_module_error());
+
         return NULL;
     }
 
@@ -130,19 +140,17 @@ static void ufo_plugin_manager_finalize(GObject *gobject)
 {
     UfoPluginManager *manager = UFO_PLUGIN_MANAGER(gobject);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE(manager);
-
     GSList *module = g_slist_nth(priv->modules, 0);
+
     while (module != NULL) {
         g_module_close(module->data);
         module = g_slist_next(module);
     }
 
     g_slist_free(priv->modules);
-
     g_slist_foreach(priv->search_paths, (GFunc) g_free, NULL);
     g_slist_free(priv->search_paths);
     g_hash_table_destroy(priv->filter_funcs);
-
     G_OBJECT_CLASS(ufo_plugin_manager_parent_class)->finalize(gobject);
 }
 
@@ -150,7 +158,6 @@ static void ufo_plugin_manager_class_init(UfoPluginManagerClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->finalize = ufo_plugin_manager_finalize;
-
     g_type_class_add_private(klass, sizeof(UfoPluginManagerPrivate));
 }
 
@@ -161,6 +168,6 @@ static void ufo_plugin_manager_init(UfoPluginManager *manager)
     priv->search_paths = NULL;
     priv->modules = NULL;
     priv->filter_funcs = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, g_free);
+                         g_free, g_free);
 }
 

@@ -60,11 +60,11 @@ struct _UfoBufferPrivate {
 
     UfoAccess   access;
     UfoDomain   domain;
-    
+
     cl_event    *events;
     cl_uint     current_event_index; /**< index of currently available event position */
     cl_uint     num_total_events;   /**< total amount of events we can keep */
-    
+
     cl_ulong    time_upload;
     cl_ulong    time_download;
 };
@@ -75,7 +75,7 @@ GQuark ufo_buffer_error_quark(void)
 }
 
 /**
- * ufo_buffer_new: 
+ * ufo_buffer_new:
  * @num_dims: (in): Number of dimensions
  * @dim_size: (in) (array): Size of each dimension
  *
@@ -133,6 +133,7 @@ void ufo_buffer_get_dimensions(UfoBuffer *buffer, guint *num_dims, guint **dim_s
         return;
 
     *num_dims = priv->host_array.num_dims;
+
     if (*dim_size == NULL)
         *dim_size = g_malloc0(sizeof(guint) * (*num_dims));
 
@@ -190,16 +191,14 @@ void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
     if (from->priv->location == DEVICE_ARRAY_VALID) {
         UfoResourceManager *manager = ufo_resource_manager();
         to->priv->device_array = ufo_resource_manager_memdup(manager, from->priv->device_array);
-
         cl_event event;
-        CHECK_ERROR(clEnqueueCopyBuffer(command_queue, from->priv->device_array, 
-                    to->priv->device_array, 0, 0, from->priv->size, 0, NULL, &event));
-
+        CHECK_ERROR(clEnqueueCopyBuffer(command_queue, from->priv->device_array,
+                                        to->priv->device_array, 0, 0, from->priv->size, 0, NULL, &event));
         ufo_buffer_attach_event(to, event);
     }
     else if (from->priv->location == HOST_ARRAY_VALID)
         ufo_buffer_set_host_array(to, from->priv->host_array.data, from->priv->size, NULL);
-    
+
     to->priv->location = from->priv->location;
 }
 
@@ -231,6 +230,7 @@ void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height
 void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
 {
     UfoBufferPrivate *priv = buffer->priv;
+
     if (priv->device_array != NULL)
         clReleaseMemObject(priv->device_array);
 
@@ -254,7 +254,7 @@ void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 /**
  * ufo_buffer_reinterpret:
  * @buffer: A #UfoBuffer.
- * @source_depth: The number of bits that make up the original integer data type.  
+ * @source_depth: The number of bits that make up the original integer data type.
  * @num_pixels: Number of pixels to consider
  *
  * The fundamental data type of a UfoBuffer is one single-precision floating
@@ -265,17 +265,20 @@ void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels)
 {
     float *dst = buffer->priv->host_array.data;
+
     /* To save a memory allocation and several copies, we process data from back
      * to front. This is possible if src bit depth is at most half as wide as
      * the 32-bit target buffer. The processor cache should not be a problem. */
     if (source_depth == 8) {
         guint8 *src = (guint8 *) buffer->priv->host_array.data;
-        for (int index = (num_pixels-1); index >= 0; index--)
+
+        for (int index = (num_pixels - 1); index >= 0; index--)
             dst[index] = src[index] / 255.0;
     }
     else if (source_depth == 16) {
         guint16 *src = (guint16 *) buffer->priv->host_array.data;
-        for (int index = (num_pixels-1); index >= 0; index--)
+
+        for (int index = (num_pixels - 1); index >= 0; index--)
             dst[index] = src[index] / 65535.0;
     }
 }
@@ -295,7 +298,7 @@ void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
 /**
  * ufo_buffer_get_cl_mem:
  * @buffer: A #UfoBuffer.
- * 
+ *
  * Return associated OpenCL memory object without synchronizing with CPU memory.
  *
  * Return value: A cl_mem object associated with this #UfoBuffer.
@@ -316,7 +319,6 @@ gpointer ufo_buffer_get_cl_mem(UfoBuffer *buffer)
 void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
-
     priv->events[priv->current_event_index++] = (cl_event) event;
 
     if (priv->current_event_index == priv->num_total_events) {
@@ -350,8 +352,10 @@ void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_even
 void ufo_buffer_clear_events(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+
     for (int i = 0; i < priv->current_event_index; i++)
         clReleaseEvent(priv->events[i]);
+
     priv->current_event_index = 0;
 }
 
@@ -365,8 +369,8 @@ void ufo_buffer_clear_events(UfoBuffer *buffer)
  */
 void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong *download_time)
 {
-    *upload_time = buffer->priv->time_upload; 
-    *download_time = buffer->priv->time_download; 
+    *upload_time = buffer->priv->time_upload;
+    *download_time = buffer->priv->time_download;
 }
 
 /**
@@ -383,19 +387,22 @@ void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong
 void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error)
 {
     UfoBufferPrivate *priv = buffer->priv;
+
     if (data == NULL)
         return;
 
     if (num_bytes > priv->size) {
         if (error != NULL) {
             g_set_error(error,
-                    UFO_BUFFER_ERROR,
-                    UFO_BUFFER_ERROR_WRONG_SIZE,
-                    "Trying to set more data than buffer dimensions allow");
+                        UFO_BUFFER_ERROR,
+                        UFO_BUFFER_ERROR_WRONG_SIZE,
+                        "Trying to set more data than buffer dimensions allow");
         }
+
         return;
     }
-    if (priv->host_array.data == NULL) 
+
+    if (priv->host_array.data == NULL)
         priv->host_array.data = g_malloc0(priv->size);
 
     g_memmove(priv->host_array.data, data, num_bytes);
@@ -411,34 +418,34 @@ void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, 
  *
  * Return value: Float array.
  */
-float* ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
+float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
 {
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
 
     switch (priv->location) {
         case HOST_ARRAY_VALID:
+
             /* This can be the case, when a buffer's device memory was invalidated
              * but no host memory has been allocated before. */
             if (priv->host_array.data == NULL)
                 priv->host_array.data = g_malloc0(priv->size);
-            break;
 
+            break;
         case DEVICE_ARRAY_VALID:
+
             if (priv->host_array.data == NULL)
                 priv->host_array.data = g_malloc0(priv->size);
-            
-            CHECK_ERROR(clEnqueueReadBuffer(command_queue,
-                    priv->device_array,
-                    CL_TRUE, 
-                    0, priv->size,
-                    priv->host_array.data,
-                    0, NULL, NULL));
 
+            CHECK_ERROR(clEnqueueReadBuffer(command_queue,
+                                            priv->device_array,
+                                            CL_TRUE,
+                                            0, priv->size,
+                                            priv->host_array.data,
+                                            0, NULL, NULL));
             /* TODO: Can we release the events here? */
             priv->current_event_index = 0;
             priv->location = HOST_ARRAY_VALID;
             break;
-
         case NO_DATA:
             priv->host_array.data = g_malloc0(priv->size);
             priv->location = HOST_ARRAY_VALID;
@@ -465,36 +472,37 @@ gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
 
     switch (priv->location) {
         case HOST_ARRAY_VALID:
+
             if (priv->device_array == NULL)
                 priv->device_array = clCreateBuffer(NULL, CL_MEM_READ_WRITE, priv->size, NULL, NULL);
 
             CHECK_ERROR(clEnqueueWriteBuffer((cl_command_queue) command_queue,
-                    priv->device_array,
-                    CL_FALSE,
-                    0, priv->size,
-                    priv->host_array.data,
-                    0, NULL, &event));
-
+                                             priv->device_array,
+                                             CL_FALSE,
+                                             0, priv->size,
+                                             priv->host_array.data,
+                                             0, NULL, &event));
             priv->location = DEVICE_ARRAY_VALID;
             break;
-
         case DEVICE_ARRAY_VALID:
             break;
-
         case NO_DATA:
+
             if (priv->device_array) {
                 priv->location = DEVICE_ARRAY_VALID;
                 break;
             }
+
             return NULL;
     }
+
     return priv->device_array;
 }
 
 static void ufo_filter_set_property(GObject *object,
-    guint           property_id,
-    const GValue    *value,
-    GParamSpec      *pspec)
+                                    guint           property_id,
+                                    const GValue    *value,
+                                    GParamSpec      *pspec)
 {
     UfoBuffer *buffer = UFO_BUFFER(object);
 
@@ -515,9 +523,9 @@ static void ufo_filter_set_property(GObject *object,
 }
 
 static void ufo_filter_get_property(GObject *object,
-    guint       property_id,
-    GValue      *value,
-    GParamSpec  *pspec)
+                                    guint       property_id,
+                                    GValue      *value,
+                                    GParamSpec  *pspec)
 {
     UfoBuffer *buffer = UFO_BUFFER(object);
 
@@ -541,12 +549,12 @@ static void ufo_buffer_finalize(GObject *gobject)
 {
     UfoBuffer *buffer = UFO_BUFFER(gobject);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+
     if (priv->host_array.data)
         g_free(priv->host_array.data);
-    
+
     priv->host_array.data = NULL;
     g_free(priv->events);
-    
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
@@ -556,36 +564,31 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
     gobject_class->set_property = ufo_filter_set_property;
     gobject_class->get_property = ufo_filter_get_property;
     gobject_class->finalize = ufo_buffer_finalize;
-
-    buffer_properties[PROP_ID] = 
+    buffer_properties[PROP_ID] =
         g_param_spec_int("id",
-            "ID of this buffer",
-            "ID of this buffer",
-            -1,
-            32736,
-            0,
-            G_PARAM_READWRITE);
-
-    buffer_properties[PROP_ACCESS] = 
+                         "ID of this buffer",
+                         "ID of this buffer",
+                         -1,
+                         32736,
+                         0,
+                         G_PARAM_READWRITE);
+    buffer_properties[PROP_ACCESS] =
         g_param_spec_flags("access",
-            "Access restrictions",
-            "Read/Write access restrictions of this buffer",
-            UFO_TYPE_ACCESS,
-            UFO_BUFFER_READWRITE,
-            G_PARAM_READABLE);
-
-    buffer_properties[PROP_DOMAIN] = 
+                           "Access restrictions",
+                           "Read/Write access restrictions of this buffer",
+                           UFO_TYPE_ACCESS,
+                           UFO_BUFFER_READWRITE,
+                           G_PARAM_READABLE);
+    buffer_properties[PROP_DOMAIN] =
         g_param_spec_enum("domain",
-            "Domain of the buffer",
-            "Domain of the buffer, either spatial or frequential",
-            UFO_TYPE_DOMAIN,
-            UFO_BUFFER_SPACE,
-            G_PARAM_READWRITE);
-
+                          "Domain of the buffer",
+                          "Domain of the buffer, either spatial or frequential",
+                          UFO_TYPE_DOMAIN,
+                          UFO_BUFFER_SPACE,
+                          G_PARAM_READWRITE);
     g_object_class_install_property(gobject_class, PROP_ID, buffer_properties[PROP_ID]);
     g_object_class_install_property(gobject_class, PROP_ACCESS, buffer_properties[PROP_ACCESS]);
     g_object_class_install_property(gobject_class, PROP_DOMAIN, buffer_properties[PROP_DOMAIN]);
-
     g_type_class_add_private(klass, sizeof(UfoBufferPrivate));
 }
 
@@ -594,16 +597,13 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     UfoBufferPrivate *priv;
     buffer->priv = priv = UFO_BUFFER_GET_PRIVATE(buffer);
     priv->id = -1;
-
     priv->device_array = NULL;
     priv->host_array.num_dims = 0;
     priv->host_array.data = NULL;
     priv->location = NO_DATA;
-
     priv->current_event_index = 0;
     priv->num_total_events = 8;
     priv->events = g_malloc0(priv->num_total_events * sizeof(cl_event));
-
     priv->time_upload = 0;
     priv->time_download = 0;
 }

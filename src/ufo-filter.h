@@ -34,13 +34,13 @@ struct _UfoFilter {
 
 /**
  * UfoFilterClass:
- * 
+ *
  * #UfoFilter class
  */
 struct _UfoFilterClass {
     /*< private >*/
     GObjectClass parent;
-    
+
     /*< public >*/
     void (*process) (UfoFilter *filter);
     void (*initialize) (UfoFilter *filter);
