@@ -124,3 +124,32 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 add_subdirectory(bindings)
+
+
+# --- Build API reference -----------------------------------------------------
+pkg_check_modules(GTK_DOC gtk-doc)
+if(GTK_DOC_FOUND)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../docs/upd-ref.sh.in
+        ${CMAKE_CURRENT_BINARY_DIR}/../docs/upd-ref.sh)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in
+        ${CMAKE_CURRENT_BINARY_DIR}/../docs/Ufo-docs.xml)
+
+    add_custom_command(TARGET ufo POST_BUILD
+        COMMAND sh ${CMAKE_CURRENT_BINARY_DIR}/../docs/upd-ref.sh
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../docs)
+
+    set(doc_root "${CMAKE_CURRENT_BINARY_DIR}/../docs/html")
+    file(GLOB ref_files "${doc_root}/*.html")
+    set(ref_files 
+        ${ref_files} 
+        "${doc_root}/style.css"
+        "${doc_root}/Ufo.devhelp"
+        "${doc_root}/Ufo.devhelp2")
+    file(GLOB img_files "${doc_root}/*.png")
+
+    install(FILES 
+        ${ref_files} 
+        ${img_files} 
+        DESTINATION /usr/share/gtk-doc/html/Ufo)
+endif(GTK_DOC_FOUND)
