@@ -269,7 +269,7 @@ void ufo_graph_run(UfoGraph *graph)
     for (guint i = 0; i < g_slist_length(priv->elements); i++) {
         UfoFilter *child = UFO_FILTER(g_slist_nth_data(priv->elements, i));
         threads = g_list_append(threads,
-                                g_thread_create(graph_process_thread, child, TRUE, &error));
+                g_thread_create(graph_process_thread, child, TRUE, &error));
     }
 
     g_list_foreach(threads, graph_join_thread, NULL);
@@ -308,10 +308,8 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
 
     if (filter == NULL) {
         g_set_error(error,
-                    UFO_GRAPH_ERROR,
-                    UFO_GRAPH_ERROR_FILTER_NOT_FOUND,
-                    "Filter 'libfilter%s.so' not found",
-                    plugin_name);
+                UFO_GRAPH_ERROR, UFO_GRAPH_ERROR_FILTER_NOT_FOUND,
+                "Filter <%s.so> not found", plugin_name);
         return NULL;
     }
 
