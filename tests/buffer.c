@@ -62,7 +62,7 @@ static void test_buffer_reinterpret_8bit(void)
     guint8 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
     ufo_buffer_set_host_array(buffer, (float *) test_data, 10 * sizeof(float), &error);
     g_assert(error == NULL);
-    ufo_buffer_reinterpret(buffer, 8, 10);
+    ufo_buffer_reinterpret(buffer, 8, 10, TRUE);
 
     float *result = ufo_buffer_get_host_array(buffer, NULL);
     g_assert(float_eq(result[0], 1 / 255.));
@@ -79,7 +79,7 @@ static void test_buffer_reinterpret_16bit(void)
     guint16 test_data[] = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6 };
     ufo_buffer_set_host_array(buffer, (float *) test_data, 10 * sizeof(float), &error);
     g_assert(error == NULL);
-    ufo_buffer_reinterpret(buffer, 16, 10);
+    ufo_buffer_reinterpret(buffer, 16, 10, TRUE);
 
     float *result = ufo_buffer_get_host_array(buffer, NULL);
     g_assert(float_eq(result[0], 1 / 65535.));

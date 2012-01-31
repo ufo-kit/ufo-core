@@ -256,13 +256,14 @@ void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
  * @buffer: A #UfoBuffer.
  * @source_depth: The number of bits that make up the original integer data type.
  * @num_pixels: Number of pixels to consider
+ * @normalize: Normalize image data to range [0.0, 1.0]
  *
  * The fundamental data type of a UfoBuffer is one single-precision floating
  * point per pixel. To increase performance it is possible to load arbitrary
  * integer data with ufo_buffer_set_cpu_data() and convert that data with this
  * method.
  */
-void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels)
+void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, gboolean normalize)
 {
     float *dst = buffer->priv->host_array.data;
 
@@ -271,15 +272,17 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pix
      * the 32-bit target buffer. The processor cache should not be a problem. */
     if (source_depth == 8) {
         guint8 *src = (guint8 *) buffer->priv->host_array.data;
+        const float scale = normalize ? 255.0f : 1.0f;        
 
         for (int index = (num_pixels - 1); index >= 0; index--)
-            dst[index] = src[index] / 255.0;
+            dst[index] = src[index] / scale;
     }
     else if (source_depth == 16) {
         guint16 *src = (guint16 *) buffer->priv->host_array.data;
+        const float scale = normalize ? 65535.0f : 1.0f;        
 
         for (int index = (num_pixels - 1); index >= 0; index--)
-            dst[index] = src[index] / 65535.0;
+            dst[index] = src[index] / scale;
     }
 }
 

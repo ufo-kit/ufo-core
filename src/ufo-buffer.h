@@ -63,7 +63,7 @@ gint ufo_buffer_get_id(UfoBuffer *buffer);
 void ufo_buffer_get_dimensions(UfoBuffer *buffer, guint *num_dims, guint **dim_size);
 void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height);
 
-void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels);
+void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, gboolean normalize);
 void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error);
 float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue);
 
