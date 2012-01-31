@@ -84,7 +84,8 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
     DESTINATION include/ufo)
 
-# --- install pkg-config file
+
+# --- pkg-config --------------------------------------------------------------
 set(prefix      ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix "\${prefix}")
 set(libdir      "${LIB_INSTALL_DIR}")
@@ -96,6 +97,28 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc DESTINATION lib/pkgconfig)
+
+
+# --- Introspection files -----------------------------------------------------
+if (INTROSPECTION_FOUND)
+    set(GIR_PREFIX "Ufo-${UFO_GIR_VERSION}")
+    set(GIR_XML "${GIR_PREFIX}.gir")
+    set(GIR_TYPELIB "${GIR_PREFIX}.typelib")
+
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/bindings/ufo-gir.sh.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/ufo-gir.sh")
+
+    add_custom_command(TARGET ufo POST_BUILD
+        COMMAND sh ${CMAKE_CURRENT_BINARY_DIR}/ufo-gir.sh
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
+        DESTINATION ${INTROSPECTION_GIRDIR})
+
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
+        DESTINATION ${INTROSPECTION_TYPELIBDIR})
+endif()
+
 
 # --- Generate config.h -------------------------------------------------------
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
