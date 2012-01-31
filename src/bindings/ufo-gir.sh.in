@@ -3,7 +3,6 @@
 @INTROSPECTION_SCANNER@ \
     --namespace=Ufo \
     --nsversion=@UFO_GIR_VERSION@ \
-    --library-path=@DEST_DIR@ \
     --library=ufo \
     --include=GObject-2.0 \
     --include=GModule-2.0 \
