@@ -140,16 +140,24 @@ if(GTK_DOC_FOUND)
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../docs)
 
     set(doc_root "${CMAKE_CURRENT_BINARY_DIR}/../docs/html")
-    file(GLOB ref_files "${doc_root}/*.html")
-    set(ref_files 
-        ${ref_files} 
+    set(reference_files 
+        "${doc_root}/index.html"
+        "${doc_root}/annotation-glossary.html"
+        "${doc_root}/api-index-full.html"
+        "${doc_root}/ch01.html"
+        "${doc_root}/Ufo-UfoBuffer.html"
+        "${doc_root}/Ufo-UfoChannel.html"
+        "${doc_root}/Ufo-UfoFilter.html"
+        "${doc_root}/Ufo-UfoGraph.html"
+        "${doc_root}/Ufo-UfoPluginManager.html"
+        "${doc_root}/Ufo-UfoResourceManager.html"
         "${doc_root}/style.css"
         "${doc_root}/Ufo.devhelp"
-        "${doc_root}/Ufo.devhelp2")
-    file(GLOB img_files "${doc_root}/*.png")
+        "${doc_root}/Ufo.devhelp2"
+        "${doc_root}/home.png"
+        "${doc_root}/left.png"
+        "${doc_root}/right.png"
+        "${doc_root}/up.png")
 
-    install(FILES 
-        ${ref_files} 
-        ${img_files} 
-        DESTINATION /usr/share/gtk-doc/html/Ufo)
+    install(FILES ${reference_files} DESTINATION /usr/share/gtk-doc/html/Ufo)
 endif(GTK_DOC_FOUND)
