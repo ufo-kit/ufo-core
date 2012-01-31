@@ -66,7 +66,6 @@ else()
     set (LIB_SUFFIX "")
 endif()
 
-set(LIB_SUFFIX "")
 set(LIB_INSTALL_DIR "lib${LIB_SUFFIX}")
 
 include_directories(
