@@ -129,35 +129,35 @@ add_subdirectory(bindings)
 # --- Build API reference -----------------------------------------------------
 pkg_check_modules(GTK_DOC gtk-doc)
 if(GTK_DOC_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../docs/upd-ref.sh.in
-        ${CMAKE_CURRENT_BINARY_DIR}/../docs/upd-ref.sh)
+    set(doc_in "${CMAKE_CURRENT_SOURCE_DIR}/../docs")
+    set(doc_out "${CMAKE_CURRENT_BINARY_DIR}/../docs")
+    set(doc_html "${CMAKE_CURRENT_BINARY_DIR}/../docs/html")
 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in
-        ${CMAKE_CURRENT_BINARY_DIR}/../docs/Ufo-docs.xml)
+    configure_file("${doc_in}/upd-ref.sh.in" "${doc_out}/upd-ref.sh")
+    configure_file("${doc_in}/Ufo-docs.xml.in" "${doc_out}/Ufo-docs.xml")
 
     add_custom_command(TARGET ufo POST_BUILD
-        COMMAND sh ${CMAKE_CURRENT_BINARY_DIR}/../docs/upd-ref.sh
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../docs)
+        COMMAND sh "${doc_out}/upd-ref.sh"
+        WORKING_DIRECTORY ${doc_out})
 
-    set(doc_root "${CMAKE_CURRENT_BINARY_DIR}/../docs/html")
     set(reference_files 
-        "${doc_root}/index.html"
-        "${doc_root}/annotation-glossary.html"
-        "${doc_root}/api-index-full.html"
-        "${doc_root}/ch01.html"
-        "${doc_root}/Ufo-UfoBuffer.html"
-        "${doc_root}/Ufo-UfoChannel.html"
-        "${doc_root}/Ufo-UfoFilter.html"
-        "${doc_root}/Ufo-UfoGraph.html"
-        "${doc_root}/Ufo-UfoPluginManager.html"
-        "${doc_root}/Ufo-UfoResourceManager.html"
-        "${doc_root}/style.css"
-        "${doc_root}/Ufo.devhelp"
-        "${doc_root}/Ufo.devhelp2"
-        "${doc_root}/home.png"
-        "${doc_root}/left.png"
-        "${doc_root}/right.png"
-        "${doc_root}/up.png")
+        "${doc_html}/index.html"
+        "${doc_html}/annotation-glossary.html"
+        "${doc_html}/api-index-full.html"
+        "${doc_html}/ch01.html"
+        "${doc_html}/Ufo-UfoBuffer.html"
+        "${doc_html}/Ufo-UfoChannel.html"
+        "${doc_html}/Ufo-UfoFilter.html"
+        "${doc_html}/Ufo-UfoGraph.html"
+        "${doc_html}/Ufo-UfoPluginManager.html"
+        "${doc_html}/Ufo-UfoResourceManager.html"
+        "${doc_html}/style.css"
+        "${doc_html}/Ufo.devhelp"
+        "${doc_html}/Ufo.devhelp2"
+        "${doc_html}/home.png"
+        "${doc_html}/left.png"
+        "${doc_html}/right.png"
+        "${doc_html}/up.png")
 
-    install(FILES ${reference_files} DESTINATION /usr/share/gtk-doc/html/Ufo)
+    install(FILES ${reference_files} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/gtk-doc/html/Ufo)
 endif(GTK_DOC_FOUND)
