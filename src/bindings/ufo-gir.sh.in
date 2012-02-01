@@ -4,6 +4,7 @@
     --namespace=Ufo \
     --nsversion=@UFO_GIR_VERSION@ \
     --library=ufo \
+    --no-libtool \
     --include=GObject-2.0 \
     --include=GModule-2.0 \
     -I@OPENCL_INCLUDE_DIRS@ \
