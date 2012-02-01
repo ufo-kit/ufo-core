@@ -50,9 +50,6 @@ if(SPHINX)
             set(sphinx_input ${sphinx_input} ${CMAKE_CURRENT_SOURCE_DIR}/source/${file})
         endforeach()
 
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
-            ${CMAKE_CURRENT_BINARY_DIR}/source/conf.py)
-
         add_custom_command(OUTPUT ${sphinx_output}
             COMMAND ${SPHINX} -b html -c ${sphinx_output_dir} ${CMAKE_CURRENT_SOURCE_DIR}/source html
             DEPENDS ${sphinx_input}
