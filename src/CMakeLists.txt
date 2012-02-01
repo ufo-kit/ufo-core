@@ -132,34 +132,40 @@ add_subdirectory(bindings)
 # --- Build API reference -----------------------------------------------------
 pkg_check_modules(GTK_DOC gtk-doc)
 if(GTK_DOC_FOUND)
-    set(doc_in "${CMAKE_CURRENT_SOURCE_DIR}/../docs")
-    set(doc_out "${CMAKE_CURRENT_BINARY_DIR}/../docs")
-    set(doc_html "${CMAKE_CURRENT_BINARY_DIR}/../docs/html")
+    option(WITH_GTK_DOC "Build API reference" ON)
+    if (WITH_GTK_DOC)
+        set(doc_in "${CMAKE_CURRENT_SOURCE_DIR}/../docs")
+        set(doc_out "${CMAKE_CURRENT_BINARY_DIR}/../docs/reference")
+        set(doc_html "${CMAKE_CURRENT_BINARY_DIR}/../docs/reference/html")
 
-    configure_file("${doc_in}/upd-ref.sh.in" "${doc_out}/upd-ref.sh")
-    configure_file("${doc_in}/Ufo-docs.xml.in" "${doc_out}/Ufo-docs.xml")
+        configure_file("${doc_in}/upd-ref.sh.in" "${doc_out}/upd-ref.sh")
+        configure_file("${doc_in}/Ufo-docs.xml.in" "${doc_out}/Ufo-docs.xml")
 
-    add_custom_command(TARGET ufo POST_BUILD
-        COMMAND sh "${doc_out}/upd-ref.sh"
-        WORKING_DIRECTORY ${doc_out})
+        set(reference_files 
+            "${doc_html}/index.html"
+            "${doc_html}/annotation-glossary.html"
+            "${doc_html}/api-index-full.html"
+            "${doc_html}/ch01.html"
+            "${doc_html}/Ufo-UfoBuffer.html"
+            "${doc_html}/Ufo-UfoChannel.html"
+            "${doc_html}/Ufo-UfoFilter.html"
+            "${doc_html}/Ufo-UfoGraph.html"
+            "${doc_html}/Ufo-UfoPluginManager.html"
+            "${doc_html}/Ufo-UfoResourceManager.html"
+            "${doc_html}/style.css"
+            "${doc_html}/Ufo.devhelp2"
+            "${doc_html}/home.png"
+            "${doc_html}/left.png"
+            "${doc_html}/right.png"
+            "${doc_html}/up.png")
 
-    set(reference_files 
-        "${doc_html}/index.html"
-        "${doc_html}/annotation-glossary.html"
-        "${doc_html}/api-index-full.html"
-        "${doc_html}/ch01.html"
-        "${doc_html}/Ufo-UfoBuffer.html"
-        "${doc_html}/Ufo-UfoChannel.html"
-        "${doc_html}/Ufo-UfoFilter.html"
-        "${doc_html}/Ufo-UfoGraph.html"
-        "${doc_html}/Ufo-UfoPluginManager.html"
-        "${doc_html}/Ufo-UfoResourceManager.html"
-        "${doc_html}/style.css"
-        "${doc_html}/Ufo.devhelp2"
-        "${doc_html}/home.png"
-        "${doc_html}/left.png"
-        "${doc_html}/right.png"
-        "${doc_html}/up.png")
+        add_custom_command(OUTPUT ${reference_files}
+            COMMAND sh "${doc_out}/upd-ref.sh"
+            DEPENDS ${ufocore_SRCS}
+            WORKING_DIRECTORY ${doc_out})
+        add_custom_target(reference ALL DEPENDS ${reference_files})
+        add_dependencies(reference ufo)
 
-    install(FILES ${reference_files} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/gtk-doc/html/Ufo)
+        install(FILES ${reference_files} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/gtk-doc/html/Ufo)
+    endif()
 endif(GTK_DOC_FOUND)

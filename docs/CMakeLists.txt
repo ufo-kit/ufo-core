@@ -5,37 +5,59 @@ mark_as_advanced(SPHINX)
 
 # --- End-user manual ---------------------------------------------------------
 if(SPHINX)
-    set(SPHINX_RESOURCES
-        source/contents.rst
-        source/api.rst
-        source/bugs.rst
-        source/build.rst
-        source/copyright.rst
-        source/faq.rst
-        source/filters.rst
-        source/glossary.rst
-        source/install.rst
-        source/install-linux.rst
-        source/install-mac.rst
-        source/json.rst
-        source/using/index.rst
-        source/whatsnew/0.1.rst
-        source/_static/ufo-logo.png
-        source/_templates/indexcontent.html
-        source/_templates/indexsidebar.html
-        )
+    option(WITH_MANUAL "Build user manual" ON)
 
-    foreach(file ${SPHINX_RESOURCES})
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${file}
-            ${CMAKE_CURRENT_BINARY_DIR}/${file} COPYONLY)
-    endforeach()
+    if (WITH_MANUAL)
+        set(sphinx_output_dir ${CMAKE_CURRENT_BINARY_DIR}/manual)
 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
-        ${CMAKE_CURRENT_BINARY_DIR}/source/conf.py)
+        set(sphinx_source
+            contents.rst
+            api.rst
+            bugs.rst
+            build.rst
+            copyright.rst
+            faq.rst
+            filters.rst
+            glossary.rst
+            install.rst
+            install-linux.rst
+            install-mac.rst
+            json.rst
+            using/index.rst
+            whatsnew/0.1.rst
+            )
 
-    add_custom_target(manual
-        ${SPHINX} -b html ${CMAKE_CURRENT_BINARY_DIR}/source docs
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating user documentation with Sphinx" VERBATIM
-        )
+        set(sphinx_static
+            _static/ufo-logo.png
+            _templates/indexcontent.html
+            _templates/indexsidebar.html
+            )
+
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
+            ${sphinx_output_dir}/conf.py)
+        
+        foreach(file ${sphinx_static})
+            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/${file}
+                ${CMAKE_CURRENT_BINARY_DIR}/manual/${file} COPYONLY)
+        endforeach()
+
+        set(sphinx_output "")
+        set(sphinx_input "")
+
+        foreach(file ${sphinx_source})
+            string(REPLACE "rst" "html" html_file ${file})
+            set(sphinx_output ${sphinx_output} ${sphinx_output_dir}/html/${html_file})
+            set(sphinx_input ${sphinx_input} ${CMAKE_CURRENT_SOURCE_DIR}/source/${file})
+        endforeach()
+
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
+            ${CMAKE_CURRENT_BINARY_DIR}/source/conf.py)
+
+        add_custom_command(OUTPUT ${sphinx_output}
+            COMMAND ${SPHINX} -b html -c ${sphinx_output_dir} ${CMAKE_CURRENT_SOURCE_DIR}/source html
+            DEPENDS ${sphinx_input}
+            WORKING_DIRECTORY ${sphinx_output_dir})
+        add_custom_target(manual ALL DEPENDS ${sphinx_output})
+        add_dependencies(manual ufo)
+    endif()
 endif()
