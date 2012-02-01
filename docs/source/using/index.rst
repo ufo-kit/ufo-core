@@ -46,21 +46,8 @@ There are no plans to support any languages with manually written language
 bindings. However, UFO is a GObject-based library from which ``gir`` (GObject
 Introspection) files can be generated at build time. Any language that supports
 GObject Introspection and the ``gir``/``typelib`` format is thus able to
-integrate UFO.
-
-Generating Introspection Files
-------------------------------
-
-No manual intervention is need if the GObject Introspection tools are found.
-With a simple ::
-
-    make install
-
-all necessary files are installed in the correct locations. You can make sure
-that everything is built correctly, by running::
-
-    make gir
-
+integrate UFO. No manual intervention is need if the GObject Introspection tools
+are found.
 
 Using GObject Introspection
 ---------------------------
