@@ -155,7 +155,6 @@ if(GTK_DOC_FOUND)
         "${doc_html}/Ufo-UfoPluginManager.html"
         "${doc_html}/Ufo-UfoResourceManager.html"
         "${doc_html}/style.css"
-        "${doc_html}/Ufo.devhelp"
         "${doc_html}/Ufo.devhelp2"
         "${doc_html}/home.png"
         "${doc_html}/left.png"
