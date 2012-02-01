@@ -108,9 +108,12 @@ if (INTROSPECTION_FOUND)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/bindings/ufo-gir.sh.in"
         "${CMAKE_CURRENT_BINARY_DIR}/ufo-gir.sh")
 
-    add_custom_command(TARGET ufo POST_BUILD
+    add_custom_command(OUTPUT ${GIR_XML} ${GIR_TYPELIB}
         COMMAND sh ${CMAKE_CURRENT_BINARY_DIR}/ufo-gir.sh
+        DEPENDS ${ufocore_SRCS}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    add_custom_target(gir ALL DEPENDS ${GIR_XML} ${GIR_TYPELIB})
+    add_dependencies(gir ufo)
 
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
         DESTINATION ${INTROSPECTION_GIRDIR})
