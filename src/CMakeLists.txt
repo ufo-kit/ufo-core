@@ -55,8 +55,6 @@ add_custom_command(
           ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.c.template
 )
 
-set(ufocore_SRCS ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
-
 # --- Target ------------------------------------------------------------------
 get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
 
@@ -67,7 +65,7 @@ include_directories(
     ${JSON_GLIB_INCLUDE_DIRS}
     )
 
-add_library(ufo SHARED ${ufocore_SRCS})
+add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 set_target_properties(ufo PROPERTIES
     VERSION ${UFO_ABI_VERSION}
@@ -107,13 +105,31 @@ if (INTROSPECTION_FOUND)
     set(GIR_XML "${GIR_PREFIX}.gir")
     set(GIR_TYPELIB "${GIR_PREFIX}.typelib")
 
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/bindings/ufo-gir.sh.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/ufo-gir.sh")
-
-    add_custom_command(OUTPUT ${GIR_XML} ${GIR_TYPELIB}
-        COMMAND sh ${CMAKE_CURRENT_BINARY_DIR}/ufo-gir.sh
+    set(_gir_input)
+    foreach(_src ${ufocore_SRCS} ${ufocore_HDRS})
+        list(APPEND _gir_input "${CMAKE_CURRENT_SOURCE_DIR}/${_src}") 
+    endforeach()
+    
+    add_custom_command(OUTPUT ${GIR_XML}
+        COMMAND ${INTROSPECTION_SCANNER}
+                --namespace=Ufo
+                --nsversion=${UFO_GIR_VERSION}
+                --library=ufo
+                --no-libtool
+                --include=GObject-2.0
+                --include=GModule-2.0
+                -I${OPENCL_INCLUDE_DIRS}
+                --output ${GIR_XML}
+                ${_gir_input}
         DEPENDS ${ufocore_SRCS}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+    add_custom_command(OUTPUT ${GIR_TYPELIB}
+        COMMAND ${INTROSPECTION_COMPILER}
+                -o ${GIR_TYPELIB}
+                ${GIR_XML}
+        )
+
     add_custom_target(gir ALL DEPENDS ${GIR_XML} ${GIR_TYPELIB})
     add_dependencies(gir ufo)
 
