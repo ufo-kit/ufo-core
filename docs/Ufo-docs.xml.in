@@ -6,9 +6,9 @@
 ]>
 <book id="index">
   <bookinfo>
-    <title>Ufo Reference Manual</title>
+    <title>UFO Reference Manual</title>
     <releaseinfo>
-        for Ufo ${UFO_API_VERSION}
+        for UFO ${UFO_API_VERSION}
       The latest version of this documentation can be found on-line at
       <ulink role="online-location"
           url="http://ufo.kit.edu/ufo">http://ufo.kit.edu/ufo/</ulink>.
@@ -17,12 +17,7 @@
 
   <chapter>
     <title>UFO API Reference</title>
-        <xi:include href="xml/ufo-plugin-manager.xml"/>
-    <xi:include href="xml/ufo-resource-manager.xml"/>
-    <xi:include href="xml/ufo-filter.xml"/>
-    <xi:include href="xml/ufo-channel.xml"/>
-    <xi:include href="xml/ufo-graph.xml"/>
-    <xi:include href="xml/ufo-buffer.xml"/>
+        ${_xml_doc_input}
 
   </chapter>
   <index id="api-index-full">
