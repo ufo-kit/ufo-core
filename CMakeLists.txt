@@ -7,9 +7,15 @@ set(UFO_API_VERSION "0.1")
 set(UFO_ABI_VERSION "0.1")
 set(UFO_ABI_MAJOR_VERSION "0")
 
-set(PACKAGE_VERSION "0.1.0")
-set(PACKAGE_NAME "${TARNAME}")
-set(PACKAGE_TARNAME "${TARNAME}")
+set(UFO_DESCRIPTION "UFO high-speed image processing core library")
+set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
+
+set(PACKAGE_VERSION_MAJOR "0")
+set(PACKAGE_VERSION_MINOR "1")
+set(PACKAGE_VERSION_PATCH "0")
+set(PACKAGE_VERSION "${PACKAGE_VERSION_MAJOR}.${PACKAGE_VERSION_MINOR}.${PACKAGE_VERSION_PATCH}")
+set(PACKAGE_NAME ${TARNAME})
+set(PACKAGE_TARNAME ${TARNAME})
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_BUGREPORT "http://ufo.kit.edu/ufo/newticket")
 
@@ -19,12 +25,14 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+
 # --- Options -----------------------------------------------------------------
 option(WITH_PROFILING "Enable profiling" OFF)
 if (WITH_PROFILING)
     add_definitions("-pg")
     set(CMAKE_C_FLAGS "-pg")
 endif ()
+
 
 # --- Find packages and libraries ---------------------------------------------
 
@@ -53,3 +61,26 @@ add_subdirectory(src)
 add_subdirectory(docs)
 add_subdirectory(tests)
 
+
+# --- Package generation ------------------------------------------------------
+set(CPACK_PACKAGE_DESCRIPTION ${UFO_DESCRIPTION})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${UFO_DESCRIPTION_SUMMARY})
+set(CPACK_PACKAGE_NAME ${TARNAME})
+
+set(CPACK_PACKAGE_CONTACT "matthias.vogelgesang@kit.edu")
+set(CPACK_PACKAGE_VENDOR "Karlsruhe Institute of Technology/IPE")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PACKAGE_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PACKAGE_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PACKAGE_VERSION_PATCH})
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PACKAGE_VERSION_MAJOR}.${PACKAGE_VERSION_MINOR}-${CMAKE_SYSTEM_PROCESSOR}")
+set(VERSION ${PACKAGE_VERSION})
+
+set(CPACK_GENERATOR "DEB;RPM;")
+set(CPACK_SOURCE_GENERATOR "TGZ")
+set(CPACK_SOURCE_IGNORE_FILES "tags" ".bzr" ".swp" "~1~")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_NAME}-${PACKAGE_VERSION}" CACHE INTERNAL "tarball basename")
+
+# --- Distro specific
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.3.6), libgcc1 (>= 1:4.1)")
+
+include(CPack)

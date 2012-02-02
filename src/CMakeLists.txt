@@ -86,10 +86,12 @@ install(FILES
 
 
 # --- pkg-config --------------------------------------------------------------
-set(prefix      ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix "\${prefix}")
-set(libdir      "${LIB_INSTALL_DIR}")
-set(includedir  "\${prefix}/include")
+set(UFO_PKG_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(UFO_PKG_EXEC_PREFIX "${UFO_PKG_PREFIX}/bin")
+set(UFO_PKG_LIBDIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
+set(UFO_PKG_INCLUDEDIR "${UFO_PKG_PREFIX}/include/ufo")
+set(UFO_PKG_GIRDIR "${UFO_PKG_PREFIX}/share/gir-1.0")
+set(UFO_PKG_TYPELIBDIR "${UFO_PKG_PREFIX}/${LIB_INSTALL_DIR}/girepository-1.0")
 
 # FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
 # hard coded values
@@ -116,10 +118,10 @@ if (INTROSPECTION_FOUND)
     add_dependencies(gir ufo)
 
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
-        DESTINATION ${INTROSPECTION_GIRDIR})
+        DESTINATION share/gir-1.0)
 
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
-        DESTINATION ${INTROSPECTION_TYPELIBDIR})
+        DESTINATION ${LIB_INSTALL_DIR}/girepository-1.0)
 endif()
 
 
@@ -166,6 +168,7 @@ if(GTK_DOC_FOUND)
         add_custom_target(reference ALL DEPENDS ${reference_files})
         add_dependencies(reference ufo)
 
-        install(FILES ${reference_files} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/gtk-doc/html/Ufo)
+        install(FILES ${reference_files} DESTINATION share/gtk-doc/html/Ufo)
     endif()
 endif(GTK_DOC_FOUND)
+

@@ -1,14 +1,12 @@
-# Package Information for pkg-config
-
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@/ufo
-girdir=@datadir@/gir-1.0
-typelibdir=@libdir@/girepository-1.0
+prefix=@UFO_PKG_PREFIX@
+exec_prefix=@UFO_PKG_EXEC_PREFIX@
+libdir=@UFO_PKG_LIBDIR@
+includedir=@UFO_PKG_INCLUDEDIR@
+girdir=@UFO_PKG_GIRDIR@
+typelibdir=@UFO_PKG_TYPELIBDIR@
 
 Name: @TARNAME@
+Description: @UFO_DESCRIPTION_SUMMARY@
 Version: @PACKAGE_VERSION@
-Description: UFO high-speed image processing core library
-Libs: -L${libdir} -lufo -lglib-2.0 -lgobject-2.0 -lgthread-2.0 -ljson-glib-1.0
-Cflags: -I${includedir} -I@GLIB2_INCLUDE_DIRS@
+Libs: -L${libdir} -lufo
+Cflags: -I${includedir}
