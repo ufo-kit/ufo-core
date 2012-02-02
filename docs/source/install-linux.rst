@@ -3,7 +3,18 @@
 Installation on Linux
 =====================
 
-In the future, UFO can be installed painlessly from openSUSE and Debian packages.
+Debian and RPM packages are provided. To install the Debian package under Ubuntu
+or Debian, issue ::
+
+  $ sudo dpkg -i libufo-x.y.deb
+
+Unfortunately, the OpenCL distributions from NVIDIA and AMD are not known to the
+repository system of openSUSE. When installing UFO, ``rpm`` will complain, that
+it cannot find this dependency. To solve this problem use ``zypper`` ::
+
+  $ sudo zypper install libufo-x.y.rpm
+
+and when asked to fix the dependency, ignore it.
 
 
 Building UFO from Source
@@ -48,15 +59,23 @@ configure ::
   $ cmake <path-to-ufo>
 
 CMake will notify you, if some of the dependencies are not met. Remember though,
-that only GLib/GObject, JSON-GLib, Ethos and OpenCL are needed. Please consult
-your distributions documentation to install the necessary development libraries.
-If other dependencies are not satisified, the relevant filter plugins will not
-be built.
+that only GLib/GObject, JSON-GLib and OpenCL are needed. Please consult your
+distributions documentation to install the necessary development libraries.  If
+other dependencies are not satisified, the relevant filter plugins will not be
+built.
 
 You can adjust some build parameters later on by using the ``ccmake`` tool in
 the build directory ::
 
   $ ccmake .
+
+For early versions of PyGObject, it is necessary that the introspection files
+are located under ``/usr`` not ``/usr/local``. You can force the prefix by
+calling ::
+
+  $ cmake <path-to-ufo> -DCMAKE_INSTALL_PREFIX=/usr
+
+or change ``CMAKE_INSTALL_PREFIX`` variable with ``ccmake``.
 
 Last but not least build the framework, introspection files, API reference and
 the documentation using ::
