@@ -219,7 +219,7 @@ void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_d
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
 
-    if (filter_find_argument_position(priv->input_names, name) < 0)
+    if (filter_find_argument_position(priv->input_names, name) >= 0)
         return;
 
     g_ptr_array_add(priv->input_names, g_strdup(name));
@@ -241,7 +241,7 @@ void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);    
 
-    if (filter_find_argument_position(priv->output_names, name) < 0)
+    if (filter_find_argument_position(priv->output_names, name) >= 0)
         return;
 
     g_ptr_array_add(priv->output_names, g_strdup(name));
