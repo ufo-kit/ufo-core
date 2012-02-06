@@ -19,20 +19,6 @@ G_DEFINE_TYPE(UfoFilter, ufo_filter, G_TYPE_OBJECT)
 
 #define UFO_FILTER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER, UfoFilterPrivate))
 
-#define UFO_FILTER_ERROR ufo_filter_error_quark()
-GQuark ufo_filter_error_quark(void)
-{
-    return g_quark_from_static_string("ufo-filter-error-quark");
-}
-
-typedef enum {
-    UFO_FILTER_ERROR_INSUFFICIENTINPUTS,
-    UFO_FILTER_ERROR_INSUFFICIENTOUTPUTS,
-    UFO_FILTER_ERROR_NUMDIMSMISMATCH,
-    UFO_FILTER_ERROR_NOSUCHINPUT,
-    UFO_FILTER_ERROR_NOSUCHOUTPUT
-} UfoFilterError;
-
 struct _UfoFilterPrivate {
     gchar               *plugin_name;
     GPtrArray           *input_names;     /**< Contains *gchar */
@@ -79,6 +65,10 @@ static gint filter_find_argument_position(GPtrArray *array, const gchar *name)
     return pos == array->len ? -1 : (gint) pos;
 }
 
+GQuark ufo_filter_error_quark(void)
+{
+    return g_quark_from_static_string("ufo-filter-error-quark");
+}
 
 /**
  * ufo_filter_initialize:

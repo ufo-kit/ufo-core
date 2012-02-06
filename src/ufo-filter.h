@@ -14,6 +14,17 @@
 #define UFO_IS_FILTER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_FILTER))
 #define UFO_FILTER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_FILTER, UfoFilterClass))
 
+#define UFO_FILTER_ERROR ufo_filter_error_quark()
+GQuark ufo_filter_error_quark(void);
+
+typedef enum {
+    UFO_FILTER_ERROR_INSUFFICIENTINPUTS,
+    UFO_FILTER_ERROR_INSUFFICIENTOUTPUTS,
+    UFO_FILTER_ERROR_NUMDIMSMISMATCH,
+    UFO_FILTER_ERROR_NOSUCHINPUT,
+    UFO_FILTER_ERROR_NOSUCHOUTPUT
+} UfoFilterError;
+
 typedef struct _UfoFilter           UfoFilter;
 typedef struct _UfoFilterClass      UfoFilterClass;
 typedef struct _UfoFilterPrivate    UfoFilterPrivate;
