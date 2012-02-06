@@ -13,6 +13,7 @@ cmake_minimum_required(VERSION 2.8)
 # configure unit tests
 set(TEST_SRCS
     test-buffer.c
+    test-channel.c
     test-filter.c
     )
 
@@ -30,6 +31,7 @@ if (WITH_TESTS)
         add_test(${_binary} ${_binary})
 
         string(REPLACE "test" "ufo" _dependency ${_src})
+        list(APPEND TEST_DEPENDENCIES "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
         list(APPEND TEST_DEPENDENCIES "${CMAKE_CURRENT_SOURCE_DIR}/../src/${_dependency}")
     endforeach()
 
