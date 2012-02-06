@@ -41,7 +41,6 @@ struct _UfoFilterClass {
     /*< private >*/
     GObjectClass parent;
 
-    /*< public >*/
     void (*process) (UfoFilter *filter);
     void (*initialize) (UfoFilter *filter);
 };
@@ -51,8 +50,11 @@ void ufo_filter_process(UfoFilter *filter);
 void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue);
 gpointer ufo_filter_get_command_queue(UfoFilter *filter);
 
-void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination);
-void ufo_filter_connect_by_name(UfoFilter *source, const gchar *source_output, UfoFilter *destination, const gchar *dest_input);
+void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_dims);
+void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_dims);
+
+void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **error);
+void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name, UfoFilter *destination, const gchar *input_name, GError **error);
 gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination);
 
 UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter);

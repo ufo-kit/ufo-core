@@ -204,10 +204,13 @@ static void ufo_channel_dispose(GObject *object)
 {
     UfoChannel *channel = UFO_CHANNEL(object);
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    UfoResourceManager *manager = ufo_resource_manager();
 
-    for (int i = 0; i < priv->num_buffers; i++)
-        ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
+    if (priv->num_buffers > 0) {
+        UfoResourceManager *manager = ufo_resource_manager();
+
+        for (int i = 0; i < priv->num_buffers; i++)
+            ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
+    }
 }
 
 static void ufo_channel_finalize(GObject *object)

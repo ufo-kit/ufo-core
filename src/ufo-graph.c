@@ -93,6 +93,7 @@ static UfoFilter *graph_handle_json_filter(UfoGraph *self, JsonObject *object)
 static void graph_handle_json_sequence(UfoGraph *self, JsonObject *sequence)
 {
     if (json_object_has_member(sequence, "elements")) {
+        GError *error = NULL;
         UfoFilter *predecessor = NULL;
         JsonArray *elements = json_object_get_array_member(sequence, "elements");
 
@@ -102,7 +103,7 @@ static void graph_handle_json_sequence(UfoGraph *self, JsonObject *sequence)
 
             /* Connect predecessor's output with current input */
             if (predecessor != NULL)
-                ufo_filter_connect_to(predecessor, current);
+                ufo_filter_connect_to(predecessor, current, &error);
 
             predecessor = current;
         }
@@ -159,7 +160,6 @@ static void graph_join_thread(gpointer data, gpointer user_data)
     GThread *thread = (GThread *) data;
     g_thread_join(thread);
 }
-
 
 GQuark ufo_graph_error_quark(void)
 {
