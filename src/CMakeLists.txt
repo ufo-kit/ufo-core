@@ -128,7 +128,8 @@ if (INTROSPECTION_FOUND)
         COMMAND ${INTROSPECTION_COMPILER}
                 -o ${GIR_TYPELIB}
                 ${GIR_XML}
-        )
+        DEPENDS ${GIR_XML}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
     add_custom_target(gir ALL DEPENDS ${GIR_XML} ${GIR_TYPELIB})
     add_dependencies(gir ufo)
