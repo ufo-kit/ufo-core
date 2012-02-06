@@ -438,10 +438,10 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
      */
     graph_properties[PROP_PATHS] =
         g_param_spec_string("paths",
-                            "List of :-separated paths pointing to possible filter locations",
-                            "List of :-separated paths pointing to possible filter locations",
-                            ".",
-                            G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+                "List of :-separated paths pointing to possible filter locations",
+                "List of :-separated paths pointing to possible filter locations",
+                ".",
+                G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
     g_object_class_install_property(gobject_class, PROP_PATHS, graph_properties[PROP_PATHS]);
     g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
 }

@@ -188,7 +188,7 @@ if(GTK_DOC_FOUND)
         find_program(GTK_DOC_MKDB gtkdoc-mkdb REQUIRED)
         find_program(GTK_DOC_MKHTML gtkdoc-mkhtml REQUIRED)
 
-        add_custom_command(OUTPUT ${docs_out}/Ufo.types
+        add_custom_command(OUTPUT ${docs_out}/Ufo-sections.txt
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}/../src
@@ -200,7 +200,7 @@ if(GTK_DOC_FOUND)
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --output-format=xml
-                    DEPENDS ${docs_out}/Ufo.types
+                    DEPENDS ${docs_out}/Ufo-sections.txt
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_dir}/html.stamp

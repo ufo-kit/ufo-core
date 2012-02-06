@@ -29,8 +29,6 @@ enum UfoBufferError {
 enum {
     PROP_0,
     PROP_ID,
-    PROP_ACCESS,
-    PROP_DOMAIN,
     PROP_STRUCTURE,
     N_PROPERTIES
 };
@@ -57,9 +55,6 @@ struct _UfoBufferPrivate {
 
     gint        id;     /**< unique id that is passed to the transformed buffer */
     gsize       size;   /**< size of buffer in bytes */
-
-    UfoAccess   access;
-    UfoDomain   domain;
 
     cl_event    *events;
     cl_uint     current_event_index; /**< index of currently available event position */
@@ -513,12 +508,6 @@ static void ufo_filter_set_property(GObject *object,
         case PROP_ID:
             buffer->priv->id = g_value_get_int(value);
             break;
-        case PROP_ACCESS:
-            buffer->priv->access = g_value_get_flags(value);
-            break;
-        case PROP_DOMAIN:
-            buffer->priv->domain = g_value_get_enum(value);
-            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -535,12 +524,6 @@ static void ufo_filter_get_property(GObject *object,
     switch (property_id) {
         case PROP_ID:
             g_value_set_int(value, buffer->priv->id);
-            break;
-        case PROP_ACCESS:
-            g_value_set_flags(value, buffer->priv->access);
-            break;
-        case PROP_DOMAIN:
-            g_value_set_enum(value, buffer->priv->domain);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -567,31 +550,16 @@ static void ufo_buffer_class_init(UfoBufferClass *klass)
     gobject_class->set_property = ufo_filter_set_property;
     gobject_class->get_property = ufo_filter_get_property;
     gobject_class->finalize = ufo_buffer_finalize;
+
     buffer_properties[PROP_ID] =
         g_param_spec_int("id",
                          "ID of this buffer",
                          "ID of this buffer",
-                         -1,
-                         32736,
-                         0,
+                         -1, G_MAXINT, 0,
                          G_PARAM_READWRITE);
-    buffer_properties[PROP_ACCESS] =
-        g_param_spec_flags("access",
-                           "Access restrictions",
-                           "Read/Write access restrictions of this buffer",
-                           UFO_TYPE_ACCESS,
-                           UFO_BUFFER_READWRITE,
-                           G_PARAM_READABLE);
-    buffer_properties[PROP_DOMAIN] =
-        g_param_spec_enum("domain",
-                          "Domain of the buffer",
-                          "Domain of the buffer, either spatial or frequential",
-                          UFO_TYPE_DOMAIN,
-                          UFO_BUFFER_SPACE,
-                          G_PARAM_READWRITE);
+
     g_object_class_install_property(gobject_class, PROP_ID, buffer_properties[PROP_ID]);
-    g_object_class_install_property(gobject_class, PROP_ACCESS, buffer_properties[PROP_ACCESS]);
-    g_object_class_install_property(gobject_class, PROP_DOMAIN, buffer_properties[PROP_DOMAIN]);
+
     g_type_class_add_private(klass, sizeof(UfoBufferPrivate));
 }
 

@@ -39,18 +39,6 @@ struct _UfoBufferClass {
     GObjectClass parent_class;
 };
 
-typedef enum {
-    UFO_BUFFER_READABLE  = 1 << 0,
-    UFO_BUFFER_WRITEABLE = 1 << 1,
-    UFO_BUFFER_READWRITE = (UFO_BUFFER_READABLE | UFO_BUFFER_WRITEABLE)
-} UfoAccess;
-
-typedef enum {
-    UFO_BUFFER_SPACE,
-    UFO_BUFFER_FREQUENCY, /**< implies interleaved complex numbers */
-    UFO_BUFFER_HISTOGRAM
-} UfoDomain;
-
 UfoBuffer *ufo_buffer_new(guint num_dims, const guint *dim_size);
 void ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_size);
 
