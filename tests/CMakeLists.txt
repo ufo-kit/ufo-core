@@ -11,25 +11,41 @@
 cmake_minimum_required(VERSION 2.8)
 
 # configure unit tests
-set(TEST_BINARIES
-    buffer
-    filter
+set(TEST_SRCS
+    test-buffer.c
+    test-filter.c
     )
 
-foreach(binary ${TEST_BINARIES})
-    add_executable(${binary} ${binary}.c)
-    target_link_libraries(${binary} ufo ${GLIB2_LIBRARIES})
-    add_test(${binary} ${binary})
-endforeach()
+option(WITH_TESTS "Run tests on each build" ON)
+if (WITH_TESTS)
+    set(TEST_DEPENDENCIES)
+    set(TEST_BINARIES)
 
-add_custom_target(gtest
-    gtester ${TEST_BINARIES} -o results.xml 
-)
+    foreach(_src ${TEST_SRCS})
+        string(REPLACE ".c" "" _binary ${_src})
+        list(APPEND TEST_BINARIES ${_binary})
 
-# non-unit test
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test.json ${CMAKE_CURRENT_BINARY_DIR}/test.json)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test.js ${CMAKE_CURRENT_BINARY_DIR}/test.js)
+        add_executable(${_binary} ${_src})
+        target_link_libraries(${_binary} ufo ${GLIB2_LIBRARIES})
+        add_test(${_binary} ${_binary})
 
-add_executable(runjson test.c)
-add_test(runjson runjson)
-target_link_libraries(runjson ufo ${GLIB2_LIBRARIES})
+        string(REPLACE "test" "ufo" _dependency ${_src})
+        list(APPEND TEST_DEPENDENCIES "${CMAKE_CURRENT_SOURCE_DIR}/../src/${_dependency}")
+    endforeach()
+
+    find_program(GTESTER gtester REQUIRED)
+
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/results.xml
+        COMMAND ${GTESTER}
+                ${TEST_BINARIES}
+                -o results.xml
+                DEPENDS ${TEST_DEPENDENCIES}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+    add_custom_target(gtest ALL DEPENDS 
+        ${TEST_BINARIES}
+        ${CMAKE_CURRENT_BINARY_DIR}/results.xml)
+
+    add_executable(runjson test.c)
+    target_link_libraries(runjson ufo ${GLIB2_LIBRARIES})
+endif()

@@ -101,44 +101,47 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc DESTINATION lib/pkgconfig)
 
 # --- Introspection files -----------------------------------------------------
 if (INTROSPECTION_FOUND)
-    set(GIR_PREFIX "Ufo-${UFO_GIR_VERSION}")
-    set(GIR_XML "${GIR_PREFIX}.gir")
-    set(GIR_TYPELIB "${GIR_PREFIX}.typelib")
+    option(WITH_GIR "Build introspection files" ON)
+    if (WITH_GIR)
+        set(GIR_PREFIX "Ufo-${UFO_GIR_VERSION}")
+        set(GIR_XML "${GIR_PREFIX}.gir")
+        set(GIR_TYPELIB "${GIR_PREFIX}.typelib")
 
-    set(_gir_input)
-    foreach(_src ${ufocore_SRCS} ${ufocore_HDRS})
-        list(APPEND _gir_input "${CMAKE_CURRENT_SOURCE_DIR}/${_src}") 
-    endforeach()
-    
-    add_custom_command(OUTPUT ${GIR_XML}
-        COMMAND ${INTROSPECTION_SCANNER}
-                --namespace=Ufo
-                --nsversion=${UFO_GIR_VERSION}
-                --library=ufo
-                --no-libtool
-                --include=GObject-2.0
-                --include=GModule-2.0
-                -I${OPENCL_INCLUDE_DIRS}
-                --output ${GIR_XML}
-                ${_gir_input}
-        DEPENDS ${ufocore_SRCS}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        set(_gir_input)
+        foreach(_src ${ufocore_SRCS} ${ufocore_HDRS})
+            list(APPEND _gir_input "${CMAKE_CURRENT_SOURCE_DIR}/${_src}") 
+        endforeach()
+        
+        add_custom_command(OUTPUT ${GIR_XML}
+            COMMAND ${INTROSPECTION_SCANNER}
+                    --namespace=Ufo
+                    --nsversion=${UFO_GIR_VERSION}
+                    --library=ufo
+                    --no-libtool
+                    --include=GObject-2.0
+                    --include=GModule-2.0
+                    -I${OPENCL_INCLUDE_DIRS}
+                    --output ${GIR_XML}
+                    ${_gir_input}
+            DEPENDS ${ufocore_SRCS}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-    add_custom_command(OUTPUT ${GIR_TYPELIB}
-        COMMAND ${INTROSPECTION_COMPILER}
-                -o ${GIR_TYPELIB}
-                ${GIR_XML}
-        DEPENDS ${GIR_XML}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        add_custom_command(OUTPUT ${GIR_TYPELIB}
+            COMMAND ${INTROSPECTION_COMPILER}
+                    -o ${GIR_TYPELIB}
+                    ${GIR_XML}
+            DEPENDS ${GIR_XML}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-    add_custom_target(gir ALL DEPENDS ${GIR_XML} ${GIR_TYPELIB})
-    add_dependencies(gir ufo)
+        add_custom_target(gir ALL DEPENDS ${GIR_XML} ${GIR_TYPELIB})
+        add_dependencies(gir ufo)
 
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
-        DESTINATION share/gir-1.0)
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
+            DESTINATION share/gir-1.0)
 
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
-        DESTINATION ${LIB_INSTALL_DIR}/girepository-1.0)
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
+            DESTINATION ${LIB_INSTALL_DIR}/girepository-1.0)
+    endif()
 endif()
 
 

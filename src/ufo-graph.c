@@ -40,7 +40,6 @@ enum {
 
 static GParamSpec *graph_properties[N_PROPERTIES] = { NULL, };
 
-
 static void graph_handle_json_single_prop(JsonObject *object, const gchar *name, JsonNode *node, gpointer user)
 {
     GValue val = { 0, };
