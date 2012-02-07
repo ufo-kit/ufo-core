@@ -151,8 +151,6 @@ static void graph_build(UfoGraph *self, JsonNode *node)
 static gpointer graph_process_thread(gpointer data)
 {
     ufo_filter_process(UFO_FILTER(data));
-    GError *error = g_error_new(UFO_FILTER_ERROR, UFO_FILTER_ERROR_NUMDIMSMISMATCH, "bla");
-    return error;
     return NULL;
 }
 
