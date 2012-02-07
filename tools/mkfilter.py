@@ -166,6 +166,11 @@ static void ufo_filter_${prefix_underscore}_init(UfoFilter${prefix_camel} *self)
 {
     UfoFilter${prefix_camel}Private *priv = self->priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE(self);
     priv->example = 1.0;
+
+    /* Use this place to register your named inputs and outputs with the
+     * number of dimensions that the input is accepting and the output providing */
+    ufo_filter_register_input(UFO_FILTER(self), "input", 2);
+    ufo_filter_register_output(UFO_FILTER(self), "output", 2);
 }
 
 G_MODULE_EXPORT UfoFilter *ufo_filter_plugin_new(void)
