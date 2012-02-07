@@ -65,6 +65,21 @@ static gint filter_find_argument_position(GPtrArray *array, const gchar *name)
     return pos == array->len ? -1 : (gint) pos;
 }
 
+/**
+ * UfoFilterError:
+ * @UFO_FILTER_ERROR_INSUFFICIENTINPUTS: Filter does not provide enough inputs.
+ * @UFO_FILTER_ERROR_INSUFFICIENTOUTPUTS: Filter does not provide enough
+ *      outputs.
+ * @UFO_FILTER_ERROR_NUMDIMSMISMATCH: Mismatch between number of dimensions of
+ *      given input and output.
+ * @UFO_FILTER_ERROR_NOSUCHINPUT: Filter does not provide an input with that
+ *      name.
+ * @UFO_FILTER_ERROR_NOSUCHOUTPUT: Filter does not provide an output with that
+ *      name.
+ *
+ * Possible errors that ufo_filter_connect_to() and ufo_filter_connect_by_name()
+ * can return.
+ */
 GQuark ufo_filter_error_quark(void)
 {
     return g_quark_from_static_string("ufo-filter-error-quark");
@@ -111,7 +126,7 @@ void ufo_filter_process(UfoFilter *filter)
  * ufo_filter_connect_to:
  * @source: Source #UfoFilter
  * @destination: Destination #UfoFilter
- * @error: Return location for error
+ * @error: Return location for error with values from #UfoFilterError
  *
  * Connect filter using the default first inputs and outputs.
  */
@@ -146,9 +161,10 @@ void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **e
  * @output_name: Name of the source output channel
  * @destination: Destination #UfoFilter
  * @input_name: Name of the destination input channel
- * @error: Return location for error
+ * @error: Return location for error with values from #UfoFilterError
  *
- * Connect filter with named input and output.
+ * Connect output @output_name of filter @source with input @input_name of
+ * filter @destination.
  */
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name, 
         UfoFilter *destination, const gchar *input_name, GError **error)
@@ -203,7 +219,7 @@ void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name,
  * Add a new input name. Each registered input is appended to the filter's
  * argument list.
  *
- * @note: This method must be called by each filter.
+ * @note: This method must be called by each filter that accepts input.
  */
 void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_dims)
 {
@@ -225,7 +241,7 @@ void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_d
  * Add a new output name. Each registered output is appended to the filter's
  * output list.
  *
- * @note: This method must be called by each filter.
+ * @note: This method must be called by each filter that provides output.
  */
 void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_dims)
 {
@@ -243,9 +259,9 @@ void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_
  * @source: Source #UfoFilter.
  * @destination: Destination #UfoFilter.
  *
- * Check if two filters are connected
+ * Check if @source and @destination are connected.
  *
- * Return value: TRUE if source is connected with destination else FALSE.
+ * Return value: TRUE if @source is connected with @destination else FALSE.
  */
 gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
 {
@@ -267,7 +283,8 @@ gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
  * ufo_filter_get_input_channel_by_name:
  * @filter: A #UfoFilter.
  * @name: Name of the input channel.
- * Get named input channel
+ *
+ * Get input channel called @name from @filter.
  *
  * Return value: NULL if no such channel exists, otherwise the #UfoChannel object
  */
@@ -356,7 +373,7 @@ float ufo_filter_get_gpu_time(UfoFilter *filter)
  * ufo_filter_get_plugin_name:
  * @filter: A #UfoFilter.
  *
- * Get canonical name of the filter
+ * Get canonical name of @filter.
  * Return value: (transfer none): NULL-terminated string owned by the filter
  */
 const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)

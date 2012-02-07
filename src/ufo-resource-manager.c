@@ -214,8 +214,8 @@ UfoResourceManager *ufo_resource_manager()
  * @manager: A #UfoResourceManager
  * @paths: A string with a list of colon-separated paths
  *
- * Each path is used when searching for kernel files using
- * ufo_resource_manager_add_program() in that order that they are passed.
+ * Each path in @paths is used when searching for kernel files using
+ * ufo_resource_manager_add_program() in the order that they are passed in.
  */
 void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *paths)
 {

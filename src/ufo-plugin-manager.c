@@ -63,7 +63,7 @@ UfoPluginManager *ufo_plugin_manager_new(void)
 /**
  * ufo_plugin_manager_add_paths:
  * @manager: A #UfoPluginManager
- * @paths: (in): string with colon-separated list of absolute paths
+ * @paths: (in): Zero-terminated string containing a colon-separated list of absolute paths
  *
  * Add paths from which to search for modules
  */
@@ -87,7 +87,7 @@ void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
  * Load a #UfoFilter module and return an instance. The shared object name is
  * constructed as "@name.so".
  *
- * Return value: UfoFilter or NULL if module cannot be found
+ * Return value: #UfoFilter or NULL if module cannot be found
  */
 UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name)
 {

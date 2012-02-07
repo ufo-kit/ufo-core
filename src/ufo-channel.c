@@ -1,6 +1,6 @@
 /**
  * SECTION:ufo-channel
- * @Short_description: Data transport between two Filters
+ * @Short_description: Data transport between two UfoFilters
  * @Title: UfoChannel
  */
 
@@ -47,7 +47,7 @@ UfoChannel *ufo_channel_new(void)
  * ufo_channel_ref:
  * @channel: A #UfoChannel
  *
- * Reference a channel if to be used as an output
+ * Reference a channel if to be used as an output.
  */
 void ufo_channel_ref(UfoChannel *channel)
 {
@@ -59,7 +59,7 @@ void ufo_channel_ref(UfoChannel *channel)
  * @channel: A #UfoChannel
  *
  * Finish using this channel and notify subsequent filters that no more
- * data can be expected
+ * data can be expected.
  */
 void ufo_channel_finish(UfoChannel *channel)
 {
@@ -73,7 +73,7 @@ void ufo_channel_finish(UfoChannel *channel)
  * @num_dims: (in): Number of dimensions
  * @dim_size: (in) (array): Size of the buffers
  *
- * Allocate outgoing buffers with given dimensions
+ * Allocate outgoing buffers with @num_dims dimensions.
  */
 void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint num_dims, const guint *dim_size)
 {
