@@ -127,7 +127,7 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
     fseek(fp, 0, SEEK_END);
     const size_t length = ftell(fp);
     rewind(fp);
-    gchar *buffer = (gchar *) g_malloc0(length);
+    gchar *buffer = (gchar *) g_malloc0(length + 1);
 
     if (buffer == NULL) {
         fclose(fp);
