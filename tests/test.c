@@ -19,12 +19,19 @@ int main(int argc, char const* argv[])
     ufo_graph_read_from_json(graph, argv[1], &error);
 
     if (error) {
-        g_error("Error: %s", error->message);
+        g_error("%s", error->message);
         g_error_free(error);
         g_object_unref(graph);
         return 1;
     }
-    ufo_graph_run(graph);
+
+    ufo_graph_run(graph, &error);
+
+    if (error) {
+        g_error("%s", error->message);
+        g_error_free(error);
+    }
+
     g_object_unref(graph);
     return 0;
 }

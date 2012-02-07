@@ -40,7 +40,7 @@ struct _UfoGraphClass {
 
 UfoGraph *ufo_graph_new(void);
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error);
-void ufo_graph_run(UfoGraph *graph);
+void ufo_graph_run(UfoGraph *graph, GError **error);
 guint ufo_graph_get_number_of_devices(UfoGraph *graph);
 GList *ufo_graph_get_filter_names(UfoGraph *graph);
 

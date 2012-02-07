@@ -151,13 +151,9 @@ static void graph_build(UfoGraph *self, JsonNode *node)
 static gpointer graph_process_thread(gpointer data)
 {
     ufo_filter_process(UFO_FILTER(data));
+    GError *error = g_error_new(UFO_FILTER_ERROR, UFO_FILTER_ERROR_NUMDIMSMISMATCH, "bla");
+    return error;
     return NULL;
-}
-
-static void graph_join_thread(gpointer data, gpointer user_data)
-{
-    GThread *thread = (GThread *) data;
-    g_thread_join(thread);
 }
 
 GQuark ufo_graph_error_quark(void)
@@ -207,11 +203,12 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
 /**
  * ufo_graph_run:
  * @graph: A #UfoGraph.
+ * @error: Return location for error
  *
  * Start execution of all UfoElements in the UfoGraph until no more data is
  * produced
  */
-void ufo_graph_run(UfoGraph *graph)
+void ufo_graph_run(UfoGraph *graph, GError **error)
 {
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
     /* Build adjacency matrix */
@@ -262,17 +259,34 @@ void ufo_graph_run(UfoGraph *graph)
     GTimer *timer = g_timer_new();
     g_timer_start(timer);
     /* Start each filter in its own thread */
-    GList *threads = NULL;
-    GError *error = NULL;
+    GSList *threads = NULL;
+    GError *tmp_error = NULL;
 
     for (guint i = 0; i < g_slist_length(priv->elements); i++) {
         UfoFilter *child = UFO_FILTER(g_slist_nth_data(priv->elements, i));
-        threads = g_list_append(threads,
-                g_thread_create(graph_process_thread, child, TRUE, &error));
+        threads = g_slist_append(threads,
+                g_thread_create(graph_process_thread, child, TRUE, &tmp_error));
+
+        if (tmp_error != NULL) {
+            g_message("error!");
+            /* FIXME: kill already started threads */
+            g_propagate_error(error, tmp_error);
+            return;
+        }
     }
 
-    g_list_foreach(threads, graph_join_thread, NULL);
-    g_list_free(threads);
+    GSList *thread = threads;
+    while (thread) {
+        tmp_error = (GError *) g_thread_join(thread->data);
+        if (tmp_error != NULL) {
+            /* FIXME: wait for the rest? */
+            g_propagate_error(error, tmp_error);
+            return;
+        }
+        thread = g_slist_next(thread);
+    }
+
+    g_slist_free(threads);
     g_timer_stop(timer);
     g_message("Processing finished after %3.5f seconds",
               g_timer_elapsed(timer, NULL));
