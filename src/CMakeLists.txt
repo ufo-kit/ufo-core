@@ -203,7 +203,7 @@ if(GTK_DOC_FOUND)
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --output-format=xml
-                    DEPENDS ${ufocore_SRCS}
+                    DEPENDS ${docs_out}/Ufo-decl.txt
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_dir}/html.stamp
