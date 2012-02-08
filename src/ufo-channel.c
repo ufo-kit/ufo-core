@@ -21,6 +21,7 @@ G_DEFINE_TYPE(UfoChannel, ufo_channel, G_TYPE_OBJECT);
 
 struct _UfoChannelPrivate {
     gint ref_count;
+    gint ref_total;
     gboolean finished;
 
     guint num_buffers;
@@ -29,6 +30,19 @@ struct _UfoChannelPrivate {
     GAsyncQueue *output_queue;
 };
 
+static void channel_dispose_buffers(UfoChannelPrivate *priv)
+{
+    UfoResourceManager *manager = ufo_resource_manager();
+
+    for (int i = 0; i < priv->num_buffers; i++)
+        ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
+
+    g_async_queue_unref(priv->input_queue);
+    g_async_queue_unref(priv->output_queue);
+    priv->input_queue = g_async_queue_new();
+    priv->output_queue = g_async_queue_new();
+    priv->num_buffers = 0;
+}
 
 /**
  * ufo_channel_new:
@@ -52,6 +66,7 @@ UfoChannel *ufo_channel_new(void)
 void ufo_channel_ref(UfoChannel *channel)
 {
     g_atomic_int_inc(&channel->priv->ref_count);
+    g_atomic_int_inc(&channel->priv->ref_total);
 }
 
 /**
@@ -65,6 +80,26 @@ void ufo_channel_finish(UfoChannel *channel)
 {
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
     priv->finished = g_atomic_int_dec_and_test(&priv->ref_count);
+
+    /* All buffers are released and queues setup clean again. This is necessary
+     * so that on subsequent runs everything is in a clean state and prepared
+     * for ufo_channel_allocate_output_buffers().
+     *
+     * Note that the test itself is thread-safe because the last thread was the
+     * only able to toggle the finished flag. */
+    if (priv->finished) {
+
+        /* We have to block here, because we do not know how long the subsequent
+         * filters need to process the remaining inputs */
+        while (g_async_queue_length(priv->output_queue) < priv->num_buffers)
+            g_usleep(1000);
+
+        channel_dispose_buffers(priv);
+        priv->ref_count = priv->ref_total;
+        priv->finished = FALSE;
+        g_free(priv->buffers);
+        priv->buffers = NULL;
+    }
 }
 
 /**
@@ -205,12 +240,8 @@ static void ufo_channel_dispose(GObject *object)
     UfoChannel *channel = UFO_CHANNEL(object);
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
 
-    if (priv->num_buffers > 0) {
-        UfoResourceManager *manager = ufo_resource_manager();
-
-        for (int i = 0; i < priv->num_buffers; i++)
-            ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
-    }
+    if (priv->num_buffers > 0)
+        channel_dispose_buffers(priv);
 }
 
 static void ufo_channel_finalize(GObject *object)
@@ -236,7 +267,9 @@ static void ufo_channel_init(UfoChannel *channel)
     UfoChannelPrivate *priv;
     channel->priv = priv = UFO_CHANNEL_GET_PRIVATE(channel);
     priv->ref_count = 0;
+    priv->ref_total = 0;
     priv->finished = FALSE;
+    priv->num_buffers = 0;
     priv->buffers = NULL;
     priv->input_queue = g_async_queue_new();
     priv->output_queue = g_async_queue_new();
