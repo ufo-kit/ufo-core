@@ -34,13 +34,14 @@ static void channel_dispose_buffers(UfoChannelPrivate *priv)
 {
     UfoResourceManager *manager = ufo_resource_manager();
 
-    for (int i = 0; i < priv->num_buffers; i++)
-        ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
-
     g_async_queue_unref(priv->input_queue);
     g_async_queue_unref(priv->output_queue);
     priv->input_queue = g_async_queue_new();
     priv->output_queue = g_async_queue_new();
+
+    for (int i = 0; i < priv->num_buffers; i++)
+        ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
+
     priv->num_buffers = 0;
 }
 
@@ -91,8 +92,17 @@ void ufo_channel_finish(UfoChannel *channel)
 
         /* We have to block here, because we do not know how long the subsequent
          * filters need to process the remaining inputs */
-        while (g_async_queue_length(priv->output_queue) < priv->num_buffers)
+        while (g_async_queue_length(priv->input_queue) != 0)
             g_usleep(1000);
+
+        while (g_async_queue_length(priv->output_queue) != priv->num_buffers)
+            g_usleep(1000);
+
+        /* All inputs must be consumed ... */
+        g_assert(g_async_queue_length(priv->input_queue) == 0);
+
+        /* ... and be returned */
+        g_assert(g_async_queue_length(priv->output_queue) == priv->num_buffers);
 
         channel_dispose_buffers(priv);
         priv->ref_count = priv->ref_total;
@@ -124,7 +134,7 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint num_dims, co
 
     UfoResourceManager *manager = ufo_resource_manager();
     /* Allocate as many buffers as we have threads */
-    priv->num_buffers = priv->ref_count + 1;
+    priv->num_buffers = priv->ref_count;
     priv->buffers = g_malloc0(priv->num_buffers * sizeof(UfoBuffer *));
 
     for (int i = 0; i < priv->num_buffers; i++) {
