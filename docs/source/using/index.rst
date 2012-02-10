@@ -23,11 +23,11 @@ own image processing pipeline.
 Hello World
 ===========
 
-The easiest UFO program looks like this::
+The easiest UFO program in C looks like this::
 
     int main(void)
     {
-        g_type_init();  /* initialize GType/GObject */
+        g_type_init();  /* you _must_ call this! */
 
         UfoGraph *graph = ufo_graph_new_from_json("hello-world.json");
         ufo_graph_run(graph);
@@ -170,4 +170,24 @@ sequence :math:`S_2 = (I_2, \ldots, I_{n})`. The code could look like this::
     argmax.connect_to(writer)
 
     g.run()
+
+
+Controlling debug messages
+--------------------------
+
+Generally, UFO emits debug messages under the log domain ``Ufo``. To handle
+these messages you must set a log handler_ that decides what to do with the
+messages. To ignore all messages in Python, you would have to write something
+like ::
+
+    from gi.repository import Ufo, GLib
+
+    def ignore_message(domain, level, message, user):
+        pass
+
+    if __name__ == '__main__':
+        GLib.log_set_handler("Ufo", GLib.LogLevelFlags.LEVEL_MASK,
+            ignore_message, None)
+
+.. _handler: http://developer.gnome.org/glib/unstable/glib-Message-Logging.html#g-log-set-handler
 
