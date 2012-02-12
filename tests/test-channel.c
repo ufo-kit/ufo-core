@@ -10,6 +10,7 @@ static void ufo_channel_fixture_setup(UfoChannelFixture *fixture, gconstpointer 
 {
     fixture->channel = ufo_channel_new();
     g_assert(fixture->channel);
+    ufo_channel_ref(fixture->channel);
 }
 
 static void ufo_channel_fixture_teardown(UfoChannelFixture *fixture, gconstpointer data)
