@@ -123,6 +123,7 @@ if (INTROSPECTION_FOUND)
                     -I${OPENCL_INCLUDE_DIRS}
                     --output ${GIR_XML}
                     ${_gir_input}
+                    2> /dev/null
             DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
