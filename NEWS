@@ -1,4 +1,10 @@
 
+Overview of Changes from ufo-core 0.1.1 to 0.2.0
+------------------------------------------------
+
+- Add scripts/ that contains usage examples and replaces the json/ samples
+
+
 Overview of Changes from ufo-core 0.1.0 to 0.1.1
 ------------------------------------------------
 
