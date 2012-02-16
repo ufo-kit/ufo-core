@@ -2,7 +2,11 @@
 #define __UFO_RESOURCE_MANAGER_H
 
 #include <glib-object.h>
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
 #include <CL/cl.h>
+#endif
 
 #include "ufo-buffer.h"
 
