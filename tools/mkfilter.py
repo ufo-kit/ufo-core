@@ -21,6 +21,14 @@ SKELETON_C="""#include <gmodule.h>
 #include <ufo/ufo-buffer.h>
 #include "ufo-filter-${prefix_hyphen}.h"
 
+/**
+ * SECTION:ufo-filter-${prefix_hyphen}
+ * @Short_description:
+ * @Title: ${prefix_lower}
+ *
+ * Detailed description.
+ */
+
 struct _UfoFilter${prefix_camel}Private {
     /* add your private data here */
     /* cl_kernel kernel; */
@@ -146,7 +154,13 @@ static void ufo_filter_${prefix_underscore}_class_init(UfoFilter${prefix_camel}C
     filter_class->initialize = ufo_filter_${prefix_underscore}_initialize;
     filter_class->process = ufo_filter_${prefix_underscore}_process;
 
-    /* install properties */
+    /* You can document properties more in-depth if you think that the
+     * description given as a parameter is not enough like this: */
+    /**
+     * UfoFilter${prefix_camel}:example
+     *
+     * Information about this property
+     */
     ${prefix_underscore}_properties[PROP_EXAMPLE] = 
         g_param_spec_double("example",
             "This is an example property",
@@ -158,7 +172,6 @@ static void ufo_filter_${prefix_underscore}_class_init(UfoFilter${prefix_camel}C
 
     g_object_class_install_property(gobject_class, PROP_EXAMPLE, ${prefix_underscore}_properties[PROP_EXAMPLE]);
 
-    /* install private data */
     g_type_class_add_private(gobject_class, sizeof(UfoFilter${prefix_camel}Private));
 }
 
@@ -199,12 +212,19 @@ typedef struct _UfoFilter${prefix_camel}Class      UfoFilter${prefix_camel}Class
 typedef struct _UfoFilter${prefix_camel}Private    UfoFilter${prefix_camel}Private;
 
 struct _UfoFilter${prefix_camel} {
+    /*< private >*/
     UfoFilter parent_instance;
 
     UfoFilter${prefix_camel}Private *priv;
 };
 
+/**
+ * UfoFilter${prefix_camel}Class:
+ *
+ * #UfoFilter${prefix_camel} class
+ */
 struct _UfoFilter${prefix_camel}Class {
+    /*< private >*/
     UfoFilterClass parent_class;
 };
 
