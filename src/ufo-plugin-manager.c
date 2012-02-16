@@ -104,7 +104,7 @@ UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar 
         return (*func)();
 
     /* No suitable function found, let's find the module */
-    gchar *module_name = g_strdup_printf("lib%s.so", name);
+    gchar *module_name = g_strdup_printf("libufofilter%s.so", name);
     gchar *path = plugin_manager_get_path(priv, module_name);
     g_free(module_name);
 
