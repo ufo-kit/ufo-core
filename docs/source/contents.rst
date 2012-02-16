@@ -4,7 +4,7 @@ UFO Documentation contents
 
 .. toctree::
 
-    whatsnew/0.1.rst
+    whatsnew/index.rst
     build.rst
     install.rst
     install-linux.rst
@@ -15,6 +15,7 @@ UFO Documentation contents
     filters.rst
     faq.rst
     glossary.rst
+    todo.rst
 
     bugs.rst
     copyright.rst

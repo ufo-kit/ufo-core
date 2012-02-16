@@ -31,6 +31,15 @@ documentation with a recent version of `CMake <http://cmake.org>`_, `Doxygen
 <http://doxygen.org>`_ and `Sphinx <http://sphinx.pocoo.org>`_. The current
 distributed version control system in use, is `Bazaar <bazaar.canonical.com>`_.
 
+In case you use openSUSE, just issue ::
+
+    $ zypper install gcc gcc-c++ glib2-devel json-glib-devel
+    $ zypper install gobject-introspection-devel python-gobject2
+    $ zypper install gtk-doc python-Sphinx
+    $ zypper install libtiff-devel
+    
+to install all dependencies.
+
 
 Building Dependencies
 ---------------------
