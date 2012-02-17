@@ -54,7 +54,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}
     )
 
 add_definitions("-std=c99 -Wall -fPIC")
-add_definitions(-DG_LOG_DOMAIN="Ufo")
+add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 
 add_subdirectory(src)
 add_subdirectory(docs)

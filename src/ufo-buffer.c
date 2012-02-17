@@ -35,6 +35,7 @@ enum {
 
 static GParamSpec *buffer_properties[N_PROPERTIES] = { NULL, };
 
+
 typedef enum {
     NO_DATA = 0,
     HOST_ARRAY_VALID,

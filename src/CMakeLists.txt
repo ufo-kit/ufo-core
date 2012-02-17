@@ -169,6 +169,7 @@ if(GTK_DOC_FOUND)
 
         string(REPLACE ";" "\n" _xml_doc_input ${_xml_doc_input})
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in" "${docs_out}/Ufo-docs.xml")
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-sections.txt.in" "${docs_out}/Ufo-sections.txt")
 
         set(reference_files 
             "${docs_out}/index.html"
@@ -196,7 +197,7 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}/../src
-                    DEPENDS ${ufocore_SRCS}
+                    DEPENDS ${ufocore_SRCS} 
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_out}/sgml.stamp
@@ -204,7 +205,7 @@ if(GTK_DOC_FOUND)
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --output-format=xml
-                    DEPENDS ${docs_out}/Ufo-decl.txt
+                    DEPENDS ${docs_out}/Ufo-decl.txt ${docs_out}/Ufo-sections.txt
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_dir}/html.stamp
