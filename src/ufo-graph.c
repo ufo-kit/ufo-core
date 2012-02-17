@@ -189,6 +189,7 @@ UfoGraph *ufo_graph_new(void)
  */
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error)
 {
+    g_return_if_fail(UFO_IS_GRAPH(graph) || (filename != NULL));
     *error = NULL;
     json_parser_load_from_file(graph->priv->json_parser, filename, error);
 
@@ -208,6 +209,7 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
  */
 void ufo_graph_run(UfoGraph *graph, GError **error)
 {
+    g_return_if_fail(UFO_IS_GRAPH(graph));
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
     /* Build adjacency matrix */
     int n = g_slist_length(priv->elements);
@@ -299,6 +301,7 @@ void ufo_graph_run(UfoGraph *graph, GError **error)
  */
 GList *ufo_graph_get_filter_names(UfoGraph *graph)
 {
+    g_return_val_if_fail(UFO_IS_GRAPH(graph), NULL);
     return NULL;
 }
 
@@ -314,6 +317,7 @@ GList *ufo_graph_get_filter_names(UfoGraph *graph)
  */
 UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error)
 {
+    g_return_val_if_fail(UFO_IS_GRAPH(graph) || (plugin_name != NULL), NULL);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
     UfoFilter *filter = ufo_plugin_manager_get_filter(priv->plugin_manager, plugin_name);
 
@@ -339,6 +343,7 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
  */
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
 {
+    g_return_if_fail(UFO_IS_GRAPH(graph) || UFO_IS_FILTER(filter) || (name != NULL));
     ufo_filter_initialize(filter, name);
     graph->priv->elements = g_slist_prepend(graph->priv->elements, filter);
 }
@@ -353,6 +358,7 @@ void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
  */
 guint ufo_graph_get_number_of_devices(UfoGraph *graph)
 {
+    g_return_val_if_fail(UFO_IS_GRAPH(graph), 0);
     return ufo_resource_manager_get_number_of_devices(graph->priv->resource_manager);
 }
 

@@ -65,6 +65,10 @@ include_directories(
     ${JSON_GLIB_INCLUDE_DIRS}
     )
 
+if(CMAKE_BUILD_TYPE MATCHES "Release")
+    add_definitions(-DG_DISABLE_ASSERT)
+endif()
+
 add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 set_target_properties(ufo PROPERTIES
@@ -205,7 +209,7 @@ if(GTK_DOC_FOUND)
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --output-format=xml
-                    DEPENDS ${docs_out}/Ufo-decl.txt ${docs_out}/Ufo-sections.txt
+                    DEPENDS ${docs_out}/Ufo-decl.txt ${docs_out}/Ufo-sections.txt ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_dir}/html.stamp

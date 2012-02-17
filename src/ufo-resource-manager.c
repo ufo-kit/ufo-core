@@ -219,6 +219,7 @@ UfoResourceManager *ufo_resource_manager()
  */
 void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *paths)
 {
+    g_return_if_fail(UFO_IS_RESOURCE_MANAGER(manager));
     UfoResourceManagerPrivate *priv = manager->priv;
     gchar *new_paths = g_strdup_printf("%s:%s", priv->paths, paths);
     g_free(priv->paths);
@@ -240,11 +241,12 @@ void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *pa
  * Return value: TRUE on success, FALSE if an error occurred
  */
 gboolean ufo_resource_manager_add_program(
-    UfoResourceManager *manager,
-    const gchar *filename,
-    const gchar *options,
-    GError **error)
+        UfoResourceManager *manager,
+        const gchar *filename,
+        const gchar *options,
+        GError **error)
 {
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (filename != NULL), FALSE);
     UfoResourceManagerPrivate *priv = manager->priv;
     /* programs might be added multiple times if this is not locked */
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
@@ -368,6 +370,7 @@ gboolean ufo_resource_manager_add_program(
  */
 gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gchar *kernel_name, GError **error)
 {
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (kernel_name != NULL), NULL);
     cl_kernel kernel = (cl_kernel) g_hash_table_lookup(manager->priv->opencl_kernels, kernel_name);
 
     if (kernel == NULL) {
@@ -426,6 +429,7 @@ void ufo_resource_manager_call(UfoResourceManager *manager,
  */
 gpointer ufo_resource_manager_get_context(UfoResourceManager *manager)
 {
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager), NULL);
     return manager->priv->opencl_context;
 }
 
@@ -447,6 +451,9 @@ gpointer ufo_resource_manager_get_context(UfoResourceManager *manager)
 UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *manager,
         guint num_dims, const guint *dim_size, gfloat *data, gpointer command_queue)
 {
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager), NULL);
+    g_return_val_if_fail((num_dims > UFO_BUFFER_MAX_NDIMS) || (dim_size != NULL), NULL);
+
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
     UfoBuffer *buffer = ufo_buffer_new(num_dims, dim_size);
     const gsize num_bytes = ufo_buffer_get_size(buffer);
@@ -480,6 +487,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *manager,
  */
 gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size)
 {
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (size == 0), NULL);
     cl_int errcode = CL_SUCCESS;
     cl_mem mem = clCreateBuffer(manager->priv->opencl_context, CL_MEM_READ_WRITE, size, NULL, &errcode);
     CHECK_ERROR(errcode);
@@ -497,6 +505,7 @@ gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size)
  */
 gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memobj)
 {
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (memobj == NULL), NULL);
     size_t size = 0;
     cl_mem mem = (cl_mem) memobj;
     CHECK_ERROR(clGetMemObjectInfo(mem, CL_MEM_SIZE, sizeof(size_t), &size, NULL));
@@ -513,6 +522,7 @@ gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memob
  */
 void ufo_resource_manager_release_buffer(UfoResourceManager *manager, UfoBuffer *buffer)
 {
+    g_return_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || UFO_IS_BUFFER(buffer));
 #ifdef WITH_PROFILING
     gulong upload_time, download_time;
     ufo_buffer_get_transfer_time(buffer, &upload_time, &download_time);
@@ -529,6 +539,7 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *manager, UfoBuffer 
 
 guint ufo_resource_manager_get_new_id(UfoResourceManager *manager)
 {
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager), 0);
     guint id;
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
     g_static_mutex_lock(&mutex);
@@ -547,6 +558,7 @@ guint ufo_resource_manager_get_new_id(UfoResourceManager *manager)
  */
 void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpointer *command_queues, int *num_queues)
 {
+    g_return_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (command_queues != NULL) || (num_queues != NULL));
     /* FIXME: Use only first platform */
     *num_queues = manager->priv->num_devices[0];
     *command_queues = manager->priv->command_queues;
@@ -561,6 +573,7 @@ void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpoint
  */
 guint ufo_resource_manager_get_number_of_devices(UfoResourceManager *manager)
 {
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager), 0);
     return manager->priv->num_devices[0];
 }
 

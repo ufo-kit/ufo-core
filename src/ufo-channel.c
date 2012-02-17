@@ -66,6 +66,7 @@ UfoChannel *ufo_channel_new(void)
  */
 void ufo_channel_ref(UfoChannel *channel)
 {
+    g_return_if_fail(UFO_IS_CHANNEL(channel));
     g_atomic_int_inc(&channel->priv->ref_count);
     g_atomic_int_inc(&channel->priv->ref_total);
 }
@@ -79,6 +80,7 @@ void ufo_channel_ref(UfoChannel *channel)
  */
 void ufo_channel_finish(UfoChannel *channel)
 {
+    g_return_if_fail(UFO_IS_CHANNEL(channel));
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
     priv->finished = g_atomic_int_dec_and_test(&priv->ref_count);
 
@@ -118,10 +120,12 @@ void ufo_channel_finish(UfoChannel *channel)
  * @num_dims: (in): Number of dimensions
  * @dim_size: (in) (array): Size of the buffers
  *
- * Allocate outgoing buffers with @num_dims dimensions.
+ * Allocate outgoing buffers with @num_dims dimensions. @num_dims must be less than
+ * or equal to #UFO_BUFFER_MAX_NDIMS.
  */
 void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint num_dims, const guint *dim_size)
 {
+    g_return_if_fail(UFO_IS_CHANNEL(channel));
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
     g_static_mutex_lock(&mutex);
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
@@ -154,6 +158,7 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint num_dims, co
  */
 void ufo_channel_allocate_output_buffers_like(UfoChannel *channel, UfoBuffer *buffer)
 {
+    g_return_if_fail(UFO_IS_CHANNEL(channel) || UFO_IS_BUFFER(buffer));
     guint num_dims = 0;
     guint *dim_size = NULL;
     ufo_buffer_get_dimensions(buffer, &num_dims, &dim_size);
@@ -172,6 +177,7 @@ void ufo_channel_allocate_output_buffers_like(UfoChannel *channel, UfoBuffer *bu
  */
 UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
 {
+    g_return_val_if_fail(UFO_IS_CHANNEL(channel), NULL);
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
     UfoBuffer *buffer = NULL;
     GTimeVal end_time;
@@ -199,6 +205,7 @@ UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
  */
 UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel)
 {
+    g_return_val_if_fail(UFO_IS_CHANNEL(channel), NULL);
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
     return g_async_queue_pop(priv->output_queue);
 }
@@ -214,13 +221,12 @@ UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel)
  */
 void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
+    g_return_if_fail(UFO_IS_CHANNEL(channel));
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    gboolean is_ours = FALSE;
 
     for (int i = 0; i < priv->num_buffers; i++)
-        is_ours = is_ours || (buffer == priv->buffers[i]);
+        g_assert(buffer == priv->buffers[i]);
 
-    g_assert(is_ours);
     g_async_queue_push(priv->output_queue, buffer);
 }
 
@@ -235,13 +241,12 @@ void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
  */
 void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer)
 {
+    g_return_if_fail(UFO_IS_CHANNEL(channel) || UFO_IS_BUFFER(buffer));
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
-    gboolean is_ours = FALSE;
 
     for (int i = 0; i < priv->num_buffers; i++)
-        is_ours = is_ours || (buffer == priv->buffers[i]);
+        g_assert(buffer == priv->buffers[i]);
 
-    g_assert(is_ours);
     g_async_queue_push(priv->input_queue, buffer);
 }
 

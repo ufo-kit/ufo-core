@@ -69,6 +69,7 @@ UfoPluginManager *ufo_plugin_manager_new(void)
  */
 void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
 {
+    g_return_if_fail(UFO_IS_PLUGIN_MANAGER(manager));
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE(manager);
     gchar **path_list = g_strsplit(paths, ":", 0);
     gchar **p = path_list;
@@ -91,12 +92,10 @@ void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
  */
 UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name)
 {
+    g_return_val_if_fail(UFO_IS_PLUGIN_MANAGER(manager) || (name != NULL), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE(manager);
     GetFilterFunc *func = NULL;
     GModule *module = NULL;
-
-    if (name == NULL)
-        return NULL;
 
     func = g_hash_table_lookup(priv->filter_funcs, name);
 

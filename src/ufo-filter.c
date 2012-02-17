@@ -132,6 +132,7 @@ void ufo_filter_process(UfoFilter *filter)
  */
 void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **error)
 {
+    g_return_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination));
     GError *tmp_error = NULL;
     GPtrArray *input_names = destination->priv->input_names;
     GPtrArray *output_names = source->priv->output_names;
@@ -169,6 +170,9 @@ void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **e
 void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name, 
         UfoFilter *destination, const gchar *input_name, GError **error)
 {
+    g_return_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination));
+    g_return_if_fail((output_name != NULL) || (input_name != NULL));
+
     GPtrArray *input_num_dims = destination->priv->input_num_dims;
     GPtrArray *output_num_dims = source->priv->output_num_dims;
     GPtrArray *input_names = destination->priv->input_names;
@@ -223,6 +227,8 @@ void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name,
  */
 void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_dims)
 {
+    g_return_if_fail(UFO_IS_FILTER(filter) || (name != NULL));
+    g_return_if_fail(num_dims <= UFO_BUFFER_MAX_NDIMS);
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
 
     if (filter_find_argument_position(priv->input_names, name) >= 0)
@@ -245,6 +251,8 @@ void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_d
  */
 void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_dims)
 {
+    g_return_if_fail(UFO_IS_FILTER(filter) || (name != NULL));
+    g_return_if_fail(num_dims <= UFO_BUFFER_MAX_NDIMS);
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);    
 
     if (filter_find_argument_position(priv->output_names, name) >= 0)
@@ -265,6 +273,7 @@ void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_
  */
 gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
 {
+    g_return_val_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination), FALSE);
     GList *output_channels = g_hash_table_get_values(source->priv->output_channels);
     GList *input_channels = g_hash_table_get_values(destination->priv->input_channels);
 
@@ -290,6 +299,7 @@ gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
  */
 UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar *name)
 {
+    g_return_val_if_fail(UFO_IS_FILTER(filter) || (name != NULL), NULL);
     UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, name);
     return channel;
 }
@@ -304,6 +314,7 @@ UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar 
  */
 UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar *name)
 {
+    g_return_val_if_fail(UFO_IS_FILTER(filter) || (name != NULL), NULL);
     UfoChannel *channel = g_hash_table_lookup(filter->priv->output_channels, name);
     return channel;
 }
@@ -318,6 +329,7 @@ UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar
  */
 UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter)
 {
+    g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
     UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, 
             g_ptr_array_index(filter->priv->input_names, 0));
     return channel;
@@ -333,6 +345,7 @@ UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter)
  */
 UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter)
 {
+    g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
     UfoChannel *channel = g_hash_table_lookup(filter->priv->output_channels, 
             g_ptr_array_index(filter->priv->output_names, 0));
     return channel;
@@ -348,6 +361,7 @@ UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter)
  */
 void ufo_filter_account_gpu_time(UfoFilter *filter, gpointer event)
 {
+    g_return_if_fail(UFO_IS_FILTER(filter));
 #ifdef WITH_PROFILING
     cl_ulong start, end;
     cl_event e = (cl_event) event;
@@ -366,6 +380,7 @@ void ufo_filter_account_gpu_time(UfoFilter *filter, gpointer event)
  */
 float ufo_filter_get_gpu_time(UfoFilter *filter)
 {
+    g_return_val_if_fail(UFO_IS_FILTER(filter), 0.0f);
     return filter->priv->gpu_time;
 }
 
@@ -378,6 +393,7 @@ float ufo_filter_get_gpu_time(UfoFilter *filter)
  */
 const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
 {
+    g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
     return filter->priv->plugin_name;
 }
 
@@ -391,6 +407,8 @@ const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
  */
 void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue)
 {
+    g_return_if_fail(UFO_IS_FILTER(filter));
+
     if (filter->priv->command_queue == NULL)
         filter->priv->command_queue = command_queue;
 }
@@ -406,6 +424,7 @@ void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue)
  */
 gpointer ufo_filter_get_command_queue(UfoFilter *filter)
 {
+    g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
     return filter->priv->command_queue;
 }
 
@@ -418,6 +437,7 @@ gpointer ufo_filter_get_command_queue(UfoFilter *filter)
  */
 void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu)
 {
+    g_return_if_fail(UFO_IS_FILTER(filter));
     UfoResourceManager *manager = ufo_resource_manager();
     int num_queues = 0;
     cl_command_queue *cmd_queues = NULL;
