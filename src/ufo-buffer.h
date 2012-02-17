@@ -33,7 +33,8 @@ struct _UfoBuffer {
  * UFO_BUFFER_MAX_NDIMS:
  *
  * Maximum number of allowed dimensions. This is a pre-processor macro instead
- * of const variable because of http://c-faq.com/ansi/constasconst.html.
+ * of const variable because of <ulink
+ * url="http://c-faq.com/ansi/constasconst.html">C constraints</ulink>.
  */
 #define UFO_BUFFER_MAX_NDIMS 32
 

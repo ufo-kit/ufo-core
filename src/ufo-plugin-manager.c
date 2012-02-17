@@ -1,10 +1,14 @@
 
 /**
  * SECTION:ufo-plugin-manager
- * @Short_description: Load an UfoFilter from a shared object
+ * @Short_description: Load an #UfoFilter from a shared object
  * @Title: UfoPluginManager
  *
- * Foo
+ * The plugin manager opens shared object modules searched for in locations
+ * specified with ufo_plugin_manager_add_paths(). An #UfoFilter can be
+ * instantiated with ufo_plugin_manager_get_filter() with a one-to-one mapping
+ * between filter name xyz and module name libfilterxyz.so. Any errors are
+ * reported as one of #UfoPluginManagerError codes.
  */
 #include <gmodule.h>
 #include "ufo-plugin-manager.h"
@@ -22,6 +26,19 @@ struct _UfoPluginManagerPrivate {
     GHashTable *filter_funcs;  /**< maps from gchar* to GetFilterFunc* */
 };
 
+/**
+ * UfoPluginManagerError:
+ * @UFO_PLUGIN_MANAGER_ERROR_MODULE_NOT_FOUND: The module could not be found
+ * @UFO_PLUGIN_MANAGER_ERROR_MODULE_OPEN: Module could not be opened
+ * @UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND: Necessary entry symbol was not
+ *      found
+ *
+ * Possible errors that ufo_plugin_manager_get_filter() can return.
+ */
+GQuark ufo_plugin_manager_error_quark(void)
+{
+    return g_quark_from_static_string("ufo-plugin-manager-error-quark");
+}
 
 static gchar *plugin_manager_get_path(UfoPluginManagerPrivate *priv, const gchar *name)
 {
@@ -84,18 +101,22 @@ void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
  * ufo_plugin_manager_get_filter:
  * @manager: A #UfoPluginManager
  * @name: Name of the plugin.
+ * @error: return location for a GError or %NULL
  *
  * Load a #UfoFilter module and return an instance. The shared object name is
- * constructed as "@name.so".
+ * constructed as "libfilter@name.so".
  *
- * Return value: #UfoFilter or NULL if module cannot be found
+ * Return value: #UfoFilter or %NULL if module cannot be found
+ *
+ * Since: 0.2, the error parameter is available
  */
-UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name)
+UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name, GError **error)
 {
     g_return_val_if_fail(UFO_IS_PLUGIN_MANAGER(manager) || (name != NULL), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE(manager);
     GetFilterFunc *func = NULL;
     GModule *module = NULL;
+    const gchar *entry_symbol_name = "ufo_filter_plugin_new"; 
 
     func = g_hash_table_lookup(priv->filter_funcs, name);
 
@@ -105,34 +126,43 @@ UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar 
     /* No suitable function found, let's find the module */
     gchar *module_name = g_strdup_printf("libufofilter%s.so", name);
     gchar *path = plugin_manager_get_path(priv, module_name);
-    g_free(module_name);
 
-    if (path == NULL)
-        return NULL;
+    if (path == NULL) {
+        g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_NOT_FOUND,
+                "Module %s not found", module_name);
+        goto handle_error;
+    }
 
     module = g_module_open(path, G_MODULE_BIND_LAZY);
     g_free(path);
 
     if (!module) {
-        g_error("%s", g_module_error());
-        return NULL;
+        g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_OPEN,
+                "Module %s could not be opened: %s", module_name, g_module_error());
+        goto handle_error;
     }
 
     func = g_malloc0(sizeof(GetFilterFunc));
 
-    if (!g_module_symbol(module, "ufo_filter_plugin_new", (gpointer *) func)) {
-        g_error("%s", g_module_error());
+    if (!g_module_symbol(module, entry_symbol_name, (gpointer *) func)) {
+        g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND,
+                "%s is not exported by module %s: %s", entry_symbol_name, module_name, g_module_error());
         g_free(func);
 
         if (!g_module_close(module))
             g_warning("%s", g_module_error());
 
-        return NULL;
+        goto handle_error;
     }
 
     priv->modules = g_slist_append(priv->modules, module);
     g_hash_table_insert(priv->filter_funcs, g_strdup(name), func);
+    g_free(module_name);
     return (*func)();
+
+handle_error:
+    g_free(module_name);
+    return NULL;
 }
 
 static void ufo_plugin_manager_finalize(GObject *gobject)

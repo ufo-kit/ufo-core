@@ -1,6 +1,7 @@
 <SECTION>
 <FILE>ufo-plugin-manager</FILE>
 <TITLE>UfoPluginManager</TITLE>
+UfoPluginManagerError
 UfoPluginManager
 ufo_plugin_manager_new
 ufo_plugin_manager_add_paths
@@ -14,7 +15,9 @@ UFO_PLUGIN_MANAGER_CLASS
 UFO_IS_PLUGIN_MANAGER_CLASS
 UFO_PLUGIN_MANAGER_GET_CLASS
 <SUBSECTION Private>
+UFO_PLUGIN_MANAGER_ERROR
 UfoPluginManagerPrivate
+ufo_plugin_manager_error_quark
 </SECTION>
 
 <SECTION>
@@ -51,7 +54,6 @@ UfoResourceManagerPrivate
 <SECTION>
 <FILE>ufo-filter</FILE>
 <TITLE>UfoFilter</TITLE>
-UFO_FILTER_ERROR
 UfoFilterError
 UfoFilter
 ufo_filter_initialize
@@ -80,6 +82,7 @@ UFO_FILTER_CLASS
 UFO_IS_FILTER_CLASS
 UFO_FILTER_GET_CLASS
 <SUBSECTION Private>
+UFO_FILTER_ERROR
 UfoFilterClass
 UfoFilterPrivate
 ufo_filter_error_quark
@@ -114,6 +117,7 @@ UfoChannelPrivate
 <SECTION>
 <FILE>ufo-graph</FILE>
 <TITLE>UfoGraph</TITLE>
+UfoGraphError
 UfoGraph
 ufo_graph_new
 ufo_graph_read_from_json
@@ -131,6 +135,7 @@ UFO_GRAPH_CLASS
 UFO_IS_GRAPH_CLASS
 UFO_GRAPH_GET_CLASS
 <SUBSECTION Private>
+UFO_GRAPH_ERROR
 UfoGraphClass
 UfoGraphPrivate
 </SECTION>

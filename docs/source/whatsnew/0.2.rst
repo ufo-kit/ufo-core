@@ -11,6 +11,10 @@ Filters are now prefixed again with ``libfilter`` to allow introspected
 documentation. Thus, any filter built for 0.1 cannot be used because they are
 simply not found.
 
+Method get_filter() from UfoPluginManager received a new third parameter
+``error`` that reports errors when opening and loading a UfoFilter from a
+shared object.
+
 
 General improvements
 ====================

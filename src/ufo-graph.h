@@ -11,6 +11,11 @@
 #define UFO_IS_GRAPH_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_GRAPH))
 #define UFO_GRAPH_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_GRAPH, UfoGraphClass))
 
+#define UFO_GRAPH_ERROR ufo_graph_error_quark()
+typedef enum {
+    UFO_GRAPH_ERROR_ALREADY_LOAD
+} UfoGraphError;
+
 typedef struct _UfoGraph           UfoGraph;
 typedef struct _UfoGraphClass      UfoGraphClass;
 typedef struct _UfoGraphPrivate    UfoGraphPrivate;

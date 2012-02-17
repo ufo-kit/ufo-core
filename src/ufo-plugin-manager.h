@@ -13,6 +13,15 @@ G_BEGIN_DECLS
 #define UFO_IS_PLUGIN_MANAGER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_PLUGIN_MANAGER))
 #define UFO_PLUGIN_MANAGER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_PLUGIN_MANAGER, UfoPluginManagerClass))
 
+#define UFO_PLUGIN_MANAGER_ERROR ufo_plugin_manager_error_quark()
+GQuark ufo_plugin_manager_error_quark(void);
+
+typedef enum {
+    UFO_PLUGIN_MANAGER_ERROR_MODULE_NOT_FOUND,
+    UFO_PLUGIN_MANAGER_ERROR_MODULE_OPEN,
+    UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND
+} UfoPluginManagerError;
+
 typedef struct _UfoPluginManager           UfoPluginManager;
 typedef struct _UfoPluginManagerClass      UfoPluginManagerClass;
 typedef struct _UfoPluginManagerPrivate    UfoPluginManagerPrivate;
@@ -43,7 +52,7 @@ struct _UfoPluginManagerClass {
 
 UfoPluginManager *ufo_plugin_manager_new(void);
 void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths);
-UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name);
+UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name, GError **error);
 
 GType ufo_plugin_manager_get_type(void);
 

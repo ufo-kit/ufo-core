@@ -17,11 +17,14 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
 
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
-#define UFO_GRAPH_ERROR ufo_graph_error_quark()
-enum UfoGraphError {
-    UFO_GRAPH_ERROR_ALREADY_LOAD,
-    UFO_GRAPH_ERROR_FILTER_NOT_FOUND
-};
+/**
+ * UfoGraphError:
+ * @UFO_GRAPH_ERROR_ALREADY_LOAD: Graph is already loaded
+ */
+GQuark ufo_graph_error_quark(void)
+{
+    return g_quark_from_static_string("ufo-graph-error-quark");
+}
 
 struct _UfoGraphPrivate {
     UfoPluginManager    *plugin_manager;
@@ -152,11 +155,6 @@ static gpointer graph_process_thread(gpointer data)
 {
     ufo_filter_process(UFO_FILTER(data));
     return NULL;
-}
-
-GQuark ufo_graph_error_quark(void)
-{
-    return g_quark_from_static_string("ufo-graph-error-quark");
 }
 
 
@@ -309,7 +307,8 @@ GList *ufo_graph_get_filter_names(UfoGraph *graph)
  * ufo_graph_get_filter:
  * @graph: a #UfoGraph
  * @plugin_name: name of the plugin
- * @error: return location for a GError or NULL
+ * @error: return location for a GError with error codes from
+ * #UfoPluginManagerError or %NULL
  *
  * Instantiate a new filter from a given plugin.
  *
@@ -319,12 +318,11 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
 {
     g_return_val_if_fail(UFO_IS_GRAPH(graph) || (plugin_name != NULL), NULL);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
-    UfoFilter *filter = ufo_plugin_manager_get_filter(priv->plugin_manager, plugin_name);
+    GError *tmp_error = NULL;
+    UfoFilter *filter = ufo_plugin_manager_get_filter(priv->plugin_manager, plugin_name, &tmp_error);
 
-    if (filter == NULL) {
-        g_set_error(error,
-                UFO_GRAPH_ERROR, UFO_GRAPH_ERROR_FILTER_NOT_FOUND,
-                "Filter <%s.so> not found", plugin_name);
+    if (tmp_error != NULL) {
+        g_propagate_error(error, tmp_error);
         return NULL;
     }
 
