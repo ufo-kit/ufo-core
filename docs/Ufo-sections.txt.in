@@ -24,8 +24,7 @@ ufo_plugin_manager_error_quark
 <FILE>ufo-resource-manager</FILE>
 <TITLE>UfoResourceManager</TITLE>
 UfoResourceManager
-opencl_map_error
-CHECK_ERROR
+CHECK_OPENCL_ERROR
 ufo_resource_manager
 ufo_resource_manager_add_paths
 ufo_resource_manager_add_program
@@ -49,6 +48,7 @@ UFO_RESOURCE_MANAGER_GET_CLASS
 <SUBSECTION Private>
 UfoResourceManagerClass
 UfoResourceManagerPrivate
+opencl_map_error
 </SECTION>
 
 <SECTION>

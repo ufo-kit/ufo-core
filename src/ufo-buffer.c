@@ -195,7 +195,7 @@ void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
         UfoResourceManager *manager = ufo_resource_manager();
         to->priv->device_array = ufo_resource_manager_memdup(manager, from->priv->device_array);
         cl_event event;
-        CHECK_ERROR(clEnqueueCopyBuffer(command_queue, from->priv->device_array,
+        CHECK_OPENCL_ERROR(clEnqueueCopyBuffer(command_queue, from->priv->device_array,
                                         to->priv->device_array, 0, 0, from->priv->size, 0, NULL, &event));
         ufo_buffer_attach_event(to, event);
     }
@@ -449,7 +449,7 @@ float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
             if (priv->host_array.data == NULL)
                 priv->host_array.data = g_malloc0(priv->size);
 
-            CHECK_ERROR(clEnqueueReadBuffer(command_queue,
+            CHECK_OPENCL_ERROR(clEnqueueReadBuffer(command_queue,
                                             priv->device_array,
                                             CL_TRUE,
                                             0, priv->size,
@@ -489,7 +489,7 @@ gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
             if (priv->device_array == NULL)
                 priv->device_array = clCreateBuffer(NULL, CL_MEM_READ_WRITE, priv->size, NULL, NULL);
 
-            CHECK_ERROR(clEnqueueWriteBuffer((cl_command_queue) command_queue,
+            CHECK_OPENCL_ERROR(clEnqueueWriteBuffer((cl_command_queue) command_queue,
                                              priv->device_array,
                                              CL_FALSE,
                                              0, priv->size,

@@ -148,13 +148,13 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
 static void resource_manager_release_kernel(gpointer data)
 {
     cl_kernel kernel = (cl_kernel) data;
-    CHECK_ERROR(clReleaseKernel(kernel));
+    CHECK_OPENCL_ERROR(clReleaseKernel(kernel));
 }
 
 static void resource_manager_release_program(gpointer data, gpointer user_data)
 {
     cl_program program = (cl_program) data;
-    CHECK_ERROR(clReleaseProgram(program));
+    CHECK_OPENCL_ERROR(clReleaseProgram(program));
 }
 
 static gchar *resource_manager_find_path(UfoResourceManagerPrivate *priv,
@@ -324,7 +324,7 @@ gboolean ufo_resource_manager_add_program(
                     "Failed to build OpenCL program");
         const int LOG_SIZE = 4096;
         gchar *log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
-        CHECK_ERROR(clGetProgramBuildInfo(program, priv->opencl_devices[0][0],
+        CHECK_OPENCL_ERROR(clGetProgramBuildInfo(program, priv->opencl_devices[0][0],
                                           CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void *) log, NULL));
         g_print("\n=== Build log for %s===%s\n\n", filename, log);
         g_free(log);
@@ -336,18 +336,18 @@ gboolean ufo_resource_manager_add_program(
     /* Create all kernels in the program source and map their function names to
      * the corresponding cl_kernel object */
     cl_uint num_kernels;
-    CHECK_ERROR(clCreateKernelsInProgram(program, 0, NULL, &num_kernels));
+    CHECK_OPENCL_ERROR(clCreateKernelsInProgram(program, 0, NULL, &num_kernels));
     cl_kernel *kernels = (cl_kernel *) g_malloc0(num_kernels * sizeof(cl_kernel));
-    CHECK_ERROR(clCreateKernelsInProgram(program, num_kernels, kernels, NULL));
+    CHECK_OPENCL_ERROR(clCreateKernelsInProgram(program, num_kernels, kernels, NULL));
     priv->opencl_kernel_table = g_list_append(priv->opencl_kernel_table, kernels);
 
     for (guint i = 0; i < num_kernels; i++) {
         size_t kernel_name_length;
-        CHECK_ERROR(clGetKernelInfo(kernels[i], CL_KERNEL_FUNCTION_NAME,
+        CHECK_OPENCL_ERROR(clGetKernelInfo(kernels[i], CL_KERNEL_FUNCTION_NAME,
                                     0, NULL,
                                     &kernel_name_length));
         gchar *kernel_name = (gchar *) g_malloc0(kernel_name_length);
-        CHECK_ERROR(clGetKernelInfo(kernels[i], CL_KERNEL_FUNCTION_NAME,
+        CHECK_OPENCL_ERROR(clGetKernelInfo(kernels[i], CL_KERNEL_FUNCTION_NAME,
                                     kernel_name_length, kernel_name,
                                     NULL));
         g_hash_table_insert(priv->opencl_kernels, kernel_name, kernels[i]);
@@ -381,7 +381,7 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gcha
         return NULL;
     }
 
-    CHECK_ERROR(clRetainKernel(kernel));
+    CHECK_OPENCL_ERROR(clRetainKernel(kernel));
     return kernel;
 }
 
@@ -467,7 +467,7 @@ UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *manager,
                                        mem_flags,
                                        num_bytes,
                                        data, &errcode);
-    CHECK_ERROR(errcode);
+    CHECK_OPENCL_ERROR(errcode);
     ufo_buffer_set_cl_mem(buffer, buffer_mem);
 
     if ((data) && (command_queue == NULL))
@@ -490,7 +490,7 @@ gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size)
     g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (size == 0), NULL);
     cl_int errcode = CL_SUCCESS;
     cl_mem mem = clCreateBuffer(manager->priv->opencl_context, CL_MEM_READ_WRITE, size, NULL, &errcode);
-    CHECK_ERROR(errcode);
+    CHECK_OPENCL_ERROR(errcode);
     return mem;
 }
 
@@ -508,7 +508,7 @@ gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memob
     g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (memobj == NULL), NULL);
     size_t size = 0;
     cl_mem mem = (cl_mem) memobj;
-    CHECK_ERROR(clGetMemObjectInfo(mem, CL_MEM_SIZE, sizeof(size_t), &size, NULL));
+    CHECK_OPENCL_ERROR(clGetMemObjectInfo(mem, CL_MEM_SIZE, sizeof(size_t), &size, NULL));
     cl_mem dup = ufo_resource_manager_memalloc(manager, size);
     return dup;
 }
@@ -532,7 +532,7 @@ void ufo_resource_manager_release_buffer(UfoResourceManager *manager, UfoBuffer 
     cl_mem mem = (cl_mem) ufo_buffer_get_cl_mem(buffer);
 
     if (mem != NULL)
-        CHECK_ERROR(clReleaseMemObject(mem));
+        CHECK_OPENCL_ERROR(clReleaseMemObject(mem));
 
     g_object_unref(buffer);
 }
@@ -598,7 +598,7 @@ static void ufo_resource_manager_finalize(GObject *gobject)
     for (int i = 0; i < priv->num_devices[0]; i++)
         clReleaseCommandQueue(priv->command_queues[i]);
 
-    CHECK_ERROR(clReleaseContext(priv->opencl_context));
+    CHECK_OPENCL_ERROR(clReleaseContext(priv->opencl_context));
     g_string_free(priv->opencl_build_options, TRUE);
 
     for (guint i = 0; i < priv->num_platforms; i ++)
@@ -637,9 +637,9 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->current_id = 0;
     /* initialize OpenCL subsystem */
     int errcode = CL_SUCCESS;
-    CHECK_ERROR(clGetPlatformIDs(0, NULL, &priv->num_platforms));
+    CHECK_OPENCL_ERROR(clGetPlatformIDs(0, NULL, &priv->num_platforms));
     priv->opencl_platforms = g_malloc0(priv->num_platforms * sizeof(cl_platform_id));
-    CHECK_ERROR(clGetPlatformIDs(priv->num_platforms, priv->opencl_platforms, NULL));
+    CHECK_OPENCL_ERROR(clGetPlatformIDs(priv->num_platforms, priv->opencl_platforms, NULL));
     priv->num_devices = g_malloc0(priv->num_platforms * sizeof(cl_uint));
     priv->opencl_devices = g_malloc0(priv->num_platforms * sizeof(cl_device_id *));
     g_debug("Number of OpenCL platforms: %i", priv->num_platforms);
@@ -648,9 +648,9 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
     for (int i = 0; i < priv->num_platforms; i++) {
         cl_platform_id platform = priv->opencl_platforms[i];
-        CHECK_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_NAME, 256, info_buffer, NULL));
+        CHECK_OPENCL_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_NAME, 256, info_buffer, NULL));
         g_debug("--- %s ---", info_buffer);
-        CHECK_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_VENDOR, 256, info_buffer, NULL));
+        CHECK_OPENCL_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_VENDOR, 256, info_buffer, NULL));
         g_debug(" Vendor...........: %s", info_buffer);
 
         if (g_str_has_prefix(info_buffer, "NVIDIA"))
@@ -658,15 +658,15 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
         else if (g_str_has_prefix(info_buffer, "Advanced Micro Devices"))
             g_string_append(priv->opencl_build_options, "-DVENDOR=AMD");
 
-        CHECK_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_VERSION, 256, info_buffer, NULL));
+        CHECK_OPENCL_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_VERSION, 256, info_buffer, NULL));
         g_debug(" Version..........: %s", info_buffer);
         cl_uint num_devices;
-        CHECK_ERROR(clGetDeviceIDs(platform,
+        CHECK_OPENCL_ERROR(clGetDeviceIDs(platform,
                                    CL_DEVICE_TYPE_ALL,
                                    0, NULL,
                                    &num_devices));
         priv->opencl_devices[i] = g_malloc0(num_devices * sizeof(cl_device_id));
-        CHECK_ERROR(clGetDeviceIDs(platform,
+        CHECK_OPENCL_ERROR(clGetDeviceIDs(platform,
                                    CL_DEVICE_TYPE_ALL,
                                    num_devices, priv->opencl_devices[i],
                                    NULL));
@@ -687,14 +687,14 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
                                                priv->num_devices[0],
                                                priv->opencl_devices[0],
                                                NULL, NULL, &errcode);
-        CHECK_ERROR(errcode);
+        CHECK_OPENCL_ERROR(errcode);
         priv->command_queues = g_malloc0(priv->num_devices[0] * sizeof(cl_command_queue));
 
         for (int i = 0; i < priv->num_devices[0]; i++) {
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                                       priv->opencl_devices[0][i],
                                       queue_properties, &errcode);
-            CHECK_ERROR(errcode);
+            CHECK_OPENCL_ERROR(errcode);
         }
     }
 }

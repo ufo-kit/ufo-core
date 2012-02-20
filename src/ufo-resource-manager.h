@@ -23,8 +23,15 @@ typedef struct _UfoResourceManagerPrivate    UfoResourceManagerPrivate;
 
 const gchar *opencl_map_error(int error);
 
-#define CHECK_ERROR(error) { \
-    if ((error) != CL_SUCCESS) g_message("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
+/**
+ * CHECK_OPENCL_ERROR:
+ * @error: OpenCL error code
+ *
+ * Check the return value of OpenCL functions and issue a warning with file and
+ * line number if an error occured.
+ */
+#define CHECK_OPENCL_ERROR(error) { \
+    if ((error) != CL_SUCCESS) g_warning("OpenCL error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
 
 /**
  * UfoResourceManager:
