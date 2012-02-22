@@ -28,8 +28,6 @@ if(SPHINX)
                 ${CMAKE_CURRENT_BINARY_DIR}/manual/${file} COPYONLY)
         endforeach()
 
-        message("${sphinx_source}")
-
         add_custom_command(OUTPUT ${sphinx_output_dir}/html/index.html
             COMMAND ${SPHINX} -b html -c ${sphinx_output_dir} ${CMAKE_CURRENT_SOURCE_DIR}/source html
             DEPENDS ${sphinx_source}
