@@ -7,6 +7,6 @@ What's New in ufo-core 0.1
 Changes from version 0.1.0 to 0.1.1
 ===================================
 
-Bugs fixed:
------------
+Fixed bugs
+----------
     - Ticket #55: tests/test-channel blocks indefinitely

@@ -5,14 +5,11 @@ UFO Documentation contents
 .. toctree::
 
     whatsnew/index.rst
-    build.rst
-    install.rst
-    install-linux.rst
-    install-mac.rst
+    install/index.rst
     using/index.rst
+    filters.rst
     api.rst
     json.rst
-    filters.rst
     faq.rst
     glossary.rst
     todo.rst

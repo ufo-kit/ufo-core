@@ -175,9 +175,4 @@ easily do an un-filtered back-projection ::
 As you might correctly conclude, we could have also merged these two
 configurations and skip writing the sinograms to disk.
 
-TODO
-----
-
-- how to specify merge in `split`
-
 .. _JSON: http://json.org

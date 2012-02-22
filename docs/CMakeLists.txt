@@ -10,27 +10,14 @@ if(SPHINX)
     if (WITH_MANUAL)
         set(sphinx_output_dir ${CMAKE_CURRENT_BINARY_DIR}/manual)
 
-        set(sphinx_source
-            contents.rst
-            api.rst
-            bugs.rst
-            build.rst
-            copyright.rst
-            faq.rst
-            filters.rst
-            glossary.rst
-            install.rst
-            install-linux.rst
-            install-mac.rst
-            json.rst
-            using/index.rst
-            whatsnew/0.1.rst
-            )
+        file(GLOB_RECURSE sphinx_source ${CMAKE_CURRENT_SOURCE_DIR}/source/*.rst)
+        list(APPEND sphinx_source "${sphinx_output_dir}/conf.py")
 
         set(sphinx_static
             _static/ufo-logo.png
             _templates/indexcontent.html
             _templates/indexsidebar.html
+            _templates/layout.html
             )
 
         configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
@@ -41,20 +28,17 @@ if(SPHINX)
                 ${CMAKE_CURRENT_BINARY_DIR}/manual/${file} COPYONLY)
         endforeach()
 
-        set(sphinx_output "")
-        set(sphinx_input "")
+        message("${sphinx_source}")
 
-        foreach(file ${sphinx_source})
-            string(REPLACE "rst" "html" html_file ${file})
-            set(sphinx_output ${sphinx_output} ${sphinx_output_dir}/html/${html_file})
-            set(sphinx_input ${sphinx_input} ${CMAKE_CURRENT_SOURCE_DIR}/source/${file})
-        endforeach()
-
-        add_custom_command(OUTPUT ${sphinx_output}
+        add_custom_command(OUTPUT ${sphinx_output_dir}/html/index.html
             COMMAND ${SPHINX} -b html -c ${sphinx_output_dir} ${CMAKE_CURRENT_SOURCE_DIR}/source html
-            DEPENDS ${sphinx_input}
-            WORKING_DIRECTORY ${sphinx_output_dir})
-        add_custom_target(manual ALL DEPENDS ${sphinx_output})
+            DEPENDS ${sphinx_source}
+            WORKING_DIRECTORY ${sphinx_output_dir}
+            COMMENT "Build Sphinx HTML")
+
+        add_custom_target(manual 
+            ALL DEPENDS ${sphinx_output_dir}/html/index.html)
+
         add_dependencies(manual ufo)
     endif()
 endif()

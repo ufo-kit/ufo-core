@@ -445,6 +445,7 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
     gobject_class->dispose = ufo_graph_dispose;
     gobject_class->dispose = ufo_graph_finalize;
     gobject_class->constructor = ufo_graph_constructor;
+
     /**
      * UfoGraph:paths:
      *
@@ -457,6 +458,7 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
                 "List of :-separated paths pointing to possible filter locations",
                 ".",
                 G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+
     g_object_class_install_property(gobject_class, PROP_PATHS, graph_properties[PROP_PATHS]);
     g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
 }

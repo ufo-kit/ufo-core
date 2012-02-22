@@ -5,30 +5,17 @@ Filters
 =======
 
 UFO filters are simple shared objects that expose their ``GType`` and implement
-the :ref:`UfoFilter <ufo-api>` class. When the UFO framework is initialized, plugin
-description files with the suffix `ufo-plugin` are inspected. These description
-files are simple INI files looking like this::
-
-    [UFO Plugin]
-    Name=fft
-    Module=filterfft
-    IAge=1
-    Authors=John Doe
-    Copyright=Public Domain
-    Website=http://ufo.kit.edu
-    Description=Fast Fourier Transformation
-
-The `Module` entry specifies the name of the shared object, in this case a
-`libfilterfft.so` is looked up in all suitable paths.
-
+the ``UfoFilter`` class. 
 
 Writing a simple OpenCL filter
 ==============================
 
+.. highlight:: c
+
 The easiest way to get started, is to write OpenCL kernels using the cl-plugin.
 We create a new file ``simple.cl``, that contains a simple kernel that inverts
 our normalized input (you can silently ignore the ``scratch`` parameter for
-now) :: 
+now):: 
 
     __kernel void invert(__global float *data, __local float *scratch)
     {
@@ -38,41 +25,34 @@ now) ::
         data[index] = inverted_value;
     }
 
-Now we want to use our little kernel and write a suitable description file
-called ``simple.json``::
+.. highlight:: python
 
-    {
-        "type": "sequence",
-        "elements": [
-            { "type": "filter", "plugin": "reader",
-                "properties": {
-                    "prefix": "lena" 
-                }
-            },
-            { "type": "filter", "plugin": "cl",
-                "properties": {
-                    "file": "simple.cl",
-                    "kernel": "invert",
-                    "inplace": true
-                }
-            },
-            { "type": "filter", "plugin": "writer",
-                "properties": {
-                    "prefix": "foo" 
-                }
-            }
-        ]
-    }
+We wire this small kernel into a short Python script::
 
-What does this tell us? We build a simple pipeline consisting of a reader, the
-cl plugin and a writer. The reader reads any TIFF files beginning with the word
-`lena` and outputs them to the cl plugin. This uses our ``simple.cl`` file to
-load the ``invert`` kernel which inverts the incoming data in-place. Finally,
-the writer writes a file prefixed with `foo`.
+    from gi.repository import Ufo
+
+    g = Ufo.Graph()
+    reader = graph.get_filter('reader')
+    writer = graph.get_filter('writer')
+
+    # this filter applies the kernel
+    cl = graph.get_filter('cl')     
+    cl.set_properties(file='simple.cl', kernel='invert')
+
+    reader.connect_to(cl)
+    cl.connect_to(writer)
+
+For more information on how to write OpenCL kernels, consult the official
+`OpenCL reference pages`__.
+
+__ http://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/
+    
 
 
 Writing a filter in C
 =====================
+
+.. highlight:: bash
 
 Writing a new UFO filter is simple and by calling :: 
 
@@ -143,58 +123,3 @@ file ::
 in case your filter is still called ``AwesomeFoo``. Notice, that the variable
 name matches the plugin name with underscores before capitalized letters.
 
-
-
-=================
-Available Filters
-=================
-
-reader
-======
-
-`Purpose`
-    Reads TIFF files from disk and converts them to the internal 32-bit floating
-    point format.
-
-`Input`
-    None
-
-`Output`
-    UfoBuffer with file content
-
-`Properties`
-    "path" [`type` : string, `default` : "."]
-        Path to files to load from
-
-    "prefix" [`type` : string, `default` : ""]
-        Reader loads only those files whose prefix matches the specified prefix
-
-    "count" [`type` : integer, `default` : 1]
-        Number of files to load from `path`
-
-
-writer
-======
-
-`Purpose`
-    Writes TIFF files.
-
-`Input`
-    UfoBuffer to write 
-
-`Output`
-    None
-
-`Properties`
-    "path" [`type` : string, `default` : "."]
-        Path to files to load from
-
-    "prefix" [`type` : string, `default` : ""]
-        Prefix the output filenames with this prefix. The filename also contains
-        the current counter.
-
-
-TODO
-====
-
-We should pull out all this information from the source using `gtk-doc`.

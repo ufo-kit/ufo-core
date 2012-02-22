@@ -7,18 +7,24 @@ What's New in ufo-core 0.2
 Major breakage
 ==============
 
-Filters are now prefixed again with ``libfilter`` to allow introspected
-documentation. Thus, any filter built for 0.1 cannot be used because they are
-simply not found.
+- Filters are now prefixed again with ``libfilter`` to allow introspected
+  documentation. Thus, any filter built for 0.1 cannot be used because they are
+  simply not found.
 
-Method get_filter() from UfoPluginManager received a new third parameter
-``error`` that reports errors when opening and loading a UfoFilter from a
-shared object.
+- Method get_filter() from UfoPluginManager received a new third parameter
+  ``error`` that reports errors when opening and loading a UfoFilter from a
+  shared object.
+
+- The ``CHECK_ERROR`` macro defined in ``ufo-resource-manager.h`` was renamed to
+  ``CHECK_OPENCL_ERROR`` to better reflect its real purpose.
 
 
 General improvements
 ====================
 
-Instead of the ``json/`` directory a new ``scripts/`` directory has been added
-to give an idea how to use the UFO framework for computing the tomographic
+- Instead of the ``json/`` directory a new ``scripts/`` directory has been added
+to give an idea how to use the UFO framework for computing a tomographic
 reconstruction.
+
+- The manual was restructured considerably.
+

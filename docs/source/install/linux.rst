@@ -1,7 +1,12 @@
 .. _installation-linux:
 
+#####################
 Installation on Linux
-=====================
+#####################
+
+=======================================
+Installation from pre-compiled binaries
+=======================================
 
 Debian and RPM packages are provided. To install the Debian package under Ubuntu
 or Debian, issue ::
@@ -17,8 +22,9 @@ it cannot find this dependency. To solve this problem use ``zypper`` ::
 and when asked to fix the dependency, ignore it.
 
 
-Building UFO from Source
-========================
+====================
+Building from source
+====================
 
 UFO has only a few hard source dependencies, namely
 
@@ -42,7 +48,7 @@ to install all dependencies.
 
 
 Building Dependencies
----------------------
+=====================
 
 OpenCL development files must be installed in order to build UFO. However, we
 cannot give general advices as installation procedures vary between different
@@ -51,34 +57,36 @@ to find header files and libraries.
 
 
 Checking out the Code
----------------------
+=====================
 
-In an empty directory, issue the following commands to retrieve the current HEAD
-of the source ::
+In an empty directory, issue the following commands to retrieve the current
+unstable version of the source ::
 
-  $ bzr clone bzr+ssh://<user>@ufo.kit.edu/vogelgesang/ufo
+  $ bzr clone bzr+ssh://<user>@ufo.kit.edu/vogelgesang/ufo-core
+
+All stable versions are kept at ``ufo-core/ufo-core-x.y``.
 
 
 Configuration and Compilation
------------------------------
+=============================
 
 Change into another empty `build` directory and issue the following commands to
 configure ::
 
   $ cmake <path-to-ufo>
 
-CMake will notify you, if some of the dependencies are not met. Remember though,
-that only GLib/GObject, JSON-GLib and OpenCL are needed. Please consult your
-distributions documentation to install the necessary development libraries.  If
-other dependencies are not satisified, the relevant filter plugins will not be
-built.
+CMake will notify you, if some of the dependencies are not met. In case you want
+to install the library system-wide on a 64-bit machine you should generate the
+Makefiles with ::
+
+  $ cmake <path-to-ufo> -DLIB_SUFFIX=64
 
 You can adjust some build parameters later on by using the ``ccmake`` tool in
 the build directory ::
 
   $ ccmake .
 
-For early versions of PyGObject, it is necessary that the introspection files
+For earlier versions of PyGObject, it is necessary that the introspection files
 are located under ``/usr`` not ``/usr/local``. You can force the prefix by
 calling ::
 
@@ -103,10 +111,32 @@ or source tarballs with ::
 To install the library and `pkg-config` files, issue ::
 
   $ make install
-  $ ldconfig
+
+.. seealso:: :ref:`faq-linker-cant-find-libufo`
+
+
+.. _inst-installing-into-non-standard-directories:
+
+Installing into non-standard directories
+----------------------------------------
+
+It is possible to install the library in a non-standard directory, for example
+in the home directory of a user. In case we want to install in ``~/tmp/usr``, we
+have to configure the project like this ::
+
+  $ cmake <path-to-ufo> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
+
+After building with ``make`` and installing into ``~/tmp/usr`` with ``make
+install``, we have to adjust the ``pkg-config`` path, so that the library can be
+found when configuring the filters ::
+
+  $ export PKG_CONFIG_PATH=/home/user/tmp/usr/lib/pkgconfig
+
+Now the library should be picked up by the filter's CMake process.
+
 
 First Test
-----------
+==========
 
 To verify that your UFO version is behaving correctly, you should check its
 functionality by running some builtin tests using ::
