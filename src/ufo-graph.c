@@ -188,11 +188,13 @@ UfoGraph *ufo_graph_new(void)
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) || (filename != NULL));
-    *error = NULL;
-    json_parser_load_from_file(graph->priv->json_parser, filename, error);
+    *tmp_error = NULL;
+    json_parser_load_from_file(graph->priv->json_parser, filename, tmp_error);
 
-    if (*error)
+    if (tmp_error != NULL) {
+        g_propagate_error(error, tmp_error); 
         return;
+    }
 
     graph_build(graph, json_parser_get_root(graph->priv->json_parser));
 }
