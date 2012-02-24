@@ -92,7 +92,7 @@ void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
     gchar **p = path_list;
 
     while (*p != NULL)
-        priv->search_paths = g_slist_append(priv->search_paths, g_strdup(*(p++)));
+        priv->search_paths = g_slist_prepend(priv->search_paths, g_strdup(*(p++)));
 
     g_strfreev(path_list);
 }

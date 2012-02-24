@@ -635,13 +635,18 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->opencl_programs = NULL;
     priv->opencl_build_options = g_string_new("-cl-mad-enable ");
     priv->current_id = 0;
+
+    g_debug("Ufo version %s\n", UFO_VERSION);
+
     /* initialize OpenCL subsystem */
     int errcode = CL_SUCCESS;
     CHECK_OPENCL_ERROR(clGetPlatformIDs(0, NULL, &priv->num_platforms));
     priv->opencl_platforms = g_malloc0(priv->num_platforms * sizeof(cl_platform_id));
+
     CHECK_OPENCL_ERROR(clGetPlatformIDs(priv->num_platforms, priv->opencl_platforms, NULL));
     priv->num_devices = g_malloc0(priv->num_platforms * sizeof(cl_uint));
     priv->opencl_devices = g_malloc0(priv->num_platforms * sizeof(cl_device_id *));
+
     g_debug("Number of OpenCL platforms: %i", priv->num_platforms);
     /* Get devices for each available platform */
     gchar *info_buffer = g_malloc0(256);
