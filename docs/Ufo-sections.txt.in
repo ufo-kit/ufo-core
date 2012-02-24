@@ -121,6 +121,7 @@ UfoGraphError
 UfoGraph
 ufo_graph_new
 ufo_graph_read_from_json
+ufo_graph_save_to_json
 ufo_graph_run
 ufo_graph_get_number_of_devices
 ufo_graph_get_filter_names

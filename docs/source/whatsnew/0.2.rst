@@ -18,13 +18,20 @@ Major breakage
 - The ``CHECK_ERROR`` macro defined in ``ufo-resource-manager.h`` was renamed to
   ``CHECK_OPENCL_ERROR`` to better reflect its real purpose.
 
+- The old JSON specification has been changed to reflect the possibilities of
+  the current API. Thus, JSON files that worked under Ufo 0.1 cannot be read
+  with Ufo 0.2.
+
 
 General improvements
 ====================
 
 - Instead of the ``json/`` directory a new ``scripts/`` directory has been added
-to give an idea how to use the UFO framework for computing a tomographic
-reconstruction.
+  to give an idea how to use the UFO framework for computing a tomographic
+  reconstruction.
 
 - The manual was restructured considerably.
+
+- Saving graphs as JSON files has been added via
+  c:func:`ufo_graph_save_to_json()`.
 

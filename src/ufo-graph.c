@@ -147,6 +147,52 @@ static void graph_build(UfoGraph *self, JsonNode *root)
     }
 }
 
+static void graph_transfer_props_to_json_object(UfoFilter *filter, JsonObject *json_object)
+{
+    GObjectClass *klass = G_OBJECT_GET_CLASS(filter);
+    guint num_properties = 0;
+
+    GParamSpec **param_specs = g_object_class_list_properties(klass, &num_properties);
+    GParamSpec *spec = param_specs[0];
+    GValue value = {0, };
+
+    for (guint i = 0; i < num_properties; i++, spec = param_specs[i]) {
+        JsonNode *prop_node = json_node_new(JSON_NODE_VALUE);
+        /* XXX: This is a stupid hack, because json-glib is unable to use guint
+         * types, which is fairly common among our filters. To "fix" this, we
+         * simply use gint. */
+        GType value_type = spec->value_type == G_TYPE_UINT ? G_TYPE_INT : spec->value_type;
+
+        g_value_init(&value, value_type);
+        g_object_get_property(G_OBJECT(filter), spec->name, &value);
+
+        /* We should ignore values that are default anyway */
+        json_node_set_value(prop_node, &value);
+        json_object_set_member(json_object, spec->name, prop_node);
+        g_value_unset(&value);
+    }
+
+    g_free(param_specs);
+}
+
+static void graph_add_filter_to_json_array(gpointer data, gpointer user_data)
+{
+    g_return_if_fail(UFO_IS_FILTER(data));
+
+    UfoFilter *filter = UFO_FILTER(data);
+    JsonArray *array = (JsonArray *) user_data;
+    JsonObject *node_object = json_object_new();
+    JsonObject *prop_object = json_object_new();
+    const gchar *plugin_name = ufo_filter_get_plugin_name(filter);
+
+    graph_transfer_props_to_json_object(filter, prop_object);
+
+    json_object_set_string_member(node_object, "name", plugin_name);
+    json_object_set_string_member(node_object, "plugin", plugin_name);
+    json_object_set_object_member(node_object, "properties", prop_object);
+    json_array_add_object_element(array, node_object);
+}
+
 static gpointer graph_process_thread(gpointer data)
 {
     ufo_filter_process(UFO_FILTER(data));
@@ -231,6 +277,61 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
 
     graph_build(graph, json_parser_get_root(json_parser));
     g_object_unref(json_parser);
+}
+
+
+/**
+ * ufo_graph_save_to_json:
+ * @graph: A #UfoGraph.
+ * @filename: Path and filename to the JSON file
+ * @error: Indicates error in case of failed file saving
+ *
+ * Save a JSON configuration file with the filter structure of @graph.
+ */
+void ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **error)
+{
+    g_return_if_fail(UFO_IS_GRAPH(graph) || (filename != NULL));
+
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
+    GError *tmp_error = NULL;
+    GList *filters = g_hash_table_get_values(priv->nodes);
+    const guint num_filters = g_list_length(filters);
+
+    JsonGenerator *json_generator = json_generator_new();
+    JsonNode *root_node = json_node_new(JSON_NODE_OBJECT);
+    JsonObject *root_object = json_object_new();
+    JsonArray *nodes = json_array_new();
+    JsonArray *edges = json_array_new();
+
+    g_list_foreach(filters, graph_add_filter_to_json_array, nodes);
+
+    /* FIXME: I know, this is O(n^2) and is not covering the general case of named
+     * inputs and outputs but it's something to begin with. */
+    for (guint i = 0; i < num_filters; i++) {
+        for (guint j = 0; j < num_filters; j++) {
+            UfoFilter *from = g_list_nth_data(filters, i);
+            UfoFilter *to = g_list_nth_data(filters, j);
+
+            if (ufo_filter_connected(from, to)) {
+                JsonObject *connect_object = json_object_new(); 
+                json_object_set_string_member(connect_object, "from", ufo_filter_get_plugin_name(from));
+                json_object_set_string_member(connect_object, "to", ufo_filter_get_plugin_name(to));
+                json_array_add_object_element(edges, connect_object);
+            }
+        } 
+    }
+
+    json_object_set_array_member(root_object, "nodes", nodes);
+    json_object_set_array_member(root_object, "edges", edges);
+    json_node_set_object(root_node, root_object);
+    json_generator_set_root(json_generator, root_node);
+
+    if (!json_generator_to_file(json_generator, filename, &tmp_error)) {
+        g_propagate_error(error, tmp_error); 
+        return;
+    }
+
+    g_object_unref(json_generator);
 }
 
 /**
