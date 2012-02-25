@@ -1,178 +1,141 @@
 .. _json-configuration:
 
+.. highlight:: javascript
+
 =========================
 JSON Configuration Format
 =========================
 
 JSON_ is a self-contained, human-readable data-interchange format. It is pure
-Unicode text and language independent. The main structures are key/value pairs
-(hash-tables, dictionaries, associative arrays ...) and ordered lists (arrays,
-vectors, sequences ...) of base types such as strings, numbers and boolean
-values. For a complete description you may refer to the complete reference at
-json.org.
+Unicode text and language independent. The main structures objects containing
+key/value pairs (hash-tables, dictionaries, associative arrays ...) and ordered
+lists (arrays, vectors, sequences ...) of objects or values. For a complete
+description you may refer to the complete reference at `json.org
+<http://json.org>`_.
 
 The configuration of a filter setup is stored in a JSON-encoded text file with a
-``.json`` suffix. The root object must at least contain one ``"type"`` and one
-``"elements"`` mapping. It may also define several ``"prop-set"`` s for further
+``.json`` suffix. The root object must at least contain a ``nodes`` and an
+``edges`` array. It may also define several ``prop-set`` s for further
 reference.
 
 
-Node Types
-----------
+Nodes array
+===========
 
-A node type is specified by the key ``"type"`` in a JSON object::
- 
-  { "type" : $TYPE }
+The nodes array contains filter objects that are executed on run-time.
+Information how they are connected is provided in the `Edges array`_.
 
-where ``$TYPE`` could be
-
-``"sequence"``, that is a sequential chain of filters and containers::
-
-    [filter A] --> [sequence S --> [filter X] -> [filter Y]]
-
-``"split"``, a number of filters and containers working on data in truly parallel
-fashion::
-
-                          +--> [filter X] --+
-  [filter A] --> [split] -+                 +-->
-                          +--> [filter Y] --+
-
-``"filter"``, a node that doesn't contain any other containers but specifies the
-kind of computation.
-
-
-Elements
---------
-
-An ``"elements"`` key lists the children of a container type as an JSON array.
-The children could be container types again or Filter specifications.
-
-
-Split Containers
-----------------
-
-A split takes an input buffer and distributes it in specified order to its child
-filters or containers.
-
-Properties:
-
-- ``"type"`` [string]: Must be ``"split"``.
-- ``"mode"`` [string]: Mode of operation in which work should be distributed.
-  The following string values are possible:
-  
-  - ``"random"``: choose next free child
-  - ``"round-robin"``: push data to one child after another
-  - ``"copy"``: copy the input and distribute it to `all` children
-
-- ``"repeat"`` [integer]: Controls how many instances of the first filter should be
-  created. If not specified it defaults to ``1``.
-
-
-Sequence Containers
--------------------
-
-Properties:
-
-- ``"type"`` [string]: Must be ``"sequence"``.
-
-
-Property Sets
+Filter object
 -------------
 
+A filter consists at least of a ``plugin`` key string pointing to the filter
+that is going to be used and a ``name`` string field for unique identification.
+Of course, plugins have to be available as a shared object in UFO's path.
+
+.. highlight:: python
+
+To configure the filter, the ``properties`` field can be used. This is an object
+that maps string keys specifying the actual filter property to the value.
+Therefore, the Python code to set a property ::
+
+    reader = graph.get_filter('reader')
+    reader.set_properties(path='/home/user/data/*.tif', count=5)
+
+.. highlight:: javascript
+
+translates to ::
+
+    { "path": "/home/user/data/*.tif", "count": 5 }
+
+Instead of defining recurring properties for each filter, you can also use
+pre-defined `Property sets`_.
+
+Example nodes array
+-------------------
+ 
+An example node array looks like this::
+
+    "nodes" : [
+        {
+            "plugin": "reader",
+            "name": "reader",
+            "properties" : { "path": "/home/user/data/*.tif", "count": 5 }
+        },
+        {
+            "plugin": "writer",
+            "name": "writer"
+        }
+    ]
+
+
+Edges array
+===========
+
+The edges array specifies how the nodes in a `Nodes array`_ are connected. Each
+entry is an object that contains two arrays ``from`` and ``to``. In these
+arrays, the first entry is the name of the node and the second the name of the
+input or output. You can omit the second entry if you want to connect the
+default inputs and outputs. 
+
+To connect the nodes defined in the `Example nodes array`_ all you have to do is ::
+
+    "edges" : [
+        { 
+            "from": ["reader"],
+            "to": ["writer"]
+        } 
+    ]
+
+Note, that the names specify the name of the node, not the plugin which are
+identical in this example.
+
+
+Property sets
+=============
+
 To avoid to list the same properties for different filters over and over again,
-properties can be pre-defined with a singular ``"prop-sets"`` mapping. Each key
-is a name that can be referenced in filter nodes using the ``"prop-refs"``
-array. The values are ordinary ``"property"`` mappings.
-
-
-Filters
--------
-
-A filter consists at least of a ``"plugin"`` key naming the filter that is going
-to be used. Of course, plugins have to be available as a shared object in UFO's
-path.
-
-Properties:
-
-- ``"type"`` [string]: Must be ``"filter"``.
-- ``"plugin"`` [string]: Name of the associated plugin corresponding to the
-  filter ``libfilterxxx.so``.
-- ``"properties"`` [dict]: Mapping from string to value. Exact names and value
-  types depend on the actual filter.
-- ``"prop-refs"`` [array of strings]: Names of property sets that have been
-  pre-defined with a ``"prop-sets"`` map.
-
-
-Example
--------
-
-Let's say we want to generate sinograms from a directory full of tomographic
-projections. A suitable configuration would look like this::
+properties can be pre-defined with a singular top-level ``prop-sets`` object.
+Each key is a name that can be referenced in filter nodes using the
+``prop-refs`` array. The values are ordinary ``property`` mappings::
 
     {
-        "type" : "sequence",
-        "elements" : [
+        "prop-sets" : {
+            "foo-prop": {
+                "path": "/home/user/path/to/projections/*.tif", 
+                "count": 300
+            } 
+        },
+        "nodes" : [
             {
-                "type" : "filter",
-                "plugin" : "reader",
-                "properties" : {
-                    "path" : "/home/path/to/projections/",
-                    "count" : 300
-                }
-            },
-            {
-                "type" : "filter",
-                "plugin" : "sinogenerator",
-                "properties" : {
-                    "num-projections" : 300
-                }
-            },
-            {
-                "type" : "filter",
-                "plugin" : "writer",
-                "properties" : {
-                    "path" : "/home/path/to/sinograms/",
-                    "prefix" : "sino"
-                }
+                "plugin": "reader",
+                "name": "reader",
+                "prop-refs": ["foo-prop"]
             }
         ]
     }
 
-Okay, now we have some sinograms. Using the following configuration we can
-easily do an un-filtered back-projection ::
 
-    {
-        "type" : "sequence",
-        "elements" : [
-            {
-                "type" : "filter",
-                "plugin" : "reader",
-                "properties" : {
-                    "path" : "/home/path/to/sinograms/",
-                    "count" : 200,
-                    "prefix" : "sino"
-                }
-            },
-            {
-                "type" : "filter",
-                "plugin" : "backproject",
-                "properties" : {
-                    "axis-pos" : 413.0,
-                    "angle-step" : 0.01256637
-                }
-            },
-            {
-                "type" : "filter",
-                "plugin" : "writer",
-                "properties" : {
-                    "path" : "/home/path/to/slices",
-                    "prefix" : "slice"
-                }
-            }
-        ]
-    }
+Loading and Saving the Graph
+============================
 
-As you might correctly conclude, we could have also merged these two
-configurations and skip writing the sinograms to disk.
+.. highlight:: python
+
+The ``UfoGraph`` class exports the ``ufo_graph_read_from_json`` and
+``ufo_graph_read_save_to_json`` methods which are responsible for loading and
+saving the graph. In Python this would simply be::
+
+    from gi.repository import Ufo
+
+    g1 = Ufo.Graph()
+
+    # set up the filters using graph.get_filter() and filter.connect_to()
+
+    g1.run()
+    g1.save_to_json('graph.json')
+
+    g2 = Ufo.Graph()
+    g2.load_from_json('graph.json')
+    g2.run()
+
 
 .. _JSON: http://json.org

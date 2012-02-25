@@ -20,70 +20,15 @@ Shkarin.
            make
            sudo make install
 
-2. Clone Ethos from the repository::
-
-       git clone git://git.dronelabs.com/ethos
-
-3. Install the necessary packages through macports::
+2. Install the necessary packages through macports::
 
        sudo port install glib2
        sudo port install gtk2
        sudo port install json-glib
 
-4. Install CMake from http://cmake.org
+3. Install CMake from http://cmake.org
 
-.. highlight:: c
-
-5. Next, go to the directory of Ethos and edit the file ``ethos_dir/ethos/ethos_manager.c`` (from line 194) from::
-
-       while (NULL != (filename = g_dir_read_name (dir))) {
-           if (g_str_has_suffix (filename, "." G_MODULE_SUFFIX)) {
-               abspath = g_build_filename (loaders_dir, filename, NULL);
-               loader = ethos_manager_create_plugin_loader (manager, abspath);
-               if (loader != NULL)
-                    loaders = g_list_prepend (loaders, loader);}}
-               g_free (abspath);
-           }
-       }
-
-   to::
-
-       while (NULL != (filename = g_dir_read_name (dir))) {
-           #ifdef __APPLE__
-               gchar* suffix = "dylib";
-           #else
-               gchar* suffix = ("." G_MODULE_SUFFIX);
-           #endif
-            if (g_str_has_suffix (filename, "." G_MODULE_SUFFIX)) {
-                abspath = g_build_filename (loaders_dir, filename, NULL);
-                loader = ethos_manager_create_plugin_loader (manager, abspath);
-                if (loader != NULL)
-                     loaders = g_list_prepend (loaders, loader);}}
-                g_free (abspath);
-            }
-        }
-
-   This fixes a bug where the application could not find an
-   ethos-plugin-loader.
-
-.. highlight:: bash
-
-6. Make and install Ethos
-
-   1. Disable making for: ``ethos-dir/tests``, change in ``Makefile.am`` from (line
-      number: contents)::
-
-       02: SUBDIRS = c-plugins manager-dep
-       30: manager_sources = manager.c
-       31: plugin_info_sources = plugin-info.c
-
-   2. Make and Install Ethos::
-
-       sh autogen.sh
-       make
-       sudo make install
-
-7. Make ufo-core
+4. Make ufo-core
 
    1. Got to the directory ufo-core and run::
 
@@ -106,7 +51,7 @@ Shkarin.
          cmake_install.cmake:32 (INCLUDE)
        make: *** [install] Error 1
 
-8. Make filters
+5. Make filters
 
    1. Go to ufo-filters directory. Now, since libufo was installed in lib64, we must update the paths to look
    for shared libraries::
@@ -120,5 +65,5 @@ Shkarin.
        make
        sudo make install
 
-9. Build the test project and verify that everything works.
+6. Build the test project and verify that everything works.
 
