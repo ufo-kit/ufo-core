@@ -1,4 +1,5 @@
 
+#include <stdlib.h>
 #include <glib.h>
 #include "ufo-graph.h"
 
