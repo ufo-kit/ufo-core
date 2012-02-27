@@ -4,8 +4,10 @@
 Filters
 =======
 
+.. default-domain:: c
+
 UFO filters are simple shared objects that expose their ``GType`` and implement
-the ``UfoFilter`` class. 
+the :type:`UfoFilter` class. 
 
 Writing a simple OpenCL filter
 ==============================
@@ -94,20 +96,20 @@ The actual processing is done in the ``ufo_filter_awesome_foo_process()`` method
 which is called exactly once per filter. Therefore, you should not return until
 you receive a NULL buffer.
 
-A filter has to use an :ref:`UfoChannel <ufo-api>` to ask for new buffers. To
-retrieve an input buffer, ``ufo_channel_get_input_buffer()`` has to be called,
-similarly ``ufo_channel_get_output_buffer()`` is used to retrieve a buffer where
-the results are stored. As buffers are allocated between filters (using
-``ufo_channel_allocate_output_buffers()``), they have to be released after usage
-by calling ``ufo_channel_finalize_input_buffer()``. When processing has
-finished, all associated output channels must be closed with
-``ufo_channel_finish()``.
+A filter has to use an :type:`UfoChannel` to ask for new buffers. To retrieve an
+input buffer, :func:`ufo_channel_get_input_buffer()` has to be called, similarly
+:func:`ufo_channel_get_output_buffer()` is used to retrieve a buffer where the
+results are stored. As buffers are allocated between filters (using
+:func:`ufo_channel_allocate_output_buffers()`), they have to be released after
+usage by calling :func:`ufo_channel_finalize_input_buffer()`. When processing
+has finished, all associated output channels must be closed with
+:func:`ufo_channel_finish()`.
 
 To work with the buffer data, you would call either
-``ufo_buffer_get_cpu_data()`` or ``ufo_buffer_get_gpu_data()``. You would then
-get a plain ``float`` array or a ``cl_mem`` handle. The latter can be used in
-conjunction with ``cl_set_kernel_arg`` to call an OpenCL kernel with the buffer
-data as an argument.
+:func:`ufo_buffer_get_host_array()` to get a plain ``float`` array or
+:func:`ufo_buffer_get_device_array()` to get a ``cl_mem`` handle. The latter can
+be used in conjunction with ``cl_set_kernel_arg`` to call an OpenCL kernel with
+the buffer data as an argument.
 
 
 Additional sources

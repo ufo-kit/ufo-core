@@ -7,8 +7,8 @@ UFO Documentation contents
     whatsnew/index.rst
     install/index.rst
     using/index.rst
+    api/index.rst
     filters.rst
-    api.rst
     json.rst
     faq.rst
     glossary.rst
