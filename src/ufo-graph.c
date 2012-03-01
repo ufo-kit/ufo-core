@@ -448,6 +448,8 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) || UFO_IS_FILTER(filter) || (name != NULL));
+    /* FIXME: if the same filter type is added more than once, this won't work! */
+    g_hash_table_insert(graph->priv->nodes, g_strdup(name), filter);
     ufo_filter_initialize(filter, name);
 }
 
