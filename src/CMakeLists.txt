@@ -72,8 +72,8 @@ endif()
 add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 set_target_properties(ufo PROPERTIES
-    VERSION ${UFO_ABI_VERSION}
-    SOVERSION ${UFO_ABI_MAJOR_VERSION})
+    VERSION ${PACKAGE_VERSION}
+    SOVERSION ${UFO_SO_VERSION})
 
 target_link_libraries(ufo ${ufocore_LIBS})
 

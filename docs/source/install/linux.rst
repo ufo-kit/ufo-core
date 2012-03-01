@@ -32,10 +32,10 @@ UFO has only a few hard source dependencies, namely
   - `JSON-GLib 1.0 <http://live.gnome.org/JsonGlib>`_ and
   - a valid OpenCL installation.
 
-Furthermore it is convenient to build the framework and accompanying
-documentation with a recent version of `CMake <http://cmake.org>`_, `Doxygen
-<http://doxygen.org>`_ and `Sphinx <http://sphinx.pocoo.org>`_. The current
-distributed version control system in use, is `Bazaar <bazaar.canonical.com>`_.
+Furthermore, it is necessary to build the framework with a recent version of
+`CMake <http://cmake.org>`_.  `Sphinx <http://sphinx.pocoo.org>`_ is used to
+create this documentation and `Bazaar <bazaar.canonical.com>`_ for revision
+control.
 
 In case you use openSUSE, just issue ::
 
@@ -60,9 +60,10 @@ Checking out the Code
 =====================
 
 In an empty directory, issue the following commands to retrieve the current
-unstable version of the source ::
+unstable version of the source::
 
-  $ bzr clone bzr+ssh://<user>@ufo.kit.edu/vogelgesang/ufo-core
+    $ bzr branch bzr+ssh://<user>@ufo.kit.edu/vogelgesang/ufo-core OR
+    $ bzr branch http://ufo.kit.edu/sources/vogelgesang/ufo-core 
 
 All stable versions are kept at ``ufo-core/ufo-core-x.y``.
 
