@@ -73,6 +73,7 @@ static void ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter)
 static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
+    cl_command_queue cmd_queue = ufo_filter_get_command_queue(filter);
     UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
     UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
     UfoBuffer *input = ufo_channel_get_input_buffer(input_channel);
@@ -80,7 +81,7 @@ static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
 
     /* If you provide any output, you must allocate output buffers of the
        appropriate size */
-    gint32 dimensions[2] = { 256, 256 };
+    guint dimensions[2] = { 256, 256 };
     ufo_channel_allocate_output_buffers(output_channel, 2, dimensions);
 
     while (input != NULL) {
