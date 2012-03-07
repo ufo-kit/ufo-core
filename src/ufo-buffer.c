@@ -513,6 +513,67 @@ gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
     return priv->device_array;
 }
 
+/**
+ * ufo_buffer_swap_host_arrays:
+ * @a: A #UfoBuffer
+ * @b: A #UfoBuffer
+ *
+ * Swap host array pointers of @a and @b and mark host arrays valid.
+ */
+void ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b)
+{
+    g_return_if_fail(UFO_IS_BUFFER(a) && UFO_IS_BUFFER(b));
+
+    UfoBufferPrivate *pa = a->priv;
+    UfoBufferPrivate *pb = b->priv;
+
+    /* TODO: also check size of dimensions? */
+    g_return_if_fail(pa->host_array.num_dims == pb->host_array.num_dims);
+    g_return_if_fail((pa->host_array.data != NULL) || (pb->host_array.data != NULL));
+
+    if (pa->host_array.data == NULL)
+        pa->host_array.data = g_malloc0(pa->size);
+
+    if (pb->host_array.data == NULL)
+        pb->host_array.data = g_malloc0(pb->size);
+
+    gfloat *tmp = pa->host_array.data;
+    pa->host_array.data = pb->host_array.data;
+    pb->host_array.data = tmp;
+
+    pa->location = HOST_ARRAY_VALID;
+    pb->location = HOST_ARRAY_VALID;
+}
+
+/**
+ * ufo_buffer_param_spec:
+ * @name: canonical name of the property specified
+ * @nick: nick name for the property specified
+ * @blurb: description of the property specified
+ * @default_value: default value for the property specified
+ *
+ * Creates a new #UfoBufferParamSpec instance specifying a #UFO_TYPE_BUFFER
+ * property.
+ *
+ * Returns: a newly created parameter specification
+ * 
+ * @see g_param_spec_internal() for details on property names.
+ */
+GParamSpec *ufo_buffer_param_spec(const gchar *name, 
+        const gchar *nick, 
+        const gchar *blurb, 
+        UfoBuffer *default_value, 
+        GParamFlags flags)
+{
+    UfoBufferParamSpec *bspec;
+
+    bspec = g_param_spec_internal(UFO_TYPE_PARAM_BUFFER,
+            name, nick, blurb, flags);
+
+    return G_PARAM_SPEC(bspec);
+}
+
+
 static void ufo_filter_set_property(GObject *object,
                                     guint           property_id,
                                     const GValue    *value,
@@ -593,4 +654,42 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->events = g_malloc0(priv->num_total_events * sizeof(cl_event));
     priv->time_upload = 0;
     priv->time_download = 0;
+}
+
+static void ufo_buffer_param_init(GParamSpec *pspec)
+{
+    UfoBufferParamSpec *bspec = UFO_BUFFER_PARAM_SPEC(pspec);
+
+    bspec->default_value = NULL;
+}
+
+static void ufo_buffer_param_set_default(GParamSpec *pspec, GValue *value)
+{
+    UfoBufferParamSpec *bspec = UFO_BUFFER_PARAM_SPEC(pspec);
+
+    bspec->default_value = NULL;
+    g_value_unset(value);
+}
+
+GType ufo_buffer_param_get_type()
+{
+    static GType type = 0;
+
+    if (type == 0) {
+        GParamSpecTypeInfo pspec_info = {
+            sizeof(UfoBufferParamSpec),     /* instance_size */
+            16,                             /* n_preallocs */
+            ufo_buffer_param_init,          /* instance_init */
+            0,                              /* value_type */
+            NULL,                           /* finalize */
+            ufo_buffer_param_set_default,   /* value_set_default */
+            NULL,                           /* value_validate */
+            NULL,                           /* values_cmp */
+        };
+        pspec_info.value_type = UFO_TYPE_BUFFER;
+        type = g_param_type_register_static(g_intern_static_string("UfoBufferParam"), &pspec_info);
+        g_assert(type == UFO_TYPE_PARAM_BUFFER);
+    }
+
+    return type;
 }

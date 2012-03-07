@@ -140,6 +140,28 @@ static void test_buffer_copy(void)
     g_object_unref(copy);
 }
 
+static void test_buffer_swap(void)
+{
+    const guint dimensions[] = { 4, 4 };
+
+    UfoBuffer *a = ufo_buffer_new(2, dimensions);
+    UfoBuffer *b = ufo_buffer_new(2, dimensions);
+
+    gfloat *h_a = ufo_buffer_get_host_array(a, NULL);
+    gfloat *h_b = ufo_buffer_get_host_array(b, NULL);
+
+    ufo_buffer_swap_host_arrays(a, b);
+
+    gfloat *sh_a = ufo_buffer_get_host_array(a, NULL);
+    gfloat *sh_b = ufo_buffer_get_host_array(b, NULL);
+
+    g_assert(h_a == sh_b);
+    g_assert(h_b == sh_a);
+
+    g_object_unref(a);
+    g_object_unref(b);
+}
+
 int main(int argc, char *argv[])
 {
     g_type_init();
@@ -154,6 +176,7 @@ int main(int argc, char *argv[])
     g_test_add_func("/buffer/reinterpret/16bit", test_buffer_reinterpret_16bit);
     g_test_add_func("/buffer/size", test_buffer_size);
     g_test_add_func("/buffer/copy", test_buffer_copy);
+    g_test_add_func("/buffer/swap", test_buffer_swap);
     g_test_run();
 
     return 0;

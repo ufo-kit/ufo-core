@@ -12,9 +12,14 @@ G_BEGIN_DECLS
 #define UFO_IS_BUFFER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_BUFFER))
 #define UFO_BUFFER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_BUFFER, UfoBufferClass))
 
+#define UFO_TYPE_PARAM_BUFFER       (ufo_buffer_param_get_type())
+#define UFO_IS_PARAM_SPEC_BUFFER(pspec)  (G_TYPE_CHECK_INSTANCE_TYPE((pspec), UFO_TYPE_PARAM_BUFFER))
+#define UFO_BUFFER_PARAM_SPEC(pspec)     (G_TYPE_CHECK_INSTANCE_CAST((pspec), UFO_TYPE_PARAM_BUFFER, UfoBufferParamSpec))
+
 typedef struct _UfoBuffer           UfoBuffer;
 typedef struct _UfoBufferClass      UfoBufferClass;
 typedef struct _UfoBufferPrivate    UfoBufferPrivate;
+typedef struct _UfoBufferParamSpec  UfoBufferParamSpec;
 
 /**
  * UfoBuffer:
@@ -48,6 +53,16 @@ struct _UfoBufferClass {
     GObjectClass parent_class;
 };
 
+/**
+ * UfoBufferParamSpec:
+ * @default_value: default value for the property
+ */
+struct _UfoBufferParamSpec {
+    GParamSpec  parent_instance;
+
+    UfoBuffer   *default_value;
+};
+
 UfoBuffer *ufo_buffer_new(guint num_dims, const guint *dim_size);
 void ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_size);
 
@@ -64,7 +79,7 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pix
 void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error);
 float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue);
 
-/* gpointer ufo_buffer_get_gpu_data(UfoBuffer *buffer, gpointer command_queue); */
+void ufo_buffer_swap_host_arrays(UfoBuffer *buffer_a, UfoBuffer *buffer_b);
 gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue);
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer);
 void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem);
@@ -76,6 +91,9 @@ void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_even
 void ufo_buffer_clear_events(UfoBuffer *buffer);
 
 GType ufo_buffer_get_type(void);
+
+GParamSpec *ufo_buffer_param_spec(const gchar *name, const gchar *nick, const gchar *blurb, UfoBuffer *default_value, GParamFlags flags);
+GType ufo_buffer_param_get_type();
 
 G_END_DECLS
 
