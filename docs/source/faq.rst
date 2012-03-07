@@ -68,3 +68,27 @@ like this::
 
 .. _handler: http://developer.gnome.org/glib/unstable/glib-Message-Logging.html#g-log-set-handler
 
+
+How can I use Numpy output?
+---------------------------
+
+Install the Python extension module from ``vogelgesang/ufonp`` with ``setup.py``
+like this::
+
+    $ cd <path-to-ufonp>
+    $ python setup.py build
+    $ sudo python setup.py install
+
+You can then use the BufferInput filter to process Numpy arrays data::
+
+    from gi.repository import Ufo
+    import ufonp
+    import numpy as np
+
+    A = np.zeros((1024, 1024))
+    b = Ufo.Buffer()
+    ufonp.fromarray(b, A)
+
+    g = Ufo.Graph()
+    numpy_input = g.get_filter('bufferinput')
+    numpy_input.set_properties(buffers=[b])
