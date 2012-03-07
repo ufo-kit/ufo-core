@@ -1,9 +1,9 @@
 prefix=@UFO_PKG_PREFIX@
-exec_prefix=@UFO_PKG_EXEC_PREFIX@
-libdir=@UFO_PKG_LIBDIR@
-includedir=@UFO_PKG_INCLUDEDIR@
-girdir=@UFO_PKG_GIRDIR@
-typelibdir=@UFO_PKG_TYPELIBDIR@
+exec_prefix=${prefix}
+libdir=${prefix}/lib@LIB_SUFFIX@
+includedir=${prefix}/include/ufo
+girdir=${prefix}/share/gir-1.0
+typelibdir=${prefix}/lib@LIB_SUFFIX@/girepository-1.0
 
 Name: @TARNAME@
 Description: @UFO_DESCRIPTION_SUMMARY@
