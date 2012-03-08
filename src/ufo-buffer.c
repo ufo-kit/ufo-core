@@ -551,6 +551,7 @@ void ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b)
  * @nick: nick name for the property specified
  * @blurb: description of the property specified
  * @default_value: default value for the property specified
+ * @flags: flags for the property specified
  *
  * Creates a new #UfoBufferParamSpec instance specifying a #UFO_TYPE_BUFFER
  * property.

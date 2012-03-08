@@ -58,6 +58,7 @@ struct _UfoBufferClass {
  * @default_value: default value for the property
  */
 struct _UfoBufferParamSpec {
+    /*< private >*/
     GParamSpec  parent_instance;
 
     UfoBuffer   *default_value;
@@ -79,7 +80,7 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pix
 void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error);
 float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue);
 
-void ufo_buffer_swap_host_arrays(UfoBuffer *buffer_a, UfoBuffer *buffer_b);
+void ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b);
 gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue);
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer);
 void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem);
