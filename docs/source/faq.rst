@@ -85,10 +85,9 @@ You can then use the BufferInput filter to process Numpy arrays data::
     import ufonp
     import numpy as np
 
-    A = np.zeros((1024, 1024))
-    b = Ufo.Buffer()
-    ufonp.fromarray(b, A)
+    arrays = [ i*np.eye(100, dtype=np.float32) for i in range(1, 10) ]
+    buffers = [ ufonp.fromarray(a) for a in arrays ]
 
     g = Ufo.Graph()
     numpy_input = g.get_filter('bufferinput')
-    numpy_input.set_properties(buffers=[b])
+    numpy_input.set_properties(buffers=buffers)
