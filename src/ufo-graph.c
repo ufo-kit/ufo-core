@@ -240,20 +240,13 @@ static void graph_check_consistency(UfoGraphPrivate *priv)
 /**
  * ufo_graph_new:
  *
- * Create a new #UfoGraph. Because resources (especially those belonging to the
- * GPU) should only be allocated once, we allow only one graph at a time. Thus
- * the graph is a singleton.
+ * Create a new #UfoGraph. 
  *
  * Return value: A #UfoGraph.
  */
 UfoGraph *ufo_graph_new(void)
 {
-    static UfoGraph *graph = NULL;
-
-    if (graph == NULL)
-        graph = UFO_GRAPH(g_object_new(UFO_TYPE_GRAPH, NULL));
-
-    return graph;
+    return UFO_GRAPH(g_object_new(UFO_TYPE_GRAPH, NULL));
 }
 
 /**
@@ -425,7 +418,9 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
     g_return_val_if_fail(UFO_IS_GRAPH(graph) || (plugin_name != NULL), NULL);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
     GError *tmp_error = NULL;
+
     UfoFilter *filter = ufo_plugin_manager_get_filter(priv->plugin_manager, plugin_name, &tmp_error);
+    g_object_ref(filter);
 
     if (tmp_error != NULL) {
         g_propagate_error(error, tmp_error);
@@ -553,7 +548,7 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
     gobject_class->set_property = ufo_graph_set_property;
     gobject_class->get_property = ufo_graph_get_property;
     gobject_class->dispose = ufo_graph_dispose;
-    gobject_class->dispose = ufo_graph_finalize;
+    gobject_class->finalize = ufo_graph_finalize;
     gobject_class->constructor = ufo_graph_constructor;
 
     /**

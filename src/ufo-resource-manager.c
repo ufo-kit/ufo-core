@@ -22,6 +22,8 @@ enum UfoResourceManagerError {
     UFO_RESOURCE_MANAGER_ERROR_KERNEL_NOT_FOUND
 };
 
+static UfoResourceManager *manager_singleton = NULL;
+
 struct _UfoResourceManagerPrivate {
     cl_uint num_platforms;
     cl_platform_id *opencl_platforms;
@@ -201,12 +203,10 @@ GQuark ufo_resource_manager_error_quark(void)
  */
 UfoResourceManager *ufo_resource_manager()
 {
-    static UfoResourceManager *manager = NULL;
+    if (manager_singleton == NULL)
+        manager_singleton = UFO_RESOURCE_MANAGER(g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL));
 
-    if (manager == NULL)
-        manager = UFO_RESOURCE_MANAGER(g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL));
-
-    return manager;
+    return manager_singleton;
 }
 
 /**
@@ -612,6 +612,9 @@ static void ufo_resource_manager_finalize(GObject *gobject)
     priv->opencl_kernels = NULL;
     priv->opencl_devices = NULL;
     priv->opencl_platforms = NULL;
+
+    manager_singleton = NULL;
+
     G_OBJECT_CLASS(ufo_resource_manager_parent_class)->finalize(gobject);
 }
 
