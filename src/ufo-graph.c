@@ -438,7 +438,9 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
  * @name: A unique human-readable name
  *
  * In the case that a filter was not created using ufo_graph_get_filter() but in
- * a different place, you have to register the filter with this method.
+ * a different place, you have to register the filter with this method. 
+ *
+ * Note: Once you have added a filter, you cannot unref the filter on your own.
  */
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
 {

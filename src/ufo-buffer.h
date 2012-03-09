@@ -55,7 +55,8 @@ struct _UfoBufferClass {
 
 /**
  * UfoBufferParamSpec:
- * @default_value: default value for the property
+ *
+ * UfoBufferParamSpec class
  */
 struct _UfoBufferParamSpec {
     /*< private >*/
