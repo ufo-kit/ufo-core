@@ -6,6 +6,11 @@
 
 #include <glib.h>
 #include <json-glib/json-glib.h>
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
+#include <CL/cl.h>
+#endif
 
 #include "config.h"
 
