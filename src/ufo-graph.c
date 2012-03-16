@@ -474,7 +474,6 @@ static void ufo_graph_dispose(GObject *object)
     UfoGraph *self = UFO_GRAPH(object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(self);
 
-    g_list_foreach(g_hash_table_get_values(priv->nodes), (GFunc) g_object_unref, NULL);
     g_object_unref(priv->plugin_manager);
     g_object_unref(priv->resource_manager);
 
