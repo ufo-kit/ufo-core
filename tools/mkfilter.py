@@ -35,9 +35,7 @@ struct _UfoFilter${prefix_camel}Private {
     float example;
 };
 
-GType ufo_filter_${prefix_underscore}_get_type(void) G_GNUC_CONST;
-
-G_DEFINE_TYPE(UfoFilter${prefix_camel}, ufo_filter_${prefix_underscore}, UFO_TYPE_FILTER);
+G_DEFINE_TYPE(UfoFilter${prefix_camel}, ufo_filter_${prefix_underscore}, UFO_TYPE_FILTER)
 
 #define UFO_FILTER_${prefix_upper}_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}Private))
 
