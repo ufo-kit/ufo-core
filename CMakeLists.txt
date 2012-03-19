@@ -56,7 +56,15 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}
     ${OPENCL_INCLUDE_DIRS}
     )
 
-add_definitions("-std=c99 -Wall -fPIC")
+add_definitions("-std=c99 -pedantic -Werror -Wall -Wextra -fPIC")
+if (CMAKE_COMPILER_IS_GNUCC)
+    add_definitions("-Wmissing-prototypes -Wmissing-declarations -Wshadow
+    -Wpointer-arith -Wcast-align -Wwrite-strings -Wredundant-decls -Wcast-qual
+    -Wnested-externs -Winline -Wno-long-long -Wconversion -Wstrict-prototypes")
+
+    add_definitions("-Wno-unused-parameter -Wno-missing-field-initializers")
+endif()
+
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 
 add_subdirectory(src)

@@ -18,7 +18,7 @@
 #include "ufo-resource-manager.h"
 #include "ufo-plugin-manager.h"
 
-G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT);
+G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT)
 
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
@@ -49,7 +49,7 @@ static GParamSpec *graph_properties[N_PROPERTIES] = { NULL, };
 
 static void graph_handle_json_single_prop(JsonObject *object, const gchar *name, JsonNode *node, gpointer user)
 {
-    GValue val = { 0, };
+    GValue val = {0,};
     json_node_get_value(node, &val);
     g_object_set_property(G_OBJECT(user), name, &val);
     g_value_unset(&val);
@@ -208,35 +208,35 @@ static void graph_check_consistency(UfoGraphPrivate *priv)
 {
     /* Build adjacency matrix */
     GList *elements = g_hash_table_get_values(priv->nodes);
-    int n = g_list_length(elements);
+    guint n = g_list_length(elements);
     UfoFilter *filters[n]; /* mapping from UfoFilter to N */
     int connections[n][n];  /* adjacency matrix */
     int out_degree[n], in_degree[n];
 
-    for (int i = 0; i < n; i++) {
+    for (guint i = 0; i < n; i++) {
         filters[i] = UFO_FILTER(g_list_nth_data(elements, i));
         in_degree[i] = 0;
         out_degree[i] = 0;
     }
 
-    for (int from = 0; from < n; from++) {
+    for (guint from = 0; from < n; from++) {
         UfoFilter *source = UFO_FILTER(g_list_nth_data(elements, from));
 
-        for (int to = 0; to < n; to++) {
+        for (guint to = 0; to < n; to++) {
             UfoFilter *dest = UFO_FILTER(g_list_nth_data(elements, to));
             connections[from][to] = ufo_filter_connected(source, dest) ? 1 : 0;
         }
     }
 
-    for (int from = 0; from < n; from++) {
-        for (int to = 0; to < n; to++) {
+    for (guint from = 0; from < n; from++) {
+        for (guint to = 0; to < n; to++) {
             out_degree[from] += connections[from][to];
             in_degree[from] += connections[to][from];
         }
     }
 
     /* Use the graph for statical analysis */
-    for (int i = 0; i < n; i++) {
+    for (guint i = 0; i < n; i++) {
         if (in_degree[i] == 0 && out_degree[i] == 0)
             g_warning("Filter %i is not connected to any other filter", i);
     }
@@ -349,7 +349,7 @@ void ufo_graph_run(UfoGraph *graph, GError **error)
 
     /* Assign GPUs to filters */
     cl_command_queue *cmd_queues;
-    int num_queues;
+    guint num_queues;
     ufo_resource_manager_get_command_queues(graph->priv->resource_manager, (void **) &cmd_queues, &num_queues);
 
     g_thread_init(NULL);

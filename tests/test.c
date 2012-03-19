@@ -9,7 +9,7 @@ static void handle_error(GError *error, UfoGraph *graph)
         g_error("%s", error->message);
         g_error_free(error);
         g_object_unref(graph);
-        return exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 

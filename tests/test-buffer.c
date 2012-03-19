@@ -5,7 +5,7 @@
 
 static gboolean float_eq(float n1, float n2)
 {
-    static const float epsilon = 0.000001;
+    static const gdouble epsilon = 0.000001;
     return (fabs(n1-n2) < epsilon);
 }
 
@@ -65,8 +65,8 @@ static void test_buffer_reinterpret_8bit(void)
     ufo_buffer_reinterpret(buffer, 8, 10, TRUE);
 
     float *result = ufo_buffer_get_host_array(buffer, NULL);
-    g_assert(float_eq(result[0], 1 / 255.));
-    g_assert(float_eq(result[1], 2 / 255.));
+    g_assert(float_eq(result[0], 1 / 255.0f));
+    g_assert(float_eq(result[1], 2 / 255.0f));
     g_object_unref(buffer);
 }
 
@@ -82,8 +82,8 @@ static void test_buffer_reinterpret_16bit(void)
     ufo_buffer_reinterpret(buffer, 16, 10, TRUE);
 
     float *result = ufo_buffer_get_host_array(buffer, NULL);
-    g_assert(float_eq(result[0], 1 / 65535.));
-    g_assert(float_eq(result[1], 2 / 65535.));
+    g_assert(float_eq(result[0], 1 / 65535.0f));
+    g_assert(float_eq(result[1], 2 / 65535.0f));
     g_object_unref(buffer);
 }
 
@@ -97,7 +97,7 @@ static void test_buffer_dimensions(void)
     ufo_buffer_get_dimensions(buffer, &num_dims, &out_dimensions);
     g_assert(num_dims == 2);
 
-    for (int i = 0; i < num_dims; i++)
+    for (guint i = 0; i < num_dims; i++)
         g_assert_cmpuint(in_dimensions[i], ==, out_dimensions[i]);
 
     guint width = 0, height = 0;

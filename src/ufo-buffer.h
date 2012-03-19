@@ -93,9 +93,10 @@ void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_even
 void ufo_buffer_clear_events(UfoBuffer *buffer);
 
 GType ufo_buffer_get_type(void);
+GQuark ufo_buffer_error_quark(void);
 
 GParamSpec *ufo_buffer_param_spec(const gchar *name, const gchar *nick, const gchar *blurb, UfoBuffer *default_value, GParamFlags flags);
-GType ufo_buffer_param_get_type();
+GType ufo_buffer_param_get_type(void);
 
 G_END_DECLS
 

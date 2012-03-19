@@ -28,8 +28,8 @@ struct _UfoFilterPrivate {
     GHashTable          *output_channels; /**< Map from *char to *UfoChannel */
     GHashTable          *input_channels;  /**< Map from *char to *UfoChannel */
     cl_command_queue    command_queue;
-    float cpu_time;
-    float gpu_time;
+    gfloat cpu_time;
+    gfloat gpu_time;
 };
 
 static void filter_set_output_channel(UfoFilter *self, const gchar *name, UfoChannel *channel)
@@ -115,7 +115,7 @@ void ufo_filter_process(UfoFilter *filter)
         GTimer *timer = g_timer_new();
         UFO_FILTER_GET_CLASS(filter)->process(filter);
         g_timer_stop(timer);
-        filter->priv->cpu_time = g_timer_elapsed(timer, NULL);
+        filter->priv->cpu_time = (gfloat) g_timer_elapsed(timer, NULL);
         g_timer_destroy(timer);
     }
     else
@@ -277,10 +277,10 @@ gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
     GList *output_channels = g_hash_table_get_values(source->priv->output_channels);
     GList *input_channels = g_hash_table_get_values(destination->priv->input_channels);
 
-    for (int i = 0; i < g_list_length(output_channels); i++) {
+    for (guint i = 0; i < g_list_length(output_channels); i++) {
         gpointer channel = g_list_nth_data(output_channels, i);
 
-        for (int j = 0; j < g_list_length(input_channels); j++)
+        for (guint j = 0; j < g_list_length(input_channels); j++)
             if (channel == g_list_nth_data(input_channels, j))
                 return TRUE;
     }
@@ -439,7 +439,7 @@ void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     UfoResourceManager *manager = ufo_resource_manager();
-    int num_queues = 0;
+    guint num_queues = 0;
     cl_command_queue *cmd_queues = NULL;
     ufo_resource_manager_get_command_queues(manager, (void **) &cmd_queues, &num_queues);
 

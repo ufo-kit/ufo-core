@@ -15,7 +15,7 @@
 #include "config.h"
 #include "ufo-resource-manager.h"
 
-G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT);
+G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT)
 
 #define UFO_RESOURCE_MANAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_RESOURCE_MANAGER, UfoResourceManagerPrivate))
 
@@ -132,7 +132,7 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
         return NULL;
 
     fseek(fp, 0, SEEK_END);
-    const size_t length = ftell(fp);
+    const gsize length = (gsize) ftell(fp);
     rewind(fp);
     gchar *buffer = (gchar *) g_malloc0(length + 1);
 
@@ -206,7 +206,7 @@ GQuark ufo_resource_manager_error_quark(void)
  *
  * Return value: A new #UfoResourceManager
  */
-UfoResourceManager *ufo_resource_manager()
+UfoResourceManager *ufo_resource_manager(void)
 {
     if (manager_singleton == NULL)
         manager_singleton = UFO_RESOURCE_MANAGER(g_object_new(UFO_TYPE_RESOURCE_MANAGER, NULL));
@@ -327,7 +327,7 @@ gboolean ufo_resource_manager_add_program(
                     UFO_RESOURCE_MANAGER_ERROR,
                     UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
                     "Failed to build OpenCL program");
-        const int LOG_SIZE = 4096;
+        const gsize LOG_SIZE = 4096;
         gchar *log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
         CHECK_OPENCL_ERROR(clGetProgramBuildInfo(program, priv->opencl_devices[0][0],
                                           CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void *) log, NULL));
@@ -390,38 +390,38 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gcha
     return kernel;
 }
 
-void ufo_resource_manager_call(UfoResourceManager *manager,
-                               const gchar *kernel_name,
-                               void *command_queue,
-                               uint32_t work_dim,
-                               size_t *global_work_size,
-                               size_t *local_work_size,
-                               ...)
-{
-    cl_kernel kernel = (cl_kernel) g_hash_table_lookup(manager->priv->opencl_kernels, kernel_name);
+/* void ufo_resource_manager_call(UfoResourceManager *manager, */
+/*                                const gchar *kernel_name, */
+/*                                void *command_queue, */
+/*                                uint32_t work_dim, */
+/*                                size_t *global_work_size, */
+/*                                size_t *local_work_size, */
+/*                                ...) */
+/* { */
+/*     cl_kernel kernel = (cl_kernel) g_hash_table_lookup(manager->priv->opencl_kernels, kernel_name); */
 
-    if (kernel == NULL)
-        return;
+/*     if (kernel == NULL) */
+/*         return; */
 
-    cl_uint num_args = 0;
-    clGetKernelInfo(kernel, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &num_args, NULL);
-    void *ptr = NULL;
-    size_t size = 0;
-    va_list ap;
-    va_start(ap, local_work_size);
-    g_message("parsing arguments");
+/*     cl_uint num_args = 0; */
+/*     clGetKernelInfo(kernel, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &num_args, NULL); */
+/*     void *ptr = NULL; */
+/*     size_t size = 0; */
+/*     va_list ap; */
+/*     va_start(ap, local_work_size); */
+/*     g_message("parsing arguments"); */
 
-    for (int i = 0; i < num_args; i++) {
-        size = va_arg(ap, size_t);
-        ptr = va_arg(ap, void *);
-        clSetKernelArg(kernel, i, size, ptr);
-    }
+/*     for (guint i = 0; i < num_args; i++) { */
+/*         size = va_arg(ap, size_t); */
+/*         ptr = va_arg(ap, void *); */
+/*         clSetKernelArg(kernel, i, size, ptr); */
+/*     } */
 
-    va_end(ap);
-    clEnqueueNDRangeKernel(command_queue, kernel,
-                           work_dim, NULL, global_work_size, local_work_size,
-                           0, NULL, NULL);
-}
+/*     va_end(ap); */
+/*     clEnqueueNDRangeKernel(command_queue, kernel, */
+/*                            work_dim, NULL, global_work_size, local_work_size, */
+/*                            0, NULL, NULL); */
+/* } */
 
 /**
  * ufo_resource_manager_get_context:
@@ -561,7 +561,7 @@ guint ufo_resource_manager_get_new_id(UfoResourceManager *manager)
  *
  * Return the number and actual command queues.
  */
-void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpointer *command_queues, int *num_queues)
+void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpointer *command_queues, guint *num_queues)
 {
     g_return_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (command_queues != NULL) || (num_queues != NULL));
     /* FIXME: Use only first platform */
@@ -600,7 +600,7 @@ static void ufo_resource_manager_finalize(GObject *gobject)
     g_list_foreach(priv->opencl_programs, resource_manager_release_program, NULL);
     g_list_free(priv->opencl_programs);
 
-    for (int i = 0; i < priv->num_devices[0]; i++)
+    for (guint i = 0; i < priv->num_devices[0]; i++)
         clReleaseCommandQueue(priv->command_queues[i]);
 
     CHECK_OPENCL_ERROR(clReleaseContext(priv->opencl_context));
@@ -659,7 +659,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     /* Get devices for each available platform */
     gchar *info_buffer = g_malloc0(256);
 
-    for (int i = 0; i < priv->num_platforms; i++) {
+    for (guint i = 0; i < priv->num_platforms; i++) {
         cl_platform_id platform = priv->opencl_platforms[i];
         CHECK_OPENCL_ERROR(clGetPlatformInfo(platform, CL_PLATFORM_NAME, 256, info_buffer, NULL));
         g_debug("--- %s ---", info_buffer);
@@ -703,7 +703,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
         CHECK_OPENCL_ERROR(errcode);
         priv->command_queues = g_malloc0(priv->num_devices[0] * sizeof(cl_command_queue));
 
-        for (int i = 0; i < priv->num_devices[0]; i++) {
+        for (guint i = 0; i < priv->num_devices[0]; i++) {
             priv->command_queues[i] = clCreateCommandQueue(priv->opencl_context,
                                       priv->opencl_devices[0][i],
                                       queue_properties, &errcode);

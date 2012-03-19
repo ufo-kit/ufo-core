@@ -54,5 +54,6 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name);
 
 GType ufo_graph_get_type(void);
+GQuark ufo_graph_error_quark(void);
 
 #endif

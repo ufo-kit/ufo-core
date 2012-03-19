@@ -16,7 +16,7 @@
 #include "ufo-resource-manager.h"
 #include "ufo-enums.h"
 
-G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT);
+G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT)
 
 #define UFO_BUFFER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BUFFER, UfoBufferPrivate))
 
@@ -104,7 +104,7 @@ void ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *d
     priv->size = sizeof(float);
     priv->host_array.num_dims = num_dims;
 
-    for (int i = 0; i < num_dims; i++) {
+    for (guint i = 0; i < num_dims; i++) {
         priv->host_array.dim_size[i] = dim_size[i];
         priv->size *= dim_size[i];
     }
@@ -230,17 +230,17 @@ void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height
  * actually copy the data from host to device. Same as ufo_buffer_new(), users
  * should stay away from calling this on their own.
  */
-void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem)
-{
-    g_return_if_fail(UFO_IS_BUFFER(buffer) || (mem != NULL));
-    UfoBufferPrivate *priv = buffer->priv;
+/* void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem) */
+/* { */
+/*     g_return_if_fail(UFO_IS_BUFFER(buffer) || (mem != NULL)); */
+/*     UfoBufferPrivate *priv = buffer->priv; */
 
-    if (priv->device_array != NULL)
-        clReleaseMemObject(priv->device_array);
+/*     if (priv->device_array != NULL) */
+/*         clReleaseMemObject(priv->device_array); */
 
-    priv->device_array = (cl_mem) mem;
-    priv->location = DEVICE_ARRAY_VALID;
-}
+/*     priv->device_array = (cl_mem) mem; */
+/*     priv->location = DEVICE_ARRAY_VALID; */
+/* } */
 
 
 /**
@@ -271,7 +271,7 @@ void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, gboolean normalize)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer));
-    float *dst = buffer->priv->host_array.data;
+    gfloat *dst = buffer->priv->host_array.data;
 
     /* To save a memory allocation and several copies, we process data from back
      * to front. This is possible if src bit depth is at most half as wide as
@@ -280,15 +280,15 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pix
         guint8 *src = (guint8 *) buffer->priv->host_array.data;
         const float scale = normalize ? 255.0f : 1.0f;        
 
-        for (int index = (num_pixels - 1); index >= 0; index--)
-            dst[index] = src[index] / scale;
+        for (gint index = (((gint) num_pixels) - 1); index >= 0; index--)
+            dst[index] = ((gfloat) src[index]) / scale;
     }
     else if (source_depth == 16) {
         guint16 *src = (guint16 *) buffer->priv->host_array.data;
         const float scale = normalize ? 65535.0f : 1.0f;        
 
-        for (int index = (num_pixels - 1); index >= 0; index--)
-            dst[index] = src[index] / scale;
+        for (gint index = (((gint) num_pixels) - 1); index >= 0; index--)
+            dst[index] = ((gfloat) src[index]) / scale;
     }
 }
 
@@ -366,7 +366,7 @@ void ufo_buffer_clear_events(UfoBuffer *buffer)
     g_return_if_fail(UFO_IS_BUFFER(buffer));
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
 
-    for (int i = 0; i < priv->current_event_index; i++)
+    for (guint i = 0; i < priv->current_event_index; i++)
         clReleaseEvent(priv->events[i]);
 
     priv->current_event_index = 0;

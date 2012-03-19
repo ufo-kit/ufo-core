@@ -14,7 +14,7 @@
 #include "ufo-plugin-manager.h"
 
 
-G_DEFINE_TYPE(UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT);
+G_DEFINE_TYPE(UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT)
 
 #define UFO_PLUGIN_MANAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_PLUGIN_MANAGER, UfoPluginManagerPrivate))
 

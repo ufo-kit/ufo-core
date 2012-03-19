@@ -15,7 +15,7 @@
 #include "ufo-resource-manager.h"
 #include "ufo-channel.h"
 
-G_DEFINE_TYPE(UfoChannel, ufo_channel, G_TYPE_OBJECT);
+G_DEFINE_TYPE(UfoChannel, ufo_channel, G_TYPE_OBJECT)
 
 #define UFO_CHANNEL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_CHANNEL, UfoChannelPrivate))
 
@@ -39,7 +39,7 @@ static void channel_dispose_buffers(UfoChannelPrivate *priv)
     priv->input_queue = g_async_queue_new();
     priv->output_queue = g_async_queue_new();
 
-    for (int i = 0; i < priv->num_buffers; i++)
+    for (guint i = 0; i < priv->num_buffers; i++)
         ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
 
     priv->num_buffers = 0;
@@ -97,14 +97,14 @@ void ufo_channel_finish(UfoChannel *channel)
         while (g_async_queue_length(priv->input_queue) != 0)
             g_usleep(1000);
 
-        while (g_async_queue_length(priv->output_queue) != priv->num_buffers)
+        while (g_async_queue_length(priv->output_queue) != ((gint) priv->num_buffers))
             g_usleep(1000);
 
         /* All inputs must be consumed ... */
         g_assert(g_async_queue_length(priv->input_queue) == 0);
 
         /* ... and be returned */
-        g_assert(g_async_queue_length(priv->output_queue) == priv->num_buffers);
+        g_assert(g_async_queue_length(priv->output_queue) == ((gint) priv->num_buffers));
 
         channel_dispose_buffers(priv);
         priv->ref_count = priv->ref_total;
@@ -138,10 +138,10 @@ void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint num_dims, co
 
     UfoResourceManager *manager = ufo_resource_manager();
     /* Allocate as many buffers as we have threads */
-    priv->num_buffers = priv->ref_count;
+    priv->num_buffers = (guint) priv->ref_count;
     priv->buffers = g_malloc0(priv->num_buffers * sizeof(UfoBuffer *));
 
-    for (int i = 0; i < priv->num_buffers; i++) {
+    for (guint i = 0; i < priv->num_buffers; i++) {
         priv->buffers[i] = ufo_resource_manager_request_buffer(manager, num_dims, dim_size, NULL, NULL);
         g_async_queue_push(priv->output_queue, priv->buffers[i]);
     }
@@ -224,7 +224,7 @@ void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer)
     g_return_if_fail(UFO_IS_CHANNEL(channel));
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
 
-    for (int i = 0; i < priv->num_buffers; i++)
+    for (guint i = 0; i < priv->num_buffers; i++)
         g_assert(buffer == priv->buffers[i]);
 
     g_async_queue_push(priv->output_queue, buffer);
@@ -244,7 +244,7 @@ void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer)
     g_return_if_fail(UFO_IS_CHANNEL(channel) || UFO_IS_BUFFER(buffer));
     UfoChannelPrivate *priv = UFO_CHANNEL_GET_PRIVATE(channel);
 
-    for (int i = 0; i < priv->num_buffers; i++)
+    for (guint i = 0; i < priv->num_buffers; i++)
         g_assert(buffer == priv->buffers[i]);
 
     g_async_queue_push(priv->input_queue, buffer);
