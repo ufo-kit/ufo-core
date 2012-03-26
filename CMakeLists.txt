@@ -56,7 +56,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}
     ${OPENCL_INCLUDE_DIRS}
     )
 
-add_definitions("-std=c99 -pedantic -Werror -Wall -Wextra -fPIC")
+add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
 if (CMAKE_COMPILER_IS_GNUCC)
     add_definitions("-Wmissing-prototypes -Wmissing-declarations -Wshadow
     -Wpointer-arith -Wcast-align -Wwrite-strings -Wredundant-decls -Wcast-qual

@@ -238,7 +238,7 @@ static void graph_check_consistency(UfoGraphPrivate *priv)
     /* Use the graph for statical analysis */
     for (guint i = 0; i < n; i++) {
         if (in_degree[i] == 0 && out_degree[i] == 0)
-            g_warning("Filter %i is not connected to any other filter", i);
+            g_warning("%s is not connected to any other filter", ufo_filter_get_plugin_name(filters[i]));
     }
 }
 
@@ -432,7 +432,9 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
         return NULL;
     }
 
-    ufo_graph_add_filter(graph, filter, plugin_name);
+    gchar *unique_name = g_strdup_printf("%s-%p", plugin_name, (void *) filter);
+    ufo_graph_add_filter(graph, filter, unique_name);
+    g_free(unique_name);
     return filter;
 }
 
