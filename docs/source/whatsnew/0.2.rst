@@ -2,8 +2,6 @@
 What's New in ufo-core 0.2
 ==========================
 
-:Author: Matthias Vogelgesang
-
 Major breakage
 ==============
 

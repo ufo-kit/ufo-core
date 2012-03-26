@@ -45,7 +45,7 @@ copyright = u'%s, UFO Development Team a Collaboration of KIT, SCI and TPU' % ti
 # built documents.
 #
 # The short X.Y version.
-version = "${UFO_API_VERSION}"
+version = "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}"
 # The full version, including alpha/beta/rc tags.
 release = "${PACKAGE_VERSION}"
 
