@@ -69,6 +69,8 @@ like this::
 .. _handler: http://developer.gnome.org/glib/unstable/glib-Message-Logging.html#g-log-set-handler
 
 
+.. _faq-numpy-output:
+
 How can I use Numpy output?
 ---------------------------
 
@@ -82,12 +84,25 @@ like this::
 You can then use the BufferInput filter to process Numpy arrays data::
 
     from gi.repository import Ufo
-    import ufonp
+    import ufotools
     import numpy as np
 
     arrays = [ i*np.eye(100, dtype=np.float32) for i in range(1, 10) ]
-    buffers = [ ufonp.fromarray(a) for a in arrays ]
+    buffers = [ ufotools.fromarray(a) for a in arrays ]
 
     g = Ufo.Graph()
     numpy_input = g.get_filter('bufferinput')
     numpy_input.set_properties(buffers=buffers)
+
+
+How can I instantiate and pass parameters when creating a filter?
+-----------------------------------------------------------------
+
+Yes, the same module that is used to access Numpy buffers has a convenience
+wrapper around the :c:type:`UfoGraph` class that provides a ``new_filter`` method::
+
+    import ufotools.patch
+
+    g = ufotools.patch.Graph()
+    rd = g.new_filter('reader', path='/home/src', count=5)
+    wr = g.new_filter('writer', path='/home/dst', prefix='foo-')
