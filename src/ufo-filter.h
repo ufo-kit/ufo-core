@@ -30,6 +30,19 @@ typedef struct _UfoFilterClass      UfoFilterClass;
 typedef struct _UfoFilterPrivate    UfoFilterPrivate;
 
 /**
+ * UfoFilterConditionFunc:
+ * @value: Property value that should be checked
+ * @user_data: user data passed to the function
+ *
+ * A function that returns a boolean value depending on the input property.
+ *
+ * Returns: %TRUE if property satisfies condition else %FALSE
+ *
+ * Since: 0.2
+ */
+typedef gboolean (*UfoFilterConditionFunc) (GValue *value, gpointer user_data);
+
+/**
  * UfoFilter:
  *
  * Creates #UfoFilter instances by loading corresponding shared objects. The
@@ -77,6 +90,7 @@ void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu);
 void ufo_filter_account_gpu_time(UfoFilter *filter, gpointer event);
 float ufo_filter_get_gpu_time(UfoFilter *filter);
 const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);
+void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionFunc condition, gpointer user_data);
 
 
 GType ufo_filter_get_type(void);

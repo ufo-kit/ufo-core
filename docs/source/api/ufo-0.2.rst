@@ -409,6 +409,16 @@ UfoFilter
     :returns: NULL-terminated string owned by the filter
 
 
+.. c:function:: void ufo_filter_wait_until(UfoFilter* self, GParamSpec* pspec, UfoFilterConditionFunc condition, gpointer user_data)
+
+    Wait until a property specified by ``pspec`` fulfills
+    ``condition``.
+
+    :param pspec: The specification of the property
+    :param condition: A condition function to wait until it is satisfied
+    :param user_data: User data passed to the condition func
+
+
 UfoGraph
 ========
 

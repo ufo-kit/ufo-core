@@ -125,3 +125,36 @@ file ::
 in case your filter is still called ``AwesomeFoo``. Notice, that the variable
 name matches the plugin name with underscores before capitalized letters.
 
+
+.. _filters-block:
+
+Wait until a property satisfies a condition
+-------------------------------------------
+
+.. highlight:: c
+
+For some filters it could be important to not only wait until input buffers
+arrive but also properties change their values. For example, the back-projection
+should only start as soon as it is assigned a correct center-of-rotation. To
+implement this, we have to define a condition function that checks if a
+``GValue`` representing the current property satisfies a certain condition ::
+
+    static gboolean is_larger_than_zero(GValue *value, gpointer user_data)
+    {
+        return g_value_get_float(value) > 0.0f; 
+    }
+
+As the filter installed the properties it also knows which type it is and which
+``g_value_get_*()`` function to call. Now, we wait until this conditions holds
+using :c:func:`ufo_filter_wait_until` ::
+
+    /* Somewhere in ufo_filter_process() */
+    ufo_filter_wait_until(self, properties[PROP_CENTER_OF_ROTATION],
+            &is_larger_than_zero, NULL);
+
+.. warning:: 
+
+    :c:func:`ufo_filter_wait_until` might block indefinitely when the
+    condition function never returns ``TRUE``.
+
+.. seealso:: :ref:`faq-synchronize-properties`

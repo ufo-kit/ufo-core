@@ -106,3 +106,27 @@ wrapper around the :c:type:`UfoGraph` class that provides a ``new_filter`` metho
     g = ufotools.patch.Graph()
     rd = g.new_filter('reader', path='/home/src', count=5)
     wr = g.new_filter('writer', path='/home/dst', prefix='foo-')
+
+
+.. _faq-synchronize-properties:
+
+How can I synchronize two properties?
+-------------------------------------
+
+Although this is a general GObject question, synchronizing two properties is
+particularly important if the receiving filter depends on a changed property.
+For example, the back-projection should start only if a center-of-rotation is
+known. In Python you can use the ``bind_property`` function from the
+``ufotools`` module like this::
+
+    from gi.repository import Ufo
+    import ufotools.bind_property
+
+    g = Ufo.Graph()
+    cor = g.get_filter('centerofrotation')
+    bp = g.get_filter('backproject')
+
+    # Now connect the properties
+    ufotools.bind_property(cor, 'center', bp, 'axis-pos')
+
+In C, the similar ``g_object_bind_property`` function is provided out-of-the-box.

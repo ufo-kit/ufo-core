@@ -449,6 +449,32 @@ void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu)
         g_warning("Invalid GPU");
 }
 
+/**
+ * ufo_filter_wait_until:
+ * @filter: A #UfoFilter
+ * @pspec: The specification of the property
+ * @condition: A condition function to wait until it is satisfied
+ * @user_data: User data passed to the condition func
+ *
+ * Wait until a property specified by @pspec fulfills @condition.
+ */
+void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionFunc condition, gpointer user_data)
+{
+    GValue val = {0,};
+    g_value_init(&val, pspec->value_type);
+
+    while (1) {
+        g_object_get_property(G_OBJECT(filter), pspec->name, &val);
+
+        if (condition(&val, user_data))
+            break;
+
+        g_usleep(10000);
+    }
+
+    g_value_unset(&val);
+}
+
 static void ufo_filter_finalize(GObject *object)
 {
     UfoFilter *self = UFO_FILTER(object);

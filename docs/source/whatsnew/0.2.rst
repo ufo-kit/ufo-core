@@ -9,7 +9,7 @@ Major breakage
   documentation. Thus, any filter built for 0.1 cannot be used because they are
   simply not found.
 
-- Method get_filter() from UfoPluginManager received a new third parameter
+- :c:func:`ufo_plugin_manager_get_filter` received a new third parameter
   ``error`` that reports errors when opening and loading a UfoFilter from a
   shared object.
 
@@ -31,5 +31,7 @@ General improvements
 - The manual was restructured considerably.
 
 - Saving graphs as JSON files has been added via
-  c:func:`ufo_graph_save_to_json()`.
+  :c:func:`ufo_graph_save_to_json()`.
 
+- Filters can now wait until their properties satisfy a condition using
+  :c:func:`ufo_filter_wait_until`, see also :ref:`filters-block`.
