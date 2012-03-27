@@ -506,7 +506,7 @@ static GObject *ufo_graph_constructor(GType gtype, guint n_properties, GObjectCo
         return NULL;
 
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
-    gchar *paths = g_strdup_printf("%s:%s", LIB_FILTER_DIR, priv->paths);
+    gchar *paths = g_strdup_printf("%s:%s", priv->paths, LIB_FILTER_DIR);
     ufo_resource_manager_add_paths(priv->resource_manager, paths);
 
     priv->plugin_manager = ufo_plugin_manager_new();
