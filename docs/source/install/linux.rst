@@ -133,7 +133,19 @@ found when configuring the filters ::
 
   $ export PKG_CONFIG_PATH=/home/user/tmp/usr/lib/pkgconfig
 
-Now the library should be picked up by the filter's CMake process.
+Now you can build the filters. After installation you have to set the typelib
+and linker path so that everything is found at run-time ::
+
+  $ export GI_TYPELIB_PATH=/home/user/tmp/usr/lib/girepository-1.0
+  $ export LD_LIBRARY_PATH=/home/user/tmp/usr/lib:$LD_LIBRARY_PATH
+
+.. note:: 
+
+    It is strongly discouraged to abuse the library path for permanent
+    usage. Read some good arguments `here`__ and `here`__.
+
+__ http://web.archive.org/web/20060719201954/http://www.visi.com/~barr/ldpath.html
+__ http://linuxmafia.com/faq/Admin/ld-lib-path.html
 
 
 First Test

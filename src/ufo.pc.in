@@ -1,7 +1,7 @@
 prefix=@UFO_PKG_PREFIX@
 exec_prefix=${prefix}
 libdir=${prefix}/lib@LIB_SUFFIX@
-includedir=${prefix}/include/ufo
+includedir=${prefix}/include
 girdir=${prefix}/share/gir-1.0
 typelibdir=${prefix}/lib@LIB_SUFFIX@/girepository-1.0
 
