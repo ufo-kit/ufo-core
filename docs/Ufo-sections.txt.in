@@ -49,6 +49,7 @@ UFO_RESOURCE_MANAGER_GET_CLASS
 UfoResourceManagerClass
 UfoResourceManagerPrivate
 opencl_map_error
+ufo_resource_manager_error_quark
 </SECTION>
 
 <SECTION>
@@ -56,6 +57,7 @@ opencl_map_error
 <TITLE>UfoFilter</TITLE>
 UfoFilterError
 UfoFilter
+UfoFilterConditionFunc
 ufo_filter_initialize
 ufo_filter_process
 ufo_filter_set_command_queue
@@ -69,6 +71,7 @@ ufo_filter_get_input_channel
 ufo_filter_get_output_channel
 ufo_filter_get_input_channel_by_name
 ufo_filter_get_output_channel_by_name
+ufo_filter_wait_until
 ufo_filter_set_gpu_affinity
 ufo_filter_account_gpu_time
 ufo_filter_get_gpu_time
@@ -139,6 +142,7 @@ UFO_GRAPH_GET_CLASS
 UFO_GRAPH_ERROR
 UfoGraphClass
 UfoGraphPrivate
+ufo_graph_error_quark
 </SECTION>
 
 <SECTION>
@@ -184,4 +188,5 @@ ufo_buffer_param_get_type
 <SUBSECTION Private>
 UfoBufferPrivate
 UfoBufferClass
+ufo_buffer_error_quark
 </SECTION>
