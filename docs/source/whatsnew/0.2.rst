@@ -13,6 +13,10 @@ Major breakage
   ``error`` that reports errors when opening and loading a UfoFilter from a
   shared object.
 
+- :c:func:`ufo_resource_manager_add_program` is removed.
+
+- The kernel file name must be passed to :c:func:`ufo_resource_manager_get_kernel`.
+
 - The ``CHECK_ERROR`` macro defined in ``ufo-resource-manager.h`` was renamed to
   ``CHECK_OPENCL_ERROR`` to better reflect its real purpose.
 

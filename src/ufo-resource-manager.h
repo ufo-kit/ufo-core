@@ -53,8 +53,7 @@ struct _UfoResourceManagerClass {
 UfoResourceManager *ufo_resource_manager(void);
 
 void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *paths);
-gboolean ufo_resource_manager_add_program(UfoResourceManager *manager, const gchar *filename, const gchar *options, GError **error);
-gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gchar *kernel_name, GError **error);
+gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gchar *filename, const gchar *kernel_name, GError **error);
 gpointer ufo_resource_manager_get_context(UfoResourceManager *manager);
 void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpointer *command_queues, guint *num_queues);
 guint ufo_resource_manager_get_number_of_devices(UfoResourceManager *manager);

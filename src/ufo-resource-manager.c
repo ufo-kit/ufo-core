@@ -40,12 +40,9 @@ struct _UfoResourceManagerPrivate {
     cl_command_queue *command_queues;   /**< Array of command queues per device */
 
     gchar *paths;                       /**< Colon-separated string with paths to kernel files */
-    GList *opencl_files;
-    GList *opencl_kernel_table;
-    GList *opencl_programs;
+    GHashTable *opencl_programs;        /**< Map from filename to cl_program */
+    GList *opencl_kernels;
     GString *opencl_build_options;
-
-    GHashTable *opencl_kernels;         /**< maps from kernel string to cl_kernel */
 
     guint current_id;                   /**< current non-assigned buffer id */
 
@@ -152,15 +149,17 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
     return buffer;
 }
 
-static void resource_manager_release_kernel(gpointer data)
+static void resource_manager_release_kernel(gpointer data, gpointer user_data)
 {
     cl_kernel kernel = (cl_kernel) data;
+    g_debug("Release kernel %p\n", kernel);
     CHECK_OPENCL_ERROR(clReleaseKernel(kernel));
 }
 
-static void resource_manager_release_program(gpointer data, gpointer user_data)
+static void resource_manager_release_program(gpointer data)
 {
     cl_program program = (cl_program) data;
+    g_debug("Release program %p\n", program);
     CHECK_OPENCL_ERROR(clReleaseProgram(program));
 }
 
@@ -220,7 +219,7 @@ UfoResourceManager *ufo_resource_manager(void)
  * @paths: A string with a list of colon-separated paths
  *
  * Each path in @paths is used when searching for kernel files using
- * ufo_resource_manager_add_program() in the order that they are passed in.
+ * ufo_resource_manager_get_kernel() in the order that they are passed in.
  */
 void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *paths)
 {
@@ -231,36 +230,21 @@ void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *pa
     priv->paths = new_paths;
 }
 
-/**
- * ufo_resource_manager_add_program:
- * @manager: A #UfoResourceManager
- * @filename: Name or path of an ASCII-encoded kernel file
- * @options: (in) (allow-none): Additional build options such as "-DX=Y", or NULL
- * @error: Return locatation for a GError, or NULL
- *
- * Opens, loads and builds an OpenCL kernel file either by an absolute path or
- * by looking up the file in all directories specified by
- * ufo_resource_manager_add_paths(). After successfully building the program,
- * individual kernels can be accessed using ufo_resource_manager_get_kernel().
- *
- * Return value: TRUE on success, FALSE if an error occurred
- */
-gboolean ufo_resource_manager_add_program(
-        UfoResourceManager *manager,
-        const gchar *filename,
-        const gchar *options,
-        GError **error)
+static cl_program resource_manager_add_program(UfoResourceManager *manager,
+        const gchar *filename, const gchar *options, GError **error)
 {
     g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (filename != NULL), FALSE);
     UfoResourceManagerPrivate *priv = manager->priv;
+
     /* programs might be added multiple times if this is not locked */
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
     g_static_mutex_lock(&mutex);
 
     /* Don't process the kernel file again, if already load */
-    if (g_list_find_custom(priv->opencl_files, filename, (GCompareFunc) g_strcmp0)) {
+    cl_program program = g_hash_table_lookup(priv->opencl_programs, filename);
+    if (program != NULL) {
         g_static_mutex_unlock(&mutex);
-        return TRUE;
+        return program;
     }
 
     gchar *path = resource_manager_find_path(priv, filename);
@@ -272,7 +256,7 @@ gboolean ufo_resource_manager_add_program(
                     "Could not find %s",
                     filename);
         g_static_mutex_unlock(&mutex);
-        return FALSE;
+        return NULL;
     }
 
     gchar *buffer = resource_manager_load_opencl_program(path);
@@ -285,12 +269,11 @@ gboolean ufo_resource_manager_add_program(
                     "Could not open %s",
                     filename);
         g_static_mutex_unlock(&mutex);
-        return FALSE;
+        return NULL;
     }
 
-    priv->opencl_files = g_list_append(priv->opencl_files, g_strdup(filename));
     int errcode = CL_SUCCESS;
-    cl_program program = clCreateProgramWithSource(priv->opencl_context,
+    program = clCreateProgramWithSource(priv->opencl_context,
                          1, (const char **) &buffer, NULL, &errcode);
 
     if (errcode != CL_SUCCESS) {
@@ -300,11 +283,9 @@ gboolean ufo_resource_manager_add_program(
                     "Failed to create OpenCL program: %s", opencl_map_error(errcode));
         g_static_mutex_unlock(&mutex);
         g_free(buffer);
-        return FALSE;
+        return NULL;
     }
 
-    priv->opencl_programs = g_list_append(priv->opencl_programs, program);
-    /* Concatenate global build options with per-program options */
     gchar *build_options = NULL;
 
     if (options != NULL)
@@ -312,7 +293,6 @@ gboolean ufo_resource_manager_add_program(
     else
         build_options = priv->opencl_build_options->str;
 
-    /* TODO: build program for each platform?!*/
     errcode = clBuildProgram(program,
                              priv->num_devices[0],
                              priv->opencl_devices[0],
@@ -335,49 +315,43 @@ gboolean ufo_resource_manager_add_program(
         g_free(log);
         g_free(buffer);
         g_static_mutex_unlock(&mutex);
-        return FALSE;
+        return NULL;
     }
 
-    /* Create all kernels in the program source and map their function names to
-     * the corresponding cl_kernel object */
-    cl_uint num_kernels;
-    CHECK_OPENCL_ERROR(clCreateKernelsInProgram(program, 0, NULL, &num_kernels));
-    cl_kernel *kernels = (cl_kernel *) g_malloc0(num_kernels * sizeof(cl_kernel));
-    CHECK_OPENCL_ERROR(clCreateKernelsInProgram(program, num_kernels, kernels, NULL));
-    priv->opencl_kernel_table = g_list_append(priv->opencl_kernel_table, kernels);
-
-    for (guint i = 0; i < num_kernels; i++) {
-        size_t kernel_name_length;
-        CHECK_OPENCL_ERROR(clGetKernelInfo(kernels[i], CL_KERNEL_FUNCTION_NAME,
-                                    0, NULL,
-                                    &kernel_name_length));
-        gchar *kernel_name = (gchar *) g_malloc0(kernel_name_length);
-        CHECK_OPENCL_ERROR(clGetKernelInfo(kernels[i], CL_KERNEL_FUNCTION_NAME,
-                                    kernel_name_length, kernel_name,
-                                    NULL));
-        g_hash_table_insert(priv->opencl_kernels, kernel_name, kernels[i]);
-    }
+    g_hash_table_insert(priv->opencl_programs, g_strdup(filename), program);
 
     g_static_mutex_unlock(&mutex);
     g_free(buffer);
-    return TRUE;
+    return program;
 }
 
 /**
  * ufo_resource_manager_get_kernel:
  * @manager: A #UfoResourceManager
+ * @filename: Name of the .cl kernel file
  * @kernel_name: Name of a kernel
  * @error: Return location for a GError, or NULL
  *
- * Returns a kernel that has been previously loaded with ufo_resource_manager_add_program()
- *
- * Return value: The cl_kernel object identified by the kernel name
+ * Returns: a cl_kernel object that is load from @filename
  */
-gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gchar *kernel_name, GError **error)
+gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gchar *filename, const gchar *kernel_name, GError **error)
 {
-    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (kernel_name != NULL), NULL);
-    cl_kernel kernel = (cl_kernel) g_hash_table_lookup(manager->priv->opencl_kernels, kernel_name);
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) && 
+            (filename != NULL) && (kernel_name != NULL), NULL);
 
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
+    GError *tmp_error = NULL;
+    
+    cl_program program = resource_manager_add_program(manager, filename, "", &tmp_error);
+
+    if (program == NULL) {
+        g_propagate_error(error, tmp_error);
+        return NULL;
+    }
+
+    cl_kernel kernel = clCreateKernel(program, kernel_name, NULL);
+
+    /* TODO: check real OpenCL error code */
     if (kernel == NULL) {
         g_set_error(error,
                     UFO_RESOURCE_MANAGER_ERROR,
@@ -386,9 +360,11 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gcha
         return NULL;
     }
 
+    priv->opencl_kernels = g_list_append(priv->opencl_kernels, kernel);
     CHECK_OPENCL_ERROR(clRetainKernel(kernel));
     return kernel;
 }
+
 
 /* void ufo_resource_manager_call(UfoResourceManager *manager, */
 /*                                const gchar *kernel_name, */
@@ -586,19 +562,17 @@ static void ufo_resource_manager_finalize(GObject *gobject)
 {
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
+
 #ifdef WITH_PROFILING
     g_message("Memory transfer time between host and device");
     g_message("  To Device: %.4lfs", priv->upload_time);
     g_message("  To Host..: %.4lfs", priv->download_time);
     g_message("  Total....: %.4lfs", priv->upload_time + priv->download_time);
 #endif
-    g_hash_table_destroy(priv->opencl_kernels);
-    g_list_foreach(priv->opencl_files, (GFunc) g_free, NULL);
-    g_list_free(priv->opencl_files);
-    g_list_foreach(priv->opencl_kernel_table, (GFunc) g_free, NULL);
-    g_list_free(priv->opencl_kernel_table);
-    g_list_foreach(priv->opencl_programs, resource_manager_release_program, NULL);
-    g_list_free(priv->opencl_programs);
+
+    g_hash_table_destroy(priv->opencl_programs);
+    g_list_foreach(priv->opencl_kernels, resource_manager_release_kernel, NULL);
+    g_list_free(priv->opencl_kernels);
 
     for (guint i = 0; i < priv->num_devices[0]; i++)
         clReleaseCommandQueue(priv->command_queues[i]);
@@ -637,12 +611,12 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     priv->upload_time = 0.0f;
     priv->download_time = 0.0f;
     priv->paths = g_strdup_printf(".");
-    priv->opencl_kernel_table = NULL;
-    priv->opencl_kernels = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, resource_manager_release_kernel);
-    priv->opencl_platforms = NULL;
-    priv->opencl_programs = NULL;
-    priv->opencl_build_options = g_string_new("-cl-mad-enable ");
     priv->current_id = 0;
+
+    priv->opencl_programs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, resource_manager_release_program);
+    priv->opencl_kernels = NULL;
+    priv->opencl_platforms = NULL;
+    priv->opencl_build_options = g_string_new("-cl-mad-enable ");
 
     g_debug("Ufo version %s\n", UFO_VERSION);
 

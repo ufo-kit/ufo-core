@@ -27,7 +27,6 @@ UfoResourceManager
 CHECK_OPENCL_ERROR
 ufo_resource_manager
 ufo_resource_manager_add_paths
-ufo_resource_manager_add_program
 ufo_resource_manager_get_kernel
 ufo_resource_manager_get_context
 ufo_resource_manager_get_command_queues
