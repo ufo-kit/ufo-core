@@ -15,6 +15,15 @@ typedef struct _UfoResourceManager           UfoResourceManager;
 typedef struct _UfoResourceManagerClass      UfoResourceManagerClass;
 typedef struct _UfoResourceManagerPrivate    UfoResourceManagerPrivate;
 
+#define UFO_RESOURCE_MANAGER_ERROR ufo_resource_manager_error_quark()
+typedef enum {
+    UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
+    UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
+    UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
+    UFO_RESOURCE_MANAGER_ERROR_CREATE_KERNEL
+} UfoResourceManagerError;
+
+
 const gchar *opencl_map_error(int error);
 
 /**

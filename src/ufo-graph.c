@@ -13,7 +13,6 @@
 #endif
 
 #include "config.h"
-
 #include "ufo-graph.h"
 #include "ufo-resource-manager.h"
 #include "ufo-plugin-manager.h"

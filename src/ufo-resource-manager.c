@@ -19,13 +19,19 @@ G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT)
 
 #define UFO_RESOURCE_MANAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_RESOURCE_MANAGER, UfoResourceManagerPrivate))
 
-#define UFO_RESOURCE_MANAGER_ERROR ufo_resource_manager_error_quark()
-enum UfoResourceManagerError {
-    UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
-    UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
-    UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
-    UFO_RESOURCE_MANAGER_ERROR_KERNEL_NOT_FOUND
-};
+/**
+ * UfoResourceManagerError:
+ * @UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM: Could not load the OpenCL file
+ * @UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM: Could not create a program from
+ *      the sources
+ * @UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM: Could not build program from
+ *      sources
+ * @UFO_RESOURCE_MANAGER_ERROR_CREATE_KERNEL: Could not create kernel
+ */
+GQuark ufo_resource_manager_error_quark(void)
+{
+    return g_quark_from_static_string("ufo-resource-manager-error-quark");
+}
 
 static UfoResourceManager *manager_singleton = NULL;
 
@@ -152,14 +158,12 @@ static gchar *resource_manager_load_opencl_program(const gchar *filename)
 static void resource_manager_release_kernel(gpointer data, gpointer user_data)
 {
     cl_kernel kernel = (cl_kernel) data;
-    g_debug("Release kernel %p\n", kernel);
     CHECK_OPENCL_ERROR(clReleaseKernel(kernel));
 }
 
 static void resource_manager_release_program(gpointer data)
 {
     cl_program program = (cl_program) data;
-    g_debug("Release program %p\n", program);
     CHECK_OPENCL_ERROR(clReleaseProgram(program));
 }
 
@@ -191,11 +195,6 @@ static gchar *resource_manager_find_path(UfoResourceManagerPrivate *priv,
 
     g_strfreev(path_list);
     return NULL;
-}
-
-GQuark ufo_resource_manager_error_quark(void)
-{
-    return g_quark_from_static_string("ufo-resource-manager-error-quark");
 }
 
 /**
@@ -242,6 +241,7 @@ static cl_program resource_manager_add_program(UfoResourceManager *manager,
 
     /* Don't process the kernel file again, if already load */
     cl_program program = g_hash_table_lookup(priv->opencl_programs, filename);
+
     if (program != NULL) {
         g_static_mutex_unlock(&mutex);
         return program;
@@ -306,7 +306,8 @@ static cl_program resource_manager_add_program(UfoResourceManager *manager,
         g_set_error(error,
                     UFO_RESOURCE_MANAGER_ERROR,
                     UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
-                    "Failed to build OpenCL program");
+                    "Failed to build OpenCL program: %s", opencl_map_error(errcode));
+
         const gsize LOG_SIZE = 4096;
         gchar *log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
         CHECK_OPENCL_ERROR(clGetProgramBuildInfo(program, priv->opencl_devices[0][0],
@@ -330,11 +331,12 @@ static cl_program resource_manager_add_program(UfoResourceManager *manager,
  * @manager: A #UfoResourceManager
  * @filename: Name of the .cl kernel file
  * @kernel_name: Name of a kernel
- * @error: Return location for a GError, or NULL
+ * @error: Return location for a GError from #UfoResourceManagerError, or NULL
  *
  * Returns: a cl_kernel object that is load from @filename
  */
-gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gchar *filename, const gchar *kernel_name, GError **error)
+gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, 
+        const gchar *filename, const gchar *kernel_name, GError **error)
 {
     g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) && 
             (filename != NULL) && (kernel_name != NULL), NULL);
@@ -349,14 +351,15 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, const gcha
         return NULL;
     }
 
-    cl_kernel kernel = clCreateKernel(program, kernel_name, NULL);
+    cl_int errcode = CL_SUCCESS;
+    cl_kernel kernel = clCreateKernel(program, kernel_name, &errcode);
 
     /* TODO: check real OpenCL error code */
     if (kernel == NULL) {
         g_set_error(error,
                     UFO_RESOURCE_MANAGER_ERROR,
-                    UFO_RESOURCE_MANAGER_ERROR_KERNEL_NOT_FOUND,
-                    "Kernel '%s' not found", kernel_name);
+                    UFO_RESOURCE_MANAGER_ERROR_CREATE_KERNEL,
+                    "Failed to create kernel: %s", opencl_map_error(errcode));
         return NULL;
     }
 
@@ -664,6 +667,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
     g_free(info_buffer);
     cl_command_queue_properties queue_properties = 0;
+
 #ifdef WITH_PROFILING
     queue_properties = CL_QUEUE_PROFILING_ENABLE;
 #endif

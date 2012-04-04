@@ -23,8 +23,9 @@ ufo_plugin_manager_error_quark
 <SECTION>
 <FILE>ufo-resource-manager</FILE>
 <TITLE>UfoResourceManager</TITLE>
-UfoResourceManager
 CHECK_OPENCL_ERROR
+UfoResourceManagerError
+UfoResourceManager
 ufo_resource_manager
 ufo_resource_manager_add_paths
 ufo_resource_manager_get_kernel
@@ -45,6 +46,7 @@ UFO_RESOURCE_MANAGER_CLASS
 UFO_IS_RESOURCE_MANAGER_CLASS
 UFO_RESOURCE_MANAGER_GET_CLASS
 <SUBSECTION Private>
+UFO_RESOURCE_MANAGER_ERROR
 UfoResourceManagerClass
 UfoResourceManagerPrivate
 opencl_map_error
