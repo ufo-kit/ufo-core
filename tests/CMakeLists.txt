@@ -35,19 +35,6 @@ if (WITH_TESTS)
         list(APPEND TEST_DEPENDENCIES "${CMAKE_CURRENT_SOURCE_DIR}/../src/${_dependency}")
     endforeach()
 
-    find_program(GTESTER gtester REQUIRED)
-
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/results.xml
-        COMMAND ${GTESTER}
-                ${TEST_BINARIES}
-                -o results.xml
-                DEPENDS ${TEST_DEPENDENCIES}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-
-    add_custom_target(gtest ALL DEPENDS 
-        ${TEST_BINARIES}
-        ${CMAKE_CURRENT_BINARY_DIR}/results.xml)
-
     add_executable(runjson test.c)
     target_link_libraries(runjson ufo ${GLIB2_LIBRARIES})
 endif()
