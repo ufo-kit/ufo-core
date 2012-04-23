@@ -55,16 +55,9 @@ static void ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter)
     UfoFilter${prefix_camel} *self = UFO_FILTER_${prefix_upper}(filter);
     UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
-    self->priv->kernel = NULL;
+    self->priv->kernel = ufo_resource_manager_get_kernel(manager,
+            "kernel-file.cl", "kernelname", &error);
 
-    ufo_resource_manager_add_program(manager, "foo-kernel-file.cl", NULL, &error);
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-        return;
-    }
-
-    self->priv->kernel = ufo_resource_manager_get_kernel(manager, "foo-kernel", &error);
     if (error != NULL) {
         g_warning("%s", error->message);
         g_error_free(error);
