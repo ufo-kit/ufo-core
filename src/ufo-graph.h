@@ -43,7 +43,7 @@ struct _UfoGraphClass {
     GObjectClass parent_class;
 };
 
-UfoGraph *ufo_graph_new(void);
+UfoGraph *ufo_graph_new(const gchar *paths);
 void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error);
 void ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **error);
 void ufo_graph_run(UfoGraph *graph, GError **error);

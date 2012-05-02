@@ -24,6 +24,7 @@ Major breakage
   the current API. Thus, JSON files that worked under Ufo 0.1 cannot be read
   with Ufo 0.2.
 
+- :c:func:`ufo_graph_new` takes the paths parameter.
 
 General improvements
 ====================

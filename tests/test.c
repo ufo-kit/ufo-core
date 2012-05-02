@@ -22,10 +22,11 @@ int main(int argc, char const* argv[])
         return 0;
     }
     UfoGraph *graph = NULL;
+
     if (argc == 2)
-        graph = ufo_graph_new();
+        graph = ufo_graph_new("");
     else
-        graph = g_object_new(UFO_TYPE_GRAPH, "paths", argv[2], NULL);
+        graph = ufo_graph_new(argv[2]);
 
     ufo_graph_read_from_json(graph, argv[1], &error);
     handle_error(error, graph);

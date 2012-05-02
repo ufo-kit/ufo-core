@@ -243,12 +243,14 @@ static void graph_check_consistency(UfoGraphPrivate *priv)
 
 /**
  * ufo_graph_new:
+ * @paths: A string with a colon-separated list of paths that are used to search
+ *      for OpenCL kernel files and header files included by OpenCL kernels.
  *
  * Create a new #UfoGraph. 
  *
  * Return value: A #UfoGraph.
  */
-UfoGraph *ufo_graph_new(void)
+UfoGraph *ufo_graph_new(const gchar *paths)
 {
     return UFO_GRAPH(g_object_new(UFO_TYPE_GRAPH, NULL));
 }
