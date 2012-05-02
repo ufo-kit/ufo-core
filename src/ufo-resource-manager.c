@@ -45,10 +45,11 @@ struct _UfoResourceManagerPrivate {
     cl_device_id **opencl_devices;      /**< Array of OpenCL devices per platform id */
     cl_command_queue *command_queues;   /**< Array of command queues per device */
 
-    gchar *paths;                       /**< Colon-separated string with paths to kernel files */
+    GList *kernel_paths;                /**< Colon-separated string with paths to kernel files */
     GHashTable *opencl_programs;        /**< Map from filename to cl_program */
     GList *opencl_kernels;
     GString *opencl_build_options;
+    GString *include_paths;             /**< List of include paths "-I/foo/bar" built from added paths */
 
     guint current_id;                   /**< current non-assigned buffer id */
 
@@ -179,21 +180,18 @@ static gchar *resource_manager_find_path(UfoResourceManagerPrivate *priv,
     }
 
     /* If it is not a path, search in all paths that were added */
-    gchar **path_list = g_strsplit(priv->paths, ":", 0);
-    gchar **p = path_list;
+    GList *elem = g_list_first(priv->kernel_paths);
 
-    while (*p != NULL) {
-        gchar *path = g_strdup_printf("%s%c%s", *(p++), G_DIR_SEPARATOR, filename);
+    while (elem != NULL) {
+        gchar *path = g_strdup_printf("%s%c%s", (gchar *) elem->data, G_DIR_SEPARATOR, filename);
 
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) {
-            g_strfreev(path_list);
+        if (g_file_test(path, G_FILE_TEST_EXISTS))
             return path;
-        }
 
         g_free(path);
+        elem = g_list_next(elem);
     }
 
-    g_strfreev(path_list);
     return NULL;
 }
 
@@ -224,9 +222,19 @@ void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *pa
 {
     g_return_if_fail(UFO_IS_RESOURCE_MANAGER(manager));
     UfoResourceManagerPrivate *priv = manager->priv;
-    gchar *new_paths = g_strdup_printf("%s:%s", priv->paths, paths);
-    g_free(priv->paths);
-    priv->paths = new_paths;
+
+    /*
+     * Add each of the path to the include paths for header file inclusion
+     */
+    gchar **path_list = g_strsplit(paths, ":", 0);
+    gchar **p = path_list;
+
+    while (*p != NULL) {
+        priv->kernel_paths = g_list_append(priv->kernel_paths, g_strdup(*p));
+        g_string_append_printf(priv->include_paths, "-I%s ", *(p++));
+    }
+
+    g_strfreev(path_list);
 }
 
 static cl_program resource_manager_add_program(UfoResourceManager *manager,
@@ -234,6 +242,8 @@ static cl_program resource_manager_add_program(UfoResourceManager *manager,
 {
     g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (filename != NULL), FALSE);
     UfoResourceManagerPrivate *priv = manager->priv;
+    gchar *build_options = NULL;
+    cl_int errcode = CL_SUCCESS;
 
     /* programs might be added multiple times if this is not locked */
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
@@ -272,7 +282,6 @@ static cl_program resource_manager_add_program(UfoResourceManager *manager,
         return NULL;
     }
 
-    int errcode = CL_SUCCESS;
     program = clCreateProgramWithSource(priv->opencl_context,
                          1, (const char **) &buffer, NULL, &errcode);
 
@@ -286,21 +295,17 @@ static cl_program resource_manager_add_program(UfoResourceManager *manager,
         return NULL;
     }
 
-    gchar *build_options = NULL;
-
     if (options != NULL)
-        build_options = g_strdup_printf("%s %s", priv->opencl_build_options->str, options);
+        build_options = g_strdup_printf("%s %s %s", priv->opencl_build_options->str, priv->include_paths->str, options);
     else
-        build_options = priv->opencl_build_options->str;
+        build_options = g_strdup_printf("%s %s", priv->opencl_build_options->str, priv->include_paths->str);
 
     errcode = clBuildProgram(program,
                              priv->num_devices[0],
                              priv->opencl_devices[0],
                              build_options,
                              NULL, NULL);
-
-    if (options)
-        g_free(build_options);
+    g_free(build_options);
 
     if (errcode != CL_SUCCESS) {
         g_set_error(error,
@@ -574,6 +579,8 @@ static void ufo_resource_manager_finalize(GObject *gobject)
 #endif
 
     g_hash_table_destroy(priv->opencl_programs);
+    g_list_foreach(priv->kernel_paths, (GFunc) g_free, NULL);
+    g_list_free(priv->kernel_paths);
     g_list_foreach(priv->opencl_kernels, resource_manager_release_kernel, NULL);
     g_list_free(priv->opencl_kernels);
 
@@ -582,6 +589,7 @@ static void ufo_resource_manager_finalize(GObject *gobject)
 
     CHECK_OPENCL_ERROR(clReleaseContext(priv->opencl_context));
     g_string_free(priv->opencl_build_options, TRUE);
+    g_string_free(priv->include_paths, TRUE);
 
     for (guint i = 0; i < priv->num_platforms; i ++)
         g_free(priv->opencl_devices[i]);
@@ -613,13 +621,14 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     self->priv = priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
     priv->upload_time = 0.0f;
     priv->download_time = 0.0f;
-    priv->paths = g_strdup_printf(".");
     priv->current_id = 0;
 
     priv->opencl_programs = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, resource_manager_release_program);
+    priv->kernel_paths = g_list_append(NULL, g_strdup("."));
     priv->opencl_kernels = NULL;
     priv->opencl_platforms = NULL;
     priv->opencl_build_options = g_string_new("-cl-mad-enable ");
+    priv->include_paths = g_string_new("-I. ");
 
     g_debug("Ufo version %s\n", UFO_VERSION);
 
