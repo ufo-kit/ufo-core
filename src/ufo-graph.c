@@ -405,7 +405,7 @@ void ufo_graph_run(UfoGraph *graph, GError **error)
 GList *ufo_graph_get_filter_names(UfoGraph *graph)
 {
     g_return_val_if_fail(UFO_IS_GRAPH(graph), NULL);
-    return NULL;
+    return ufo_plugin_manager_available_filters(graph->priv->plugin_manager);
 }
 
 /**

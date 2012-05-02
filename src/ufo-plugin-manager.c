@@ -11,6 +11,7 @@
  * reported as one of #UfoPluginManagerError codes.
  */
 #include <gmodule.h>
+#include <glob.h>
 #include "ufo-plugin-manager.h"
 
 
@@ -163,6 +164,49 @@ UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar 
 handle_error:
     g_free(module_name);
     return NULL;
+}
+
+/**
+ * ufo_plugin_manager_available_filters:
+ * @name: Name of the plugin.
+ *
+ * Return a list with potential filter names that match shared objects in all
+ * search paths.
+ *
+ * Return value: (element-type utf8) (transfer full): List of strings with filter names
+ */
+GList *ufo_plugin_manager_available_filters(UfoPluginManager *manager)
+{
+    g_return_val_if_fail(UFO_IS_PLUGIN_MANAGER(manager), NULL);
+    UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE(manager);
+    GList *result = NULL;
+    GSList *path = g_slist_nth(priv->search_paths, 0);
+
+    GRegex *regex = g_regex_new("libufofilter([A-Za-z]+).so", 0, 0, NULL);
+    GMatchInfo *match_info = NULL;
+
+    while (path != NULL) {
+        glob_t glob_vector;
+        gchar *pattern = g_strdup_printf("%s%clibufofilter*.so", (gchar *) path->data, G_DIR_SEPARATOR);
+        glob(pattern, GLOB_MARK | GLOB_TILDE, NULL, &glob_vector);
+        g_free(pattern);
+        gsize i = 0;
+
+        while (i < glob_vector.gl_pathc) {
+            g_regex_match(regex, glob_vector.gl_pathv[i], 0, &match_info);
+            if (g_match_info_matches(match_info)) {
+                gchar *word = g_match_info_fetch(match_info, 1); 
+                result = g_list_append(result, word);
+            }
+            i++;
+        }
+
+        path = g_slist_next(path);
+    }
+
+    g_match_info_free(match_info);
+    g_regex_unref(regex);
+    return result;
 }
 
 static void ufo_plugin_manager_finalize(GObject *gobject)
