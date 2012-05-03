@@ -79,7 +79,7 @@ static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
 
     /* If you provide any output, you must allocate output buffers of the
        appropriate size */
-    gint32 dimensions[2] = { 256, 256 };
+    guint dimensions[2] = { 256, 256 };
     ufo_channel_allocate_output_buffers(output_channel, 2, dimensions);
 
     while (input != NULL) {
