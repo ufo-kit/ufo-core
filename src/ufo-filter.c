@@ -98,18 +98,9 @@ void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name)
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
     priv->plugin_name = g_strdup(plugin_name);
-
-    if (UFO_FILTER_GET_CLASS(filter)->initialize != NULL)
-        UFO_FILTER_GET_CLASS(filter)->initialize(filter);
 }
 
-/**
- * ufo_filter_process:
- * @filter: A #UfoFilter.
- *
- * Execute a filter.
- */
-void ufo_filter_process(UfoFilter *filter)
+static void ufo_filter_process_deprecated(UfoFilter *filter)
 {
     if (UFO_FILTER_GET_CLASS(filter)->process != NULL) {
         GTimer *timer = g_timer_new();
@@ -120,6 +111,70 @@ void ufo_filter_process(UfoFilter *filter)
     }
     else
         g_warning("%s::process not implemented", filter->priv->plugin_name);
+}
+
+/**
+ * ufo_filter_process:
+ * @filter: A #UfoFilter.
+ *
+ * Execute a filter.
+ */
+void ufo_filter_process(UfoFilter *filter)
+{
+    UfoFilterClass *filter_class = UFO_FILTER_GET_CLASS(filter);
+    UfoFilterPrivate *priv = filter->priv;
+    enum { INIT, WORK, FINISH } state = INIT;
+
+    /* TODO: Consider GPU case */
+    if (filter_class->process_cpu != NULL) {
+        guint num_inputs = priv->input_names->len;
+        UfoBuffer **work = g_malloc(num_inputs * sizeof(UfoBuffer *));
+        UfoChannel **input_channels = g_malloc(num_inputs * sizeof(UfoChannel *));
+
+        /*
+         * Build a linearly ordered list of input channels
+         */
+        for (guint i = 0; i < num_inputs; i++) {
+            gchar *input_name = g_ptr_array_index(priv->input_names, i); 
+            input_channels[i] = (UfoChannel *) g_hash_table_lookup(priv->input_channels, input_name);
+        }
+
+        while (state != FINISH) {
+            /*
+             * Collect the data from all inputs to transfer it over to the
+             * filter in one pass
+             */
+            for (guint i = 0; i < num_inputs; i++) {
+                work[i] = ufo_channel_get_input_buffer(input_channels[i]); 
+                if (work[i] == NULL) {
+                    state = FINISH;
+                    break;
+                }
+            } 
+
+            if (state != FINISH) {
+                if (state == INIT && filter_class->initialize != NULL) {
+                    filter_class->initialize(filter, work);
+                    state = WORK;
+                }
+
+                /* 
+                 * At this point we can decide where to run the filter and also
+                 * change command queues to distribute work across devices.
+                 */
+                filter_class->process_cpu(filter, work);
+
+                for (guint i = 0; i < num_inputs; i++)
+                    ufo_channel_finalize_input_buffer(input_channels[i], work[i]);
+            }
+        }
+
+        g_free(input_channels);
+        g_free(work);
+    }
+    else {
+        ufo_filter_process_deprecated(filter);
+    }
 }
 
 /**

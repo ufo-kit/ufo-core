@@ -66,7 +66,8 @@ struct _UfoFilterClass {
     GObjectClass parent;
 
     void (*process) (UfoFilter *filter);
-    void (*initialize) (UfoFilter *filter);
+    void (*process_cpu) (UfoFilter *filter, UfoBuffer *params[]);
+    void (*initialize) (UfoFilter *filter, UfoBuffer *params[]);
 };
 
 void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
