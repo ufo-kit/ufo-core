@@ -237,13 +237,57 @@ void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *pa
     g_strfreev(path_list);
 }
 
+static cl_program resource_manager_add_program_from_source(UfoResourceManagerPrivate *priv,
+        const gchar *source, const gchar *options, GError **error)
+{
+    gchar *build_options = NULL;
+    cl_int errcode = CL_SUCCESS;
+    cl_program program = clCreateProgramWithSource(priv->opencl_context,
+                         1, &source, NULL, &errcode);
+
+    if (errcode != CL_SUCCESS) {
+        g_set_error(error,
+                    UFO_RESOURCE_MANAGER_ERROR,
+                    UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
+                    "Failed to create OpenCL program: %s", opencl_map_error(errcode));
+        return NULL;
+    }
+
+    if (options != NULL)
+        build_options = g_strdup_printf("%s %s %s", priv->opencl_build_options->str, priv->include_paths->str, options);
+    else
+        build_options = g_strdup_printf("%s %s", priv->opencl_build_options->str, priv->include_paths->str);
+
+    errcode = clBuildProgram(program,
+                             priv->num_devices[0],
+                             priv->opencl_devices[0],
+                             build_options,
+                             NULL, NULL);
+    g_free(build_options);
+
+    if (errcode != CL_SUCCESS) {
+        g_set_error(error,
+                    UFO_RESOURCE_MANAGER_ERROR,
+                    UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
+                    "Failed to build OpenCL program: %s", opencl_map_error(errcode));
+
+        const gsize LOG_SIZE = 4096;
+        gchar *log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
+        CHECK_OPENCL_ERROR(clGetProgramBuildInfo(program, priv->opencl_devices[0][0],
+                                          CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void *) log, NULL));
+        g_print("\n=== Build log for s===%s\n\n", log);
+        g_free(log);
+        return NULL;
+    }
+
+    return program;
+}
+
 static cl_program resource_manager_add_program(UfoResourceManager *manager,
         const gchar *filename, const gchar *options, GError **error)
 {
     g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (filename != NULL), FALSE);
     UfoResourceManagerPrivate *priv = manager->priv;
-    gchar *build_options = NULL;
-    cl_int errcode = CL_SUCCESS;
 
     /* programs might be added multiple times if this is not locked */
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
@@ -282,53 +326,34 @@ static cl_program resource_manager_add_program(UfoResourceManager *manager,
         return NULL;
     }
 
-    program = clCreateProgramWithSource(priv->opencl_context,
-                         1, (const char **) &buffer, NULL, &errcode);
+    program = resource_manager_add_program_from_source(priv, buffer, options, error);
 
-    if (errcode != CL_SUCCESS) {
-        g_set_error(error,
-                    UFO_RESOURCE_MANAGER_ERROR,
-                    UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
-                    "Failed to create OpenCL program: %s", opencl_map_error(errcode));
-        g_static_mutex_unlock(&mutex);
-        g_free(buffer);
-        return NULL;
-    }
-
-    if (options != NULL)
-        build_options = g_strdup_printf("%s %s %s", priv->opencl_build_options->str, priv->include_paths->str, options);
-    else
-        build_options = g_strdup_printf("%s %s", priv->opencl_build_options->str, priv->include_paths->str);
-
-    errcode = clBuildProgram(program,
-                             priv->num_devices[0],
-                             priv->opencl_devices[0],
-                             build_options,
-                             NULL, NULL);
-    g_free(build_options);
-
-    if (errcode != CL_SUCCESS) {
-        g_set_error(error,
-                    UFO_RESOURCE_MANAGER_ERROR,
-                    UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM,
-                    "Failed to build OpenCL program: %s", opencl_map_error(errcode));
-
-        const gsize LOG_SIZE = 4096;
-        gchar *log = (gchar *) g_malloc0(LOG_SIZE * sizeof(char));
-        CHECK_OPENCL_ERROR(clGetProgramBuildInfo(program, priv->opencl_devices[0][0],
-                                          CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void *) log, NULL));
-        g_print("\n=== Build log for %s===%s\n\n", filename, log);
-        g_free(log);
-        g_free(buffer);
-        g_static_mutex_unlock(&mutex);
-        return NULL;
-    }
-
-    g_hash_table_insert(priv->opencl_programs, g_strdup(filename), program);
+    if (program != NULL)
+        g_hash_table_insert(priv->opencl_programs, g_strdup(filename), program);
 
     g_static_mutex_unlock(&mutex);
     g_free(buffer);
     return program;
+}
+
+static cl_kernel resource_manager_get_kernel(UfoResourceManagerPrivate *priv, 
+        cl_program program, const gchar *kernel_name, GError **error)
+{
+    cl_int errcode = CL_SUCCESS;
+    cl_kernel kernel = clCreateKernel(program, kernel_name, &errcode);
+
+    /* TODO: check real OpenCL error code */
+    if (kernel == NULL) {
+        g_set_error(error,
+                    UFO_RESOURCE_MANAGER_ERROR,
+                    UFO_RESOURCE_MANAGER_ERROR_CREATE_KERNEL,
+                    "Failed to create kernel: %s", opencl_map_error(errcode));
+        return NULL;
+    }
+
+    priv->opencl_kernels = g_list_append(priv->opencl_kernels, kernel);
+    CHECK_OPENCL_ERROR(clRetainKernel(kernel));
+    return kernel;
 }
 
 /**
@@ -356,23 +381,26 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager,
         return NULL;
     }
 
-    cl_int errcode = CL_SUCCESS;
-    cl_kernel kernel = clCreateKernel(program, kernel_name, &errcode);
-
-    /* TODO: check real OpenCL error code */
-    if (kernel == NULL) {
-        g_set_error(error,
-                    UFO_RESOURCE_MANAGER_ERROR,
-                    UFO_RESOURCE_MANAGER_ERROR_CREATE_KERNEL,
-                    "Failed to create kernel: %s", opencl_map_error(errcode));
-        return NULL;
-    }
-
-    priv->opencl_kernels = g_list_append(priv->opencl_kernels, kernel);
-    CHECK_OPENCL_ERROR(clRetainKernel(kernel));
-    return kernel;
+    return resource_manager_get_kernel(priv, program, kernel_name, error);
 }
 
+gpointer ufo_resource_manager_get_kernel_from_source(UfoResourceManager *manager,
+        const gchar *source, const gchar *kernel_name, GError **error)
+{
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) && (source != NULL) && (kernel_name != NULL), NULL);
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
+    cl_program program = resource_manager_add_program_from_source(priv, source, NULL, error);
+
+    /*
+     * We add the program under a fake file name. This looks very brittle to me
+     * (kernel name could be the same as a source filename) but it should work
+     * in most cases.
+     */
+    if (program != NULL)
+        g_hash_table_insert(priv->opencl_programs, g_strdup(kernel_name), program);
+
+    return resource_manager_get_kernel(priv, program, kernel_name, error);
+}
 
 /* void ufo_resource_manager_call(UfoResourceManager *manager, */
 /*                                const gchar *kernel_name, */

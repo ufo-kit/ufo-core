@@ -40,3 +40,6 @@ General improvements
 
 - Filters can now wait until their properties satisfy a condition using
   :c:func:`ufo_filter_wait_until`, see also :ref:`filters-block`.
+
+- A new method :c:func:`ufo_resource_manager_get_kernel_from_source` so that
+  filters can load kernels directly from source.
