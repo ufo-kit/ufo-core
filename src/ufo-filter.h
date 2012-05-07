@@ -67,6 +67,7 @@ struct _UfoFilterClass {
 
     void (*process) (UfoFilter *filter);
     void (*process_cpu) (UfoFilter *filter, UfoBuffer *params[]);
+    void (*process_gpu) (UfoFilter *filter, UfoBuffer *params[]);
     void (*initialize) (UfoFilter *filter, UfoBuffer *params[]);
 };
 

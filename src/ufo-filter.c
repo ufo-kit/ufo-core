@@ -125,8 +125,7 @@ void ufo_filter_process(UfoFilter *filter)
     UfoFilterPrivate *priv = filter->priv;
     enum { INIT, WORK, FINISH } state = INIT;
 
-    /* TODO: Consider GPU case */
-    if (filter_class->process_cpu != NULL) {
+    if ((filter_class->process_cpu != NULL) || (filter_class->process_gpu != NULL)) {
         guint num_inputs = priv->input_names->len;
         UfoBuffer **work = g_malloc(num_inputs * sizeof(UfoBuffer *));
         UfoChannel **input_channels = g_malloc(num_inputs * sizeof(UfoChannel *));
@@ -162,7 +161,10 @@ void ufo_filter_process(UfoFilter *filter)
                  * At this point we can decide where to run the filter and also
                  * change command queues to distribute work across devices.
                  */
-                filter_class->process_cpu(filter, work);
+                if (filter_class->process_gpu != NULL)
+                    filter_class->process_gpu(filter, work);
+                else
+                    filter_class->process_cpu(filter, work);
 
                 for (guint i = 0; i < num_inputs; i++)
                     ufo_channel_finalize_input_buffer(input_channels[i], work[i]);
@@ -173,6 +175,9 @@ void ufo_filter_process(UfoFilter *filter)
         g_free(work);
     }
     else {
+        if (filter_class->initialize != NULL)
+            filter_class->initialize(filter, NULL);
+
         ufo_filter_process_deprecated(filter);
     }
 }
@@ -557,6 +562,8 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     gobject_class->finalize = ufo_filter_finalize;
     klass->initialize = NULL;
     klass->process = NULL;
+    klass->process_cpu = NULL;
+    klass->process_gpu = NULL;
     g_type_class_add_private(klass, sizeof(UfoFilterPrivate));
 }
 
