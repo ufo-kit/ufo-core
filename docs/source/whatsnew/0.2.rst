@@ -26,6 +26,18 @@ Major breakage
 
 - :c:func:`ufo_graph_new` takes the paths parameter.
 
+Scheduling
+----------
+
+A more scheduable way to run filters has been implemented with the virtual
+:c:func:`process_cpu` and :c:func:`process_gpu` methods. Contrary to the old
+way, they act on *one* working set at a time that is passed as an array of
+pointers to :c:type:`UfoBuffer`. Sometimes, a filter needs to setup data
+depending on the input size. For this reason, the virtual method
+:c:func:`initialize` takes a second parameter that is again a list of pointers
+to buffer objects.
+
+
 General improvements
 ====================
 
