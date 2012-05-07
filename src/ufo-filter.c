@@ -169,6 +169,14 @@ void ufo_filter_process(UfoFilter *filter)
                 for (guint i = 0; i < num_inputs; i++)
                     ufo_channel_finalize_input_buffer(input_channels[i], work[i]);
             }
+            else {
+                GList *output_channels = g_hash_table_get_values(priv->output_channels);
+
+                for (GList *it = g_list_first(output_channels); it != NULL; it = g_list_next(it))
+                    ufo_channel_finish(UFO_CHANNEL(it->data));
+
+                g_list_free(output_channels);
+            }
         }
 
         g_free(input_channels);
