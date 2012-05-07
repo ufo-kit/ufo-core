@@ -66,8 +66,8 @@ struct _UfoFilterClass {
     GObjectClass parent;
 
     void (*process) (UfoFilter *filter);
-    void (*process_cpu) (UfoFilter *filter, UfoBuffer *params[]);
-    void (*process_gpu) (UfoFilter *filter, UfoBuffer *params[]);
+    void (*process_cpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[]);
+    void (*process_gpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[]);
     void (*initialize) (UfoFilter *filter, UfoBuffer *params[]);
 };
 
