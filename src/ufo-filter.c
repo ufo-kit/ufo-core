@@ -173,9 +173,9 @@ void ufo_filter_process(UfoFilter *filter)
                  * change command queues to distribute work across devices.
                  */
                 if (filter_class->process_gpu != NULL)
-                    filter_class->process_gpu(filter, work, result);
+                    filter_class->process_gpu(filter, work, result, priv->command_queue);
                 else
-                    filter_class->process_cpu(filter, work, result);
+                    filter_class->process_cpu(filter, work, result, priv->command_queue);
 
                 for (guint i = 0; i < num_inputs; i++)
                     ufo_channel_finalize_input_buffer(input_channels[i], work[i]);
