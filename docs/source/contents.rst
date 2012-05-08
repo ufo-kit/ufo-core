@@ -8,7 +8,6 @@ UFO Documentation contents
     install/index.rst
     using/index.rst
     api/index.rst
-    filters.rst
     json.rst
     faq.rst
     glossary.rst

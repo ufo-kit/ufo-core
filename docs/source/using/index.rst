@@ -17,7 +17,7 @@ object-oriented :ref:`API <ufo-api>`.
 .. _GObject: http://developer.gnome.org/gobject/stable/index.html
 
 After :ref:`installing <installation>` the framework you're ready to build your
-own image processing pipeline.
+own image processing pipeline or implement a new filter.
 
 
 .. toctree::
@@ -25,4 +25,5 @@ own image processing pipeline.
 
     helloworld.rst
     examples.rst
+    filters.rst
     

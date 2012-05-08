@@ -62,10 +62,12 @@ Checking out the Code
 In an empty directory, issue the following commands to retrieve the current
 unstable version of the source::
 
-    $ bzr branch bzr+ssh://<user>@ufo.kit.edu/vogelgesang/ufo-core OR
-    $ bzr branch http://ufo.kit.edu/sources/vogelgesang/ufo-core 
+    $ git clone http://ufo.kit.edu/git/ufo-core OR
+    $ git clone git@ufo.kit.edu:ufo-core
 
-All stable versions are kept at ``ufo-core/ufo-core-x.y``.
+All stable versions are tagged. To see a list of all releases issue::
+
+    $ git tag -l
 
 
 Configuration and Compilation
