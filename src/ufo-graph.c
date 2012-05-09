@@ -16,6 +16,7 @@
 #include "ufo-graph.h"
 #include "ufo-resource-manager.h"
 #include "ufo-plugin-manager.h"
+#include "ufo-base-scheduler.h"
 
 G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT)
 
@@ -33,6 +34,7 @@ GQuark ufo_graph_error_quark(void)
 struct _UfoGraphPrivate {
     UfoPluginManager    *plugin_manager;
     UfoResourceManager  *resource_manager;
+    UfoBaseScheduler    *scheduler;
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
     gchar               *paths;
     GHashTable          *nodes;          /**< maps from gchar* to UfoFilter */
@@ -197,12 +199,6 @@ static void graph_add_filter_to_json_array(gpointer data, gpointer user_data)
     json_array_add_object_element(array, node_object);
 }
 
-static gpointer graph_process_thread(gpointer data)
-{
-    ufo_filter_process(UFO_FILTER(data));
-    return NULL;
-}
-
 static void graph_check_consistency(UfoGraphPrivate *priv)
 {
     /* Build adjacency matrix */
@@ -344,56 +340,10 @@ void ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **err
 void ufo_graph_run(UfoGraph *graph, GError **error)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph));
-    
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
     graph_check_consistency(priv);
 
-    /* Assign GPUs to filters */
-    cl_command_queue *cmd_queues;
-    guint num_queues;
-    ufo_resource_manager_get_command_queues(graph->priv->resource_manager, (void **) &cmd_queues, &num_queues);
-
-    g_thread_init(NULL);
-    GTimer *timer = g_timer_new();
-    g_timer_start(timer);
-
-    /* Start each filter in its own thread */
-    GList *filter_root = g_hash_table_get_values(priv->nodes);
-    GSList *threads = NULL;
-    GError *tmp_error = NULL;
-
-    for (GList *it = filter_root; it != NULL; it = g_list_next(it)) {
-        UfoFilter *filter= UFO_FILTER(it->data);
-
-        /* Using the same GPU for now */
-        ufo_filter_set_command_queue(filter, cmd_queues[0]);
-        threads = g_slist_append(threads,
-                g_thread_create(graph_process_thread, filter, TRUE, &tmp_error));
-
-        if (tmp_error != NULL) {
-            /* FIXME: kill already started threads */
-            g_propagate_error(error, tmp_error);
-            return;
-        }
-    }
-
-    g_list_free(filter_root);
-    GSList *thread = threads;
-
-    while (thread) {
-        tmp_error = (GError *) g_thread_join(thread->data);
-        if (tmp_error != NULL) {
-            /* FIXME: wait for the rest? */
-            g_propagate_error(error, tmp_error);
-            return;
-        }
-        thread = g_slist_next(thread);
-    }
-
-    g_slist_free(threads);
-    g_timer_stop(timer);
-    g_message("Processing finished after %3.5f seconds", g_timer_elapsed(timer, NULL));
-    g_timer_destroy(timer);
+    ufo_base_scheduler_run(priv->scheduler, error);
 }
 
 /**
@@ -453,8 +403,12 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
 void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) || UFO_IS_FILTER(filter) || (name != NULL));
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
+
+    ufo_base_scheduler_add_filter(priv->scheduler, filter);
+
     /* FIXME: if the same filter type is added more than once, this won't work! */
-    g_hash_table_insert(graph->priv->nodes, g_strdup(name), filter);
+    g_hash_table_insert(priv->nodes, g_strdup(name), filter);
     ufo_filter_initialize(filter, name);
 }
 
@@ -479,6 +433,7 @@ static void ufo_graph_dispose(GObject *object)
 
     g_object_unref(priv->plugin_manager);
     g_object_unref(priv->resource_manager);
+    g_object_unref(priv->scheduler);
 
     priv->plugin_manager = NULL;
     priv->resource_manager = NULL;
@@ -582,6 +537,7 @@ static void ufo_graph_init(UfoGraph *self)
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
     priv->resource_manager = ufo_resource_manager();
+    priv->scheduler = ufo_base_scheduler_new();
     priv->property_sets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
     priv->nodes = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
     priv->paths = NULL;

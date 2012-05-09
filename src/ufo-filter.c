@@ -100,17 +100,52 @@ void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name)
     priv->plugin_name = g_strdup(plugin_name);
 }
 
-static void ufo_filter_process_deprecated(UfoFilter *filter)
+/**
+ * ufo_filter_get_input_channels:
+ * @filter: A #UfoFilter.
+ * @num_channels: Location for the number of returned channels
+ *
+ * Get the input channels associated with the filter.
+ *
+ * Returns: The input channels in "correct" order. Free the result with @g_free.
+ */
+UfoChannel **ufo_filter_get_input_channels(UfoFilter *filter, guint *num_channels)
 {
-    if (UFO_FILTER_GET_CLASS(filter)->process != NULL) {
-        GTimer *timer = g_timer_new();
-        UFO_FILTER_GET_CLASS(filter)->process(filter);
-        g_timer_stop(timer);
-        filter->priv->cpu_time = (gfloat) g_timer_elapsed(timer, NULL);
-        g_timer_destroy(timer);
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);    
+    const guint num_inputs = priv->input_names->len;
+    UfoChannel **channels = g_malloc0(num_inputs * sizeof(UfoChannel*));
+
+    for (guint i = 0; i < num_inputs; i++) {
+        gchar *input_name = g_ptr_array_index(priv->input_names, i); 
+        channels[i] = g_hash_table_lookup(priv->input_channels, input_name);
     }
-    else
-        g_warning("%s::process not implemented", filter->priv->plugin_name);
+
+    *num_channels = num_inputs;
+    return channels;
+}
+
+/**
+ * ufo_filter_get_output_channels:
+ * @filter: A #UfoFilter.
+ * @num_channels: Location for the number of returned channels
+ *
+ * Get the output channels associated with the filter.
+ *
+ * Returns: The output channels in "correct" order. Free the result with @g_free.
+ */
+UfoChannel **ufo_filter_get_output_channels(UfoFilter *filter, guint *num_channels)
+{
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);    
+    const guint num_outputs = priv->output_names->len;
+    UfoChannel **channels = g_malloc0(num_outputs * sizeof(UfoChannel*));
+
+    for (guint i = 0; i < num_outputs; i++) {
+        gchar *output_name = g_ptr_array_index(priv->output_names, i); 
+        channels[i] = g_hash_table_lookup(priv->output_channels, output_name);
+    }
+
+    *num_channels = num_outputs;
+    return channels;
 }
 
 /**
@@ -121,89 +156,15 @@ static void ufo_filter_process_deprecated(UfoFilter *filter)
  */
 void ufo_filter_process(UfoFilter *filter)
 {
-    UfoFilterClass *filter_class = UFO_FILTER_GET_CLASS(filter);
-    UfoFilterPrivate *priv = filter->priv;
-    enum { INIT, WORK, FINISH } state = INIT;
-
-    if ((filter_class->process_cpu != NULL) || (filter_class->process_gpu != NULL)) {
-        guint num_inputs = priv->input_names->len;
-        guint num_outputs = priv->output_names->len;
-        UfoBuffer **work = g_malloc(num_inputs * sizeof(UfoBuffer *));
-        UfoBuffer **result = g_malloc(num_outputs * sizeof(UfoBuffer *));
-        UfoChannel **input_channels = g_malloc(num_inputs * sizeof(UfoChannel *));
-        UfoChannel **output_channels = g_malloc(num_outputs * sizeof(UfoChannel *));
-
-        /*
-         * Build linearly ordered lists of input and output channels
-         */
-        for (guint i = 0; i < num_inputs; i++) {
-            gchar *input_name = g_ptr_array_index(priv->input_names, i); 
-            input_channels[i] = (UfoChannel *) g_hash_table_lookup(priv->input_channels, input_name);
-        }
-
-        for (guint i = 0; i < num_outputs; i++) {
-            gchar *output_name = g_ptr_array_index(priv->output_names, i); 
-            output_channels[i] = (UfoChannel *) g_hash_table_lookup(priv->output_channels, output_name);
-        }
-
-        while (state != FINISH) {
-            /*
-             * Collect the data from all inputs to transfer it over to the
-             * filter in one pass
-             */
-            for (guint i = 0; i < num_inputs; i++) {
-                work[i] = ufo_channel_get_input_buffer(input_channels[i]); 
-                if (work[i] == NULL) {
-                    state = FINISH;
-                    break;
-                }
-            } 
-
-            if (state != FINISH) {
-                if (state == INIT && filter_class->initialize != NULL) {
-                    filter_class->initialize(filter, work);
-                    state = WORK;
-                }
-
-                for (guint i = 0; i < num_outputs; i++)
-                    result[i] = ufo_channel_get_output_buffer(output_channels[i]);
-
-                /* 
-                 * At this point we can decide where to run the filter and also
-                 * change command queues to distribute work across devices.
-                 */
-                if (filter_class->process_gpu != NULL)
-                    filter_class->process_gpu(filter, work, result, priv->command_queue);
-                else
-                    filter_class->process_cpu(filter, work, result, priv->command_queue);
-
-                for (guint i = 0; i < num_inputs; i++)
-                    ufo_channel_finalize_input_buffer(input_channels[i], work[i]);
-
-                for (guint i = 0; i < num_outputs; i++)
-                    ufo_channel_finalize_output_buffer(output_channels[i], result[i]);
-            }
-            else {
-                for (guint i = 0; i < num_outputs; i++)
-                    ufo_channel_finish(output_channels[i]);
-            }
-        }
-
-        g_free(input_channels);
-        g_free(output_channels);
-        g_free(work);
-        g_free(result);
+    if (UFO_FILTER_GET_CLASS(filter)->process != NULL) {
+        GTimer *timer = g_timer_new();
+        UFO_FILTER_GET_CLASS(filter)->process(filter);
+        g_timer_stop(timer);
+        filter->priv->cpu_time = (gfloat) g_timer_elapsed(timer, NULL);
+        g_timer_destroy(timer);
     }
-    else {
-        if (filter_class->initialize != NULL)
-            filter_class->initialize(filter, NULL);
-
-        /*
-         * This is still needed for filters that consume more than one input
-         * buffer at the time (e.g. reduction filters, sinogram generator etc.)
-         */
-        ufo_filter_process_deprecated(filter);
-    }
+    else
+        g_warning("%s::process not implemented", filter->priv->plugin_name);
 }
 
 /**

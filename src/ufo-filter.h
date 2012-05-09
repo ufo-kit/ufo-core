@@ -71,11 +71,16 @@ struct _UfoFilterClass {
     void (*initialize) (UfoFilter *filter, UfoBuffer *params[]);
 };
 
+/* These methods are supposed to be called from non-filters */
 void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
 void ufo_filter_process(UfoFilter *filter);
 void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue);
 gpointer ufo_filter_get_command_queue(UfoFilter *filter);
+void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu);
+float ufo_filter_get_gpu_time(UfoFilter *filter);
+const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);
 
+/* These methods are supposed to be called by filter implementations */
 void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_dims);
 void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_dims);
 
@@ -87,13 +92,11 @@ UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter);
 UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter);
 UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar *name);
 UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar *name);
+UfoChannel **ufo_filter_get_input_channels(UfoFilter *filter, guint *num_channels);
+UfoChannel **ufo_filter_get_output_channels(UfoFilter *filter, guint *num_channels);
 
-void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu);
 void ufo_filter_account_gpu_time(UfoFilter *filter, gpointer event);
-float ufo_filter_get_gpu_time(UfoFilter *filter);
-const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);
 void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionFunc condition, gpointer user_data);
-
 
 GType ufo_filter_get_type(void);
 
