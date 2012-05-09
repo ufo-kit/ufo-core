@@ -491,7 +491,7 @@ gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
 
             CHECK_OPENCL_ERROR(clEnqueueWriteBuffer((cl_command_queue) command_queue,
                                              priv->device_array,
-                                             CL_FALSE,
+                                             CL_TRUE,
                                              0, priv->size,
                                              priv->host_array.data,
                                              0, NULL, &event));
