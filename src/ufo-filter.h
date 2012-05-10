@@ -65,15 +65,15 @@ struct _UfoFilterClass {
     /*< private >*/
     GObjectClass parent;
 
-    void (*process) (UfoFilter *filter);
-    void (*process_cpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
-    void (*process_gpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
-    void (*initialize) (UfoFilter *filter, UfoBuffer *params[]);
+    GError * (*process) (UfoFilter *filter);
+    GError * (*process_cpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
+    GError * (*process_gpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
+    GError * (*initialize) (UfoFilter *filter, UfoBuffer *params[]);
 };
 
 /* These methods are supposed to be called from non-filters */
 void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
-void ufo_filter_process(UfoFilter *filter);
+GError *ufo_filter_process(UfoFilter *filter);
 void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue);
 gpointer ufo_filter_get_command_queue(UfoFilter *filter);
 void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu);

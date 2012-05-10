@@ -154,17 +154,21 @@ UfoChannel **ufo_filter_get_output_channels(UfoFilter *filter, guint *num_channe
  *
  * Execute a filter.
  */
-void ufo_filter_process(UfoFilter *filter)
+GError *ufo_filter_process(UfoFilter *filter)
 {
+    GError *error = NULL;
+
     if (UFO_FILTER_GET_CLASS(filter)->process != NULL) {
         GTimer *timer = g_timer_new();
-        UFO_FILTER_GET_CLASS(filter)->process(filter);
+        error = UFO_FILTER_GET_CLASS(filter)->process(filter);
         g_timer_stop(timer);
         filter->priv->cpu_time = (gfloat) g_timer_elapsed(timer, NULL);
         g_timer_destroy(timer);
     }
     else
         g_warning("%s::process not implemented", filter->priv->plugin_name);
+
+    return error;
 }
 
 /**

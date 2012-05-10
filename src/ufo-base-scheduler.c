@@ -57,6 +57,7 @@ static gpointer process_thread(gpointer data)
 {
     UfoFilter *filter = UFO_FILTER(data);
     UfoFilterClass *filter_class = UFO_FILTER_GET_CLASS(filter);
+    GError *error = NULL;
     enum { INIT, WORK, FINISH } state = INIT;
 
     if ((filter_class->process_cpu != NULL) || (filter_class->process_gpu != NULL)) {
@@ -86,32 +87,40 @@ static gpointer process_thread(gpointer data)
 
             if (state != FINISH) {
                 if (state == INIT && filter_class->initialize != NULL) {
-                    filter_class->initialize(filter, work);
+                    error = filter_class->initialize(filter, work);
                     state = WORK;
                 }
 
-                for (guint i = 0; i < num_outputs; i++)
-                    result[i] = ufo_channel_get_output_buffer(output_channels[i]);
+                if (error == NULL) {
+                    for (guint i = 0; i < num_outputs; i++)
+                        result[i] = ufo_channel_get_output_buffer(output_channels[i]);
 
-                /* 
-                 * At this point we can decide where to run the filter and also
-                 * change command queues to distribute work across devices.
-                 */
-                cl_command_queue cmd_queue = ufo_filter_get_command_queue(filter);
+                    /* 
+                     * At this point we can decide where to run the filter and also
+                     * change command queues to distribute work across devices.
+                     */
+                    cl_command_queue cmd_queue = ufo_filter_get_command_queue(filter);
 
-                if (filter_class->process_gpu != NULL)
-                    filter_class->process_gpu(filter, work, result, cmd_queue);
-                else
-                    filter_class->process_cpu(filter, work, result, cmd_queue);
+                    if (filter_class->process_gpu != NULL)
+                        error = filter_class->process_gpu(filter, work, result, cmd_queue);
+                    else
+                        error = filter_class->process_cpu(filter, work, result, cmd_queue);
 
-                for (guint i = 0; i < num_inputs; i++) {
-                    gdouble transfer_time = g_timer_elapsed(timers[i], NULL);
-                    total_transfer_time += transfer_time;
-                    ufo_channel_finalize_input_buffer(input_channels[i], work[i]);
+                    for (guint i = 0; i < num_inputs; i++) {
+                        gdouble transfer_time = g_timer_elapsed(timers[i], NULL);
+                        total_transfer_time += transfer_time;
+                        ufo_channel_finalize_input_buffer(input_channels[i], work[i]);
+                    }
+
+                    for (guint i = 0; i < num_outputs; i++)
+                        ufo_channel_finalize_output_buffer(output_channels[i], result[i]);
                 }
-
-                for (guint i = 0; i < num_outputs; i++)
-                    ufo_channel_finalize_output_buffer(output_channels[i], result[i]);
+                else {
+                    state = FINISH;
+                    g_warning("%s: %s\n", ufo_filter_get_plugin_name(filter), error->message);
+                    /* Break out of while loop */
+                    break;
+                }
             }
             else {
                 for (guint i = 0; i < num_outputs; i++)
@@ -128,15 +137,20 @@ static gpointer process_thread(gpointer data)
     }
     else {
         if (filter_class->initialize != NULL)
-            filter_class->initialize(filter, NULL);
+            error = filter_class->initialize(filter, NULL);
 
         /*
          * This is still needed for filters that consume more than one input
          * buffer at the time (e.g. reduction filters, sinogram generator etc.)
          */
-        ufo_filter_process(filter);
+        if (error == NULL)
+            error = ufo_filter_process(filter);
     }
-    return NULL;
+
+    if (error != NULL)
+        g_warning("%s: %s\n", ufo_filter_get_plugin_name(filter), error->message);
+
+    return error;
 }
 
 /**

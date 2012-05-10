@@ -26,6 +26,9 @@ Major breakage
 
 - :c:func:`ufo_graph_new` takes the paths parameter.
 
+- The process methods must return a ``GError`` or ``NULL`` to inform the
+  scheduler about abnormal behaviour.
+
 Scheduling
 ----------
 
@@ -60,3 +63,7 @@ General improvements
 
 - A new method :c:func:`ufo_resource_manager_get_kernel_from_source` so that
   filters can load kernels directly from source.
+
+- Streamlined error handling: Filters should not issue ``g_warnings`` or
+  ``g_errors`` on their own anymore but create an error with ``g_error_new`` and
+  return that.
