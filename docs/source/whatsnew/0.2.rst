@@ -45,6 +45,9 @@ the work previously accomplished by :c:func:`ufo_filter_process` and
 :c:func:`ufo_graph_run`. The base scheduler tries to orchestrate the filters and
 assign resources in a meaningful way.
 
+If written in the new kernel style, producer filters must call
+:c:func:`ufo_filter_done` when no more data is produced.
+
 
 General improvements
 ====================

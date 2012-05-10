@@ -28,8 +28,9 @@ struct _UfoFilterPrivate {
     GHashTable          *output_channels; /**< Map from *char to *UfoChannel */
     GHashTable          *input_channels;  /**< Map from *char to *UfoChannel */
     cl_command_queue    command_queue;
-    gfloat cpu_time;
-    gfloat gpu_time;
+    gfloat              cpu_time;
+    gfloat              gpu_time;
+    gboolean            done;
 };
 
 static void filter_set_output_channel(UfoFilter *self, const gchar *name, UfoChannel *channel)
@@ -434,6 +435,34 @@ float ufo_filter_get_gpu_time(UfoFilter *filter)
 }
 
 /**
+ * ufo_filter_done:
+ * @filter: A #UfoFilter
+ *
+ * Pure producer filters have to call this method to signal that no more data
+ * can be expected.
+ */
+void ufo_filter_done(UfoFilter *filter)
+{
+    g_return_if_fail(UFO_IS_FILTER(filter));
+    filter->priv->done = TRUE;
+}
+
+/**
+ * ufo_filter_is_done:
+ * @filter: A #UfoFilter
+ *
+ * Get information about the current execution status of a pure producer filter.
+ * Any other filters are driven by their inputs and are implicitly taken as done
+ * if no data is pushed into them.
+ *
+ * Return value: TRUE if no more data is pushed.
+ */
+gboolean ufo_filter_is_done(UfoFilter *filter)
+{
+    return filter->priv->done;
+}
+
+/**
  * ufo_filter_get_plugin_name:
  * @filter: A #UfoFilter.
  *
@@ -561,6 +590,7 @@ static void ufo_filter_init(UfoFilter *self)
     UfoFilterPrivate *priv;
     self->priv = priv = UFO_FILTER_GET_PRIVATE(self);
     priv->command_queue = NULL;
+    priv->done = FALSE;
     priv->cpu_time = 0.0f;
     priv->gpu_time = 0.0f;
     priv->input_names = g_ptr_array_new_with_free_func(g_free);

@@ -79,7 +79,7 @@ these methods are arrays of pointers to input and output buffers, the last one
 the command queue to retrieve the actual content. To square the inputs and add
 the neighbouring elements on the CPU, you can write something like this::
 
-    void ufo_filter_awesome_foo_process_cpu(UfoFilter *filter,
+    static void ufo_filter_awesome_foo_process_cpu(UfoFilter *filter,
             UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
     {
         UfoFilterAwesomeFooPrivate *priv = UFO_FILTER_AWESOME_FOO_GET_PRIVATE(filter);
@@ -209,6 +209,28 @@ like this::
         ufo_channel_finish(output_channel);
     }
     
+
+Producer filters
+----------------
+
+Filters that only produce data (e.g. file readers) must signal when they are
+done producing data. If developers use the approach shown in `Multiple input
+filters`_, a call to :c:func:`ufo_channel_finish` is enough. However, this
+should not be done if the filter is written in kernel-style. For this case, the
+developer uses the :c:func:`ufo_filter_done` method on itself to mark production
+as finished::
+
+    static void ufo_filter_awesome_foo_process_cpu(UfoFilter *filter,
+            UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
+    {
+        if (!finished) {
+            /* put something in results */ 
+        }
+        else {
+            /* nothing left */
+            ufo_filter_done(filter); 
+        }
+    }
 
 Additional source files
 -----------------------

@@ -65,6 +65,7 @@ static gpointer process_thread(gpointer data)
         guint num_outputs = 0;
         UfoChannel **input_channels = ufo_filter_get_input_channels(filter, &num_inputs);
         UfoChannel **output_channels = ufo_filter_get_output_channels(filter, &num_outputs);
+        g_assert(num_inputs != 0 || num_outputs != 0);
         UfoBuffer **work = g_malloc(num_inputs * sizeof(UfoBuffer *));
         UfoBuffer **result = g_malloc(num_outputs * sizeof(UfoBuffer *));
         GTimer **timers = g_malloc(num_inputs * sizeof(GTimer *));
@@ -114,6 +115,14 @@ static gpointer process_thread(gpointer data)
 
                     for (guint i = 0; i < num_outputs; i++)
                         ufo_channel_finalize_output_buffer(output_channels[i], result[i]);
+
+                    if (num_inputs == 0 && ufo_filter_is_done(filter)) {
+                        /* We should definately refactor this piece with the
+                         * else branch down below */
+                        for (guint i = 0; i < num_outputs; i++)
+                            ufo_channel_finish(output_channels[i]);
+                        state = FINISH;
+                    }
                 }
                 else {
                     state = FINISH;

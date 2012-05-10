@@ -95,6 +95,9 @@ UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar
 UfoChannel **ufo_filter_get_input_channels(UfoFilter *filter, guint *num_channels);
 UfoChannel **ufo_filter_get_output_channels(UfoFilter *filter, guint *num_channels);
 
+void ufo_filter_done(UfoFilter *filter);
+gboolean ufo_filter_is_done(UfoFilter *filter);
+
 void ufo_filter_account_gpu_time(UfoFilter *filter, gpointer event);
 void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionFunc condition, gpointer user_data);
 
