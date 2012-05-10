@@ -1,5 +1,5 @@
 /**
- * SECTION:ufo-base_scheduler
+ * SECTION:ufo-base-scheduler
  * @Short_description: Data transport between two UfoFilters
  * @Title: UfoBaseScheduler
  */
@@ -41,6 +41,13 @@ UfoBaseScheduler *ufo_base_scheduler_new(void)
     return base_scheduler;
 }
 
+/**
+ * ufo_base_scheduler_add_filter:
+ * @scheduler: A #UfoBaseScheduler object
+ * @filter: The filter to be registered with the scheduler
+ *
+ * Adds a filter to the scheduler which controls its execution.
+ */
 void ufo_base_scheduler_add_filter(UfoBaseScheduler *scheduler, UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_BASE_SCHEDULER(scheduler));

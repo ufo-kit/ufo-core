@@ -25,6 +25,8 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT)
 /**
  * UfoGraphError:
  * @UFO_GRAPH_ERROR_ALREADY_LOAD: Graph is already loaded
+ *
+ * Possible errors when loading the graph from JSON.
  */
 GQuark ufo_graph_error_quark(void)
 {
@@ -349,6 +351,9 @@ void ufo_graph_run(UfoGraph *graph, GError **error)
 /**
  * ufo_graph_get_filter_names:
  * @graph: A #UfoGraph
+ *
+ * Enumerate all available filters that can be instatiated with
+ * ufo_graph_get_filter().
  *
  * Return value: (element-type utf8) (transfer none): list of constants.
  */

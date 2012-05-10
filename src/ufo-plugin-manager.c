@@ -168,7 +168,7 @@ handle_error:
 
 /**
  * ufo_plugin_manager_available_filters:
- * @name: Name of the plugin.
+ * @manager: A #UfoPluginManager
  *
  * Return a list with potential filter names that match shared objects in all
  * search paths.

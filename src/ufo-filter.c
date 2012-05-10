@@ -358,6 +358,7 @@ UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar 
  * ufo_filter_get_output_channel_by_name:
  * @filter: A #UfoFilter.
  * @name: Name of the output channel.
+ *
  * Get named output channel
  *
  * Return value: NULL if no such channel exists, otherwise the #UfoChannel object

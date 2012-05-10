@@ -388,6 +388,15 @@ void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong
     *download_time = buffer->priv->time_download;
 }
 
+/**
+ * ufo_buffer_get_transfer_timer:
+ * @buffer: A #UfoBuffer.
+ *
+ * Each buffer has a timer object that measures time spent for transfering data
+ * between host and device. 
+ *
+ * Returns: A #GTimer associated with this buffer
+ */
 GTimer *ufo_buffer_get_transfer_timer(UfoBuffer *buffer)
 {
     g_return_val_if_fail(UFO_IS_BUFFER(buffer), NULL);

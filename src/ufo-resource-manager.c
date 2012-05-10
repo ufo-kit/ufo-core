@@ -27,6 +27,8 @@ G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT)
  * @UFO_RESOURCE_MANAGER_ERROR_BUILD_PROGRAM: Could not build program from
  *      sources
  * @UFO_RESOURCE_MANAGER_ERROR_CREATE_KERNEL: Could not create kernel
+ *
+ * OpenCL related errors.
  */
 GQuark ufo_resource_manager_error_quark(void)
 {
@@ -363,6 +365,10 @@ static cl_kernel resource_manager_get_kernel(UfoResourceManagerPrivate *priv,
  * @kernel_name: Name of a kernel
  * @error: Return location for a GError from #UfoResourceManagerError, or NULL
  *
+ * Loads a and builds a kernel from a file. The file is searched in the current
+ * working directory and all paths added through
+ * ufo_resource_manager_add_paths().
+ *
  * Returns: a cl_kernel object that is load from @filename
  */
 gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, 
@@ -384,6 +390,17 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager,
     return resource_manager_get_kernel(priv, program, kernel_name, error);
 }
 
+/**
+ * ufo_resource_manager_get_kernel_from_source:
+ * @manager: A #UfoResourceManager
+ * @source: OpenCL source string
+ * @kernel_name: Name of a kernel
+ * @error: Return location for a GError from #UfoResourceManagerError, or NULL
+ *
+ * Loads and builds a kernel from a string.  
+ *
+ * Returns: a cl_kernel object that is load from @filename
+ */
 gpointer ufo_resource_manager_get_kernel_from_source(UfoResourceManager *manager,
         const gchar *source, const gchar *kernel_name, GError **error)
 {
@@ -585,8 +602,9 @@ void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpoint
  * ufo_resource_manager_get_number_of_devices:
  * @manager: A #UfoResourceManager
  *
- * Return value: Number of acceleration devices such as GPUs used by the
- * resource manager.
+ * Get number of acceleration devices such as GPUs.
+ *
+ * Return value: Number of acceleration devices.
  */
 guint ufo_resource_manager_get_number_of_devices(UfoResourceManager *manager)
 {
