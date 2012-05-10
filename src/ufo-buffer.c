@@ -61,6 +61,7 @@ struct _UfoBufferPrivate {
     cl_uint     current_event_index; /**< index of currently available event position */
     cl_uint     num_total_events;   /**< total amount of events we can keep */
 
+    GTimer      *timer;     /**< holds elapsed time for up/download */
     cl_ulong    time_upload;
     cl_ulong    time_download;
 };
@@ -387,6 +388,12 @@ void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong
     *download_time = buffer->priv->time_download;
 }
 
+GTimer *ufo_buffer_get_transfer_timer(UfoBuffer *buffer)
+{
+    g_return_val_if_fail(UFO_IS_BUFFER(buffer), NULL);
+    return buffer->priv->timer;
+}
+
 /**
  * ufo_buffer_set_host_array:
  * @buffer: A #UfoBuffer.
@@ -449,12 +456,14 @@ float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
             if (priv->host_array.data == NULL)
                 priv->host_array.data = g_malloc0(priv->size);
 
+            g_timer_start(priv->timer);
             CHECK_OPENCL_ERROR(clEnqueueReadBuffer(command_queue,
                                             priv->device_array,
                                             CL_TRUE,
                                             0, priv->size,
                                             priv->host_array.data,
                                             0, NULL, NULL));
+            g_timer_stop(priv->timer);
             /* TODO: Can we release the events here? */
             priv->current_event_index = 0;
             priv->location = HOST_ARRAY_VALID;
@@ -489,12 +498,14 @@ gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
             if (priv->device_array == NULL)
                 priv->device_array = clCreateBuffer(NULL, CL_MEM_READ_WRITE, priv->size, NULL, NULL);
 
+            g_timer_start(priv->timer);
             CHECK_OPENCL_ERROR(clEnqueueWriteBuffer((cl_command_queue) command_queue,
                                              priv->device_array,
                                              CL_TRUE,
                                              0, priv->size,
                                              priv->host_array.data,
                                              0, NULL, &event));
+            g_timer_stop(priv->timer);
             priv->location = DEVICE_ARRAY_VALID;
             break;
 
@@ -618,6 +629,7 @@ static void ufo_buffer_finalize(GObject *gobject)
         g_free(priv->host_array.data);
 
     priv->host_array.data = NULL;
+    g_timer_destroy(priv->timer);
     g_free(priv->events);
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
@@ -655,6 +667,7 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->events = g_malloc0(priv->num_total_events * sizeof(cl_event));
     priv->time_upload = 0;
     priv->time_download = 0;
+    priv->timer = g_timer_new();
 }
 
 static void ufo_buffer_param_init(GParamSpec *pspec)

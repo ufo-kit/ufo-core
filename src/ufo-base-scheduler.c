@@ -66,6 +66,8 @@ static gpointer process_thread(gpointer data)
         UfoChannel **output_channels = ufo_filter_get_output_channels(filter, &num_outputs);
         UfoBuffer **work = g_malloc(num_inputs * sizeof(UfoBuffer *));
         UfoBuffer **result = g_malloc(num_outputs * sizeof(UfoBuffer *));
+        GTimer **timers = g_malloc(num_inputs * sizeof(GTimer *));
+        gdouble total_transfer_time = 0.0;
 
         while (state != FINISH) {
             /*
@@ -78,6 +80,8 @@ static gpointer process_thread(gpointer data)
                     state = FINISH;
                     break;
                 }
+
+                timers[i] = ufo_buffer_get_transfer_timer(work[i]);
             } 
 
             if (state != FINISH) {
@@ -100,8 +104,11 @@ static gpointer process_thread(gpointer data)
                 else
                     filter_class->process_cpu(filter, work, result, cmd_queue);
 
-                for (guint i = 0; i < num_inputs; i++)
+                for (guint i = 0; i < num_inputs; i++) {
+                    gdouble transfer_time = g_timer_elapsed(timers[i], NULL);
+                    total_transfer_time += transfer_time;
                     ufo_channel_finalize_input_buffer(input_channels[i], work[i]);
+                }
 
                 for (guint i = 0; i < num_outputs; i++)
                     ufo_channel_finalize_output_buffer(output_channels[i], result[i]);
@@ -112,6 +119,8 @@ static gpointer process_thread(gpointer data)
             }
         }
 
+        g_print("%s: %3.5fs transfer time\n", ufo_filter_get_plugin_name(filter), total_transfer_time);
+        g_free(timers);
         g_free(input_channels);
         g_free(output_channels);
         g_free(work);
