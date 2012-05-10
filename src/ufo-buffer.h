@@ -87,7 +87,6 @@ gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue);
 void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer);
 void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem);
 gpointer ufo_buffer_get_cl_mem(UfoBuffer *buffer);
-void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong *download_time);
 
 void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event);
 void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_events);

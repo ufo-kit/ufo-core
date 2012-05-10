@@ -374,21 +374,6 @@ void ufo_buffer_clear_events(UfoBuffer *buffer)
 }
 
 /**
- * ufo_buffer_get_transfer_time:
- * @buffer: A #UfoBuffer.
- * @upload_time: (out): Location to store the upload time.
- * @download_time: (out): Location to store the download time.
- *
- * Get statistics on how long data was copied to and from GPU devices.
- */
-void ufo_buffer_get_transfer_time(UfoBuffer *buffer, gulong *upload_time, gulong *download_time)
-{
-    g_return_if_fail(UFO_IS_BUFFER(buffer) || (upload_time != NULL) || (download_time != NULL));
-    *upload_time = buffer->priv->time_upload;
-    *download_time = buffer->priv->time_download;
-}
-
-/**
  * ufo_buffer_get_transfer_timer:
  * @buffer: A #UfoBuffer.
  *

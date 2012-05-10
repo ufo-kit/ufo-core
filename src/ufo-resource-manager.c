@@ -557,12 +557,6 @@ gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memob
 void ufo_resource_manager_release_buffer(UfoResourceManager *manager, UfoBuffer *buffer)
 {
     g_return_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || UFO_IS_BUFFER(buffer));
-#ifdef WITH_PROFILING
-    gulong upload_time, download_time;
-    ufo_buffer_get_transfer_time(buffer, &upload_time, &download_time);
-    priv->upload_time += upload_time / 1000000000.0;
-    priv->download_time += download_time / 1000000000.0;
-#endif
     cl_mem mem = (cl_mem) ufo_buffer_get_cl_mem(buffer);
 
     if (mem != NULL)

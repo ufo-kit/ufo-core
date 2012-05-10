@@ -173,7 +173,6 @@ ufo_buffer_get_device_array
 ufo_buffer_invalidate_gpu_data
 ufo_buffer_set_cl_mem
 ufo_buffer_get_cl_mem
-ufo_buffer_get_transfer_time
 ufo_buffer_get_transfer_timer
 ufo_buffer_attach_event
 ufo_buffer_get_events

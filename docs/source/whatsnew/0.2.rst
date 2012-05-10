@@ -29,6 +29,9 @@ Major breakage
 - The process methods must return a ``GError`` or ``NULL`` to inform the
   scheduler about abnormal behaviour.
 
+- Removed the otherwise unused :c:func:`ufo_buffer_get_transfer_time` and
+  replaced this with the more flexible :c:func:`ufo_buffer_get_transfer_timer`.
+
 Scheduling
 ----------
 
