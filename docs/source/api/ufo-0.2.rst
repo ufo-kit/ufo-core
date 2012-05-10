@@ -2,6 +2,35 @@
 Ufo 0.2 API reference
 =====================
 
+UfoBaseScheduler
+================
+
+.. c:type:: UfoBaseScheduler
+
+    The base class scheduler is responsible of assigning command
+    queues to filters (thus managing GPU device resources) and decide
+    if to run a GPU or a CPU. The actual schedule planning can be
+    overriden.
+
+
+.. c:function:: UfoBaseScheduler* ufo_base_scheduler_new()
+
+    Creates a new :c:type:`UfoBaseScheduler`.
+
+    :returns: A new :c:type:`UfoBaseScheduler`
+
+
+.. c:function:: void ufo_base_scheduler_add_filter(UfoBaseScheduler* self, UfoFilter* filter)
+
+
+    :param filter: None
+
+
+.. c:function:: void ufo_base_scheduler_run(UfoBaseScheduler* self)
+
+    Start executing all filters in their own threads.
+
+
 UfoBuffer
 =========
 
@@ -64,7 +93,7 @@ UfoBuffer
     Retrieve dimensions of buffer.
 
     :param num_dims: Location to store the number of dimensions.
-    :param dim_size: Location to store the dimensions. If dim_size is NULL enough space is allocated to hold num_dims elements and should be freed with :c:func:`g_free()`. If dim_size is NULL, the caller must provide enough memory.
+    :param dim_size: Location to store the dimensions. If *dim_size is NULL enough space is allocated to hold num_dims elements and should be freed with :c:func:`g_free()`. If *dim_size is NULL, the caller must provide enough memory.
 
 
 .. c:function:: void ufo_buffer_get_2d_dimensions(UfoBuffer* self, guint* width, guint* height)
@@ -105,6 +134,12 @@ UfoBuffer
     :param command_queue: A cl_command_queue object.
 
     :returns: Float array.
+
+
+.. c:function:: GTimer* ufo_buffer_get_transfer_timer(UfoBuffer* self)
+
+
+    :returns: None
 
 
 .. c:function:: void ufo_buffer_swap_host_arrays(UfoBuffer* self, UfoBuffer* b)
@@ -284,9 +319,11 @@ UfoFilter
     :param plugin_name: The name of this filter.
 
 
-.. c:function:: void ufo_filter_process(UfoFilter* self)
+.. c:function:: GError* ufo_filter_process(UfoFilter* self)
 
     Execute a filter.
+
+    :returns: None
 
 
 .. c:function:: void ufo_filter_set_command_queue(UfoFilter* self, gpointer command_queue)
@@ -304,6 +341,26 @@ UfoFilter
     should only be called by a derived Filter implementation
 
     :returns: OpenCL command queue
+
+
+.. c:function:: void ufo_filter_set_gpu_affinity(UfoFilter* self, guint gpu)
+
+    Select the GPU that this filter should use.
+
+    :param gpu: Number of the preferred GPU.
+
+
+.. c:function:: float ufo_filter_get_gpu_time(UfoFilter* self)
+
+
+    :returns: Seconds that the filter used a GPU.
+
+
+.. c:function:: gchar* ufo_filter_get_plugin_name(UfoFilter* self)
+
+    Get canonical name of ``filter``.
+
+    :returns: NULL-terminated string owned by the filter
 
 
 .. c:function:: void ufo_filter_register_input(UfoFilter* self, gchar* name, guint num_dims)
@@ -381,11 +438,37 @@ UfoFilter
     :returns: NULL if no such channel exists, otherwise the :c:type:`UfoChannel` object
 
 
-.. c:function:: void ufo_filter_set_gpu_affinity(UfoFilter* self, guint gpu)
+.. c:function:: UfoChannel** ufo_filter_get_input_channels(UfoFilter* self, guint* num_channels)
 
-    Select the GPU that this filter should use.
+    Get the input channels associated with the filter.
 
-    :param gpu: Number of the preferred GPU.
+    :param num_channels: Location for the number of returned channels
+
+    :returns: The input channels in "correct" order. Free the result with ``g_free``.
+
+
+.. c:function:: UfoChannel** ufo_filter_get_output_channels(UfoFilter* self, guint* num_channels)
+
+    Get the output channels associated with the filter.
+
+    :param num_channels: Location for the number of returned channels
+
+    :returns: The output channels in "correct" order. Free the result with ``g_free``.
+
+
+.. c:function:: void ufo_filter_done(UfoFilter* self)
+
+    Pure producer filters have to call this method to signal that no
+    more data can be expected.
+
+
+.. c:function:: gboolean ufo_filter_is_done(UfoFilter* self)
+
+    Get information about the current execution status of a pure
+    producer filter. Any other filters are driven by their inputs and
+    are implicitly taken as done if no data is pushed into them.
+
+    :returns: TRUE if no more data is pushed.
 
 
 .. c:function:: void ufo_filter_account_gpu_time(UfoFilter* self, gpointer event)
@@ -394,19 +477,6 @@ UfoFilter
     execution time of this event with this filter.
 
     :param event: Pointer to a valid cl_event
-
-
-.. c:function:: float ufo_filter_get_gpu_time(UfoFilter* self)
-
-
-    :returns: Seconds that the filter used a GPU.
-
-
-.. c:function:: gchar* ufo_filter_get_plugin_name(UfoFilter* self)
-
-    Get canonical name of ``filter``.
-
-    :returns: NULL-terminated string owned by the filter
 
 
 .. c:function:: void ufo_filter_wait_until(UfoFilter* self, GParamSpec* pspec, UfoFilterConditionFunc condition, gpointer user_data)
@@ -429,9 +499,11 @@ UfoGraph
     accessed via the provided API.
 
 
-.. c:function:: UfoGraph* ufo_graph_new()
+.. c:function:: UfoGraph* ufo_graph_new(gchar* paths)
 
     Create a new :c:type:`UfoGraph`.
+
+    :param paths: A string with a colon-separated list of paths that are used to search for OpenCL kernel files and header files included by OpenCL kernels.
 
     :returns: A :c:type:`UfoGraph`.
 
@@ -525,6 +597,14 @@ UfoPluginManager
     :returns: #UfoFilter or ``NULL`` if module cannot be found
 
 
+.. c:function:: GList* ufo_plugin_manager_available_filters(UfoPluginManager* self)
+
+    Return a list with potential filter names that match shared
+    objects in all search paths.
+
+    :returns: List of strings with filter names
+
+
 UfoResourceManager
 ==================
 
@@ -538,34 +618,28 @@ UfoResourceManager
 .. c:function:: void ufo_resource_manager_add_paths(UfoResourceManager* self, gchar* paths)
 
     Each path in ``paths`` is used when searching for kernel files
-    using :c:func:`ufo_resource_manager_add_program()` in the order
+    using :c:func:`ufo_resource_manager_get_kernel()` in the order
     that they are passed in.
 
     :param paths: A string with a list of colon-separated paths
 
 
-.. c:function:: gboolean ufo_resource_manager_add_program(UfoResourceManager* self, gchar* filename, gchar* options)
-
-    Opens, loads and builds an OpenCL kernel file either by an
-    absolute path or by looking up the file in all directories
-    specified by :c:func:`ufo_resource_manager_add_paths()`. After
-    successfully building the program, individual kernels can be
-    accessed using :c:func:`ufo_resource_manager_get_kernel()`.
-
-    :param filename: Name or path of an ASCII-encoded kernel file
-    :param options: Additional build options such as "-DX=Y", or NULL
-
-    :returns: TRUE on success, FALSE if an error occurred
+.. c:function:: gpointer ufo_resource_manager_get_kernel(UfoResourceManager* self, gchar* filename, gchar* kernel_name)
 
 
-.. c:function:: gpointer ufo_resource_manager_get_kernel(UfoResourceManager* self, gchar* kernel_name)
-
-    Returns a kernel that has been previously loaded with
-    :c:func:`ufo_resource_manager_add_program()`
-
+    :param filename: Name of the .cl kernel file
     :param kernel_name: Name of a kernel
 
-    :returns: The cl_kernel object identified by the kernel name
+    :returns: a cl_kernel object that is load from ``filename``
+
+
+.. c:function:: gpointer ufo_resource_manager_get_kernel_from_source(UfoResourceManager* self, gchar* source, gchar* kernel_name)
+
+
+    :param source: None
+    :param kernel_name: None
+
+    :returns: None
 
 
 .. c:function:: gpointer ufo_resource_manager_get_context(UfoResourceManager* self)
