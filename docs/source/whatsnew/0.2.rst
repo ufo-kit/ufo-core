@@ -32,6 +32,9 @@ Major breakage
 - Removed the otherwise unused :c:func:`ufo_buffer_get_transfer_time` and
   replaced this with the more flexible :c:func:`ufo_buffer_get_transfer_timer`.
 
+- Rename :c:func:`ufo_filter_initialize` to
+  :c:func:`ufo_filter_set_plugin_name` that reflects its true meaning.
+
 Scheduling
 ----------
 

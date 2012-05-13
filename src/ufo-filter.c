@@ -87,18 +87,16 @@ GQuark ufo_filter_error_quark(void)
 }
 
 /**
- * ufo_filter_initialize:
+ * ufo_filter_set_plugin_name:
  * @filter: A #UfoFilter.
  * @plugin_name: The name of this filter.
  *
- * Initializes the concrete UfoFilter by giving it a name. This is necessary,
- * because we cannot instantiate the object on our own as this is already done
- * by the plugin manager.
+ * Set the name of filter.
  */
-void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name)
+void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name)
 {
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
-    priv->plugin_name = g_strdup(plugin_name);
+    g_return_if_fail(UFO_IS_FILTER(filter));
+    filter->priv->plugin_name = g_strdup(plugin_name);
 }
 
 /**

@@ -414,7 +414,7 @@ void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
 
     /* FIXME: if the same filter type is added more than once, this won't work! */
     g_hash_table_insert(priv->nodes, g_strdup(name), filter);
-    ufo_filter_initialize(filter, name);
+    ufo_filter_set_plugin_name(filter, name);
 }
 
 /**

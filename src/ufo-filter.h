@@ -72,7 +72,7 @@ struct _UfoFilterClass {
 };
 
 /* These methods are supposed to be called from non-filters */
-void ufo_filter_initialize(UfoFilter *filter, const gchar *plugin_name);
+void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name);
 GError *ufo_filter_process(UfoFilter *filter);
 void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue);
 gpointer ufo_filter_get_command_queue(UfoFilter *filter);
