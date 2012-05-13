@@ -10,3 +10,4 @@ Description: @UFO_DESCRIPTION_SUMMARY@
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lufo
 Cflags: -I${includedir}
+Requires: glib-2.0 gobject-2.0
