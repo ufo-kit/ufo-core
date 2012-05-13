@@ -31,8 +31,8 @@ SKELETON_C="""#include <gmodule.h>
 
 struct _UfoFilter${prefix_camel}Private {
     /* add your private data here */
-    /* cl_kernel kernel; */
-    float example;
+    cl_kernel kernel;
+    gdouble example;
 };
 
 G_DEFINE_TYPE(UfoFilter${prefix_camel}, ufo_filter_${prefix_underscore}, UFO_TYPE_FILTER)
@@ -48,55 +48,35 @@ enum {
 static GParamSpec *${prefix_underscore}_properties[N_PROPERTIES] = { NULL, };
 
 
-static void ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter)
+static GError *ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter, UfoBuffer *params[])
 {
-    /* Here you can code, that is called for each newly instantiated filter */
-    /*
-    UfoFilter${prefix_camel} *self = UFO_FILTER_${prefix_upper}(filter);
+    /* Here you can prepare your data structures that keep state accross process
+     * calls */
+    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE(filter);
     UfoResourceManager *manager = ufo_resource_manager();
     GError *error = NULL;
-    self->priv->kernel = ufo_resource_manager_get_kernel(manager,
-            "kernel-file.cl", "kernelname", &error);
-
-    if (error != NULL) {
-        g_warning("%s", error->message);
-        g_error_free(error);
-    }
-    */
+    priv->kernel = ufo_resource_manager_get_kernel(manager, "kernel-file.cl", "kernelname", &error);
+    return error;
 }
 
-/*
- * This is the main method in which the filter processes one buffer after
- * another.
- */
-static void ufo_filter_${prefix_underscore}_process(UfoFilter *filter)
+static GError *ufo_filter_${prefix_underscore}_process_cpu(UfoFilter *filter,
+        UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
 {
-    g_return_if_fail(UFO_IS_FILTER(filter));
-    UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
-    UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
-    UfoBuffer *input = ufo_channel_get_input_buffer(input_channel);
-    UfoBuffer *output = NULL;
+    /* Use params and write into results */
+    return NULL;
+}
 
-    /* If you provide any output, you must allocate output buffers of the
-       appropriate size */
-    guint dimensions[2] = { 256, 256 };
-    ufo_channel_allocate_output_buffers(output_channel, 2, dimensions);
+static GError *ufo_filter_${prefix_underscore}_process_gpu(UfoFilter *filter,
+        UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
+{
+    /* Use params and write into results */
+    return NULL;
+}
 
-    while (input != NULL) {
-        /* Use the input here */
-        output = ufo_channel_get_output_buffer(output_channel);
-
-        /* If you don't read the input and don't modify the output any more,
-           you have to finalize the buffers. */
-        ufo_channel_finalize_input_buffer(input_channel, input);
-        ufo_channel_finalize_output_buffer(output_channel, output);
-
-        /* Get new input */
-        input = ufo_channel_get_input_buffer(input_channel);
-    }
-
-    /* Tell subsequent filters, that we are finished */
-    ufo_channel_finish(output_channel);
+static void ufo_filter_${prefix_underscore}_finalize(GObject *object)
+{
+    /* Free resources here */
+    G_OBJECT_CLASS(ufo_filter_${prefix_underscore}_parent_class)->finalize(object);
 }
 
 static void ufo_filter_${prefix_underscore}_set_property(GObject *object,
@@ -106,7 +86,6 @@ static void ufo_filter_${prefix_underscore}_set_property(GObject *object,
 {
     UfoFilter${prefix_camel} *self = UFO_FILTER_${prefix_upper}(object);
 
-    /* Handle all properties accordingly */
     switch (property_id) {
         case PROP_EXAMPLE:
             self->priv->example = g_value_get_double(value);
@@ -124,7 +103,6 @@ static void ufo_filter_${prefix_underscore}_get_property(GObject *object,
 {
     UfoFilter${prefix_camel} *self = UFO_FILTER_${prefix_upper}(object);
 
-    /* Handle all properties accordingly */
     switch (property_id) {
         case PROP_EXAMPLE:
             g_value_set_double(value, self->priv->example);
@@ -142,8 +120,10 @@ static void ufo_filter_${prefix_underscore}_class_init(UfoFilter${prefix_camel}C
 
     gobject_class->set_property = ufo_filter_${prefix_underscore}_set_property;
     gobject_class->get_property = ufo_filter_${prefix_underscore}_get_property;
+    gobject_class->finalize = ufo_filter_${prefix_underscore}_finalize;
     filter_class->initialize = ufo_filter_${prefix_underscore}_initialize;
-    filter_class->process = ufo_filter_${prefix_underscore}_process;
+    filter_class->process_cpu = ufo_filter_${prefix_underscore}_process_cpu;
+    filter_class->process_gpu = ufo_filter_${prefix_underscore}_process_gpu;
 
     /* You can document properties more in-depth if you think that the
      * description given as a parameter is not enough like this: */
