@@ -250,7 +250,7 @@ static void graph_check_consistency(UfoGraphPrivate *priv)
  */
 UfoGraph *ufo_graph_new(const gchar *paths)
 {
-    return UFO_GRAPH(g_object_new(UFO_TYPE_GRAPH, NULL));
+    return UFO_GRAPH(g_object_new(UFO_TYPE_GRAPH, "paths", paths, NULL));
 }
 
 /**
