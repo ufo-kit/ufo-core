@@ -40,6 +40,7 @@ struct _UfoGraphPrivate {
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
     gchar               *paths;
     GHashTable          *nodes;          /**< maps from gchar* to UfoFilter */
+    GList               *relations;
 };
 
 enum {
@@ -111,14 +112,15 @@ static void graph_handle_json_filter_node(JsonArray *array, guint index, JsonNod
 static void graph_handle_json_filter_edge(JsonArray *array, guint index, JsonNode *node, gpointer user_data)
 {
     g_return_if_fail(UFO_IS_GRAPH(user_data));
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(user_data);
-    JsonObject *object = json_node_get_object(node);
-    const gchar *from_name = json_object_get_string_member(object, "from");
-    const gchar *to_name = json_object_get_string_member(object, "to");
-    UfoFilter *from = g_hash_table_lookup(priv->nodes, from_name);
-    UfoFilter *to = g_hash_table_lookup(priv->nodes, to_name);
+    /* UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(user_data); */
+    /* JsonObject *object = json_node_get_object(node); */
+    /* const gchar *from_name = json_object_get_string_member(object, "from"); */
+    /* const gchar *to_name = json_object_get_string_member(object, "to"); */
+    /* UfoFilter *from = g_hash_table_lookup(priv->nodes, from_name); */
+    /* UfoFilter *to = g_hash_table_lookup(priv->nodes, to_name); */
 
-    ufo_filter_connect_to(from, to, NULL);
+    /* TODO: create relation here */
+    /* ufo_filter_connect_to(from, to, NULL); */
 }
 
 static void graph_handle_json_propset(JsonObject *object,
@@ -221,7 +223,8 @@ static void graph_check_consistency(UfoGraphPrivate *priv)
 
         for (guint to = 0; to < n; to++) {
             UfoFilter *dest = UFO_FILTER(g_list_nth_data(elements, to));
-            connections[from][to] = ufo_filter_connected(source, dest) ? 1 : 0;
+            /* FIXME: we need to check this */
+            /* connections[from][to] = ufo_filter_connected(source, dest) ? 1 : 0; */
         }
     }
 
@@ -309,12 +312,13 @@ void ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **err
             UfoFilter *from = g_list_nth_data(filters, i);
             UfoFilter *to = g_list_nth_data(filters, j);
 
-            if (ufo_filter_connected(from, to)) {
+            /* FIXME: we need to check this */
+            /* if (ufo_filter_connected(from, to)) { */
                 JsonObject *connect_object = json_object_new(); 
                 json_object_set_string_member(connect_object, "from", ufo_filter_get_plugin_name(from));
                 json_object_set_string_member(connect_object, "to", ufo_filter_get_plugin_name(to));
                 json_array_add_object_element(edges, connect_object);
-            }
+            /* } */
         } 
     }
 
@@ -345,7 +349,7 @@ void ufo_graph_run(UfoGraph *graph, GError **error)
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
     graph_check_consistency(priv);
 
-    ufo_base_scheduler_run(priv->scheduler, error);
+    ufo_base_scheduler_run(priv->scheduler, priv->relations, error);
 }
 
 /**
@@ -389,7 +393,8 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
     }
 
     gchar *unique_name = g_strdup_printf("%s-%p", plugin_name, (void *) filter);
-    ufo_graph_add_filter(graph, filter, unique_name);
+    ufo_filter_set_plugin_name(filter, unique_name);
+    /* ufo_graph_add_filter(graph, filter, unique_name); */
     g_free(unique_name);
     return filter;
 }
@@ -405,16 +410,22 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
  *
  * Note: Once you have added a filter, you cannot unref the filter on your own.
  */
-void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name)
+/* void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name) */
+/* { */
+/*     g_return_if_fail(UFO_IS_GRAPH(graph) || UFO_IS_FILTER(filter) || (name != NULL)); */
+/*     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph); */
+
+/*     ufo_base_scheduler_add_filter(priv->scheduler, filter); */
+
+/*     /1* FIXME: if the same filter type is added more than once, this won't work! *1/ */
+/*     g_hash_table_insert(priv->nodes, g_strdup(name), filter); */
+/*     ufo_filter_set_plugin_name(filter, name); */
+/* } */
+
+void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
 {
-    g_return_if_fail(UFO_IS_GRAPH(graph) || UFO_IS_FILTER(filter) || (name != NULL));
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
-
-    ufo_base_scheduler_add_filter(priv->scheduler, filter);
-
-    /* FIXME: if the same filter type is added more than once, this won't work! */
-    g_hash_table_insert(priv->nodes, g_strdup(name), filter);
-    ufo_filter_set_plugin_name(filter, name);
+    g_return_if_fail(UFO_IS_GRAPH(graph) && UFO_IS_RELATION(relation));
+    graph->priv->relations = g_list_append(graph->priv->relations, relation);
 }
 
 /**
@@ -546,5 +557,6 @@ static void ufo_graph_init(UfoGraph *self)
     priv->property_sets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
     priv->nodes = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
     priv->paths = NULL;
+    priv->relations = NULL;
 }
 

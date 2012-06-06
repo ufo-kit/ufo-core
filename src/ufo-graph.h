@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 #include "ufo-filter.h"
+#include "ufo-relation.h"
 
 #define UFO_TYPE_GRAPH             (ufo_graph_get_type())
 #define UFO_GRAPH(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_GRAPH, UfoGraph))
@@ -51,7 +52,7 @@ guint ufo_graph_get_number_of_devices(UfoGraph *graph);
 GList *ufo_graph_get_filter_names(UfoGraph *graph);
 
 UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error);
-void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name);
+void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation);
 
 GType ufo_graph_get_type(void);
 GQuark ufo_graph_error_quark(void);

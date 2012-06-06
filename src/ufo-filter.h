@@ -22,7 +22,8 @@ typedef enum {
     UFO_FILTER_ERROR_INSUFFICIENTOUTPUTS,
     UFO_FILTER_ERROR_NUMDIMSMISMATCH,
     UFO_FILTER_ERROR_NOSUCHINPUT,
-    UFO_FILTER_ERROR_NOSUCHOUTPUT
+    UFO_FILTER_ERROR_NOSUCHOUTPUT,
+    UFO_FILTER_ERROR_INITIALIZATION
 } UfoFilterError;
 
 typedef struct _UfoFilter           UfoFilter;
@@ -68,14 +69,12 @@ struct _UfoFilterClass {
     GError * (*process) (UfoFilter *filter);
     GError * (*process_cpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
     GError * (*process_gpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
-    GError * (*initialize) (UfoFilter *filter, UfoBuffer *params[]);
+    GError * (*initialize) (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes);
 };
 
 /* These methods are supposed to be called from non-filters */
 void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name);
 GError *ufo_filter_process(UfoFilter *filter);
-void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue);
-gpointer ufo_filter_get_command_queue(UfoFilter *filter);
 void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu);
 float ufo_filter_get_gpu_time(UfoFilter *filter);
 const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);
@@ -84,16 +83,10 @@ const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);
 void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_dims);
 void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_dims);
 
-void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **error);
-void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name, UfoFilter *destination, const gchar *input_name, GError **error);
-gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination);
-
-UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter);
-UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter);
-UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar *name);
-UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar *name);
-UfoChannel **ufo_filter_get_input_channels(UfoFilter *filter, guint *num_channels);
-UfoChannel **ufo_filter_get_output_channels(UfoFilter *filter, guint *num_channels);
+guint ufo_filter_get_num_inputs(UfoFilter *filter);
+guint ufo_filter_get_num_outputs(UfoFilter *filter);
+GList *ufo_filter_get_input_num_dims(UfoFilter *filter);
+GList *ufo_filter_get_output_num_dims(UfoFilter *filter);
 
 void ufo_filter_done(UfoFilter *filter);
 gboolean ufo_filter_is_done(UfoFilter *filter);

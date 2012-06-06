@@ -43,7 +43,7 @@ struct _UfoBaseSchedulerClass {
 
 UfoBaseScheduler *ufo_base_scheduler_new(void);
 void ufo_base_scheduler_add_filter(UfoBaseScheduler *scheduler, UfoFilter *filter);
-void ufo_base_scheduler_run(UfoBaseScheduler *scheduler, GError **error);
+void ufo_base_scheduler_run(UfoBaseScheduler *scheduler, GList *relations, GError **error);
 
 GType ufo_base_scheduler_get_type(void);
 

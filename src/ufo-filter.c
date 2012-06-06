@@ -27,32 +27,18 @@ struct _UfoFilterPrivate {
     GPtrArray           *output_num_dims; /**< Contains guint */  
     GHashTable          *output_channels; /**< Map from *char to *UfoChannel */
     GHashTable          *input_channels;  /**< Map from *char to *UfoChannel */
+
+    guint               num_inputs;
+    guint               num_outputs;
+    GList               *_input_num_dims;
+    GList               *_output_num_dims;
+
     cl_command_queue    command_queue;
     gfloat              cpu_time;
     gfloat              gpu_time;
     gboolean            done;
 };
 
-static void filter_set_output_channel(UfoFilter *self, const gchar *name, UfoChannel *channel)
-{
-    UfoChannel *old_channel = g_hash_table_lookup(self->priv->output_channels, name);
-
-    if (old_channel != NULL)
-        g_hash_table_remove(self->priv->output_channels, name);
-
-    g_hash_table_insert(self->priv->output_channels, g_strdup(name), channel);
-    ufo_channel_ref(channel);
-}
-
-static void filter_set_input_channel(UfoFilter *self, const gchar *name, UfoChannel *channel)
-{
-    UfoChannel *old_channel = g_hash_table_lookup(self->priv->input_channels, name);
-
-    if (old_channel != NULL)
-        g_hash_table_remove(self->priv->input_channels, name);
-
-    g_hash_table_insert(self->priv->input_channels, g_strdup(name), channel);
-}
 
 static gint filter_find_argument_position(GPtrArray *array, const gchar *name)
 {
@@ -77,6 +63,7 @@ static gint filter_find_argument_position(GPtrArray *array, const gchar *name)
  *      name.
  * @UFO_FILTER_ERROR_NOSUCHOUTPUT: Filter does not provide an output with that
  *      name.
+ * @UFO_FILTER_ERROR_INITIALIZATION: Filter could not be initialized.
  *
  * Possible errors that ufo_filter_connect_to() and ufo_filter_connect_by_name()
  * can return.
@@ -97,54 +84,6 @@ void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
     filter->priv->plugin_name = g_strdup(plugin_name);
-}
-
-/**
- * ufo_filter_get_input_channels:
- * @filter: A #UfoFilter.
- * @num_channels: Location for the number of returned channels
- *
- * Get the input channels associated with the filter.
- *
- * Returns: The input channels in "correct" order. Free the result with @g_free.
- */
-UfoChannel **ufo_filter_get_input_channels(UfoFilter *filter, guint *num_channels)
-{
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);    
-    const guint num_inputs = priv->input_names->len;
-    UfoChannel **channels = g_malloc0(num_inputs * sizeof(UfoChannel*));
-
-    for (guint i = 0; i < num_inputs; i++) {
-        gchar *input_name = g_ptr_array_index(priv->input_names, i); 
-        channels[i] = g_hash_table_lookup(priv->input_channels, input_name);
-    }
-
-    *num_channels = num_inputs;
-    return channels;
-}
-
-/**
- * ufo_filter_get_output_channels:
- * @filter: A #UfoFilter.
- * @num_channels: Location for the number of returned channels
- *
- * Get the output channels associated with the filter.
- *
- * Returns: The output channels in "correct" order. Free the result with @g_free.
- */
-UfoChannel **ufo_filter_get_output_channels(UfoFilter *filter, guint *num_channels)
-{
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);    
-    const guint num_outputs = priv->output_names->len;
-    UfoChannel **channels = g_malloc0(num_outputs * sizeof(UfoChannel*));
-
-    for (guint i = 0; i < num_outputs; i++) {
-        gchar *output_name = g_ptr_array_index(priv->output_names, i); 
-        channels[i] = g_hash_table_lookup(priv->output_channels, output_name);
-    }
-
-    *num_channels = num_outputs;
-    return channels;
 }
 
 /**
@@ -178,31 +117,31 @@ GError *ufo_filter_process(UfoFilter *filter)
  *
  * Connect filter using the default first inputs and outputs.
  */
-void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **error)
-{
-    g_return_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination));
-    GError *tmp_error = NULL;
-    GPtrArray *input_names = destination->priv->input_names;
-    GPtrArray *output_names = source->priv->output_names;
+/* void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **error) */
+/* { */
+/*     g_return_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination)); */
+/*     GError *tmp_error = NULL; */
+/*     GPtrArray *input_names = destination->priv->input_names; */
+/*     GPtrArray *output_names = source->priv->output_names; */
 
-    if (input_names->len < 1) {
-        g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_INSUFFICIENTINPUTS,
-                "%s does not provide any inputs", destination->priv->plugin_name);
-        return;
-    }
+/*     if (input_names->len < 1) { */
+/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_INSUFFICIENTINPUTS, */
+/*                 "%s does not provide any inputs", destination->priv->plugin_name); */
+/*         return; */
+/*     } */
 
-    if (output_names->len < 1) {
-        g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_INSUFFICIENTOUTPUTS,
-                "%s does not provide any outputs", source->priv->plugin_name);
-        return;
-    }
+/*     if (output_names->len < 1) { */
+/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_INSUFFICIENTOUTPUTS, */
+/*                 "%s does not provide any outputs", source->priv->plugin_name); */
+/*         return; */
+/*     } */
 
-    ufo_filter_connect_by_name(source, g_ptr_array_index(output_names, 0), 
-            destination, g_ptr_array_index(input_names, 0), &tmp_error);
+/*     ufo_filter_connect_by_name(source, g_ptr_array_index(output_names, 0), */ 
+/*             destination, g_ptr_array_index(input_names, 0), &tmp_error); */
 
-    if (tmp_error != NULL)
-        g_propagate_error(error, tmp_error); 
-}
+/*     if (tmp_error != NULL) */
+/*         g_propagate_error(error, tmp_error); */ 
+/* } */
 
 /**
  * ufo_filter_connect_by_name:
@@ -215,52 +154,52 @@ void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **e
  * Connect output @output_name of filter @source with input @input_name of
  * filter @destination.
  */
-void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name, 
-        UfoFilter *destination, const gchar *input_name, GError **error)
-{
-    g_return_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination));
-    g_return_if_fail((output_name != NULL) || (input_name != NULL));
+/* void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name, */ 
+/*         UfoFilter *destination, const gchar *input_name, GError **error) */
+/* { */
+/*     g_return_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination)); */
+/*     g_return_if_fail((output_name != NULL) || (input_name != NULL)); */
 
-    GPtrArray *input_num_dims = destination->priv->input_num_dims;
-    GPtrArray *output_num_dims = source->priv->output_num_dims;
-    GPtrArray *input_names = destination->priv->input_names;
-    GPtrArray *output_names = source->priv->output_names;
+/*     GPtrArray *input_num_dims = destination->priv->input_num_dims; */
+/*     GPtrArray *output_num_dims = source->priv->output_num_dims; */
+/*     GPtrArray *input_names = destination->priv->input_names; */
+/*     GPtrArray *output_names = source->priv->output_names; */
 
-    gint source_pos = filter_find_argument_position(output_names, output_name);
-    if (source_pos < 0) {
-        g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NOSUCHOUTPUT,
-                "%s does not provide output %s", source->priv->plugin_name, output_name);
-        return;
-    }
+/*     gint source_pos = filter_find_argument_position(output_names, output_name); */
+/*     if (source_pos < 0) { */
+/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NOSUCHOUTPUT, */
+/*                 "%s does not provide output %s", source->priv->plugin_name, output_name); */
+/*         return; */
+/*     } */
 
-    gint destination_pos = filter_find_argument_position(input_names, input_name);
-    if (destination_pos < 0) {
-        g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NOSUCHOUTPUT,
-                "%s does not provide input %s", destination->priv->plugin_name, output_name);
-        return;
-    }
+/*     gint destination_pos = filter_find_argument_position(input_names, input_name); */
+/*     if (destination_pos < 0) { */
+/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NOSUCHOUTPUT, */
+/*                 "%s does not provide input %s", destination->priv->plugin_name, output_name); */
+/*         return; */
+/*     } */
 
-    if (GPOINTER_TO_INT(g_ptr_array_index(input_num_dims, 0)) != GPOINTER_TO_INT(g_ptr_array_index(output_num_dims, 0))) {
-        g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NUMDIMSMISMATCH,
-                "Number of dimensions of %s:%s and %s:%s do not match",
-                source->priv->plugin_name, output_name,
-                destination->priv->plugin_name, input_name); 
-        return;
-    }
+/*     if (GPOINTER_TO_INT(g_ptr_array_index(input_num_dims, 0)) != GPOINTER_TO_INT(g_ptr_array_index(output_num_dims, 0))) { */
+/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NUMDIMSMISMATCH, */
+/*                 "Number of dimensions of %s:%s and %s:%s do not match", */
+/*                 source->priv->plugin_name, output_name, */
+/*                 destination->priv->plugin_name, input_name); */ 
+/*         return; */
+/*     } */
 
-    UfoChannel *channel_in = ufo_filter_get_input_channel_by_name(destination, input_name);
-    UfoChannel *channel_out = ufo_filter_get_output_channel_by_name(source, output_name);
+/*     UfoChannel *channel_in = ufo_filter_get_input_channel_by_name(destination, input_name); */
+/*     UfoChannel *channel_out = ufo_filter_get_output_channel_by_name(source, output_name); */
 
-    if ((channel_in == NULL) && (channel_out == NULL)) {
-        UfoChannel *channel = ufo_channel_new();
-        filter_set_output_channel(source, output_name, channel);
-        filter_set_input_channel(destination, input_name, channel);
-    }
-    else if (channel_in == NULL)
-        filter_set_input_channel(destination, input_name, channel_out);
-    else if (channel_out == NULL)
-        filter_set_output_channel(source, output_name, channel_in);
-}
+/*     if ((channel_in == NULL) && (channel_out == NULL)) { */
+/*         UfoChannel *channel = ufo_channel_new(); */
+/*         filter_set_output_channel(source, output_name, channel); */
+/*         filter_set_input_channel(destination, input_name, channel); */
+/*     } */
+/*     else if (channel_in == NULL) */
+/*         filter_set_input_channel(destination, input_name, channel_out); */
+/*     else if (channel_out == NULL) */
+/*         filter_set_output_channel(source, output_name, channel_in); */
+/* } */
 
 /**
  * ufo_filter_register_input:
@@ -284,6 +223,9 @@ void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_d
 
     g_ptr_array_add(priv->input_names, g_strdup(name));
     g_ptr_array_add(priv->input_num_dims, GINT_TO_POINTER(num_dims));
+
+    priv->num_inputs++;
+    priv->_input_num_dims = g_list_append(priv->_input_num_dims, GINT_TO_POINTER(num_dims));
 }
 
 /**
@@ -308,96 +250,31 @@ void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_
 
     g_ptr_array_add(priv->output_names, g_strdup(name));
     g_ptr_array_add(priv->output_num_dims, GINT_TO_POINTER(num_dims));
+
+    priv->num_outputs++;
+    priv->_output_num_dims = g_list_append(priv->_output_num_dims, GINT_TO_POINTER(num_dims));
 }
 
-/**
- * ufo_filter_connected:
- * @source: Source #UfoFilter.
- * @destination: Destination #UfoFilter.
- *
- * Check if @source and @destination are connected.
- *
- * Return value: TRUE if @source is connected with @destination else FALSE.
- */
-gboolean ufo_filter_connected(UfoFilter *source, UfoFilter *destination)
+guint ufo_filter_get_num_inputs(UfoFilter *filter)
 {
-    g_return_val_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination), FALSE);
-    GList *output_channels = g_hash_table_get_values(source->priv->output_channels);
-    GList *input_channels = g_hash_table_get_values(destination->priv->input_channels);
-
-    for (guint i = 0; i < g_list_length(output_channels); i++) {
-        gpointer channel = g_list_nth_data(output_channels, i);
-
-        for (guint j = 0; j < g_list_length(input_channels); j++)
-            if (channel == g_list_nth_data(input_channels, j))
-                return TRUE;
-    }
-
-    return FALSE;
+    return filter->priv->num_inputs;
 }
 
-/**
- * ufo_filter_get_input_channel_by_name:
- * @filter: A #UfoFilter.
- * @name: Name of the input channel.
- *
- * Get input channel called @name from @filter.
- *
- * Return value: NULL if no such channel exists, otherwise the #UfoChannel object
- */
-UfoChannel *ufo_filter_get_input_channel_by_name(UfoFilter *filter, const gchar *name)
+guint ufo_filter_get_num_outputs(UfoFilter *filter)
 {
-    g_return_val_if_fail(UFO_IS_FILTER(filter) || (name != NULL), NULL);
-    UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, name);
-    return channel;
+    return filter->priv->num_outputs;
 }
 
-/**
- * ufo_filter_get_output_channel_by_name:
- * @filter: A #UfoFilter.
- * @name: Name of the output channel.
- *
- * Get named output channel
- *
- * Return value: NULL if no such channel exists, otherwise the #UfoChannel object
- */
-UfoChannel *ufo_filter_get_output_channel_by_name(UfoFilter *filter, const gchar *name)
-{
-    g_return_val_if_fail(UFO_IS_FILTER(filter) || (name != NULL), NULL);
-    UfoChannel *channel = g_hash_table_lookup(filter->priv->output_channels, name);
-    return channel;
-}
-
-/**
- * ufo_filter_get_input_channel:
- * @filter: A #UfoFilter.
- *
- * Get default input channel
- *
- * Return value: NULL if no such channel exists, otherwise the #UfoChannel object.
- */
-UfoChannel *ufo_filter_get_input_channel(UfoFilter *filter)
+GList *ufo_filter_get_input_num_dims(UfoFilter *filter)
 {
     g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
-    UfoChannel *channel = g_hash_table_lookup(filter->priv->input_channels, 
-            g_ptr_array_index(filter->priv->input_names, 0));
-    return channel;
+    return filter->priv->_input_num_dims;
 }
 
-/**
- * ufo_filter_get_output_channel:
- * @filter: A #UfoFilter.
- *
- * Get default output channel of filter.
- *
- * Return value: NULL if no such channel exists, otherwise the #UfoChannel object.
- */
-UfoChannel *ufo_filter_get_output_channel(UfoFilter *filter)
+GList *ufo_filter_get_output_num_dims(UfoFilter *filter)
 {
     g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
-    UfoChannel *channel = g_hash_table_lookup(filter->priv->output_channels, 
-            g_ptr_array_index(filter->priv->output_names, 0));
-    return channel;
+    return filter->priv->_output_num_dims;
 }
 
 /**
@@ -472,37 +349,6 @@ const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
 {
     g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
     return filter->priv->plugin_name;
-}
-
-/**
- * ufo_filter_set_command_queue:
- * @filter: A #UfoFilter.
- * @command_queue: A cl_command_queue to be associated with this filter.
- *
- * Set OpenCL command queue to use for OpenCL kernel invokations. The command
- * queue is usually set by UfoGraph and should not be changed by client code.
- */
-void ufo_filter_set_command_queue(UfoFilter *filter, gpointer command_queue)
-{
-    g_return_if_fail(UFO_IS_FILTER(filter));
-
-    if (filter->priv->command_queue == NULL)
-        filter->priv->command_queue = command_queue;
-}
-
-/**
- * ufo_filter_get_command_queue:
- * @filter: A #UfoFilter.
- *
- * Get OpenCL command queue associated with a filter. This function should only
- * be called by a derived Filter implementation
- *
- * Return value: OpenCL command queue
- */
-gpointer ufo_filter_get_command_queue(UfoFilter *filter)
-{
-    g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
-    return filter->priv->command_queue;
 }
 
 /**
@@ -600,5 +446,10 @@ static void ufo_filter_init(UfoFilter *self)
                            g_free, NULL);
     priv->output_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
                             g_free, (GDestroyNotify) g_object_unref);
+
+    priv->num_inputs = 0;
+    priv->num_outputs = 0;
+    priv->_input_num_dims = NULL;
+    priv->_output_num_dims = NULL;
 }
 
