@@ -25,6 +25,8 @@ set(ufocore_HDRS
 
 # --- Find packages and libraries ---------------------------------------------
 find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
+
+pkg_check_modules(GMODULE2 gmodule-2.0>=2.24 REQUIRED)
 pkg_check_modules(GTHREAD2 gthread-2.0>=2.24 REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
 
