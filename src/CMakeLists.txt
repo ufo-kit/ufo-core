@@ -24,6 +24,8 @@ set(ufocore_HDRS
     )
 
 # --- Find packages and libraries ---------------------------------------------
+find_program(INTROSPECTION_SCANNER "g-ir-scanner")
+find_program(INTROSPECTION_COMPILER "g-ir-compiler")
 find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
 
 pkg_check_modules(GMODULE2 gmodule-2.0>=2.24 REQUIRED)
@@ -111,14 +113,15 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc DESTINATION lib/pkgconfig)
 
 
 # --- Introspection files -----------------------------------------------------
-if (INTROSPECTION_FOUND)
+if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
     option(WITH_GIR "Build introspection files" ON)
+
     if (WITH_GIR)
         set(GIR_PREFIX "Ufo-${UFO_GIR_VERSION}")
         set(GIR_XML "${GIR_PREFIX}.gir")
         set(GIR_TYPELIB "${GIR_PREFIX}.typelib")
-
         set(_gir_input)
+
         foreach(_src ${ufocore_SRCS} ${ufocore_HDRS})
             list(APPEND _gir_input "${CMAKE_CURRENT_SOURCE_DIR}/${_src}") 
         endforeach()
