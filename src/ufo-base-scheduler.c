@@ -97,7 +97,6 @@ static gpointer process_thread(gpointer data)
     const guint num_inputs = ufo_filter_get_num_inputs(filter);
     const guint num_outputs = ufo_filter_get_num_outputs(filter);
     const gpointer POISON_PILL = GINT_TO_POINTER(1);
-
     enum { INIT, WORK, FINISH } state = INIT;
 
     GList *input_num_dims = ufo_filter_get_input_num_dims(filter);

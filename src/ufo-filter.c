@@ -21,17 +21,11 @@ G_DEFINE_TYPE(UfoFilter, ufo_filter, G_TYPE_OBJECT)
 
 struct _UfoFilterPrivate {
     gchar               *plugin_name;
-    GPtrArray           *input_names;     /**< Contains *gchar */
-    GPtrArray           *output_names;    /**< Contains *gchar */
-    GPtrArray           *input_num_dims;  /**< Contains guint */ 
-    GPtrArray           *output_num_dims; /**< Contains guint */  
-    GHashTable          *output_channels; /**< Map from *char to *UfoChannel */
-    GHashTable          *input_channels;  /**< Map from *char to *UfoChannel */
 
     guint               num_inputs;
     guint               num_outputs;
-    GList               *_input_num_dims;
-    GList               *_output_num_dims;
+    GList               *input_num_dims;
+    GList               *output_num_dims;
 
     cl_command_queue    command_queue;
     gfloat              cpu_time;
@@ -39,18 +33,6 @@ struct _UfoFilterPrivate {
     gboolean            done;
 };
 
-
-static gint filter_find_argument_position(GPtrArray *array, const gchar *name)
-{
-    guint pos;
-    
-    for (pos = 0; pos < array->len; pos++) {
-        if (!g_strcmp0(name, g_ptr_array_index(array, pos)))
-            break;
-    }
-    
-    return pos == array->len ? -1 : (gint) pos;
-}
 
 /**
  * UfoFilterError:
@@ -109,150 +91,46 @@ GError *ufo_filter_process(UfoFilter *filter)
     return error;
 }
 
-/**
- * ufo_filter_connect_to:
- * @source: Source #UfoFilter
- * @destination: Destination #UfoFilter
- * @error: Return location for error with values from #UfoFilterError
- *
- * Connect filter using the default first inputs and outputs.
- */
-/* void ufo_filter_connect_to(UfoFilter *source, UfoFilter *destination, GError **error) */
-/* { */
-/*     g_return_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination)); */
-/*     GError *tmp_error = NULL; */
-/*     GPtrArray *input_names = destination->priv->input_names; */
-/*     GPtrArray *output_names = source->priv->output_names; */
-
-/*     if (input_names->len < 1) { */
-/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_INSUFFICIENTINPUTS, */
-/*                 "%s does not provide any inputs", destination->priv->plugin_name); */
-/*         return; */
-/*     } */
-
-/*     if (output_names->len < 1) { */
-/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_INSUFFICIENTOUTPUTS, */
-/*                 "%s does not provide any outputs", source->priv->plugin_name); */
-/*         return; */
-/*     } */
-
-/*     ufo_filter_connect_by_name(source, g_ptr_array_index(output_names, 0), */ 
-/*             destination, g_ptr_array_index(input_names, 0), &tmp_error); */
-
-/*     if (tmp_error != NULL) */
-/*         g_propagate_error(error, tmp_error); */ 
-/* } */
-
-/**
- * ufo_filter_connect_by_name:
- * @source: Source #UfoFilter
- * @output_name: Name of the source output channel
- * @destination: Destination #UfoFilter
- * @input_name: Name of the destination input channel
- * @error: Return location for error with values from #UfoFilterError
- *
- * Connect output @output_name of filter @source with input @input_name of
- * filter @destination.
- */
-/* void ufo_filter_connect_by_name(UfoFilter *source, const gchar *output_name, */ 
-/*         UfoFilter *destination, const gchar *input_name, GError **error) */
-/* { */
-/*     g_return_if_fail(UFO_IS_FILTER(source) || UFO_IS_FILTER(destination)); */
-/*     g_return_if_fail((output_name != NULL) || (input_name != NULL)); */
-
-/*     GPtrArray *input_num_dims = destination->priv->input_num_dims; */
-/*     GPtrArray *output_num_dims = source->priv->output_num_dims; */
-/*     GPtrArray *input_names = destination->priv->input_names; */
-/*     GPtrArray *output_names = source->priv->output_names; */
-
-/*     gint source_pos = filter_find_argument_position(output_names, output_name); */
-/*     if (source_pos < 0) { */
-/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NOSUCHOUTPUT, */
-/*                 "%s does not provide output %s", source->priv->plugin_name, output_name); */
-/*         return; */
-/*     } */
-
-/*     gint destination_pos = filter_find_argument_position(input_names, input_name); */
-/*     if (destination_pos < 0) { */
-/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NOSUCHOUTPUT, */
-/*                 "%s does not provide input %s", destination->priv->plugin_name, output_name); */
-/*         return; */
-/*     } */
-
-/*     if (GPOINTER_TO_INT(g_ptr_array_index(input_num_dims, 0)) != GPOINTER_TO_INT(g_ptr_array_index(output_num_dims, 0))) { */
-/*         g_set_error(error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NUMDIMSMISMATCH, */
-/*                 "Number of dimensions of %s:%s and %s:%s do not match", */
-/*                 source->priv->plugin_name, output_name, */
-/*                 destination->priv->plugin_name, input_name); */ 
-/*         return; */
-/*     } */
-
-/*     UfoChannel *channel_in = ufo_filter_get_input_channel_by_name(destination, input_name); */
-/*     UfoChannel *channel_out = ufo_filter_get_output_channel_by_name(source, output_name); */
-
-/*     if ((channel_in == NULL) && (channel_out == NULL)) { */
-/*         UfoChannel *channel = ufo_channel_new(); */
-/*         filter_set_output_channel(source, output_name, channel); */
-/*         filter_set_input_channel(destination, input_name, channel); */
-/*     } */
-/*     else if (channel_in == NULL) */
-/*         filter_set_input_channel(destination, input_name, channel_out); */
-/*     else if (channel_out == NULL) */
-/*         filter_set_output_channel(source, output_name, channel_in); */
-/* } */
-
-/**
- * ufo_filter_register_input:
- * @filter: A #UfoFilter
- * @name: Name of appended input
- * @num_dims: Number of dimensions this input accepts.
- *
- * Add a new input name. Each registered input is appended to the filter's
- * argument list.
- *
- * @note: This method must be called by each filter that accepts input.
- */
-void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_dims)
+void ufo_filter_register_inputs(UfoFilter *filter, ...)
 {
-    g_return_if_fail(UFO_IS_FILTER(filter) || (name != NULL));
-    g_return_if_fail(num_dims <= UFO_BUFFER_MAX_NDIMS);
+    g_return_if_fail(UFO_IS_FILTER(filter));
+    g_return_if_fail(filter->priv->num_inputs == 0);
+
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
+    guint num_dims;
+    va_list ap;
+    va_start(ap, filter);
+    priv->num_inputs = 0;
 
-    if (filter_find_argument_position(priv->input_names, name) >= 0)
-        return;
+    va_start(ap, filter);
 
-    g_ptr_array_add(priv->input_names, g_strdup(name));
-    g_ptr_array_add(priv->input_num_dims, GINT_TO_POINTER(num_dims));
+    while ((num_dims = va_arg(ap, guint)) != 0) {
+        priv->num_inputs++;
+        priv->input_num_dims = g_list_append (priv->input_num_dims, GINT_TO_POINTER (num_dims));
+    }
 
-    priv->num_inputs++;
-    priv->_input_num_dims = g_list_append(priv->_input_num_dims, GINT_TO_POINTER(num_dims));
-}
+    va_end(ap);
+} 
 
-/**
- * ufo_filter_register_output:
- * @filter: A #UfoFilter
- * @name: Name of appended output 
- * @num_dims: Number of dimensions this output provides.
- *
- * Add a new output name. Each registered output is appended to the filter's
- * output list.
- *
- * @note: This method must be called by each filter that provides output.
- */
-void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_dims)
+void ufo_filter_register_outputs(UfoFilter *filter, ...)
 {
-    g_return_if_fail(UFO_IS_FILTER(filter) || (name != NULL));
-    g_return_if_fail(num_dims <= UFO_BUFFER_MAX_NDIMS);
+    g_return_if_fail(UFO_IS_FILTER(filter));
+    g_return_if_fail(filter->priv->num_outputs == 0);
+
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);    
+    va_list ap;
+    va_start(ap, filter);
+    guint num_dims;
+    priv->num_outputs = 0;
 
-    if (filter_find_argument_position(priv->output_names, name) >= 0)
-        return;
+    va_start(ap, filter);
 
-    g_ptr_array_add(priv->output_names, g_strdup(name));
-    g_ptr_array_add(priv->output_num_dims, GINT_TO_POINTER(num_dims));
+    while ((num_dims = va_arg(ap, guint)) != 0) {
+        priv->num_outputs++;
+        priv->output_num_dims = g_list_append (priv->output_num_dims, GINT_TO_POINTER (num_dims));
+    }
 
-    priv->num_outputs++;
-    priv->_output_num_dims = g_list_append(priv->_output_num_dims, GINT_TO_POINTER(num_dims));
+    va_end(ap);
 }
 
 guint ufo_filter_get_num_inputs(UfoFilter *filter)
@@ -268,13 +146,13 @@ guint ufo_filter_get_num_outputs(UfoFilter *filter)
 GList *ufo_filter_get_input_num_dims(UfoFilter *filter)
 {
     g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
-    return filter->priv->_input_num_dims;
+    return filter->priv->input_num_dims;
 }
 
 GList *ufo_filter_get_output_num_dims(UfoFilter *filter)
 {
     g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
-    return filter->priv->_output_num_dims;
+    return filter->priv->output_num_dims;
 }
 
 /**
@@ -408,13 +286,6 @@ static void ufo_filter_finalize(GObject *object)
     g_message("  GPU: %.4lfs", priv->gpu_time);
 #endif
 
-    g_ptr_array_free(priv->input_names, TRUE);
-    g_ptr_array_free(priv->output_names, TRUE);
-    g_ptr_array_free(priv->input_num_dims, FALSE);
-    g_ptr_array_free(priv->output_num_dims, FALSE);
-
-    g_hash_table_destroy(priv->input_channels);
-    g_hash_table_destroy(priv->output_channels);
     g_free(priv->plugin_name);
     G_OBJECT_CLASS(ufo_filter_parent_class)->finalize(object);
 }
@@ -438,18 +309,9 @@ static void ufo_filter_init(UfoFilter *self)
     priv->done = FALSE;
     priv->cpu_time = 0.0f;
     priv->gpu_time = 0.0f;
-    priv->input_names = g_ptr_array_new_with_free_func(g_free);
-    priv->output_names = g_ptr_array_new_with_free_func(g_free);
-    priv->input_num_dims = g_ptr_array_new();
-    priv->output_num_dims = g_ptr_array_new();
-    priv->input_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
-                           g_free, NULL);
-    priv->output_channels = g_hash_table_new_full(g_str_hash, g_str_equal,
-                            g_free, (GDestroyNotify) g_object_unref);
-
     priv->num_inputs = 0;
     priv->num_outputs = 0;
-    priv->_input_num_dims = NULL;
-    priv->_output_num_dims = NULL;
+    priv->input_num_dims = NULL;
+    priv->output_num_dims = NULL;
 }
 

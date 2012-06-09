@@ -81,12 +81,10 @@ void            ufo_filter_set_gpu_affinity     (UfoFilter                 *filt
                                                  guint                      gpu);
 gfloat          ufo_filter_get_gpu_time         (UfoFilter                 *filter);
 const gchar*    ufo_filter_get_plugin_name      (UfoFilter                 *filter);
-void            ufo_filter_register_input       (UfoFilter                 *filter, 
-                                                 const gchar               *name, 
-                                                 guint                      num_dims);
-void            ufo_filter_register_output      (UfoFilter                 *filter, 
-                                                 const gchar               *name, 
-                                                 guint                      num_dims);
+void            ufo_filter_register_inputs      (UfoFilter                 *filter, 
+                                                 ...);
+void            ufo_filter_register_outputs     (UfoFilter                 *filter, 
+                                                 ...);
 guint           ufo_filter_get_num_inputs       (UfoFilter                 *filter);
 guint           ufo_filter_get_num_outputs      (UfoFilter                 *filter);
 GList*          ufo_filter_get_input_num_dims   (UfoFilter                 *filter);
