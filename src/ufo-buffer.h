@@ -65,38 +65,58 @@ struct _UfoBufferParamSpec {
     UfoBuffer   *default_value;
 };
 
-UfoBuffer *ufo_buffer_new(guint num_dims, const guint *dim_size);
-void ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_size);
+UfoBuffer*  ufo_buffer_new                  (guint          num_dims, 
+                                             const guint   *dim_size);
+void        ufo_buffer_set_dimensions       (UfoBuffer     *buffer, 
+                                             guint          num_dims, 
+                                             const guint*   dim_size);
+void        ufo_buffer_copy                 (UfoBuffer     *from, 
+                                             UfoBuffer     *to, 
+                                             gpointer       command_queue);
+void        ufo_buffer_transfer_id          (UfoBuffer     *from, 
+                                             UfoBuffer     *to);
+gsize       ufo_buffer_get_size             (UfoBuffer     *buffer);
+gint        ufo_buffer_get_id               (UfoBuffer     *buffer);
+void        ufo_buffer_get_dimensions       (UfoBuffer     *buffer, 
+                                             guint*         num_dims, 
+                                             guint**        dim_size);
+void        ufo_buffer_get_2d_dimensions    (UfoBuffer*     buffer, 
+                                             guint*         width, 
+                                             guint*         height);
+void        ufo_buffer_reinterpret          (UfoBuffer*     buffer, 
+                                             gsize          source_depth, 
+                                             gsize          num_pixels, 
+                                             gboolean       normalize);
+void        ufo_buffer_set_host_array       (UfoBuffer*     buffer, 
+                                             gfloat*        data, 
+                                             gsize          num_bytes, 
+                                             GError**       error);
+gfloat*     ufo_buffer_get_host_array       (UfoBuffer     *buffer, 
+                                             gpointer       command_queue);
+GTimer*     ufo_buffer_get_transfer_timer   (UfoBuffer     *buffer);
+void        ufo_buffer_swap_host_arrays     (UfoBuffer     *a, 
+                                             UfoBuffer     *b);
+gpointer    ufo_buffer_get_device_array     (UfoBuffer     *buffer, 
+                                             gpointer       command_queue);
+void        ufo_buffer_invalidate_gpu_data  (UfoBuffer*     buffer);
+void        ufo_buffer_set_cl_mem           (UfoBuffer*     buffer, 
+                                             gpointer       mem);
+gpointer    ufo_buffer_get_cl_mem           (UfoBuffer*     buffer);
+void        ufo_buffer_attach_event         (UfoBuffer*     buffer,
+                                             gpointer       event);
+void        ufo_buffer_get_events           (UfoBuffer*     buffer,
+                                             gpointer**     events, 
+                                             guint*         num_events);
+void        ufo_buffer_clear_events         (UfoBuffer*     buffer);
+GType       ufo_buffer_get_type             (void);
+GQuark      ufo_buffer_error_quark          (void);
 
-void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue);
-
-void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to);
-
-gsize ufo_buffer_get_size(UfoBuffer *buffer);
-gint ufo_buffer_get_id(UfoBuffer *buffer);
-void ufo_buffer_get_dimensions(UfoBuffer *buffer, guint *num_dims, guint **dim_size);
-void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height);
-
-void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, gboolean normalize);
-void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error);
-float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue);
-GTimer *ufo_buffer_get_transfer_timer(UfoBuffer *buffer);
-
-void ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b);
-gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue);
-void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer);
-void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem);
-gpointer ufo_buffer_get_cl_mem(UfoBuffer *buffer);
-
-void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event);
-void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_events);
-void ufo_buffer_clear_events(UfoBuffer *buffer);
-
-GType ufo_buffer_get_type(void);
-GQuark ufo_buffer_error_quark(void);
-
-GParamSpec *ufo_buffer_param_spec(const gchar *name, const gchar *nick, const gchar *blurb, UfoBuffer *default_value, GParamFlags flags);
-GType ufo_buffer_param_get_type(void);
+GParamSpec* ufo_buffer_param_spec           (const gchar*   name, 
+                                             const gchar*   nick,
+                                             const gchar*   blurb, 
+                                             UfoBuffer*     default_value, 
+                                             GParamFlags    flags);
+GType       ufo_buffer_param_get_type       (void);
 
 G_END_DECLS
 

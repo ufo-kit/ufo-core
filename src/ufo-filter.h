@@ -7,6 +7,8 @@
 #include "ufo-buffer.h"
 #include "ufo-channel.h"
 
+G_BEGIN_DECLS
+
 #define UFO_TYPE_FILTER             (ufo_filter_get_type())
 #define UFO_FILTER(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_FILTER, UfoFilter))
 #define UFO_IS_FILTER(obj)          (G_TYPE_CHECK_INSTANCE_TYPE((obj), UFO_TYPE_FILTER))
@@ -72,28 +74,32 @@ struct _UfoFilterClass {
     GError * (*initialize) (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes);
 };
 
-/* These methods are supposed to be called from non-filters */
-void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name);
-GError *ufo_filter_process(UfoFilter *filter);
-void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu);
-float ufo_filter_get_gpu_time(UfoFilter *filter);
-const gchar *ufo_filter_get_plugin_name(UfoFilter *filter);
+void            ufo_filter_set_plugin_name      (UfoFilter                 *filter, 
+                                                 const gchar               *plugin_name);
+GError*         ufo_filter_process              (UfoFilter                 *filter);
+void            ufo_filter_set_gpu_affinity     (UfoFilter                 *filter, 
+                                                 guint                      gpu);
+gfloat          ufo_filter_get_gpu_time         (UfoFilter                 *filter);
+const gchar*    ufo_filter_get_plugin_name      (UfoFilter                 *filter);
+void            ufo_filter_register_input       (UfoFilter                 *filter, 
+                                                 const gchar               *name, 
+                                                 guint                      num_dims);
+void            ufo_filter_register_output      (UfoFilter                 *filter, 
+                                                 const gchar               *name, 
+                                                 guint                      num_dims);
+guint           ufo_filter_get_num_inputs       (UfoFilter                 *filter);
+guint           ufo_filter_get_num_outputs      (UfoFilter                 *filter);
+GList*          ufo_filter_get_input_num_dims   (UfoFilter                 *filter);
+GList*          ufo_filter_get_output_num_dims  (UfoFilter                 *filter);
+void            ufo_filter_done                 (UfoFilter                 *filter);
+gboolean        ufo_filter_is_done              (UfoFilter                 *filter);
+void            ufo_filter_account_gpu_time     (UfoFilter                 *filter, gpointer event);
+void            ufo_filter_wait_until           (UfoFilter                 *filter, 
+                                                 GParamSpec                *pspec, 
+                                                 UfoFilterConditionFunc     condition, 
+                                                 gpointer                   user_data);
+GType           ufo_filter_get_type             (void);
 
-/* These methods are supposed to be called by filter implementations */
-void ufo_filter_register_input(UfoFilter *filter, const gchar *name, guint num_dims);
-void ufo_filter_register_output(UfoFilter *filter, const gchar *name, guint num_dims);
-
-guint ufo_filter_get_num_inputs(UfoFilter *filter);
-guint ufo_filter_get_num_outputs(UfoFilter *filter);
-GList *ufo_filter_get_input_num_dims(UfoFilter *filter);
-GList *ufo_filter_get_output_num_dims(UfoFilter *filter);
-
-void ufo_filter_done(UfoFilter *filter);
-gboolean ufo_filter_is_done(UfoFilter *filter);
-
-void ufo_filter_account_gpu_time(UfoFilter *filter, gpointer event);
-void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionFunc condition, gpointer user_data);
-
-GType ufo_filter_get_type(void);
+G_END_DECLS
 
 #endif

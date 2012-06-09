@@ -46,19 +46,29 @@ struct _UfoRelationClass {
     GObjectClass parent_class;
 };
 
-UfoRelation *ufo_relation_new(UfoFilter *producer, guint output_port, UfoRelationMode mode);
-UfoFilter *ufo_relation_get_producer(UfoRelation *relation);
-GList *ufo_relation_get_consumers(UfoRelation *relation);
-void ufo_relation_add_consumer(UfoRelation *relation, UfoFilter *consumer, guint input_port, GError **error);
-gboolean ufo_relation_has_consumer(UfoRelation *relation, UfoFilter *consumer);
-
-guint ufo_relation_get_producer_port(UfoRelation *relation);
-guint ufo_relation_get_consumer_port(UfoRelation *relation, UfoFilter *consumer);
-void ufo_relation_get_producer_queues(UfoRelation *relation, GAsyncQueue **push_queue, GAsyncQueue **pop_queue);
-void ufo_relation_get_consumer_queues(UfoRelation *relation, UfoFilter *consumer, GAsyncQueue **push_queue, GAsyncQueue **pop_queue);
-void ufo_relation_push_poison_pill(UfoRelation *relation);
-
-GType ufo_relation_get_type(void);
+UfoRelation    *ufo_relation_new                    (UfoFilter         *producer, 
+                                                     guint              output_port, 
+                                                     UfoRelationMode    mode);
+UfoFilter      *ufo_relation_get_producer           (UfoRelation       *relation);
+GList          *ufo_relation_get_consumers          (UfoRelation       *relation);
+void            ufo_relation_add_consumer           (UfoRelation       *relation, 
+                                                     UfoFilter         *consumer, 
+                                                     guint              input_port, 
+                                                     GError           **error);
+gboolean        ufo_relation_has_consumer           (UfoRelation       *relation, 
+                                                     UfoFilter         *consumer);
+guint           ufo_relation_get_producer_port      (UfoRelation       *relation);
+guint           ufo_relation_get_consumer_port      (UfoRelation       *relation, 
+                                                     UfoFilter         *consumer);
+void            ufo_relation_get_producer_queues    (UfoRelation       *relation, 
+                                                     GAsyncQueue      **push_queue, 
+                                                     GAsyncQueue      **pop_queue);
+void            ufo_relation_get_consumer_queues    (UfoRelation       *relation, 
+                                                     UfoFilter         *consumer, 
+                                                     GAsyncQueue      **push_queue, 
+                                                     GAsyncQueue      **pop_queue);
+void            ufo_relation_push_poison_pill       (UfoRelation       *relation);
+GType           ufo_relation_get_type               (void);
 
 G_END_DECLS
 

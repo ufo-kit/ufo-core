@@ -50,12 +50,14 @@ struct _UfoPluginManagerClass {
     GObjectClass parent_class;
 };
 
-UfoPluginManager *ufo_plugin_manager_new(void);
-void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths);
-UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name, GError **error);
-GList *ufo_plugin_manager_available_filters(UfoPluginManager *manager);
-
-GType ufo_plugin_manager_get_type(void);
+UfoPluginManager   *ufo_plugin_manager_new                  (void);
+void                ufo_plugin_manager_add_paths            (UfoPluginManager   *manager, 
+                                                             const gchar        *paths);
+UfoFilter          *ufo_plugin_manager_get_filter           (UfoPluginManager   *manager, 
+                                                             const gchar        *name, 
+                                                             GError            **error);
+GList              *ufo_plugin_manager_available_filters    (UfoPluginManager   *manager);
+GType               ufo_plugin_manager_get_type             (void);
 
 G_END_DECLS
 

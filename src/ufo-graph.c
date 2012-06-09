@@ -428,20 +428,6 @@ void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
     graph->priv->relations = g_list_append(graph->priv->relations, relation);
 }
 
-/**
- * ufo_graph_get_number_of_devices:
- * @graph: A #UfoGraph
- *
- * Query the number of used acceleration devices such as GPUs
- *
- * Return value: Number of devices
- */
-guint ufo_graph_get_number_of_devices(UfoGraph *graph)
-{
-    g_return_val_if_fail(UFO_IS_GRAPH(graph), 0);
-    return ufo_resource_manager_get_number_of_devices(graph->priv->resource_manager);
-}
-
 static void ufo_graph_dispose(GObject *object)
 {
     UfoGraph *self = UFO_GRAPH(object);

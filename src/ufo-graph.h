@@ -5,6 +5,8 @@
 #include "ufo-filter.h"
 #include "ufo-relation.h"
 
+G_BEGIN_DECLS
+
 #define UFO_TYPE_GRAPH             (ufo_graph_get_type())
 #define UFO_GRAPH(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_GRAPH, UfoGraph))
 #define UFO_IS_GRAPH(obj)          (G_TYPE_CHECK_INSTANCE_TYPE((obj), UFO_TYPE_GRAPH))
@@ -44,17 +46,24 @@ struct _UfoGraphClass {
     GObjectClass parent_class;
 };
 
-UfoGraph *ufo_graph_new(const gchar *paths);
-void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error);
-void ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **error);
-void ufo_graph_run(UfoGraph *graph, GError **error);
-guint ufo_graph_get_number_of_devices(UfoGraph *graph);
-GList *ufo_graph_get_filter_names(UfoGraph *graph);
+UfoGraph   *ufo_graph_new               (const gchar   *paths);
+void        ufo_graph_read_from_json    (UfoGraph      *graph, 
+                                         const gchar   *filename, 
+                                         GError       **error);
+void        ufo_graph_save_to_json      (UfoGraph      *graph, 
+                                         const gchar   *filename, 
+                                         GError       **error);
+void        ufo_graph_run               (UfoGraph      *graph, 
+                                         GError       **error);
+GList      *ufo_graph_get_filter_names  (UfoGraph      *graph);
+UfoFilter  *ufo_graph_get_filter        (UfoGraph      *graph, 
+                                         const gchar   *plugin_name, 
+                                         GError       **error);
+void        ufo_graph_add_relation      (UfoGraph      *graph, 
+                                         UfoRelation   *relation);
+GType       ufo_graph_get_type          (void);
+GQuark      ufo_graph_error_quark       (void);
 
-UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error);
-void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation);
-
-GType ufo_graph_get_type(void);
-GQuark ufo_graph_error_quark(void);
+G_END_DECLS
 
 #endif
