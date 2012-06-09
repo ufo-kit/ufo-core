@@ -39,7 +39,6 @@ struct _UfoGraphPrivate {
     UfoBaseScheduler    *scheduler;
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
     gchar               *paths;
-    GHashTable          *nodes;          /**< maps from gchar* to UfoFilter */
     GList               *relations;
 };
 
@@ -73,7 +72,6 @@ static void graph_handle_json_filter_node(JsonArray *array, guint index, JsonNod
     UfoFilter *filter = ufo_graph_get_filter(self, plugin_name, NULL);
 
     /* TODO: check that the node name is unique */
-    g_hash_table_insert(priv->nodes, g_strdup(node_name), filter);
 
     if (filter == NULL) {
         g_warning("Couldn't find plugin '%s'", plugin_name);
@@ -205,41 +203,40 @@ static void graph_add_filter_to_json_array(gpointer data, gpointer user_data)
 
 static void graph_check_consistency(UfoGraphPrivate *priv)
 {
-    /* Build adjacency matrix */
-    GList *elements = g_hash_table_get_values(priv->nodes);
-    guint n = g_list_length(elements);
-    UfoFilter *filters[n]; /* mapping from UfoFilter to N */
-    int connections[n][n];  /* adjacency matrix */
-    int out_degree[n], in_degree[n];
+    /* /1* Build adjacency matrix *1/ */
+    /* guint n = g_list_length(elements); */
+    /* UfoFilter *filters[n]; /1* mapping from UfoFilter to N *1/ */
+    /* int connections[n][n];  /1* adjacency matrix *1/ */
+    /* int out_degree[n], in_degree[n]; */
 
-    for (guint i = 0; i < n; i++) {
-        filters[i] = UFO_FILTER(g_list_nth_data(elements, i));
-        in_degree[i] = 0;
-        out_degree[i] = 0;
-    }
+    /* for (guint i = 0; i < n; i++) { */
+    /*     filters[i] = UFO_FILTER(g_list_nth_data(elements, i)); */
+    /*     in_degree[i] = 0; */
+    /*     out_degree[i] = 0; */
+    /* } */
 
-    for (guint from = 0; from < n; from++) {
-        UfoFilter *source = UFO_FILTER(g_list_nth_data(elements, from));
+    /* for (guint from = 0; from < n; from++) { */
+    /*     UfoFilter *source = UFO_FILTER(g_list_nth_data(elements, from)); */
 
-        for (guint to = 0; to < n; to++) {
-            UfoFilter *dest = UFO_FILTER(g_list_nth_data(elements, to));
-            /* FIXME: we need to check this */
-            /* connections[from][to] = ufo_filter_connected(source, dest) ? 1 : 0; */
-        }
-    }
+    /*     for (guint to = 0; to < n; to++) { */
+    /*         UfoFilter *dest = UFO_FILTER(g_list_nth_data(elements, to)); */
+    /*         /1* FIXME: we need to check this *1/ */
+    /*         /1* connections[from][to] = ufo_filter_connected(source, dest) ? 1 : 0; *1/ */
+    /*     } */
+    /* } */
 
-    for (guint from = 0; from < n; from++) {
-        for (guint to = 0; to < n; to++) {
-            out_degree[from] += connections[from][to];
-            in_degree[from] += connections[to][from];
-        }
-    }
+    /* for (guint from = 0; from < n; from++) { */
+    /*     for (guint to = 0; to < n; to++) { */
+    /*         out_degree[from] += connections[from][to]; */
+    /*         in_degree[from] += connections[to][from]; */
+    /*     } */
+    /* } */
 
-    /* Use the graph for statical analysis */
-    for (guint i = 0; i < n; i++) {
-        if (in_degree[i] == 0 && out_degree[i] == 0)
-            g_warning("%s is not connected to any other filter", ufo_filter_get_plugin_name(filters[i]));
-    }
+    /* /1* Use the graph for statical analysis *1/ */
+    /* for (guint i = 0; i < n; i++) { */
+    /*     if (in_degree[i] == 0 && out_degree[i] == 0) */
+    /*         g_warning("%s is not connected to any other filter", ufo_filter_get_plugin_name(filters[i])); */
+    /* } */
 }
 
 /**
@@ -290,49 +287,48 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
  */
 void ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **error)
 {
-    g_return_if_fail(UFO_IS_GRAPH(graph) || (filename != NULL));
+    /* g_return_if_fail(UFO_IS_GRAPH(graph) || (filename != NULL)); */
 
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
-    GError *tmp_error = NULL;
-    GList *filters = g_hash_table_get_values(priv->nodes);
-    const guint num_filters = g_list_length(filters);
+    /* UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph); */
+    /* GError *tmp_error = NULL; */
+    /* const guint num_filters = g_list_length(filters); */
 
-    JsonGenerator *json_generator = json_generator_new();
-    JsonNode *root_node = json_node_new(JSON_NODE_OBJECT);
-    JsonObject *root_object = json_object_new();
-    JsonArray *nodes = json_array_new();
-    JsonArray *edges = json_array_new();
+    /* JsonGenerator *json_generator = json_generator_new(); */
+    /* JsonNode *root_node = json_node_new(JSON_NODE_OBJECT); */
+    /* JsonObject *root_object = json_object_new(); */
+    /* JsonArray *nodes = json_array_new(); */
+    /* JsonArray *edges = json_array_new(); */
 
-    g_list_foreach(filters, graph_add_filter_to_json_array, nodes);
+    /* g_list_foreach(filters, graph_add_filter_to_json_array, nodes); */
 
-    /* FIXME: I know, this is O(n^2) and is not covering the general case of named
-     * inputs and outputs but it's something to begin with. */
-    for (guint i = 0; i < num_filters; i++) {
-        for (guint j = 0; j < num_filters; j++) {
-            UfoFilter *from = g_list_nth_data(filters, i);
-            UfoFilter *to = g_list_nth_data(filters, j);
+    /* /1* FIXME: I know, this is O(n^2) and is not covering the general case of named */
+    /*  * inputs and outputs but it's something to begin with. *1/ */
+    /* for (guint i = 0; i < num_filters; i++) { */
+    /*     for (guint j = 0; j < num_filters; j++) { */
+    /*         UfoFilter *from = g_list_nth_data(filters, i); */
+    /*         UfoFilter *to = g_list_nth_data(filters, j); */
 
-            /* FIXME: we need to check this */
-            /* if (ufo_filter_connected(from, to)) { */
-                JsonObject *connect_object = json_object_new(); 
-                json_object_set_string_member(connect_object, "from", ufo_filter_get_plugin_name(from));
-                json_object_set_string_member(connect_object, "to", ufo_filter_get_plugin_name(to));
-                json_array_add_object_element(edges, connect_object);
-            /* } */
-        } 
-    }
+    /*         /1* FIXME: we need to check this *1/ */
+    /*         /1* if (ufo_filter_connected(from, to)) { *1/ */
+    /*             JsonObject *connect_object = json_object_new(); */ 
+    /*             json_object_set_string_member(connect_object, "from", ufo_filter_get_plugin_name(from)); */
+    /*             json_object_set_string_member(connect_object, "to", ufo_filter_get_plugin_name(to)); */
+    /*             json_array_add_object_element(edges, connect_object); */
+    /*         /1* } *1/ */
+    /*     } */ 
+    /* } */
 
-    json_object_set_array_member(root_object, "nodes", nodes);
-    json_object_set_array_member(root_object, "edges", edges);
-    json_node_set_object(root_node, root_object);
-    json_generator_set_root(json_generator, root_node);
+    /* json_object_set_array_member(root_object, "nodes", nodes); */
+    /* json_object_set_array_member(root_object, "edges", edges); */
+    /* json_node_set_object(root_node, root_object); */
+    /* json_generator_set_root(json_generator, root_node); */
 
-    if (!json_generator_to_file(json_generator, filename, &tmp_error)) {
-        g_propagate_error(error, tmp_error); 
-        return;
-    }
+    /* if (!json_generator_to_file(json_generator, filename, &tmp_error)) { */
+    /*     g_propagate_error(error, tmp_error); */ 
+    /*     return; */
+    /* } */
 
-    g_object_unref(json_generator);
+    /* g_object_unref(json_generator); */
 }
 
 /**
@@ -385,7 +381,6 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
     GError *tmp_error = NULL;
 
     UfoFilter *filter = ufo_plugin_manager_get_filter(priv->plugin_manager, plugin_name, &tmp_error);
-    g_object_ref(filter);
 
     if (tmp_error != NULL) {
         g_propagate_error(error, tmp_error);
@@ -405,6 +400,15 @@ void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
     graph->priv->relations = g_list_append(graph->priv->relations, relation);
 }
 
+/**
+ * ufo_graph_connect_filters:
+ * @graph: A #UfoGraph
+ * @from: Source filter
+ * @to: Destination filter
+ * @error: return location for error
+ *
+ * Connect to filters using their default input and output ports.
+ */
 void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GError **error)
 {
     UfoRelation *relation;
@@ -423,12 +427,14 @@ void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to,
 
 static void ufo_graph_dispose(GObject *object)
 {
-    UfoGraph *self = UFO_GRAPH(object);
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(self);
+    UfoGraph *self = UFO_GRAPH (object);
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (self);
 
-    g_object_unref(priv->plugin_manager);
-    g_object_unref(priv->resource_manager);
-    g_object_unref(priv->scheduler);
+    g_object_unref (priv->plugin_manager);
+    g_object_unref (priv->resource_manager);
+    g_object_unref (priv->scheduler);
+
+    g_list_foreach (priv->relations, (GFunc) g_object_unref, NULL);
 
     priv->plugin_manager = NULL;
     priv->resource_manager = NULL;
@@ -437,16 +443,16 @@ static void ufo_graph_dispose(GObject *object)
 
 static void ufo_graph_finalize(GObject *object)
 {
-    UfoGraph *self = UFO_GRAPH(object);
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(self);
+    UfoGraph *self = UFO_GRAPH (object);
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (self);
 
-    g_hash_table_destroy(priv->property_sets);
-    g_hash_table_destroy(priv->nodes);
-    g_free(priv->paths);
+    g_hash_table_destroy (priv->property_sets);
+    g_list_free (priv->relations);
+    g_free (priv->paths);
 
     priv->property_sets = NULL;
     priv->paths = NULL;
-    G_OBJECT_CLASS(ufo_graph_parent_class)->finalize(object);
+    G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
 }
 
 static GObject *ufo_graph_constructor(GType gtype, guint n_properties, GObjectConstructParam *properties)
@@ -534,7 +540,6 @@ static void ufo_graph_init(UfoGraph *self)
     priv->resource_manager = ufo_resource_manager();
     priv->scheduler = ufo_base_scheduler_new();
     priv->property_sets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-    priv->nodes = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
     priv->paths = NULL;
     priv->relations = NULL;
 }

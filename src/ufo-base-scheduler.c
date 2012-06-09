@@ -26,10 +26,10 @@ typedef struct {
 } ExecutionInformation;
 
 typedef struct {
-    UfoFilter *filter;
-    GList *relations;
-    guint num_cmd_queues;
-    cl_command_queue *cmd_queues;
+    UfoFilter          *filter;
+    GList              *relations;
+    guint               num_cmd_queues;
+    cl_command_queue   *cmd_queues;
 } ThreadInfo;
 
 struct _UfoBaseSchedulerPrivate {
@@ -156,69 +156,67 @@ static gpointer process_thread(gpointer data)
             break;
         }
 
-        if (state != FINISH) {
-            if (state == INIT && filter_class->initialize != NULL) {
-                error = filter_class->initialize(filter, work, output_dims);
+        if (state == INIT && filter_class->initialize != NULL) {
+            error = filter_class->initialize(filter, work, output_dims);
+            state = WORK;
 
-                if (error != NULL) {
-                    state = FINISH; 
-                    g_warning("%s", error->message);
-                    break;
-                }
-
-                state = WORK;
-
-                for (guint port = 0; port < num_outputs; port++) {
-                    for (GList *it = g_list_first(output_num_dims); it != NULL; it = g_list_next(it)) {
-                        guint num_dims = (guint) GPOINTER_TO_INT(it->data);
-                        UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
-                                num_dims, output_dims[port], NULL, NULL);
-                        g_async_queue_push(output_pop_queues[port], buffer);
-                    } 
-                }
+            if (error != NULL) {
+                state = FINISH; 
+                g_warning("%s", error->message);
+                break;
             }
 
-            /* 
-             * Fetch buffers for output.
-             */
-            for (guint port = 0; port < num_outputs; port++)
-                result[port] = g_async_queue_pop(output_pop_queues[port]);
-
-            /*
-             * Do the actual processing.
-             */
-            if (filter_class->process_gpu != NULL)
-                error = filter_class->process_gpu(filter, work, result, info->cmd_queues[0]);
-            else
-                error = filter_class->process_cpu(filter, work, result, info->cmd_queues[0]);
-
-            /*
-             * Release any work items so that preceding nodes can re-use
-             * them.
-             */
-            for (guint port = 0; port < num_inputs; port++)
-                g_async_queue_push(input_push_queues[port], work[port]); 
-
-            /*
-             * If this filter is a pure producing node (e.g. file readers),
-             * we need to check that it is finished and either push forward
-             * its output or terminate execution by sending the poison pill.
-             */
-            if (!ufo_filter_is_done(filter)) {
-                for (guint port = 0; port < num_outputs; port++)
-                    g_async_queue_push(output_push_queues[port], result[port]);
-            }
-            else if (num_inputs == 0) {
-                push_poison_pill(producing_relations);
-                state = FINISH;
+            for (guint port = 0; port < num_outputs; port++) {
+                for (GList *it = g_list_first(output_num_dims); it != NULL; it = g_list_next(it)) {
+                    guint num_dims = (guint) GPOINTER_TO_INT(it->data);
+                    UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
+                            num_dims, output_dims[port], NULL, NULL);
+                    g_async_queue_push(output_pop_queues[port], buffer);
+                } 
             }
         }
-        else {
+
+        /* 
+         * Fetch buffers for output.
+         */
+        for (guint port = 0; port < num_outputs; port++)
+            result[port] = g_async_queue_pop(output_pop_queues[port]);
+
+        /*
+         * Do the actual processing.
+         */
+        if (filter_class->process_gpu != NULL)
+            error = filter_class->process_gpu(filter, work, result, info->cmd_queues[0]);
+        else
+            error = filter_class->process_cpu(filter, work, result, info->cmd_queues[0]);
+
+        /*
+         * Release any work items so that preceding nodes can re-use
+         * them.
+         */
+        for (guint port = 0; port < num_inputs; port++) {
+            g_async_queue_push(input_push_queues[port], work[port]); 
+        }
+
+        /*
+         * If this filter is a pure producing node (e.g. file readers),
+         * we need to check that it is finished and either push forward
+         * its output or terminate execution by sending the poison pill.
+         */
+        if (!ufo_filter_is_done(filter)) {
+            for (guint port = 0; port < num_outputs; port++)
+                g_async_queue_push(output_push_queues[port], result[port]);
+        }
+        else if (num_inputs == 0) {
             push_poison_pill(producing_relations);
+            state = FINISH;
+
+            /* now kill the result buffers */
+            for (guint i = 0; i < num_outputs; i++)
+                ufo_resource_manager_release_buffer (manager, result[i]);
+            break;
         }
     }
-
-    /* TODO: clean up all output buffers */
 
     g_free(input_dims);
     g_free(output_dims);
@@ -230,6 +228,8 @@ static gpointer process_thread(gpointer data)
     g_free(output_pop_queues);
     g_free(output_push_queues);
     g_list_free(producing_relations);
+
+    g_object_unref (filter);
 
     return error;
 }
