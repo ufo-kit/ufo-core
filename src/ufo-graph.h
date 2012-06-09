@@ -59,6 +59,10 @@ GList      *ufo_graph_get_filter_names  (UfoGraph      *graph);
 UfoFilter  *ufo_graph_get_filter        (UfoGraph      *graph, 
                                          const gchar   *plugin_name, 
                                          GError       **error);
+void        ufo_graph_connect_filters   (UfoGraph      *graph,
+                                         UfoFilter     *from,
+                                         UfoFilter     *to,
+                                         GError       **error);
 void        ufo_graph_add_relation      (UfoGraph      *graph, 
                                          UfoRelation   *relation);
 GType       ufo_graph_get_type          (void);

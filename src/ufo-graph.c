@@ -394,38 +394,31 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
 
     gchar *unique_name = g_strdup_printf("%s-%p", plugin_name, (void *) filter);
     ufo_filter_set_plugin_name(filter, unique_name);
-    /* ufo_graph_add_filter(graph, filter, unique_name); */
     g_free(unique_name);
+
     return filter;
 }
-
-/**
- * ufo_graph_add_filter:
- * @graph: A #UfoGraph
- * @filter: A filter that the graph should care for
- * @name: A unique human-readable name
- *
- * In the case that a filter was not created using ufo_graph_get_filter() but in
- * a different place, you have to register the filter with this method. 
- *
- * Note: Once you have added a filter, you cannot unref the filter on your own.
- */
-/* void ufo_graph_add_filter(UfoGraph *graph, UfoFilter *filter, const char *name) */
-/* { */
-/*     g_return_if_fail(UFO_IS_GRAPH(graph) || UFO_IS_FILTER(filter) || (name != NULL)); */
-/*     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph); */
-
-/*     ufo_base_scheduler_add_filter(priv->scheduler, filter); */
-
-/*     /1* FIXME: if the same filter type is added more than once, this won't work! *1/ */
-/*     g_hash_table_insert(priv->nodes, g_strdup(name), filter); */
-/*     ufo_filter_set_plugin_name(filter, name); */
-/* } */
 
 void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) && UFO_IS_RELATION(relation));
     graph->priv->relations = g_list_append(graph->priv->relations, relation);
+}
+
+void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GError **error)
+{
+    UfoRelation *relation;
+    GError      *tmp_error = NULL;
+
+    g_return_if_fail (UFO_IS_GRAPH (graph) && UFO_IS_FILTER (from) && UFO_IS_FILTER (to));
+
+    relation = ufo_relation_new (from, 0, UFO_RELATION_MODE_DISTRIBUTE);
+    ufo_relation_add_consumer (relation, to, 0, &tmp_error);
+
+    if (tmp_error == NULL)
+        ufo_graph_add_relation (graph, relation);
+    else
+        g_propagate_error (error, tmp_error);
 }
 
 static void ufo_graph_dispose(GObject *object)

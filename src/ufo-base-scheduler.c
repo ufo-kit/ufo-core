@@ -257,10 +257,10 @@ void ufo_base_scheduler_run(UfoBaseScheduler *scheduler, GList *relations, GErro
     GHashTable *filter_set = g_hash_table_new(g_direct_hash, g_direct_equal);
 
     for (GList *it = g_list_first(relations); it != NULL; it = g_list_next(it)) {
-        UfoRelation *relation = UFO_RELATION(it->data);
-        UfoFilter *producer = ufo_relation_get_producer(relation);
-        GList *consumers = ufo_relation_get_consumers(relation);
-            
+        UfoRelation *relation   = UFO_RELATION(it->data);
+        UfoFilter   *producer   = ufo_relation_get_producer(relation);
+        GList       *consumers  = ufo_relation_get_consumers(relation);
+
         g_hash_table_insert(filter_set, producer, NULL);
 
         for (GList *jt = g_list_first(consumers); jt != NULL; jt = g_list_next(jt))
