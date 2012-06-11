@@ -33,7 +33,8 @@ typedef struct {
 } ThreadInfo;
 
 struct _UfoBaseSchedulerPrivate {
-    GHashTable *exec_info;    /**< maps from gpointer to ExecutionInformation* */
+    guint foo;
+    /* GHashTable *exec_info;    /**< maps from gpointer to ExecutionInformation* *1/ */
 };
 
 /**
@@ -47,25 +48,6 @@ UfoBaseScheduler *ufo_base_scheduler_new(void)
 {
     UfoBaseScheduler *base_scheduler = UFO_BASE_SCHEDULER(g_object_new(UFO_TYPE_BASE_SCHEDULER, NULL));
     return base_scheduler;
-}
-
-/**
- * ufo_base_scheduler_add_filter:
- * @scheduler: A #UfoBaseScheduler object
- * @filter: The filter to be registered with the scheduler
- *
- * Adds a filter to the scheduler which controls its execution.
- */
-void ufo_base_scheduler_add_filter(UfoBaseScheduler *scheduler, UfoFilter *filter)
-{
-    g_return_if_fail(UFO_IS_BASE_SCHEDULER(scheduler));
-    UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE(scheduler);
-
-    ExecutionInformation *info = g_malloc0(sizeof(ExecutionInformation));
-    info->cpu_time = 0.0f;
-    info->gpu_time = 0.0f;
-    g_hash_table_insert(priv->exec_info, filter, info);
-    g_object_ref(filter);
 }
 
 static void alloc_dim_sizes(GList *num_dims, guint **dims)
@@ -93,6 +75,8 @@ static gpointer process_thread(gpointer data)
         g_warning("Filter is deprecated\n");
         return NULL;
     }
+
+    g_object_ref (filter);
 
     const guint num_inputs = ufo_filter_get_num_inputs(filter);
     const guint num_outputs = ufo_filter_get_num_outputs(filter);
@@ -283,6 +267,7 @@ void ufo_base_scheduler_run(UfoBaseScheduler *scheduler, GList *relations, GErro
      */
     for (GList *it = filters; it != NULL; it = g_list_next(it), i++) {
         UfoFilter *filter = UFO_FILTER(it->data);
+
         thread_info[i].filter = filter;
         thread_info[i].relations = relations;
         thread_info[i].num_cmd_queues = num_queues;
@@ -321,7 +306,7 @@ void ufo_base_scheduler_run(UfoBaseScheduler *scheduler, GList *relations, GErro
 static void ufo_base_scheduler_dispose(GObject *object)
 {
     UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE(object);
-    g_hash_table_destroy(priv->exec_info);
+    /* g_hash_table_destroy(priv->exec_info); */
     G_OBJECT_CLASS(ufo_base_scheduler_parent_class)->dispose(object);
 }
 
@@ -342,5 +327,5 @@ static void ufo_base_scheduler_init(UfoBaseScheduler *base_scheduler)
 {
     UfoBaseSchedulerPrivate *priv;
     base_scheduler->priv = priv = UFO_BASE_SCHEDULER_GET_PRIVATE(base_scheduler);
-    priv->exec_info = g_hash_table_new_full(g_direct_hash, g_direct_equal, g_object_unref, g_free);
+    /* priv->exec_info = g_hash_table_new_full(g_direct_hash, g_direct_equal, g_object_unref, g_free); */
 }

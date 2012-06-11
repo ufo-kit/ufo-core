@@ -278,16 +278,13 @@ void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterCondit
 
 static void ufo_filter_finalize(GObject *object)
 {
-    UfoFilter *self = UFO_FILTER(object);
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(self);
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(object);
 
-#ifdef WITH_PROFILING
-    g_message("Time for '%s'", priv->plugin_name);
-    g_message("  GPU: %.4lfs", priv->gpu_time);
-#endif
+    g_list_free (priv->input_num_dims);
+    g_list_free (priv->output_num_dims);
+    g_free (priv->plugin_name);
 
-    g_free(priv->plugin_name);
-    G_OBJECT_CLASS(ufo_filter_parent_class)->finalize(object);
+    G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
 }
 
 static void ufo_filter_class_init(UfoFilterClass *klass)

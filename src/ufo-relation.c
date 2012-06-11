@@ -21,15 +21,14 @@ G_DEFINE_TYPE(UfoRelation, ufo_relation, G_TYPE_OBJECT)
 struct _UfoRelationPrivate {
     UfoRelationMode mode;
 
-    UfoFilter *producer;
-    guint output_port;
+    UfoFilter   *producer;
+    guint        output_port;
     GAsyncQueue *producer_pop_queue;
     GAsyncQueue *producer_push_queue;
-
-    GList *consumers;                   /* contains UfoFilter * */
-    GHashTable *consumer_ports;         /* maps from UfoFilter* to input port */
-    GHashTable *consumer_pop_queues;    /* maps from UfoFilter* to GAsyncQueue */
-    GHashTable *consumer_push_queues;   /* maps from UfoFilter* to GAsyncQueue */
+    GList       *consumers;                   /* contains UfoFilter * */
+    GHashTable  *consumer_ports;         /* maps from UfoFilter* to input port */
+    GHashTable  *consumer_pop_queues;    /* maps from UfoFilter* to GAsyncQueue */
+    GHashTable  *consumer_push_queues;   /* maps from UfoFilter* to GAsyncQueue */
 };
 
 enum {
@@ -55,11 +54,16 @@ static GParamSpec *relation_properties[N_PROPERTIES] = { NULL, };
  */
 UfoRelation *ufo_relation_new(UfoFilter *producer, guint output_port, UfoRelationMode mode)
 {
-    return UFO_RELATION(g_object_new(UFO_TYPE_RELATION, 
+    UfoRelation *relation;
+    
+    relation = UFO_RELATION(g_object_new(UFO_TYPE_RELATION, 
             "producer", producer, 
             "output-port", output_port, 
             "mode", mode, 
             NULL));
+
+    g_object_ref (producer);
+    return relation;
 }
 
 UfoFilter *ufo_relation_get_producer(UfoRelation *relation)
@@ -144,6 +148,7 @@ void ufo_relation_add_consumer(UfoRelation *relation, UfoFilter *consumer, guint
         }
     }
 
+    g_object_ref (consumer);
     priv->consumers = g_list_append(priv->consumers, consumer);
 }
 
@@ -209,7 +214,7 @@ static void ufo_relation_set_property(GObject *object, guint property_id, const 
 
     switch (property_id) {
         case PROP_PRODUCER:
-            priv->producer = g_value_get_object(value);
+            priv->producer = g_value_get_object (value);
             break;
         case PROP_OUTPUT_PORT:
             priv->output_port = g_value_get_uint(value);
@@ -243,19 +248,44 @@ static void ufo_relation_get_property(GObject *object, guint property_id, GValue
     }
 }
 
+static void g_async_queue_safe_unref (GAsyncQueue *queue)
+{
+    if (queue)
+        g_async_queue_unref (queue);
+}
+
 static void ufo_relation_dispose(GObject *object)
 {
-    G_OBJECT_CLASS(ufo_relation_parent_class)->dispose(object);
+    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (object);
+
+    g_list_foreach (priv->consumers, (GFunc) g_object_unref, NULL);
+    g_object_unref (priv->producer);
+
+    G_OBJECT_CLASS (ufo_relation_parent_class)->dispose (object);
 }
 
 static void ufo_relation_finalize(GObject *object)
 {
     UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE(object);
 
-    g_list_free(priv->consumers);
-    g_hash_table_destroy(priv->consumer_push_queues);
-    g_hash_table_destroy(priv->consumer_pop_queues);
-    g_hash_table_destroy(priv->consumer_ports);
+    if (priv->mode == UFO_RELATION_MODE_DISTRIBUTE) {
+        g_async_queue_safe_unref (priv->producer_pop_queue);
+        g_async_queue_safe_unref (priv->producer_push_queue);
+    }
+    else {
+        for (GList *it = g_list_first (priv->consumers); it != NULL; it = g_list_next (it)) {
+            UfoFilter *consumer = UFO_FILTER (it->data);
+            GAsyncQueue *pop_queue = g_hash_table_lookup (priv->consumer_pop_queues, consumer);
+            g_async_queue_safe_unref (pop_queue);
+        }
+
+        g_async_queue_safe_unref (priv->producer_pop_queue);
+    }
+
+    g_list_free (priv->consumers);
+    g_hash_table_destroy (priv->consumer_push_queues);
+    g_hash_table_destroy (priv->consumer_pop_queues);
+    g_hash_table_destroy (priv->consumer_ports);
 
     G_OBJECT_CLASS(ufo_relation_parent_class)->finalize(object);
 }
@@ -288,7 +318,6 @@ static void ufo_relation_class_init(UfoRelationClass *klass)
                 "Work item mode",
                 UFO_TYPE_RELATION_MODE, UFO_RELATION_MODE_DISTRIBUTE,
                 G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
-
 
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
         g_object_class_install_property(gobject_class, i, relation_properties[i]);

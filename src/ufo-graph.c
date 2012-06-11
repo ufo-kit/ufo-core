@@ -40,6 +40,7 @@ struct _UfoGraphPrivate {
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
     gchar               *paths;
     GList               *relations;
+    GList               *filters;
 };
 
 enum {
@@ -372,11 +373,13 @@ GList *ufo_graph_get_filter_names(UfoGraph *graph)
  *
  * Instantiate a new filter from a given plugin.
  *
- * Return value: (transfer full): a #UfoFilter
+ * Return value: (transfer none): A new #UfoFilter identified by the plugin. The
+ * filter will be managed by the Ufo system, so do not call g_object_unref() on
+ * it unless you reference it first using g_object_ref().
  */
 UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error)
 {
-    g_return_val_if_fail(UFO_IS_GRAPH(graph) || (plugin_name != NULL), NULL);
+    g_return_val_if_fail(UFO_IS_GRAPH(graph) && (plugin_name != NULL), NULL);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
     GError *tmp_error = NULL;
 
@@ -391,12 +394,15 @@ UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GErro
     ufo_filter_set_plugin_name(filter, unique_name);
     g_free(unique_name);
 
+    priv->filters = g_list_append (priv->filters, filter);
+
     return filter;
 }
 
 void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) && UFO_IS_RELATION(relation));
+    g_object_ref (relation);
     graph->priv->relations = g_list_append(graph->priv->relations, relation);
 }
 
@@ -419,8 +425,13 @@ void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to,
     relation = ufo_relation_new (from, 0, UFO_RELATION_MODE_DISTRIBUTE);
     ufo_relation_add_consumer (relation, to, 0, &tmp_error);
 
-    if (tmp_error == NULL)
-        ufo_graph_add_relation (graph, relation);
+    if (tmp_error == NULL) {
+        /* 
+         * We don't call ufo_graph_add_relation() because we don't want to
+         * reference the relation object once again.
+         */
+        graph->priv->relations = g_list_append (graph->priv->relations, relation);
+    }
     else
         g_propagate_error (error, tmp_error);
 }
@@ -430,11 +441,12 @@ static void ufo_graph_dispose(GObject *object)
     UfoGraph *self = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (self);
 
+    g_list_foreach (priv->relations, (GFunc) g_object_unref, NULL);
+    g_list_foreach (priv->filters, (GFunc) g_object_unref, NULL);
+
     g_object_unref (priv->plugin_manager);
     g_object_unref (priv->resource_manager);
     g_object_unref (priv->scheduler);
-
-    g_list_foreach (priv->relations, (GFunc) g_object_unref, NULL);
 
     priv->plugin_manager = NULL;
     priv->resource_manager = NULL;
@@ -448,6 +460,7 @@ static void ufo_graph_finalize(GObject *object)
 
     g_hash_table_destroy (priv->property_sets);
     g_list_free (priv->relations);
+    g_list_free (priv->filters);
     g_free (priv->paths);
 
     priv->property_sets = NULL;
@@ -542,5 +555,6 @@ static void ufo_graph_init(UfoGraph *self)
     priv->property_sets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
     priv->paths = NULL;
     priv->relations = NULL;
+    priv->filters = NULL;
 }
 
