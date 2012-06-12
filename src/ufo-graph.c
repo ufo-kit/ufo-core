@@ -450,7 +450,7 @@ static void ufo_graph_dispose(GObject *object)
 
     priv->plugin_manager = NULL;
     priv->resource_manager = NULL;
-    G_OBJECT_CLASS(ufo_graph_parent_class)->dispose(object);
+    G_OBJECT_CLASS (ufo_graph_parent_class)->dispose (object);
 }
 
 static void ufo_graph_finalize(GObject *object)
@@ -468,21 +468,18 @@ static void ufo_graph_finalize(GObject *object)
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
 }
 
-static GObject *ufo_graph_constructor(GType gtype, guint n_properties, GObjectConstructParam *properties)
+static void ufo_graph_constructed(GObject *object)
 {
-    GObject *object = G_OBJECT_CLASS(ufo_graph_parent_class)->constructor(gtype, n_properties, properties);
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (object);
+    gchar *paths = g_strdup_printf ("%s:%s", priv->paths, LIB_FILTER_DIR);
 
-    if (!object)
-        return NULL;
+    ufo_resource_manager_add_paths (priv->resource_manager, paths);
+    ufo_plugin_manager_add_paths (priv->plugin_manager, paths);
 
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
-    gchar *paths = g_strdup_printf("%s:%s", priv->paths, LIB_FILTER_DIR);
-    ufo_resource_manager_add_paths(priv->resource_manager, paths);
+    if (G_OBJECT_CLASS (ufo_graph_parent_class)->constructed != NULL)
+        G_OBJECT_CLASS (ufo_graph_parent_class)->constructed (object);
 
-    priv->plugin_manager = ufo_plugin_manager_new();
-    ufo_plugin_manager_add_paths(priv->plugin_manager, paths);
-    g_free(paths);
-    return object;
+    g_free (paths);
 }
 
 static void ufo_graph_set_property(GObject *object,
@@ -527,7 +524,7 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
     gobject_class->get_property = ufo_graph_get_property;
     gobject_class->dispose = ufo_graph_dispose;
     gobject_class->finalize = ufo_graph_finalize;
-    gobject_class->constructor = ufo_graph_constructor;
+    gobject_class->constructed = ufo_graph_constructed;
 
     /**
      * UfoGraph:paths:
@@ -549,10 +546,11 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
 static void ufo_graph_init(UfoGraph *self)
 {
     UfoGraphPrivate *priv;
-    self->priv = priv = UFO_GRAPH_GET_PRIVATE(self);
-    priv->resource_manager = ufo_resource_manager();
-    priv->scheduler = ufo_base_scheduler_new();
-    priv->property_sets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+    self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
+    priv->plugin_manager = ufo_plugin_manager_new ();
+    priv->resource_manager = ufo_resource_manager ();
+    priv->scheduler = ufo_base_scheduler_new ();
+    priv->property_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->paths = NULL;
     priv->relations = NULL;
     priv->filters = NULL;
