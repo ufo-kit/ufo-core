@@ -63,49 +63,49 @@ static void graph_handle_json_filter_node(JsonArray *array, guint index, JsonNod
 {
     g_return_if_fail(UFO_IS_GRAPH(user_data));
 
-    UfoGraph *self = UFO_GRAPH(user_data);
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(self);
+/*     UfoGraph *self = UFO_GRAPH(user_data); */
+/*     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(self); */
 
-    JsonObject *object = json_node_get_object(node);
-    /* TODO: check existence */
-    const gchar *plugin_name = json_object_get_string_member(object, "plugin");
-    const gchar *node_name = json_object_get_string_member(object, "name");
-    UfoFilter *filter = ufo_graph_get_filter(self, plugin_name, NULL);
+/*     JsonObject *object = json_node_get_object(node); */
+/*     /1* TODO: check existence *1/ */
+/*     const gchar *plugin_name = json_object_get_string_member(object, "plugin"); */
+/*     const gchar *node_name = json_object_get_string_member(object, "name"); */
+/*     /1* UfoFilter *filter = ufo_graph_get_filter(self, plugin_name, NULL); *1/ */
 
-    /* TODO: check that the node name is unique */
+/*     /1* TODO: check that the node name is unique *1/ */
 
-    if (filter == NULL) {
-        g_warning("Couldn't find plugin '%s'", plugin_name);
-        return;
-    }
+/*     if (filter == NULL) { */
+/*         g_warning("Couldn't find plugin '%s'", plugin_name); */
+/*         return; */
+/*     } */
 
-    /* We can define "properties" for each filter ... */
-    if (json_object_has_member(object, "properties")) {
-        JsonObject *prop_object = json_object_get_object_member(object, "properties");
-        json_object_foreach_member(prop_object,
-                                   graph_handle_json_single_prop,
-                                   filter);
-    }
+/*     /1* We can define "properties" for each filter ... *1/ */
+/*     if (json_object_has_member(object, "properties")) { */
+/*         JsonObject *prop_object = json_object_get_object_member(object, "properties"); */
+/*         json_object_foreach_member(prop_object, */
+/*                                    graph_handle_json_single_prop, */
+/*                                    filter); */
+/*     } */
 
-    /* ... and also add more through prop-refs */
-    if (json_object_has_member(object, "prop-refs")) {
-        JsonArray *prop_refs = json_object_get_array_member(object, "prop-refs");
+/*     /1* ... and also add more through prop-refs *1/ */
+/*     if (json_object_has_member(object, "prop-refs")) { */
+/*         JsonArray *prop_refs = json_object_get_array_member(object, "prop-refs"); */
 
-        for (guint i = 0; i < json_array_get_length(prop_refs); i++) {
-            const gchar *set_name = json_array_get_string_element(prop_refs, i);
-            JsonObject *prop_set = g_hash_table_lookup(priv->property_sets, set_name);
+/*         for (guint i = 0; i < json_array_get_length(prop_refs); i++) { */
+/*             const gchar *set_name = json_array_get_string_element(prop_refs, i); */
+/*             JsonObject *prop_set = g_hash_table_lookup(priv->property_sets, set_name); */
 
-            if (prop_set == NULL)
-                g_warning("No property set '%s' in 'prop-sets'", set_name);
-            else {
-                json_object_foreach_member(prop_set,
-                        graph_handle_json_single_prop,
-                        filter);
-            }
-        }
+/*             if (prop_set == NULL) */
+/*                 g_warning("No property set '%s' in 'prop-sets'", set_name); */
+/*             else { */
+/*                 json_object_foreach_member(prop_set, */
+/*                         graph_handle_json_single_prop, */
+/*                         filter); */
+/*             } */
+/*         } */
 
-        json_array_unref(prop_refs);
-    }
+/*         json_array_unref(prop_refs); */
+/*     } */
 }
 
 static void graph_handle_json_filter_edge(JsonArray *array, guint index, JsonNode *node, gpointer user_data)
@@ -364,41 +364,6 @@ GList *ufo_graph_get_filter_names(UfoGraph *graph)
     return ufo_plugin_manager_available_filters(graph->priv->plugin_manager);
 }
 
-/**
- * ufo_graph_get_filter:
- * @graph: a #UfoGraph
- * @plugin_name: name of the plugin
- * @error: return location for a GError with error codes from
- * #UfoPluginManagerError or %NULL
- *
- * Instantiate a new filter from a given plugin.
- *
- * Return value: (transfer none): A new #UfoFilter identified by the plugin. The
- * filter will be managed by the Ufo system, so do not call g_object_unref() on
- * it unless you reference it first using g_object_ref().
- */
-UfoFilter *ufo_graph_get_filter(UfoGraph *graph, const gchar *plugin_name, GError **error)
-{
-    g_return_val_if_fail(UFO_IS_GRAPH(graph) && (plugin_name != NULL), NULL);
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(graph);
-    GError *tmp_error = NULL;
-
-    UfoFilter *filter = ufo_plugin_manager_get_filter(priv->plugin_manager, plugin_name, &tmp_error);
-
-    if (tmp_error != NULL) {
-        g_propagate_error(error, tmp_error);
-        return NULL;
-    }
-
-    gchar *unique_name = g_strdup_printf("%s-%p", plugin_name, (void *) filter);
-    ufo_filter_set_plugin_name(filter, unique_name);
-    g_free(unique_name);
-
-    priv->filters = g_list_append (priv->filters, filter);
-
-    return filter;
-}
-
 void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) && UFO_IS_RELATION(relation));
@@ -436,15 +401,25 @@ void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to,
         g_propagate_error (error, tmp_error);
 }
 
+static void g_object_unref_safe (gpointer data, gpointer user_data)
+{
+    UfoFilter *filter = (UfoFilter *) data;
+
+    if (UFO_IS_FILTER (filter))
+        g_object_unref (filter);
+}
+
 static void ufo_graph_dispose(GObject *object)
 {
     UfoGraph *self = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (self);
 
     g_list_foreach (priv->relations, (GFunc) g_object_unref, NULL);
-    g_list_foreach (priv->filters, (GFunc) g_object_unref, NULL);
+    g_print ("kill filters\n");
+    g_list_foreach (priv->filters, (GFunc) g_object_unref_safe, NULL);
+    g_print ("done\n");
 
-    g_object_unref (priv->plugin_manager);
+    /* g_object_unref (priv->plugin_manager); */
     g_object_unref (priv->resource_manager);
     g_object_unref (priv->scheduler);
 
@@ -474,7 +449,7 @@ static void ufo_graph_constructed(GObject *object)
     gchar *paths = g_strdup_printf ("%s:%s", priv->paths, LIB_FILTER_DIR);
 
     ufo_resource_manager_add_paths (priv->resource_manager, paths);
-    ufo_plugin_manager_add_paths (priv->plugin_manager, paths);
+    /* ufo_plugin_manager_add_paths (priv->plugin_manager, paths); */
 
     if (G_OBJECT_CLASS (ufo_graph_parent_class)->constructed != NULL)
         G_OBJECT_CLASS (ufo_graph_parent_class)->constructed (object);
@@ -547,7 +522,7 @@ static void ufo_graph_init(UfoGraph *self)
 {
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
-    priv->plugin_manager = ufo_plugin_manager_new ();
+    priv->plugin_manager = NULL;
     priv->resource_manager = ufo_resource_manager ();
     priv->scheduler = ufo_base_scheduler_new ();
     priv->property_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);

@@ -107,7 +107,7 @@ void ufo_plugin_manager_add_paths(UfoPluginManager *manager, const gchar *paths)
  * Load a #UfoFilter module and return an instance. The shared object name is
  * constructed as "libfilter@name.so".
  *
- * Return value: #UfoFilter or %NULL if module cannot be found
+ * Return value (transfer full): #UfoFilter or %NULL if module cannot be found
  *
  * Since: 0.2, the error parameter is available
  */
@@ -115,51 +115,59 @@ UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar 
 {
     g_return_val_if_fail(UFO_IS_PLUGIN_MANAGER(manager) || (name != NULL), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE(manager);
+    UfoFilter *filter;
     GetFilterFunc *func = NULL;
     GModule *module = NULL;
+    gchar *module_name = NULL;
+    gchar *unique_name;
     const gchar *entry_symbol_name = "ufo_filter_plugin_new"; 
 
     func = g_hash_table_lookup(priv->filter_funcs, name);
 
-    if (func != NULL)
-        return (*func)();
+    if (func == NULL) {
+        /* No suitable function found, let's find the module */
+        module_name = g_strdup_printf("libufofilter%s.so", name);
+        gchar *path = plugin_manager_get_path(priv, module_name);
 
-    /* No suitable function found, let's find the module */
-    gchar *module_name = g_strdup_printf("libufofilter%s.so", name);
-    gchar *path = plugin_manager_get_path(priv, module_name);
+        if (path == NULL) {
+            g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_NOT_FOUND,
+                    "Module %s not found", module_name);
+            goto handle_error;
+        }
 
-    if (path == NULL) {
-        g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_NOT_FOUND,
-                "Module %s not found", module_name);
-        goto handle_error;
+        module = g_module_open(path, G_MODULE_BIND_LAZY);
+        g_free(path);
+
+        if (!module) {
+            g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_OPEN,
+                    "Module %s could not be opened: %s", module_name, g_module_error());
+            goto handle_error;
+        }
+
+        func = g_malloc0(sizeof(GetFilterFunc));
+
+        if (!g_module_symbol(module, entry_symbol_name, (gpointer *) func)) {
+            g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND,
+                    "%s is not exported by module %s: %s", entry_symbol_name, module_name, g_module_error());
+            g_free(func);
+
+            if (!g_module_close(module))
+                g_warning("%s", g_module_error());
+
+            goto handle_error;
+        }
+
+        priv->modules = g_slist_append(priv->modules, module);
+        g_hash_table_insert(priv->filter_funcs, g_strdup(name), func);
+        g_free(module_name);
     }
 
-    module = g_module_open(path, G_MODULE_BIND_LAZY);
-    g_free(path);
+    filter = (*func)();
+    unique_name = g_strdup_printf("%s-%p", name, (void *) filter);
+    ufo_filter_set_plugin_name(filter, unique_name);
+    g_free(unique_name);
 
-    if (!module) {
-        g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_OPEN,
-                "Module %s could not be opened: %s", module_name, g_module_error());
-        goto handle_error;
-    }
-
-    func = g_malloc0(sizeof(GetFilterFunc));
-
-    if (!g_module_symbol(module, entry_symbol_name, (gpointer *) func)) {
-        g_set_error(error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND,
-                "%s is not exported by module %s: %s", entry_symbol_name, module_name, g_module_error());
-        g_free(func);
-
-        if (!g_module_close(module))
-            g_warning("%s", g_module_error());
-
-        goto handle_error;
-    }
-
-    priv->modules = g_slist_append(priv->modules, module);
-    g_hash_table_insert(priv->filter_funcs, g_strdup(name), func);
-    g_free(module_name);
-    return (*func)();
+    return filter;
 
 handle_error:
     g_free(module_name);

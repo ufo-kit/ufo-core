@@ -280,6 +280,7 @@ static void ufo_filter_finalize(GObject *object)
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(object);
 
+    g_print ("finalize %s\n", priv->plugin_name);
     g_list_free (priv->input_num_dims);
     g_list_free (priv->output_num_dims);
     g_free (priv->plugin_name);
@@ -287,10 +288,18 @@ static void ufo_filter_finalize(GObject *object)
     G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
 }
 
+static void ufo_filter_dispose(GObject *object)
+{
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(object);
+    G_OBJECT_CLASS (ufo_filter_parent_class)->dispose (object);
+    g_print ("disposed %s\n", priv->plugin_name);
+}
+
 static void ufo_filter_class_init(UfoFilterClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->finalize = ufo_filter_finalize;
+    gobject_class->dispose = ufo_filter_dispose;
     klass->initialize = NULL;
     klass->process = NULL;
     klass->process_cpu = NULL;
