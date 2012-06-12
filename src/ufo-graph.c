@@ -34,13 +34,11 @@ GQuark ufo_graph_error_quark(void)
 }
 
 struct _UfoGraphPrivate {
-    UfoPluginManager    *plugin_manager;
     UfoResourceManager  *resource_manager;
     UfoBaseScheduler    *scheduler;
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
     gchar               *paths;
     GList               *relations;
-    GList               *filters;
 };
 
 enum {
@@ -349,21 +347,14 @@ void ufo_graph_run(UfoGraph *graph, GError **error)
     ufo_base_scheduler_run(priv->scheduler, priv->relations, error);
 }
 
-/**
- * ufo_graph_get_filter_names:
- * @graph: A #UfoGraph
- *
- * Enumerate all available filters that can be instatiated with
- * ufo_graph_get_filter().
- *
- * Return value: (element-type utf8) (transfer none): list of constants.
- */
-GList *ufo_graph_get_filter_names(UfoGraph *graph)
-{
-    g_return_val_if_fail(UFO_IS_GRAPH(graph), NULL);
-    return ufo_plugin_manager_available_filters(graph->priv->plugin_manager);
-}
 
+/**
+ * ufo_graph_add_relation:
+ * @graph: A #UfoGraph
+ * @relation: A multi-edge that should is part of the graph object
+ *
+ * Add a new relation to the graph.
+ */
 void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) && UFO_IS_RELATION(relation));
@@ -401,29 +392,16 @@ void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to,
         g_propagate_error (error, tmp_error);
 }
 
-static void g_object_unref_safe (gpointer data, gpointer user_data)
-{
-    UfoFilter *filter = (UfoFilter *) data;
-
-    if (UFO_IS_FILTER (filter))
-        g_object_unref (filter);
-}
-
 static void ufo_graph_dispose(GObject *object)
 {
     UfoGraph *self = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (self);
 
     g_list_foreach (priv->relations, (GFunc) g_object_unref, NULL);
-    g_print ("kill filters\n");
-    g_list_foreach (priv->filters, (GFunc) g_object_unref_safe, NULL);
-    g_print ("done\n");
 
-    /* g_object_unref (priv->plugin_manager); */
     g_object_unref (priv->resource_manager);
     g_object_unref (priv->scheduler);
 
-    priv->plugin_manager = NULL;
     priv->resource_manager = NULL;
     G_OBJECT_CLASS (ufo_graph_parent_class)->dispose (object);
 }
@@ -435,7 +413,6 @@ static void ufo_graph_finalize(GObject *object)
 
     g_hash_table_destroy (priv->property_sets);
     g_list_free (priv->relations);
-    g_list_free (priv->filters);
     g_free (priv->paths);
 
     priv->property_sets = NULL;
@@ -449,7 +426,6 @@ static void ufo_graph_constructed(GObject *object)
     gchar *paths = g_strdup_printf ("%s:%s", priv->paths, LIB_FILTER_DIR);
 
     ufo_resource_manager_add_paths (priv->resource_manager, paths);
-    /* ufo_plugin_manager_add_paths (priv->plugin_manager, paths); */
 
     if (G_OBJECT_CLASS (ufo_graph_parent_class)->constructed != NULL)
         G_OBJECT_CLASS (ufo_graph_parent_class)->constructed (object);
@@ -522,12 +498,10 @@ static void ufo_graph_init(UfoGraph *self)
 {
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
-    priv->plugin_manager = NULL;
     priv->resource_manager = ufo_resource_manager ();
     priv->scheduler = ufo_base_scheduler_new ();
     priv->property_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->paths = NULL;
     priv->relations = NULL;
-    priv->filters = NULL;
 }
 
