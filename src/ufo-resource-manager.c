@@ -547,24 +547,6 @@ gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memob
     return dup;
 }
 
-/**
- * ufo_resource_manager_release_buffer:
- * @manager: A #UfoResourceManager
- * @buffer: A #UfoBuffer
- *
- * Release the memory of this buffer.
- */
-void ufo_resource_manager_release_buffer(UfoResourceManager *manager, UfoBuffer *buffer)
-{
-    g_return_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || UFO_IS_BUFFER(buffer));
-    cl_mem mem = (cl_mem) ufo_buffer_get_cl_mem(buffer);
-
-    if (mem != NULL)
-        CHECK_OPENCL_ERROR(clReleaseMemObject(mem));
-
-    g_object_unref(buffer);
-}
-
 guint ufo_resource_manager_get_new_id(UfoResourceManager *manager)
 {
     g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager), 0);

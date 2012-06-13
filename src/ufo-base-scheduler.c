@@ -155,6 +155,7 @@ static gpointer process_thread(gpointer data)
                     guint num_dims = (guint) GPOINTER_TO_INT(it->data);
                     UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
                             num_dims, output_dims[port], NULL, NULL);
+                    g_print ("created buffer %p for filter %s\n", buffer, ufo_filter_get_plugin_name (filter));
                     g_async_queue_push(output_pop_queues[port], buffer);
                 } 
             }
@@ -197,9 +198,16 @@ static gpointer process_thread(gpointer data)
 
             /* now kill the result buffers */
             for (guint i = 0; i < num_outputs; i++)
-                ufo_resource_manager_release_buffer (manager, result[i]);
+                g_object_unref (result[i]);
             break;
         }
+    }
+
+    for (guint i = 0; i < num_outputs; i++) {
+        UfoBuffer *buffer = g_async_queue_pop (output_pop_queues[0]);
+
+        if (buffer != 0x1)
+            g_object_unref (buffer);
     }
 
     g_free (input_dims);

@@ -614,21 +614,29 @@ static void ufo_filter_get_property(GObject *object,
     }
 }
 
-static void ufo_buffer_finalize(GObject *gobject)
+static void 
+ufo_buffer_finalize(GObject *gobject)
 {
-    UfoBuffer *buffer = UFO_BUFFER(gobject);
-    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
+    UfoBuffer *buffer = UFO_BUFFER (gobject);
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
-    if (priv->host_array.data)
-        g_free(priv->host_array.data);
+    if (priv->host_array.data != NULL)
+        g_free (priv->host_array.data);
+
+    if (priv->device_array != NULL)
+        CHECK_OPENCL_ERROR (clReleaseMemObject (priv->device_array));
 
     priv->host_array.data = NULL;
+    priv->device_array = NULL;
+
     g_timer_destroy(priv->timer);
     g_free(priv->events);
+
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
-static void ufo_buffer_class_init(UfoBufferClass *klass)
+static void 
+ufo_buffer_class_init(UfoBufferClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->set_property = ufo_filter_set_property;

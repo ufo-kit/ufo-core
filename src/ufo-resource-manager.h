@@ -87,8 +87,6 @@ UfoBuffer          *ufo_resource_manager_request_buffer         (UfoResourceMana
                                                                  const guint        *dim_size, 
                                                                  gfloat             *data, 
                                                                  gpointer            command_queue);
-void                ufo_resource_manager_release_buffer         (UfoResourceManager *manager, 
-                                                                 UfoBuffer          *buffer);
 guint               ufo_resource_manager_get_new_id             (UfoResourceManager *manager);
 GType               ufo_resource_manager_get_type               (void);
 GQuark              ufo_resource_manager_error_quark            (void);

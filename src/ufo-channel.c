@@ -32,15 +32,13 @@ struct _UfoChannelPrivate {
 
 static void channel_dispose_buffers(UfoChannelPrivate *priv)
 {
-    UfoResourceManager *manager = ufo_resource_manager();
-
     g_async_queue_unref(priv->input_queue);
     g_async_queue_unref(priv->output_queue);
     priv->input_queue = g_async_queue_new();
     priv->output_queue = g_async_queue_new();
 
     for (guint i = 0; i < priv->num_buffers; i++)
-        ufo_resource_manager_release_buffer(manager, priv->buffers[i]);
+        g_object_unref (priv->buffers[i]);
 
     priv->num_buffers = 0;
 }
