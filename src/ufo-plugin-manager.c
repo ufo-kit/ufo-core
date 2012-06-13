@@ -127,7 +127,6 @@ UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar 
     GetFilterFunc *func = NULL;
     GModule *module = NULL;
     gchar *module_name = NULL;
-    gchar *unique_name;
     const gchar *entry_symbol_name = "ufo_filter_plugin_new"; 
 
     func = g_hash_table_lookup (priv->filter_funcs, name);
@@ -171,9 +170,7 @@ UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar 
     }
 
     filter = (*func) ();
-    unique_name = g_strdup_printf ("%s-%p", name, (void *) filter);
-    ufo_filter_set_plugin_name (filter, unique_name);
-    g_free (unique_name);
+    ufo_filter_set_plugin_name (filter, name);
 
     return filter;
 

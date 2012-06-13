@@ -611,13 +611,6 @@ static void ufo_resource_manager_finalize(GObject *gobject)
     UfoResourceManager *self = UFO_RESOURCE_MANAGER(gobject);
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(self);
 
-#ifdef WITH_PROFILING
-    g_message("Memory transfer time between host and device");
-    g_message("  To Device: %.4lfs", priv->upload_time);
-    g_message("  To Host..: %.4lfs", priv->download_time);
-    g_message("  Total....: %.4lfs", priv->upload_time + priv->download_time);
-#endif
-
     g_hash_table_destroy(priv->opencl_programs);
     g_list_foreach(priv->kernel_paths, (GFunc) g_free, NULL);
     g_list_free(priv->kernel_paths);
@@ -716,10 +709,6 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
 
     g_free(info_buffer);
     cl_command_queue_properties queue_properties = 0;
-
-#ifdef WITH_PROFILING
-    queue_properties = CL_QUEUE_PROFILING_ENABLE;
-#endif
 
     /* XXX: create context for each platform?! */
     if (priv->num_platforms > 0) {
