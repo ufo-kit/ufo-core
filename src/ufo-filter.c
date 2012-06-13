@@ -28,11 +28,8 @@ struct _UfoFilterPrivate {
     GList               *output_num_dims;
 
     cl_command_queue    command_queue;
-    gfloat              cpu_time;
-    gfloat              gpu_time;
-    gboolean            done;
+    gboolean            finished;
 };
-
 
 /**
  * UfoFilterError:
@@ -65,7 +62,7 @@ GQuark ufo_filter_error_quark(void)
 void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    filter->priv->plugin_name = g_strdup(plugin_name);
+    filter->priv->plugin_name = g_strdup (plugin_name);
 }
 
 /**
@@ -78,19 +75,23 @@ GError *ufo_filter_process(UfoFilter *filter)
 {
     GError *error = NULL;
 
-    if (UFO_FILTER_GET_CLASS(filter)->process != NULL) {
-        GTimer *timer = g_timer_new();
-        error = UFO_FILTER_GET_CLASS(filter)->process(filter);
-        g_timer_stop(timer);
-        filter->priv->cpu_time = (gfloat) g_timer_elapsed(timer, NULL);
-        g_timer_destroy(timer);
-    }
+    if (UFO_FILTER_GET_CLASS (filter)->process != NULL)
+        error = UFO_FILTER_GET_CLASS (filter)->process (filter);
     else
-        g_warning("%s::process not implemented", filter->priv->plugin_name);
+        g_warning("%s->process() not implemented", filter->priv->plugin_name);
 
     return error;
 }
 
+/**
+ * ufo_filter_register_inputs:
+ * @filter: A #UfoFilter.
+ * @Varargs: a %NULL-terminated list of dimensionalities
+ *
+ * Specifies the number of dimensions for each input.
+ *
+ * Since: 0.2
+ */
 void ufo_filter_register_inputs(UfoFilter *filter, ...)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
@@ -110,8 +111,17 @@ void ufo_filter_register_inputs(UfoFilter *filter, ...)
     }
 
     va_end(ap);
-} 
+}
 
+/**
+ * ufo_filter_register_outputs:
+ * @filter: A #UfoFilter.
+ * @Varargs: a %NULL-terminated list of dimensionalities
+ *
+ * Specifies the number of dimensions for each output.
+ *
+ * Since: 0.2
+ */
 void ufo_filter_register_outputs(UfoFilter *filter, ...)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
@@ -133,22 +143,58 @@ void ufo_filter_register_outputs(UfoFilter *filter, ...)
     va_end(ap);
 }
 
+/**
+ * ufo_filter_get_num_inputs:
+ * @filter: A #UfoFilter.
+ * 
+ * Return the number of input ports.
+ *
+ * Returns: Number of input ports.
+ * Since: 0.2
+ */
 guint ufo_filter_get_num_inputs(UfoFilter *filter)
 {
     return filter->priv->num_inputs;
 }
 
+/**
+ * ufo_filter_get_num_outputs:
+ * @filter: A #UfoFilter.
+ * 
+ * Return the number of output ports.
+ *
+ * Returns: Number of output ports.
+ * Since: 0.2
+ */
 guint ufo_filter_get_num_outputs(UfoFilter *filter)
 {
     return filter->priv->num_outputs;
 }
 
+/**
+ * ufo_filter_get_input_num_dims:
+ * @filter: A #UfoFilter.
+ *
+ * Get a list with the number of dimensions for each input.
+ *
+ * Returns (transfer none): A list with number of input dimensions.
+ * Since: 0.2
+ */
 GList *ufo_filter_get_input_num_dims(UfoFilter *filter)
 {
     g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
     return filter->priv->input_num_dims;
 }
 
+/**
+ * ufo_filter_get_output_num_dims:
+ * @filter: A #UfoFilter.
+ *
+ * Get a list with the number of dimensions for each output.
+ *
+ * Returns (transfer none): A list with number of output dimensions.
+ * Since: 0.2
+ */
 GList *ufo_filter_get_output_num_dims(UfoFilter *filter)
 {
     g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
@@ -156,64 +202,31 @@ GList *ufo_filter_get_output_num_dims(UfoFilter *filter)
 }
 
 /**
- * ufo_filter_account_gpu_time:
- * @filter: A #UfoFilter.
- * @event: Pointer to a valid cl_event
- *
- * If profiling is enabled, it uses the event to account the execution time of
- * this event with this filter.
- */
-void ufo_filter_account_gpu_time(UfoFilter *filter, gpointer event)
-{
-    g_return_if_fail(UFO_IS_FILTER(filter));
-#ifdef WITH_PROFILING
-    cl_ulong start, end;
-    cl_event e = (cl_event) event;
-    clWaitForEvents(1, &e);
-    clGetEventProfilingInfo(e, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
-    clGetEventProfilingInfo(e, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
-    filter->priv->gpu_time += (end - start) * 1e-9;
-#endif
-}
-
-/**
- * ufo_filter_get_gpu_time:
- * @filter: A #UfoFilter
- *
- * Return value: Seconds that the filter used a GPU.
- */
-float ufo_filter_get_gpu_time(UfoFilter *filter)
-{
-    g_return_val_if_fail(UFO_IS_FILTER(filter), 0.0f);
-    return filter->priv->gpu_time;
-}
-
-/**
- * ufo_filter_done:
+ * ufo_filter_finish:
  * @filter: A #UfoFilter
  *
  * Pure producer filters have to call this method to signal that no more data
  * can be expected.
  */
-void ufo_filter_done(UfoFilter *filter)
+void ufo_filter_finish(UfoFilter *filter)
 {
     g_return_if_fail(UFO_IS_FILTER(filter));
-    filter->priv->done = TRUE;
+    filter->priv->finished = TRUE;
 }
 
 /**
- * ufo_filter_is_done:
+ * ufo_filter_is_finished:
  * @filter: A #UfoFilter
  *
  * Get information about the current execution status of a pure producer filter.
- * Any other filters are driven by their inputs and are implicitly taken as done
+ * Any other filters are driven by their inputs and are implicitly taken as finished
  * if no data is pushed into them.
  *
  * Return value: TRUE if no more data is pushed.
  */
-gboolean ufo_filter_is_done(UfoFilter *filter)
+gboolean ufo_filter_is_finished(UfoFilter *filter)
 {
-    return filter->priv->done;
+    return filter->priv->finished;
 }
 
 /**
@@ -225,29 +238,8 @@ gboolean ufo_filter_is_done(UfoFilter *filter)
  */
 const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
 {
-    g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
     return filter->priv->plugin_name;
-}
-
-/**
- * ufo_filter_set_gpu_affinity:
- * @filter: A #UfoFilter.
- * @gpu: Number of the preferred GPU.
- *
- * Select the GPU that this filter should use.
- */
-void ufo_filter_set_gpu_affinity(UfoFilter *filter, guint gpu)
-{
-    g_return_if_fail(UFO_IS_FILTER(filter));
-    UfoResourceManager *manager = ufo_resource_manager();
-    guint num_queues = 0;
-    cl_command_queue *cmd_queues = NULL;
-    ufo_resource_manager_get_command_queues(manager, (void **) &cmd_queues, &num_queues);
-
-    if (gpu < num_queues)
-        filter->priv->command_queue = cmd_queues[gpu];
-    else
-        g_warning("Invalid GPU");
 }
 
 /**
@@ -278,9 +270,8 @@ void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterCondit
 
 static void ufo_filter_finalize(GObject *object)
 {
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(object);
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (object);
 
-    g_print ("finalize %s\n", priv->plugin_name);
     g_list_free (priv->input_num_dims);
     g_list_free (priv->output_num_dims);
     g_free (priv->plugin_name);
@@ -288,33 +279,23 @@ static void ufo_filter_finalize(GObject *object)
     G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
 }
 
-static void ufo_filter_dispose(GObject *object)
-{
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(object);
-    G_OBJECT_CLASS (ufo_filter_parent_class)->dispose (object);
-    g_print ("disposed %s\n", priv->plugin_name);
-}
-
 static void ufo_filter_class_init(UfoFilterClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->finalize = ufo_filter_finalize;
-    gobject_class->dispose = ufo_filter_dispose;
     klass->initialize = NULL;
     klass->process = NULL;
     klass->process_cpu = NULL;
     klass->process_gpu = NULL;
-    g_type_class_add_private(klass, sizeof(UfoFilterPrivate));
+    g_type_class_add_private (klass, sizeof(UfoFilterPrivate));
 }
 
 static void ufo_filter_init(UfoFilter *self)
 {
     UfoFilterPrivate *priv;
-    self->priv = priv = UFO_FILTER_GET_PRIVATE(self);
+    self->priv = priv = UFO_FILTER_GET_PRIVATE (self);
     priv->command_queue = NULL;
-    priv->done = FALSE;
-    priv->cpu_time = 0.0f;
-    priv->gpu_time = 0.0f;
+    priv->finished = FALSE;
     priv->num_inputs = 0;
     priv->num_outputs = 0;
     priv->input_num_dims = NULL;

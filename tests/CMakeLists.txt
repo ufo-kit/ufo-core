@@ -13,8 +13,8 @@ cmake_minimum_required(VERSION 2.8)
 # configure unit tests
 set(TEST_SRCS
     test-buffer.c
-    test-channel.c
     test-filter.c
+    test-relation.c
     )
 
 option(WITH_TESTS "Run tests on each build" ON)

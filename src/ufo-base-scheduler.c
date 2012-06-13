@@ -34,7 +34,7 @@ typedef struct {
 
 struct _UfoBaseSchedulerPrivate {
     guint foo;
-    /* GHashTable *exec_info;    /**< maps from gpointer to ExecutionInformation* *1/ */
+    GHashTable *exec_info;    /**< maps from gpointer to ExecutionInformation* */
 };
 
 /**
@@ -187,12 +187,12 @@ static gpointer process_thread(gpointer data)
          * we need to check that it is finished and either push forward
          * its output or terminate execution by sending the poison pill.
          */
-        if (!ufo_filter_is_done(filter)) {
+        if (!ufo_filter_is_finished (filter)) {
             for (guint port = 0; port < num_outputs; port++)
-                g_async_queue_push(output_push_queues[port], result[port]);
+                g_async_queue_push (output_push_queues[port], result[port]);
         }
         else if (num_inputs == 0) {
-            push_poison_pill(producing_relations);
+            push_poison_pill (producing_relations);
             state = FINISH;
 
             /* now kill the result buffers */
@@ -202,17 +202,16 @@ static gpointer process_thread(gpointer data)
         }
     }
 
-    g_free(input_dims);
-    g_free(output_dims);
-    g_free(work);
-    g_free(result);
-    g_free(timers);
-    g_free(input_pop_queues);
-    g_free(input_push_queues);
-    g_free(output_pop_queues);
-    g_free(output_push_queues);
-    g_list_free(producing_relations);
-
+    g_free (input_dims);
+    g_free (output_dims);
+    g_free (work);
+    g_free (result);
+    g_free (timers);
+    g_free (input_pop_queues);
+    g_free (input_push_queues);
+    g_free (output_pop_queues);
+    g_free (output_push_queues);
+    g_list_free (producing_relations);
     g_object_unref (filter);
 
     return error;
@@ -306,7 +305,7 @@ void ufo_base_scheduler_run(UfoBaseScheduler *scheduler, GList *relations, GErro
 static void ufo_base_scheduler_dispose(GObject *object)
 {
     UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE(object);
-    /* g_hash_table_destroy(priv->exec_info); */
+    g_hash_table_destroy(priv->exec_info);
     G_OBJECT_CLASS(ufo_base_scheduler_parent_class)->dispose(object);
 }
 
@@ -327,5 +326,5 @@ static void ufo_base_scheduler_init(UfoBaseScheduler *base_scheduler)
 {
     UfoBaseSchedulerPrivate *priv;
     base_scheduler->priv = priv = UFO_BASE_SCHEDULER_GET_PRIVATE(base_scheduler);
-    /* priv->exec_info = g_hash_table_new_full(g_direct_hash, g_direct_equal, g_object_unref, g_free); */
+    priv->exec_info = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, g_free);
 }
