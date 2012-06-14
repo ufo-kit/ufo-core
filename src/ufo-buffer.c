@@ -71,38 +71,15 @@ GQuark ufo_buffer_error_quark(void)
     return g_quark_from_static_string("ufo-buffer-error-quark");
 }
 
-/**
- * ufo_buffer_new:
- * @num_dims: (in): Number of dimensions
- * @dim_size: (in) (array): Size of each dimension
- *
- * Create a new buffer with the given dimensions.
- *
- * Return value: A new #UfoBuffer with the given dimensions.
- */
-UfoBuffer *ufo_buffer_new(guint num_dims, const guint *dim_size)
+static void
+ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_size)
 {
-    g_return_val_if_fail((num_dims <= UFO_BUFFER_MAX_NDIMS) && (dim_size != NULL), NULL);
-    UfoBuffer *buffer = UFO_BUFFER(g_object_new(UFO_TYPE_BUFFER, NULL));
-    ufo_buffer_set_dimensions(buffer, num_dims, dim_size);
-    return buffer;
-}
-
-/**
- * ufo_buffer_set_dimensions:
- * @buffer: A #UfoBuffer
- * @num_dims: (in): Number of dimensions
- * @dim_size: (in) (array): Size of each dimension
- *
- * Specify the size of this nd-array.
- */
-void ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_size)
-{
-    g_return_if_fail(UFO_IS_BUFFER(buffer));
-    g_return_if_fail((num_dims <= UFO_BUFFER_MAX_NDIMS) && (dim_size != NULL));
+    g_return_if_fail (UFO_IS_BUFFER(buffer));
+    g_return_if_fail ((num_dims > 0) && (num_dims <= UFO_BUFFER_MAX_NDIMS));
+    g_return_if_fail (dim_size != NULL);
 
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
-    priv->size = sizeof(float);
+    priv->size = sizeof(gfloat);
     priv->host_array.num_dims = num_dims;
 
     for (guint i = 0; i < num_dims; i++) {
@@ -117,16 +94,36 @@ void ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *d
 }
 
 /**
+ * ufo_buffer_new:
+ * @num_dims: (in): Number of dimensions
+ * @dim_size: (in) (array): Size of each dimension
+ *
+ * Create a new buffer with the given dimensions.
+ *
+ * Return value: A new #UfoBuffer with the given dimensions.
+ */
+UfoBuffer *
+ufo_buffer_new(guint num_dims, const guint *dim_size)
+{
+    g_return_val_if_fail ((num_dims <= UFO_BUFFER_MAX_NDIMS) && (dim_size != NULL), NULL);
+    UfoBuffer *buffer = UFO_BUFFER (g_object_new (UFO_TYPE_BUFFER, NULL));
+    ufo_buffer_set_dimensions (buffer, num_dims, dim_size);
+    return buffer;
+}
+
+/**
  * ufo_buffer_get_dimensions:
  * @buffer: A #UfoBuffer
  * @num_dims: (out): Location to store the number of dimensions.
  * @dim_size: (out): Location to store the dimensions. If *dim_size is NULL
- * enough space is allocated to hold num_dims elements and should be freed with
- * g_free(). If *dim_size is NULL, the caller must provide enough memory.
+ *      enough space is allocated to hold num_dims elements and should be freed
+ *      with g_free(). If *dim_size is NULL, the caller must provide enough
+ *      memory.
  *
  * Retrieve dimensions of buffer.
  */
-void ufo_buffer_get_dimensions(UfoBuffer *buffer, guint *num_dims, guint **dim_size)
+void
+ufo_buffer_get_dimensions(UfoBuffer *buffer, guint *num_dims, guint **dim_size)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer) || (num_dims == NULL) || (dim_size == NULL));
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -147,7 +144,8 @@ void ufo_buffer_get_dimensions(UfoBuffer *buffer, guint *num_dims, guint **dim_s
  *
  * Return value: Size of data
  */
-gsize ufo_buffer_get_size(UfoBuffer *buffer)
+gsize
+ufo_buffer_get_size(UfoBuffer *buffer)
 {
     g_return_val_if_fail(UFO_IS_BUFFER(buffer), 0);
     return buffer->priv->size;
@@ -161,7 +159,8 @@ gsize ufo_buffer_get_size(UfoBuffer *buffer)
  *
  * Return value: unique and monotone id
  */
-gint ufo_buffer_get_id(UfoBuffer *buffer)
+gint
+ufo_buffer_get_id(UfoBuffer *buffer)
 {
     g_return_val_if_fail(UFO_IS_BUFFER(buffer), -1);
     return buffer->priv->id;
@@ -174,7 +173,8 @@ gint ufo_buffer_get_id(UfoBuffer *buffer)
  *
  * Transfer id from one buffer to another.
  */
-void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
+void
+ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
 {
     g_return_if_fail(UFO_IS_BUFFER(from) || (UFO_IS_BUFFER(to)));
     to->priv->id = from->priv->id;
@@ -188,7 +188,8 @@ void ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
  *
  * Copy the content of one buffer into another.
  */
-void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
+void
+ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
 {
     g_return_if_fail(UFO_IS_BUFFER(from) || UFO_IS_BUFFER(to));
 
@@ -214,7 +215,8 @@ void ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
  *
  * Convenience function to retrieve dimension of buffer.
  */
-void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height)
+void
+ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer) || (width != NULL) || (height != NULL));
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -223,35 +225,14 @@ void ufo_buffer_get_2d_dimensions(UfoBuffer *buffer, guint *width, guint *height
 }
 
 /**
- * ufo_buffer_create_gpu_buffer:
- * @buffer: A #UfoBuffer.
- * @mem: A cl_mem object that the host memory is synchronized with.
- *
- * Associate the buffer with a given OpenCL memory object.  This does not
- * actually copy the data from host to device. Same as ufo_buffer_new(), users
- * should stay away from calling this on their own.
- */
-/* void ufo_buffer_create_gpu_buffer(UfoBuffer *buffer, gpointer mem) */
-/* { */
-/*     g_return_if_fail(UFO_IS_BUFFER(buffer) || (mem != NULL)); */
-/*     UfoBufferPrivate *priv = buffer->priv; */
-
-/*     if (priv->device_array != NULL) */
-/*         clReleaseMemObject(priv->device_array); */
-
-/*     priv->device_array = (cl_mem) mem; */
-/*     priv->location = DEVICE_ARRAY_VALID; */
-/* } */
-
-
-/**
  * ufo_buffer_invalidate_gpu_data:
  * @buffer: A #UfoBuffer.
  *
  * Invalidate state of a buffer so that Data won't be synchronized between CPU
  * and GPU and must be re-set again with ufo_buffer_set_cpu_data.
  */
-void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
+void
+ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer));
     buffer->priv->location = HOST_ARRAY_VALID;
@@ -269,7 +250,8 @@ void ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
  * integer data with ufo_buffer_set_cpu_data() and convert that data with this
  * method.
  */
-void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, gboolean normalize)
+void
+ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, gboolean normalize)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer));
     gfloat *dst = buffer->priv->host_array.data;
@@ -300,23 +282,20 @@ void ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pix
  *
  * Set OpenCL memory object that is used to up and download data.
  */
-void ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
+void
+ufo_buffer_set_cl_mem(UfoBuffer *buffer, gpointer mem)
 {
-    g_return_if_fail(UFO_IS_BUFFER(buffer) || (mem != NULL));
-    buffer->priv->device_array = (cl_mem) mem;
-}
+    g_return_if_fail (UFO_IS_BUFFER(buffer) || (mem != NULL));
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
+    cl_mem mem_object = (cl_mem) mem;
+    gsize mem_size;
 
-/**
- * ufo_buffer_get_cl_mem:
- * @buffer: A #UfoBuffer.
- *
- * Return associated OpenCL memory object without synchronizing with CPU memory.
- *
- * Return value: A cl_mem object associated with this #UfoBuffer.
- */
-gpointer ufo_buffer_get_cl_mem(UfoBuffer *buffer)
-{
-    return buffer->priv->device_array;
+    CHECK_OPENCL_ERROR (clGetMemObjectInfo (mem_object, CL_MEM_SIZE, sizeof(gsize), &mem_size, NULL));
+
+    if (mem_size != priv->size)
+        g_warning ("Buffer size is different from OpenCL memory object size");
+
+    priv->device_array = (cl_mem) mem_object;
 }
 
 /**
@@ -327,7 +306,8 @@ gpointer ufo_buffer_get_cl_mem(UfoBuffer *buffer)
  * Attach an OpenCL event to a buffer that must be finished before anything else
  * can be done with this buffer.
  */
-void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
+void
+ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer) || (event != NULL));
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -349,7 +329,8 @@ void ufo_buffer_attach_event(UfoBuffer *buffer, gpointer event)
  * Return events currently associated with a buffer but don't release them from
  * this buffer.
  */
-void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_events)
+void
+ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_events)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer) || (events != NULL) || (num_events != NULL));
     *num_events = buffer->priv->current_event_index;
@@ -362,7 +343,8 @@ void ufo_buffer_get_events(UfoBuffer *buffer, gpointer **events, guint *num_even
  *
  * Clear and release events associated with a buffer
  */
-void ufo_buffer_clear_events(UfoBuffer *buffer)
+void
+ufo_buffer_clear_events(UfoBuffer *buffer)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer));
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -382,7 +364,8 @@ void ufo_buffer_clear_events(UfoBuffer *buffer)
  *
  * Returns: A #GTimer associated with this buffer
  */
-GTimer *ufo_buffer_get_transfer_timer(UfoBuffer *buffer)
+GTimer *
+ufo_buffer_get_transfer_timer(UfoBuffer *buffer)
 {
     g_return_val_if_fail(UFO_IS_BUFFER(buffer), NULL);
     return buffer->priv->timer;
@@ -399,7 +382,8 @@ GTimer *ufo_buffer_get_transfer_timer(UfoBuffer *buffer)
  * copies the data off of it because we never know if there is enough memory to
  * hold floats of that data.
  */
-void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, GError **error)
+void
+ufo_buffer_set_host_array(UfoBuffer *buffer, gfloat *data, gsize num_bytes, GError **error)
 {
     g_return_if_fail(UFO_IS_BUFFER(buffer) || (data != NULL));
     UfoBufferPrivate *priv = buffer->priv;
@@ -431,7 +415,8 @@ void ufo_buffer_set_host_array(UfoBuffer *buffer, float *data, gsize num_bytes, 
  *
  * Return value: Float array.
  */
-float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
+gfloat *
+ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
 {
     g_return_val_if_fail(UFO_IS_BUFFER(buffer), NULL);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -445,6 +430,7 @@ float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
                 priv->host_array.data = g_malloc0(priv->size);
 
             break;
+
         case DEVICE_ARRAY_VALID:
 
             if (priv->host_array.data == NULL)
@@ -462,6 +448,7 @@ float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
             priv->current_event_index = 0;
             priv->location = HOST_ARRAY_VALID;
             break;
+
         case NO_DATA:
             priv->host_array.data = g_malloc0(priv->size);
             priv->location = HOST_ARRAY_VALID;
@@ -481,7 +468,8 @@ float *ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
  *
  * Return value: OpenCL memory object associated with this #UfoBuffer.
  */
-gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
+gpointer
+ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
 {
     g_return_val_if_fail(UFO_IS_BUFFER(buffer) || (command_queue != NULL), NULL);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -525,7 +513,8 @@ gpointer ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
  *
  * Swap host array pointers of @a and @b and mark host arrays valid.
  */
-void ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b)
+void
+ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b)
 {
     g_return_if_fail(UFO_IS_BUFFER(a) && UFO_IS_BUFFER(b));
 
@@ -565,11 +554,8 @@ void ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b)
  * 
  * @see g_param_spec_internal() for details on property names.
  */
-GParamSpec *ufo_buffer_param_spec(const gchar *name, 
-        const gchar *nick, 
-        const gchar *blurb, 
-        UfoBuffer *default_value, 
-        GParamFlags flags)
+GParamSpec *
+ufo_buffer_param_spec(const gchar *name, const gchar *nick, const gchar *blurb, UfoBuffer *default_value, GParamFlags flags)
 {
     UfoBufferParamSpec *bspec;
 
@@ -580,10 +566,8 @@ GParamSpec *ufo_buffer_param_spec(const gchar *name,
 }
 
 
-static void ufo_filter_set_property(GObject *object,
-                                    guint           property_id,
-                                    const GValue    *value,
-                                    GParamSpec      *pspec)
+static void
+ufo_filter_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
     UfoBuffer *buffer = UFO_BUFFER(object);
 
@@ -597,10 +581,8 @@ static void ufo_filter_set_property(GObject *object,
     }
 }
 
-static void ufo_filter_get_property(GObject *object,
-                                    guint       property_id,
-                                    GValue      *value,
-                                    GParamSpec  *pspec)
+static void
+ufo_filter_get_property(GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
     UfoBuffer *buffer = UFO_BUFFER(object);
 
@@ -655,7 +637,8 @@ ufo_buffer_class_init(UfoBufferClass *klass)
     g_type_class_add_private(klass, sizeof(UfoBufferPrivate));
 }
 
-static void ufo_buffer_init(UfoBuffer *buffer)
+static void
+ufo_buffer_init(UfoBuffer *buffer)
 {
     UfoBufferPrivate *priv;
     buffer->priv = priv = UFO_BUFFER_GET_PRIVATE(buffer);
@@ -672,14 +655,16 @@ static void ufo_buffer_init(UfoBuffer *buffer)
     priv->timer = g_timer_new();
 }
 
-static void ufo_buffer_param_init(GParamSpec *pspec)
+static void
+ufo_buffer_param_init(GParamSpec *pspec)
 {
     UfoBufferParamSpec *bspec = UFO_BUFFER_PARAM_SPEC(pspec);
 
     bspec->default_value = NULL;
 }
 
-static void ufo_buffer_param_set_default(GParamSpec *pspec, GValue *value)
+static void
+ufo_buffer_param_set_default(GParamSpec *pspec, GValue *value)
 {
     UfoBufferParamSpec *bspec = UFO_BUFFER_PARAM_SPEC(pspec);
 
@@ -687,7 +672,8 @@ static void ufo_buffer_param_set_default(GParamSpec *pspec, GValue *value)
     g_value_unset(value);
 }
 
-GType ufo_buffer_param_get_type()
+GType
+ufo_buffer_param_get_type()
 {
     static GType type = 0;
 

@@ -67,9 +67,6 @@ struct _UfoBufferParamSpec {
 
 UfoBuffer*  ufo_buffer_new                  (guint          num_dims, 
                                              const guint   *dim_size);
-void        ufo_buffer_set_dimensions       (UfoBuffer     *buffer, 
-                                             guint          num_dims, 
-                                             const guint*   dim_size);
 void        ufo_buffer_copy                 (UfoBuffer     *from, 
                                              UfoBuffer     *to, 
                                              gpointer       command_queue);
@@ -101,7 +98,6 @@ gpointer    ufo_buffer_get_device_array     (UfoBuffer     *buffer,
 void        ufo_buffer_invalidate_gpu_data  (UfoBuffer*     buffer);
 void        ufo_buffer_set_cl_mem           (UfoBuffer*     buffer, 
                                              gpointer       mem);
-gpointer    ufo_buffer_get_cl_mem           (UfoBuffer*     buffer);
 void        ufo_buffer_attach_event         (UfoBuffer*     buffer,
                                              gpointer       event);
 void        ufo_buffer_get_events           (UfoBuffer*     buffer,
