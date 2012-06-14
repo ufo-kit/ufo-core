@@ -225,6 +225,9 @@ void ufo_resource_manager_add_paths(UfoResourceManager *manager, const gchar *pa
     g_return_if_fail(UFO_IS_RESOURCE_MANAGER(manager));
     UfoResourceManagerPrivate *priv = manager->priv;
 
+    if (paths == NULL)
+        return;
+
     /*
      * Add each of the path to the include paths for header file inclusion
      */
@@ -369,7 +372,7 @@ static cl_kernel resource_manager_get_kernel(UfoResourceManagerPrivate *priv,
  * working directory and all paths added through
  * ufo_resource_manager_add_paths().
  *
- * Returns: a cl_kernel object that is load from @filename
+ * Returns: a cl_kernel object that is load from @filename or %NULL on error
  */
 gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, 
         const gchar *filename, const gchar *kernel_name, GError **error)
