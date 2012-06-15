@@ -259,7 +259,12 @@ static void ufo_relation_dispose(GObject *object)
     UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (object);
 
     g_list_foreach (priv->consumers, (GFunc) g_object_unref, NULL);
-    g_object_unref (priv->producer);
+
+    /*
+     * FIXME: if we enable the following unref, the unref will segfault with a
+     * certain number of filters. Why, this is, I don't know :(
+     */
+    /* g_object_unref (priv->producer); */
 
     G_OBJECT_CLASS (ufo_relation_parent_class)->dispose (object);
 }
