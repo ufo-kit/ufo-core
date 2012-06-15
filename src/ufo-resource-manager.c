@@ -485,30 +485,31 @@ gpointer ufo_resource_manager_get_context(UfoResourceManager *manager)
  *
  * Return value: A new #UfoBuffer with the given dimensions
  */
-UfoBuffer *ufo_resource_manager_request_buffer(UfoResourceManager *manager,
+UfoBuffer *
+ufo_resource_manager_request_buffer (UfoResourceManager *manager,
         guint num_dims, const guint *dim_size, gfloat *data, gpointer command_queue)
 {
-    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager), NULL);
-    g_return_val_if_fail((num_dims > UFO_BUFFER_MAX_NDIMS) || (dim_size != NULL), NULL);
+    g_return_val_if_fail (UFO_IS_RESOURCE_MANAGER (manager), NULL);
+    g_return_val_if_fail ((num_dims > UFO_BUFFER_MAX_NDIMS) || (dim_size != NULL), NULL);
 
-    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
-    UfoBuffer *buffer = ufo_buffer_new(num_dims, dim_size);
-    const gsize num_bytes = ufo_buffer_get_size(buffer);
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (manager);
+    UfoBuffer *buffer = ufo_buffer_new (num_dims, dim_size);
+    const gsize num_bytes = ufo_buffer_get_size (buffer);
     cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
 
     if ((data != NULL) && (command_queue != NULL))
         mem_flags |= CL_MEM_COPY_HOST_PTR;
 
     cl_int errcode;
-    cl_mem buffer_mem = clCreateBuffer(priv->opencl_context,
-                                       mem_flags,
-                                       num_bytes,
-                                       data, &errcode);
-    CHECK_OPENCL_ERROR(errcode);
-    ufo_buffer_set_cl_mem(buffer, buffer_mem);
+    cl_mem buffer_mem = clCreateBuffer (priv->opencl_context,
+                                        mem_flags,
+                                        num_bytes,
+                                        data, &errcode);
+    CHECK_OPENCL_ERROR (errcode);
+    ufo_buffer_set_cl_mem (buffer, buffer_mem);
 
     if ((data) && (command_queue == NULL))
-        ufo_buffer_set_host_array(buffer, data, num_bytes, NULL);
+        ufo_buffer_set_host_array (buffer, data, num_bytes, NULL);
 
     return buffer;
 }

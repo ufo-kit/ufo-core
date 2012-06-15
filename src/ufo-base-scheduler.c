@@ -153,8 +153,19 @@ static gpointer process_thread(gpointer data)
             for (guint port = 0; port < num_outputs; port++) {
                 for (GList *it = g_list_first(output_num_dims); it != NULL; it = g_list_next(it)) {
                     guint num_dims = (guint) GPOINTER_TO_INT(it->data);
-                    UfoBuffer *buffer = ufo_resource_manager_request_buffer(manager, 
+                    UfoBuffer *buffer = ufo_resource_manager_request_buffer (manager, 
                             num_dims, output_dims[port], NULL, NULL);
+
+                    /*
+                     * For some reason, if we don't reference the buffer again,
+                     * it is returned by ufo_buffer_new() for other filters as
+                     * well, thus sharing the buffer which is not what we want.
+                     *
+                     * TODO: remove the reference in a meaningful way, or find
+                     * out what the problem is.
+                     */
+                    g_object_ref (buffer);
+
                     g_async_queue_push(output_pop_queues[port], buffer);
                 } 
             }
