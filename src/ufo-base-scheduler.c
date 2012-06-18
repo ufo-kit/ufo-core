@@ -63,6 +63,11 @@ static void push_poison_pill(GList *relations)
     g_list_foreach(relations, (GFunc) ufo_relation_push_poison_pill, NULL);
 }
 
+static gboolean is_post_processing(UfoFilterClass *filter_class)
+{
+    return (filter_class->post_process_cpu != NULL) || (filter_class->post_process_gpu != NULL);
+}
+
 static gpointer process_thread(gpointer data)
 {
     GError *error = NULL;
@@ -124,19 +129,35 @@ static gpointer process_thread(gpointer data)
          * work first, because some filters initialization depends on the input.
          */
         for (guint i = 0; i < num_inputs; i++) {
-            work[i] = g_async_queue_pop(input_pop_queues[i]);
+            work[i] = g_async_queue_pop (input_pop_queues[i]);
 
             if (work[i] == POISON_PILL) {
-                g_async_queue_push(input_push_queues[i], POISON_PILL);
+                g_async_queue_push (input_push_queues[i], POISON_PILL);
                 state = FINISH;
                 break;
             }
 
-            timers[i] = ufo_buffer_get_transfer_timer(work[i]);
+            timers[i] = ufo_buffer_get_transfer_timer (work[i]);
         } 
 
         if (state == FINISH) {
-            push_poison_pill(producing_relations);
+            /*
+             * Check if we have a post-process filter, i.e. a reduction-style of
+             * filter that want's to emit its output after collecting all
+             * inputs.
+             */
+            if (is_post_processing (filter_class)) {
+                g_print ("%s: post-processing\n", ufo_filter_get_plugin_name (filter));
+                for (guint port = 0; port < num_outputs; port++)
+                    result[port] = g_async_queue_pop(output_pop_queues[port]);
+
+                filter_class->post_process_cpu(filter, result, info->cmd_queues[0]);
+
+                for (guint port = 0; port < num_outputs; port++)
+                    g_async_queue_push (output_push_queues[port], result[port]);
+            }
+
+            push_poison_pill (producing_relations);
             break;
         }
 
@@ -174,8 +195,10 @@ static gpointer process_thread(gpointer data)
         /* 
          * Fetch buffers for output.
          */
-        for (guint port = 0; port < num_outputs; port++)
-            result[port] = g_async_queue_pop(output_pop_queues[port]);
+        if (!is_post_processing (filter_class)) {
+            for (guint port = 0; port < num_outputs; port++)
+                result[port] = g_async_queue_pop(output_pop_queues[port]);
+        }
 
         /*
          * Do the actual processing.
@@ -189,16 +212,15 @@ static gpointer process_thread(gpointer data)
          * Release any work items so that preceding nodes can re-use
          * them.
          */
-        for (guint port = 0; port < num_inputs; port++) {
+        for (guint port = 0; port < num_inputs; port++) 
             g_async_queue_push(input_push_queues[port], work[port]); 
-        }
 
         /*
          * If this filter is a pure producing node (e.g. file readers),
          * we need to check that it is finished and either push forward
          * its output or terminate execution by sending the poison pill.
          */
-        if (!ufo_filter_is_finished (filter)) {
+        if (!ufo_filter_is_finished (filter) && !is_post_processing (filter_class)) {
             for (guint port = 0; port < num_outputs; port++)
                 g_async_queue_push (output_push_queues[port], result[port]);
         }

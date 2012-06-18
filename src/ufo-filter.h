@@ -68,19 +68,19 @@ struct _UfoFilterClass {
     /*< private >*/
     GObjectClass parent;
 
-    GError * (*process) (UfoFilter *filter);
+    GError * (*initialize) (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes);
     GError * (*process_cpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
     GError * (*process_gpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
-    GError * (*initialize) (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes);
+    GError * (*post_process_cpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue);
+    GError * (*post_process_gpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue);
 };
 
-void            ufo_filter_set_plugin_name      (UfoFilter                 *filter, 
+void            ufo_filter_set_plugin_name      (UfoFilter                 *filter,
                                                  const gchar               *plugin_name);
 const gchar*    ufo_filter_get_plugin_name      (UfoFilter                 *filter);
-GError*         ufo_filter_process              (UfoFilter                 *filter);
-void            ufo_filter_register_inputs      (UfoFilter                 *filter, 
+void            ufo_filter_register_inputs      (UfoFilter                 *filter,
                                                  ...) __attribute__((sentinel));
-void            ufo_filter_register_outputs     (UfoFilter                 *filter, 
+void            ufo_filter_register_outputs     (UfoFilter                 *filter,
                                                  ...) __attribute__((sentinel));
 guint           ufo_filter_get_num_inputs       (UfoFilter                 *filter);
 guint           ufo_filter_get_num_outputs      (UfoFilter                 *filter);
@@ -88,9 +88,9 @@ GList*          ufo_filter_get_input_num_dims   (UfoFilter                 *filt
 GList*          ufo_filter_get_output_num_dims  (UfoFilter                 *filter);
 void            ufo_filter_finish               (UfoFilter                 *filter);
 gboolean        ufo_filter_is_finished          (UfoFilter                 *filter);
-void            ufo_filter_wait_until           (UfoFilter                 *filter, 
-                                                 GParamSpec                *pspec, 
-                                                 UfoFilterConditionFunc     condition, 
+void            ufo_filter_wait_until           (UfoFilter                 *filter,
+                                                 GParamSpec                *pspec,
+                                                 UfoFilterConditionFunc     condition,
                                                  gpointer                   user_data);
 GType           ufo_filter_get_type             (void);
 

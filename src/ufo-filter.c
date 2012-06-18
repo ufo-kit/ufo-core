@@ -66,24 +66,6 @@ void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name)
 }
 
 /**
- * ufo_filter_process:
- * @filter: A #UfoFilter.
- *
- * Execute a filter.
- */
-GError *ufo_filter_process(UfoFilter *filter)
-{
-    GError *error = NULL;
-
-    if (UFO_FILTER_GET_CLASS (filter)->process != NULL)
-        error = UFO_FILTER_GET_CLASS (filter)->process (filter);
-    else
-        g_warning("%s->process() not implemented", filter->priv->plugin_name);
-
-    return error;
-}
-
-/**
  * ufo_filter_register_inputs:
  * @filter: A #UfoFilter.
  * @Varargs: a %NULL-terminated list of dimensionalities
@@ -284,9 +266,10 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->finalize = ufo_filter_finalize;
     klass->initialize = NULL;
-    klass->process = NULL;
     klass->process_cpu = NULL;
     klass->process_gpu = NULL;
+    klass->post_process_cpu = NULL;
+    klass->post_process_gpu = NULL;
     g_type_class_add_private (klass, sizeof(UfoFilterPrivate));
 }
 
