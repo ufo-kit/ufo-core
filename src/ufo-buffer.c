@@ -87,10 +87,6 @@ ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_si
         priv->size *= dim_size[i];
     }
 
-    if (priv->host_array.data) {
-        g_free(priv->host_array.data);
-        priv->host_array.data = NULL;
-    }
 }
 
 /**
@@ -109,6 +105,34 @@ ufo_buffer_new(guint num_dims, const guint *dim_size)
     UfoBuffer *buffer = UFO_BUFFER (g_object_new (UFO_TYPE_BUFFER, NULL));
     ufo_buffer_set_dimensions (buffer, num_dims, dim_size);
     return buffer;
+}
+
+/**
+ * ufo_buffer_resize:
+ * @num_dims: New number of dimensions
+ * @dim_size: New dimension sizes
+ *
+ * Resize an existing buffer.
+ */
+void
+ufo_buffer_resize (UfoBuffer *buffer, guint num_dims, const guint *dim_size)
+{
+    UfoBufferPrivate *priv;
+
+    g_return_if_fail ((num_dims <= UFO_BUFFER_MAX_NDIMS) && (dim_size != NULL));
+
+    ufo_buffer_set_dimensions (buffer, num_dims, dim_size);
+    priv = UFO_BUFFER_GET_PRIVATE (buffer);
+
+    if (priv->host_array.data != NULL) {
+        g_free (priv->host_array.data);
+        priv->host_array.data = NULL;
+    }
+
+    if (priv->device_array != NULL) {
+        CHECK_OPENCL_ERROR (clReleaseMemObject (priv->device_array));
+        priv->device_array = NULL;
+    }
 }
 
 /**
@@ -644,8 +668,8 @@ ufo_buffer_init(UfoBuffer *buffer)
     buffer->priv = priv = UFO_BUFFER_GET_PRIVATE(buffer);
     priv->id = -1;
     priv->device_array = NULL;
-    priv->host_array.num_dims = 0;
     priv->host_array.data = NULL;
+    priv->host_array.num_dims = 0;
     priv->location = NO_DATA;
     priv->current_event_index = 0;
     priv->num_total_events = 8;

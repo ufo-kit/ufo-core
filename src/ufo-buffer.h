@@ -67,6 +67,9 @@ struct _UfoBufferParamSpec {
 
 UfoBuffer*  ufo_buffer_new                  (guint          num_dims, 
                                              const guint   *dim_size);
+void        ufo_buffer_resize               (UfoBuffer     *buffer,
+                                             guint          num_dims,
+                                             const guint   *dim_size);
 void        ufo_buffer_copy                 (UfoBuffer     *from, 
                                              UfoBuffer     *to, 
                                              gpointer       command_queue);
