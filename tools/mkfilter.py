@@ -48,72 +48,71 @@ enum {
 static GParamSpec *${prefix_underscore}_properties[N_PROPERTIES] = { NULL, };
 
 
-static GError *ufo_filter_${prefix_underscore}_initialize(UfoFilter *filter, UfoBuffer *params[])
+static GError *
+ufo_filter_${prefix_underscore}_initialize (UfoFilter *filter, UfoBuffer *params[])
 {
     /* Here you can prepare your data structures that keep state accross process
      * calls */
-    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE(filter);
-    UfoResourceManager *manager = ufo_resource_manager();
+    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (filter);
+    UfoResourceManager *manager = ufo_resource_manager ();
     GError *error = NULL;
-    priv->kernel = ufo_resource_manager_get_kernel(manager, "kernel-file.cl", "kernelname", &error);
+    priv->kernel = ufo_resource_manager_get_kernel (manager, "kernel-file.cl", "kernelname", &error);
     return error;
 }
 
-static GError *ufo_filter_${prefix_underscore}_process_cpu(UfoFilter *filter,
-        UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
+static GError *
+ufo_filter_${prefix_underscore}_process_cpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
 {
     /* Use params and write into results */
     return NULL;
 }
 
-static GError *ufo_filter_${prefix_underscore}_process_gpu(UfoFilter *filter,
-        UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
+static GError *
+ufo_filter_${prefix_underscore}_process_gpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
 {
     /* Use params and write into results */
     return NULL;
 }
 
-static void ufo_filter_${prefix_underscore}_finalize(GObject *object)
+static void
+ufo_filter_${prefix_underscore}_finalize(GObject *object)
 {
     /* Free resources here */
     G_OBJECT_CLASS(ufo_filter_${prefix_underscore}_parent_class)->finalize(object);
 }
 
-static void ufo_filter_${prefix_underscore}_set_property(GObject *object,
-    guint           property_id,
-    const GValue    *value,
-    GParamSpec      *pspec)
+static void
+ufo_filter_${prefix_underscore}_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
-    UfoFilter${prefix_camel} *self = UFO_FILTER_${prefix_upper}(object);
+    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (self);
 
     switch (property_id) {
         case PROP_EXAMPLE:
-            self->priv->example = g_value_get_double(value);
+            priv->example = g_value_get_double (value);
             break;
         default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
     }
 }
 
-static void ufo_filter_${prefix_underscore}_get_property(GObject *object,
-    guint       property_id,
-    GValue      *value,
-    GParamSpec  *pspec)
+static void
+ufo_filter_${prefix_underscore}_get_property(GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
-    UfoFilter${prefix_camel} *self = UFO_FILTER_${prefix_upper}(object);
+    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (self);
 
     switch (property_id) {
         case PROP_EXAMPLE:
-            g_value_set_double(value, self->priv->example);
+            g_value_set_double (value, priv->example);
             break;
         default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
     }
 }
 
-static void ufo_filter_${prefix_underscore}_class_init(UfoFilter${prefix_camel}Class *klass)
+static void
+ufo_filter_${prefix_underscore}_class_init (UfoFilter${prefix_camel}Class *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
@@ -133,7 +132,7 @@ static void ufo_filter_${prefix_underscore}_class_init(UfoFilter${prefix_camel}C
      * Information about this property
      */
     ${prefix_underscore}_properties[PROP_EXAMPLE] = 
-        g_param_spec_double("example",
+        g_param_spec_double ("example",
             "This is an example property",
             "You should definately replace this with some meaningful property",
             -1.0,   /* minimum */
@@ -141,30 +140,30 @@ static void ufo_filter_${prefix_underscore}_class_init(UfoFilter${prefix_camel}C
              1.0,   /* default */
             G_PARAM_READWRITE);
 
-    g_object_class_install_property(gobject_class, PROP_EXAMPLE, ${prefix_underscore}_properties[PROP_EXAMPLE]);
+    g_object_class_install_property (gobject_class, PROP_EXAMPLE, ${prefix_underscore}_properties[PROP_EXAMPLE]);
 
-    g_type_class_add_private(gobject_class, sizeof(UfoFilter${prefix_camel}Private));
+    g_type_class_add_private (gobject_class, sizeof(UfoFilter${prefix_camel}Private));
 }
 
-static void ufo_filter_${prefix_underscore}_init(UfoFilter${prefix_camel} *self)
+static void
+ufo_filter_${prefix_underscore}_init (UfoFilter${prefix_camel} *self)
 {
-    UfoFilter${prefix_camel}Private *priv = self->priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE(self);
+    UfoFilter${prefix_camel}Private *priv = self->priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (self);
     priv->example = 1.0;
 
     /* 
-     * Use this place to register your named inputs and outputs with the number
-     * of dimensions that the input is accepting and the output providing.
-     * Currently all filters use the same naming scheme that consists of an
-     * input/output prefix and a monotonically increasing number starting from
-     * 0. 
+     * Use this place to register your inputs and outputs with the number
+     * of dimensions that the input is accepting and the output providing. You
+     * must terminate the variable argument list with a NULL.
      */
-    ufo_filter_register_input(UFO_FILTER(self), "input0", 2);
-    ufo_filter_register_output(UFO_FILTER(self), "output0", 2);
+    ufo_filter_register_inputs (UFO_FILTER(self), 2, NULL);
+    ufo_filter_register_outputs (UFO_FILTER(self), 2, NULL);
 }
 
-G_MODULE_EXPORT UfoFilter *ufo_filter_plugin_new(void)
+G_MODULE_EXPORT UfoFilter *
+ufo_filter_plugin_new(void)
 {
-    return g_object_new(UFO_TYPE_FILTER_${prefix_upper}, NULL);
+    return g_object_new (UFO_TYPE_FILTER_${prefix_upper}, NULL);
 }
 """
 
