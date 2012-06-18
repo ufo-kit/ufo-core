@@ -60,13 +60,13 @@ static GParamSpec *graph_properties[N_PROPERTIES] = { NULL, };
 /*     } */
 
 /*     if (json_object_has_member(root_object, "nodes")) { */
-/*         JsonArray *nodes = json_object_get_array_member(root_object, "nodes"); */ 
+/*         JsonArray *nodes = json_object_get_array_member(root_object, "nodes"); */
 /*         json_array_foreach_element(nodes, graph_handle_json_filter_node, self); */
 
 /*         /1* We only check edges if we have nodes, anything else doesn't make much */
 /*          * sense. *1/ */
 /*         if (json_object_has_member(root_object, "edges")) { */
-/*             JsonArray *edges = json_object_get_array_member(root_object, "edges"); */ 
+/*             JsonArray *edges = json_object_get_array_member(root_object, "edges"); */
 /*             json_array_foreach_element(edges, graph_handle_json_filter_edge, self); */
 /*         } */
 /*     } */
@@ -84,7 +84,7 @@ json_object_from_ufo_filter (UfoFilter *filter)
     return object;
 }
 
-static void 
+static void
 graph_add_filter_to_json_array(gpointer data, gpointer user_data)
 {
     g_return_if_fail (UFO_IS_FILTER (data));
@@ -130,14 +130,14 @@ add_edges_from_relation (gpointer data, gpointer user)
 
     JsonObject *relation_object = json_object_from_ufo_filter (producer);
 
-    JsonArray *consumer_objects = json_array_new (); 
+    JsonArray *consumer_objects = json_array_new ();
     GList *consumers = ufo_relation_get_consumers (relation);
 
     for (GList *it = g_list_first (consumers); it != NULL; it = g_list_next (it)) {
         UfoFilter *consumer = UFO_FILTER (it->data);
         JsonObject *consumer_object = json_object_from_ufo_filter (consumer);
 
-        json_object_set_int_member (consumer_object, "input", 
+        json_object_set_int_member (consumer_object, "input",
                                     ufo_relation_get_consumer_port (relation, consumer));
         json_array_add_object_element (consumer_objects, consumer_object);
     }
@@ -153,7 +153,7 @@ add_edges_from_relation (gpointer data, gpointer user)
  * @paths: A string with a colon-separated list of paths that are used to search
  *      for OpenCL kernel files and header files included by OpenCL kernels.
  *
- * Create a new #UfoGraph. 
+ * Create a new #UfoGraph.
  *
  * Return value: A #UfoGraph.
  */
@@ -178,7 +178,7 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
     GError *tmp_error = NULL;
 
     if (!json_parser_load_from_file(json_parser, filename, &tmp_error)) {
-        g_propagate_error(error, tmp_error); 
+        g_propagate_error(error, tmp_error);
         return;
     }
 
@@ -195,7 +195,7 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
  *
  * Save a JSON configuration file with the filter structure of @graph.
  */
-void 
+void
 ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **error)
 {
     g_return_if_fail (UFO_IS_GRAPH (graph) && (filename != NULL));
@@ -225,7 +225,7 @@ ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **error)
     json_generator_set_root(json_generator, root_node);
 
     if (!json_generator_to_file(json_generator, filename, &tmp_error)) {
-        g_propagate_error(error, tmp_error); 
+        g_propagate_error(error, tmp_error);
         return;
     }
 
@@ -272,20 +272,37 @@ void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
  */
 void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GError **error)
 {
-    UfoRelation *relation;
-    GError      *tmp_error = NULL;
+    UfoGraphPrivate *priv;
+    UfoRelation     *relation;
+    GError          *tmp_error = NULL;
 
     g_return_if_fail (UFO_IS_GRAPH (graph) && UFO_IS_FILTER (from) && UFO_IS_FILTER (to));
+    priv = UFO_GRAPH_GET_PRIVATE (graph);
+
+    /*
+     * Check that we do not make the connection twice.
+     */
+    for (GList *it = g_list_first (priv->relations); it != NULL; it = g_list_next (priv->relations)) {
+        relation = UFO_RELATION (it->data);
+
+        if (ufo_relation_get_producer (relation) == from) {
+            GList *consumers = ufo_relation_get_consumers (relation);
+            if ((g_list_first (consumers))->data == to)
+                g_warning ("Primary connection between %s-%p and %s-%p exists already",
+                        ufo_filter_get_plugin_name (from), (gpointer) from,
+                        ufo_filter_get_plugin_name (to), (gpointer) to);
+        }
+    }
 
     relation = ufo_relation_new (from, 0, UFO_RELATION_MODE_DISTRIBUTE);
     ufo_relation_add_consumer (relation, to, 0, &tmp_error);
 
     if (tmp_error == NULL) {
-        /* 
+        /*
          * We don't call ufo_graph_add_relation() because we don't want to
          * reference the relation object once again.
          */
-        graph->priv->relations = g_list_append (graph->priv->relations, relation);
+        priv->relations = g_list_append (priv->relations, relation);
     }
     else
         g_propagate_error (error, tmp_error);
