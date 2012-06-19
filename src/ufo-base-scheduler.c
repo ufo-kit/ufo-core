@@ -32,6 +32,8 @@ typedef struct {
     GList              *relations;
     guint               num_cmd_queues;
     cl_command_queue   *cmd_queues;
+    guint               num_inputs;
+    guint               num_outputs;
     guint             **output_dims;
     GAsyncQueue       **input_pop_queues;
     GAsyncQueue       **input_push_queues;
@@ -144,21 +146,42 @@ get_output_queues(GList *relations, UfoFilter *filter, GAsyncQueue ***output_pus
 }
 
 static gboolean
-fetch_work (GAsyncQueue *pop_queues[], GAsyncQueue *push_queues[], UfoBuffer **work, guint num_inputs)
+fetch_work (ThreadInfo *info)
 {
     const gpointer POISON_PILL = GINT_TO_POINTER(1);
-    gboolean finish = FALSE;
+    gboolean success = TRUE;
 
-    for (guint i = 0; i < num_inputs; i++) {
-        work[i] = g_async_queue_pop (pop_queues[i]);
+    for (guint i = 0; i < info->num_inputs; i++) {
+        info->work[i] = g_async_queue_pop (info->input_pop_queues[i]);
 
-        if (work[i] == POISON_PILL) {
-            g_async_queue_push (push_queues[i], POISON_PILL);
-            finish = TRUE;
+        if (info->work[i] == POISON_PILL) {
+            g_async_queue_push (info->input_push_queues[i], POISON_PILL);
+            success = TRUE;
         }
     }
 
-    return finish;
+    return success;
+}
+
+static void
+push_work (ThreadInfo *info)
+{
+    for (guint port = 0; port < info->num_inputs; port++)
+        g_async_queue_push(info->input_push_queues[port], info->work[port]);
+}
+
+static void
+fetch_result (ThreadInfo *info)
+{
+    for (guint port = 0; port < info->num_outputs; port++)
+        info->result[port] = g_async_queue_pop (info->output_pop_queues[port]);
+}
+
+static void
+push_result (ThreadInfo *info)
+{
+    for (guint port = 0; port < info->num_outputs; port++)
+        g_async_queue_push (info->output_push_queues[port], info->result[port]);
 }
 
 static GError *
@@ -167,9 +190,7 @@ process_source_filter (ThreadInfo *info)
     UfoFilter               *filter = UFO_FILTER (info->filter);
     UfoFilterSourceClass    *source_class = UFO_FILTER_SOURCE_GET_CLASS (filter);
     GError                  *error = NULL;
-    const guint              num_outputs = ufo_filter_get_num_outputs(filter);
     gboolean                 cont = TRUE;
-    const gchar             *name = ufo_filter_get_plugin_name (filter);
 
     error = source_class->source_initialize (UFO_FILTER_SOURCE (filter), info->output_dims);
 
@@ -179,21 +200,14 @@ process_source_filter (ThreadInfo *info)
     alloc_output_buffers (filter, info->output_pop_queues, info->output_dims);
 
     while (cont) {
-        g_print ("%s: pop output buffers\n", name);
-        for (guint port = 0; port < num_outputs; port++)
-            info->result[port] = g_async_queue_pop (info->output_pop_queues[port]);
-
-        g_print ("%s: generate output\n", name);
+        fetch_result (info);
         cont = source_class->generate (UFO_FILTER_SOURCE (filter), info->result, info->cmd_queues[0], &error);
 
         if (error != NULL)
             return error;
 
-        if (cont) {
-            g_print ("%s: push output\n", name);
-            for (guint port = 0; port < num_outputs; port++)
-                g_async_queue_push (info->output_push_queues[port], info->result[port]);
-        }
+        if (cont)
+            push_result (info);
     }
 
     return NULL;
@@ -205,15 +219,12 @@ process_synchronous_filter (ThreadInfo *info)
     UfoFilter *filter = UFO_FILTER (info->filter);
     UfoFilterClass *filter_class = UFO_FILTER_GET_CLASS(filter);
     GError *error = NULL;
-    gboolean finish = FALSE;
-    const guint num_inputs = ufo_filter_get_num_inputs(filter);
-    const guint num_outputs = ufo_filter_get_num_outputs(filter);
-    const gchar             *name = ufo_filter_get_plugin_name (filter);
+    gboolean cont = TRUE;
 
     /*
      * Initialize
      */
-    if (!fetch_work (info->input_pop_queues, info->input_push_queues, info->work, num_inputs)) {
+    if (fetch_work (info)) {
         ufo_filter_initialize (filter, info->work, info->output_dims, &error);
 
         if (error != NULL)
@@ -221,14 +232,13 @@ process_synchronous_filter (ThreadInfo *info)
 
         alloc_output_buffers (filter, info->output_pop_queues, info->output_dims);
     }
+    else {
+        return NULL;
+    }
 
-    while (!finish) {
-        for (guint port = 0; port < num_outputs; port++)
-            info->result[port] = g_async_queue_pop (info->output_pop_queues[port]);
+    while (cont) {
+        fetch_result (info);
 
-        /*
-         * Do the actual processing.
-         */
         if (filter_class->process_gpu != NULL)
             error = filter_class->process_gpu(filter, info->work, info->result, info->cmd_queues[0]);
         else
@@ -237,24 +247,48 @@ process_synchronous_filter (ThreadInfo *info)
         if (error != NULL)
             return error;
 
-        /*
-         * Release all work items so that preceding nodes can re-use
-         * them.
-         */
-        for (guint port = 0; port < num_inputs; port++)
-            g_async_queue_push(info->input_push_queues[port], info->work[port]);
+        push_work (info);
+        push_result (info);
 
-        /*
-         * Release all result items so that subsequent nodes can use them.
-         */
-        for (guint port = 0; port < num_outputs; port++)
-            g_async_queue_push (info->output_push_queues[port], info->result[port]);
-
-        finish = fetch_work (info->input_pop_queues, info->input_push_queues, info->work, num_inputs);
+        cont = fetch_work (info);
     }
 
     return NULL;
 }
+
+/* static GError * */
+/* process_arbitrary_filter (ThreadInfo *info) */
+/* { */
+/*     gint        pop_count; */
+/*     guint       push_count; */
+
+/*     UfoFilterArbitrary *filter = UFO_FILTER_ARBITRARY (info->filter); */
+
+/*     if (fetch_work (info)) { */
+/*         ufo_filter_arbitrary_initialize (filter, info->work, &pop_count, &push_count, &error); */
+
+/*         if (error != NULL) */
+/*             return error; */
+/*     } */
+
+/*     if (pop_count < 0) { */
+/*         gboolean cont = TRUE; */
+
+/*         while (cont) { */
+/*             ufo_filter_arbitrary_consume (filter, info->work, info->cmd_queues[0], &error); */
+
+/*             if (error != NULL) */
+/*                 return error; */
+
+/*             push_work (info); */
+/*             cont = fetch_work (info); */
+/*         } */
+
+/*         fetch_result (info); */
+/*         ufo_filter_arbitrary_generate (filter, info->result, info->cmd_queues[0], &error); */
+/*         push_result (info); */
+/*     } */
+/* } */
 
 static GError *
 process_sink_filter (ThreadInfo *info)
@@ -262,39 +296,40 @@ process_sink_filter (ThreadInfo *info)
     UfoFilter *filter = UFO_FILTER (info->filter);
     UfoFilterSink *sink_filter = UFO_FILTER_SINK (filter);
     GError *error = NULL;
-    gboolean finish = FALSE;
+    gboolean cont = TRUE;
     const guint num_inputs = ufo_filter_get_num_inputs(filter);
 
-    /*
-     * Initialize
-     */
-    if (!fetch_work (info->input_pop_queues, info->input_push_queues, info->work, num_inputs)) {
+    if (fetch_work (info)) {
         ufo_filter_sink_initialize (sink_filter, info->work, &error);
 
         if (error != NULL)
             return error;
     }
+    else
+        return NULL;
 
-    while (!finish) {
-        /*
-         * Do the actual processing.
-         */
+    while (cont) {
         ufo_filter_sink_consume (sink_filter, info->work, info->cmd_queues[0], &error);
 
         if (error != NULL)
             return error;
 
-        /*
-         * Release all work items so that preceding nodes can re-use
-         * them.
-         */
         for (guint port = 0; port < num_inputs; port++)
             g_async_queue_push(info->input_push_queues[port], info->work[port]);
 
-        finish = fetch_work (info->input_pop_queues, info->input_push_queues, info->work, num_inputs);
+        cont = fetch_work (info);
     }
 
     return NULL;
+}
+
+static void
+alloc_info_data (ThreadInfo *info)
+{
+    info->work = g_malloc(info->num_inputs * sizeof(UfoBuffer *));
+    info->result = g_malloc(info->num_outputs * sizeof(UfoBuffer *));
+    info->timers = g_malloc(info->num_inputs * sizeof(GTimer *));
+    info->output_dims = g_malloc0(info->num_outputs * sizeof(guint *));
 }
 
 static gpointer
@@ -306,22 +341,16 @@ process_thread(gpointer data)
 
     g_object_ref (filter);
 
-    const guint num_inputs = ufo_filter_get_num_inputs(filter);
-    const guint num_outputs = ufo_filter_get_num_outputs(filter);
-
     GList *output_num_dims = ufo_filter_get_output_num_dims(filter);
     GList *producing_relations = NULL;
-    info->input_pop_queues = NULL;
-    info->input_push_queues = NULL;
-    info->output_pop_queues = NULL;
-    info->output_push_queues = NULL;
-    info->work = g_malloc(num_inputs * sizeof(UfoBuffer *));
-    info->result = g_malloc(num_outputs * sizeof(UfoBuffer *));
-    info->timers = g_malloc(num_inputs * sizeof(GTimer *));
-    info->output_dims = g_malloc0(num_outputs * sizeof(guint *));
+
+    info->num_inputs = ufo_filter_get_num_inputs(filter);
+    info->num_outputs = ufo_filter_get_num_outputs(filter);
 
     get_input_queues (info->relations, filter, &info->input_push_queues, &info->input_pop_queues);
     get_output_queues (info->relations, filter, &info->output_push_queues, &info->output_pop_queues);
+
+    alloc_info_data (info);
     alloc_dim_sizes (output_num_dims, info->output_dims);
 
     /*
