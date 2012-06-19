@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 2.6)
 
 # --- Set sources -------------------------------------------------------------
-set(ufocore_SRCS 
+set(ufocore_SRCS
     ufo-base-scheduler.c
     ufo-channel.c
     ufo-graph.c
     ufo-buffer.c
     ufo-filter.c
+    ufo-filter-source.c
+    ufo-filter-sink.c
     ufo-plugin-manager.c
     ufo-relation.c
     ufo-resource-manager.c
@@ -18,6 +20,8 @@ set(ufocore_HDRS
     ufo-graph.h
     ufo-buffer.h
     ufo-filter.h
+    ufo-filter-source.h
+    ufo-filter-sink.h
     ufo-plugin-manager.h
     ufo-relation.h
     ufo-resource-manager.h
@@ -34,7 +38,7 @@ pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
 
 set(ufocore_LIBS
     ${OPENCL_LIBRARIES}
-    ${GLIB2_LIBRARIES} 
+    ${GLIB2_LIBRARIES}
     ${GOBJECT2_LIBRARIES}
     ${GMODULE2_LIBRARIES}
     ${GTHREAD2_LIBRARIES}
@@ -86,12 +90,12 @@ set_target_properties(ufo PROPERTIES
 
 target_link_libraries(ufo ${ufocore_LIBS})
 
-install(TARGETS ufo 
+install(TARGETS ufo
     ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
     LIBRARY DESTINATION ${LIB_INSTALL_DIR})
 
-install(FILES 
-    ${ufocore_HDRS} 
+install(FILES
+    ${ufocore_HDRS}
     ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
     DESTINATION include/ufo)
 
@@ -123,9 +127,9 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
         set(_gir_input)
 
         foreach(_src ${ufocore_SRCS} ${ufocore_HDRS})
-            list(APPEND _gir_input "${CMAKE_CURRENT_SOURCE_DIR}/${_src}") 
+            list(APPEND _gir_input "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
         endforeach()
-        
+
         add_custom_command(OUTPUT ${GIR_XML}
             COMMAND ${INTROSPECTION_SCANNER}
                     --namespace=Ufo
@@ -183,7 +187,7 @@ if(GTK_DOC_FOUND)
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in" "${docs_out}/Ufo-docs.xml")
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-sections.txt.in" "${docs_out}/Ufo-sections.txt")
 
-        set(reference_files 
+        set(reference_files
             "${docs_out}/index.html"
             "${docs_out}/annotation-glossary.html"
             "${docs_out}/api-index-full.html"
@@ -209,7 +213,7 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}/../src
-                    DEPENDS ${ufocore_SRCS} 
+                    DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_out}/sgml.stamp

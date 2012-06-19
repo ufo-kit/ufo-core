@@ -52,6 +52,13 @@ GQuark ufo_filter_error_quark(void)
     return g_quark_from_static_string("ufo-filter-error-quark");
 }
 
+void
+ufo_filter_initialize (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error)
+{
+    g_return_if_fail (UFO_IS_FILTER (filter));
+    *error = UFO_FILTER_GET_CLASS (filter)->initialize (filter, params, output_dim_sizes);
+}
+
 /**
  * ufo_filter_set_plugin_name:
  * @filter: A #UfoFilter.
@@ -109,7 +116,7 @@ void ufo_filter_register_outputs(UfoFilter *filter, ...)
     g_return_if_fail(UFO_IS_FILTER(filter));
     g_return_if_fail(filter->priv->num_outputs == 0);
 
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);    
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
     va_list ap;
     va_start(ap, filter);
     guint num_dims;
@@ -128,7 +135,7 @@ void ufo_filter_register_outputs(UfoFilter *filter, ...)
 /**
  * ufo_filter_get_num_inputs:
  * @filter: A #UfoFilter.
- * 
+ *
  * Return the number of input ports.
  *
  * Returns: Number of input ports.
@@ -142,7 +149,7 @@ guint ufo_filter_get_num_inputs(UfoFilter *filter)
 /**
  * ufo_filter_get_num_outputs:
  * @filter: A #UfoFilter.
- * 
+ *
  * Return the number of output ports.
  *
  * Returns: Number of output ports.
@@ -250,7 +257,15 @@ void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterCondit
     g_value_unset(&val);
 }
 
-static void ufo_filter_finalize(GObject *object)
+static GError *
+ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes)
+{
+    g_warning ("UfoFilter->initialize() is not implemented\n");
+    return NULL;
+}
+
+static void
+ufo_filter_finalize(GObject *object)
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (object);
 
@@ -261,11 +276,12 @@ static void ufo_filter_finalize(GObject *object)
     G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
 }
 
-static void ufo_filter_class_init(UfoFilterClass *klass)
+static void
+ufo_filter_class_init(UfoFilterClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->finalize = ufo_filter_finalize;
-    klass->initialize = NULL;
+    klass->initialize = ufo_filter_initialize_real;
     klass->process_cpu = NULL;
     klass->process_gpu = NULL;
     klass->post_process_cpu = NULL;
@@ -273,7 +289,8 @@ static void ufo_filter_class_init(UfoFilterClass *klass)
     g_type_class_add_private (klass, sizeof(UfoFilterPrivate));
 }
 
-static void ufo_filter_init(UfoFilter *self)
+static void
+ufo_filter_init(UfoFilter *self)
 {
     UfoFilterPrivate *priv;
     self->priv = priv = UFO_FILTER_GET_PRIVATE (self);

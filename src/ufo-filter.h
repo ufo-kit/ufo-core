@@ -75,6 +75,10 @@ struct _UfoFilterClass {
     GError * (*post_process_gpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue);
 };
 
+void            ufo_filter_initialize           (UfoFilter                 *filter,
+                                                 UfoBuffer                 *params[],
+                                                 guint                    **output_dim_sizes,
+                                                 GError                   **error);
 void            ufo_filter_set_plugin_name      (UfoFilter                 *filter,
                                                  const gchar               *plugin_name);
 const gchar*    ufo_filter_get_plugin_name      (UfoFilter                 *filter);
