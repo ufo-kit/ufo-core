@@ -282,7 +282,7 @@ void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to,
     /*
      * Check that we do not make the connection twice.
      */
-    for (GList *it = g_list_first (priv->relations); it != NULL; it = g_list_next (priv->relations)) {
+    for (GList *it = g_list_first (priv->relations); it != NULL; it = g_list_next (it)) {
         relation = UFO_RELATION (it->data);
 
         if (ufo_relation_get_producer (relation) == from) {
