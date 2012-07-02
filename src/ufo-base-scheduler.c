@@ -156,7 +156,7 @@ fetch_work (ThreadInfo *info)
 
         if (info->work[i] == POISON_PILL) {
             g_async_queue_push (info->input_push_queues[i], POISON_PILL);
-            success = TRUE;
+            success = FALSE;
         }
     }
 
@@ -402,8 +402,6 @@ void ufo_base_scheduler_run(UfoBaseScheduler *scheduler, GList *relations, GErro
     cl_command_queue *cmd_queues;
     guint num_queues;
     ufo_resource_manager_get_command_queues(ufo_resource_manager(), (void **) &cmd_queues, &num_queues);
-
-    g_print ("what???\n");
 
     /*
      * Unfortunately, there is no set data type in GLib. Thus we have to write
