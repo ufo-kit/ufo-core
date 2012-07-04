@@ -19,15 +19,11 @@ G_DEFINE_TYPE (UfoFilterSource, ufo_filter_source, UFO_TYPE_FILTER)
 
 #define UFO_FILTER_SOURCE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_SOURCE, UfoFilterSourcePrivate))
 
-struct _UfoFilterSourcePrivate {
-    gboolean            finished;
-};
-
 void
 ufo_filter_source_initialize (UfoFilterSource *filter, guint **output_dim_sizes, GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_SOURCE (filter));
-    UFO_FILTER_SOURCE_GET_CLASS (filter)->source_initialize (filter, output_dim_sizes, error);
+    UFO_FILTER_SOURCE_GET_CLASS (filter)->initialize (filter, output_dim_sizes, error);
 }
 
 gboolean
@@ -50,10 +46,8 @@ ufo_filter_source_class_init(UfoFilterSourceClass *klass)
 
     gobject_class->finalize = ufo_filter_source_finalize;
 
-    klass->source_initialize = NULL;
+    klass->initialize = NULL;
     klass->generate = NULL;
-
-    g_type_class_add_private (klass, sizeof(UfoFilterSourcePrivate));
 }
 
 static void

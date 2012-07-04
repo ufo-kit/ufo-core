@@ -42,8 +42,8 @@ struct _UfoFilterSourceClass {
     /*< private >*/
     UfoFilterClass parent;
 
-    void     (*source_initialize) (UfoFilterSource *filter, guint **output_dim_sizes, GError **error);
-    gboolean (*generate)          (UfoFilterSource *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    void     (*initialize)  (UfoFilterSource *filter, guint **output_dim_sizes, GError **error);
+    gboolean (*generate)    (UfoFilterSource *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
 };
 
 void     ufo_filter_source_initialize (UfoFilterSource   *filter,

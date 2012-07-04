@@ -188,12 +188,11 @@ push_result (ThreadInfo *info)
 static GError *
 process_source_filter (ThreadInfo *info)
 {
-    UfoFilter               *filter = UFO_FILTER (info->filter);
-    UfoFilterSourceClass    *source_class = UFO_FILTER_SOURCE_GET_CLASS (filter);
-    GError                  *error = NULL;
-    gboolean                 cont = TRUE;
+    UfoFilter   *filter = UFO_FILTER (info->filter);
+    GError      *error = NULL;
+    gboolean     cont = TRUE;
 
-    source_class->source_initialize (UFO_FILTER_SOURCE (filter), info->output_dims, &error);
+    ufo_filter_source_initialize (UFO_FILTER_SOURCE (filter), info->output_dims, &error);
 
     if (error != NULL)
         return error;
@@ -204,7 +203,7 @@ process_source_filter (ThreadInfo *info)
         fetch_result (info);
 
         g_timer_continue (info->cpu_timer);
-        cont = source_class->generate (UFO_FILTER_SOURCE (filter), info->result, info->cmd_queues[0], &error);
+        cont = ufo_filter_source_generate (UFO_FILTER_SOURCE (filter), info->result, info->cmd_queues[0], &error);
         g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
@@ -246,12 +245,12 @@ process_synchronous_filter (ThreadInfo *info)
         if (filter_class->process_gpu != NULL) {
             GList *events;
 
-            events = filter_class->process_gpu (filter, info->work, info->result, info->cmd_queues[0], &error);
+            events = ufo_filter_process_gpu (filter, info->work, info->result, info->cmd_queues[0], &error);
             g_list_free (events);
         }
         else {
             g_timer_continue (info->cpu_timer);
-            filter_class->process_cpu (filter, info->work, info->result, info->cmd_queues[0], &error);
+            ufo_filter_process_cpu (filter, info->work, info->result, info->cmd_queues[0], &error);
             g_timer_stop (info->cpu_timer);
         }
 
