@@ -47,16 +47,31 @@ struct _UfoFilterPrivate {
  * Possible errors that ufo_filter_connect_to() and ufo_filter_connect_by_name()
  * can return.
  */
-GQuark ufo_filter_error_quark(void)
+GQuark
+ufo_filter_error_quark(void)
 {
-    return g_quark_from_static_string("ufo-filter-error-quark");
+    return g_quark_from_static_string ("ufo-filter-error-quark");
 }
 
 void
 ufo_filter_initialize (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER (filter));
-    *error = UFO_FILTER_GET_CLASS (filter)->initialize (filter, params, output_dim_sizes);
+    UFO_FILTER_GET_CLASS (filter)->initialize (filter, params, output_dim_sizes, error);
+}
+
+void
+ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error)
+{
+    g_return_if_fail (UFO_IS_FILTER (filter));
+    UFO_FILTER_GET_CLASS (filter)->process_cpu (filter, params, results, cmd_queue, error);
+}
+
+GList *
+ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    return UFO_FILTER_GET_CLASS (filter)->process_gpu (filter, params, results, cmd_queue, error);
 }
 
 /**
@@ -66,9 +81,10 @@ ufo_filter_initialize (UfoFilter *filter, UfoBuffer *params[], guint **output_di
  *
  * Set the name of filter.
  */
-void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name)
+void
+ufo_filter_set_plugin_name (UfoFilter *filter, const gchar *plugin_name)
 {
-    g_return_if_fail(UFO_IS_FILTER(filter));
+    g_return_if_fail (UFO_IS_FILTER (filter));
     filter->priv->plugin_name = g_strdup (plugin_name);
 }
 
@@ -81,25 +97,26 @@ void ufo_filter_set_plugin_name(UfoFilter *filter, const gchar *plugin_name)
  *
  * Since: 0.2
  */
-void ufo_filter_register_inputs(UfoFilter *filter, ...)
+void
+ufo_filter_register_inputs (UfoFilter *filter, ...)
 {
-    g_return_if_fail(UFO_IS_FILTER(filter));
-    g_return_if_fail(filter->priv->num_inputs == 0);
+    g_return_if_fail (UFO_IS_FILTER (filter));
+    g_return_if_fail (filter->priv->num_inputs == 0);
 
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (filter);
     guint num_dims;
     va_list ap;
-    va_start(ap, filter);
+    va_start (ap, filter);
     priv->num_inputs = 0;
 
-    va_start(ap, filter);
+    va_start (ap, filter);
 
-    while ((num_dims = va_arg(ap, guint)) != 0) {
+    while ((num_dims = va_arg (ap, guint)) != 0) {
         priv->num_inputs++;
         priv->input_num_dims = g_list_append (priv->input_num_dims, GINT_TO_POINTER (num_dims));
     }
 
-    va_end(ap);
+    va_end (ap);
 }
 
 /**
@@ -111,25 +128,26 @@ void ufo_filter_register_inputs(UfoFilter *filter, ...)
  *
  * Since: 0.2
  */
-void ufo_filter_register_outputs(UfoFilter *filter, ...)
+void
+ufo_filter_register_outputs (UfoFilter *filter, ...)
 {
-    g_return_if_fail(UFO_IS_FILTER(filter));
-    g_return_if_fail(filter->priv->num_outputs == 0);
+    g_return_if_fail (UFO_IS_FILTER (filter));
+    g_return_if_fail (filter->priv->num_outputs == 0);
 
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE(filter);
+    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (filter);
     va_list ap;
-    va_start(ap, filter);
+    va_start (ap, filter);
     guint num_dims;
     priv->num_outputs = 0;
 
-    va_start(ap, filter);
+    va_start (ap, filter);
 
-    while ((num_dims = va_arg(ap, guint)) != 0) {
+    while ((num_dims = va_arg (ap, guint)) != 0) {
         priv->num_outputs++;
         priv->output_num_dims = g_list_append (priv->output_num_dims, GINT_TO_POINTER (num_dims));
     }
 
-    va_end(ap);
+    va_end (ap);
 }
 
 /**
@@ -141,7 +159,8 @@ void ufo_filter_register_outputs(UfoFilter *filter, ...)
  * Returns: Number of input ports.
  * Since: 0.2
  */
-guint ufo_filter_get_num_inputs(UfoFilter *filter)
+guint
+ufo_filter_get_num_inputs (UfoFilter *filter)
 {
     return filter->priv->num_inputs;
 }
@@ -155,7 +174,8 @@ guint ufo_filter_get_num_inputs(UfoFilter *filter)
  * Returns: Number of output ports.
  * Since: 0.2
  */
-guint ufo_filter_get_num_outputs(UfoFilter *filter)
+guint
+ufo_filter_get_num_outputs (UfoFilter *filter)
 {
     return filter->priv->num_outputs;
 }
@@ -169,9 +189,10 @@ guint ufo_filter_get_num_outputs(UfoFilter *filter)
  * Returns (transfer none): A list with number of input dimensions.
  * Since: 0.2
  */
-GList *ufo_filter_get_input_num_dims(UfoFilter *filter)
+GList *
+ufo_filter_get_input_num_dims (UfoFilter *filter)
 {
-    g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
     return filter->priv->input_num_dims;
 }
 
@@ -184,9 +205,10 @@ GList *ufo_filter_get_input_num_dims(UfoFilter *filter)
  * Returns (transfer none): A list with number of output dimensions.
  * Since: 0.2
  */
-GList *ufo_filter_get_output_num_dims(UfoFilter *filter)
+GList *
+ufo_filter_get_output_num_dims (UfoFilter *filter)
 {
-    g_return_val_if_fail(UFO_IS_FILTER(filter), NULL);
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
     return filter->priv->output_num_dims;
 }
 
@@ -197,9 +219,10 @@ GList *ufo_filter_get_output_num_dims(UfoFilter *filter)
  * Pure producer filters have to call this method to signal that no more data
  * can be expected.
  */
-void ufo_filter_finish(UfoFilter *filter)
+void
+ufo_filter_finish (UfoFilter *filter)
 {
-    g_return_if_fail(UFO_IS_FILTER(filter));
+    g_return_if_fail (UFO_IS_FILTER (filter));
     filter->priv->finished = TRUE;
 }
 
@@ -213,7 +236,8 @@ void ufo_filter_finish(UfoFilter *filter)
  *
  * Return value: TRUE if no more data is pushed.
  */
-gboolean ufo_filter_is_finished(UfoFilter *filter)
+gboolean
+ufo_filter_is_finished (UfoFilter *filter)
 {
     return filter->priv->finished;
 }
@@ -225,7 +249,8 @@ gboolean ufo_filter_is_finished(UfoFilter *filter)
  * Get canonical name of @filter.
  * Return value: (transfer none): NULL-terminated string owned by the filter
  */
-const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
+const gchar *
+ufo_filter_get_plugin_name (UfoFilter *filter)
 {
     g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
     return filter->priv->plugin_name;
@@ -240,32 +265,32 @@ const gchar *ufo_filter_get_plugin_name(UfoFilter *filter)
  *
  * Wait until a property specified by @pspec fulfills @condition.
  */
-void ufo_filter_wait_until(UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionFunc condition, gpointer user_data)
+void
+ufo_filter_wait_until (UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionFunc condition, gpointer user_data)
 {
     GValue val = {0,};
-    g_value_init(&val, pspec->value_type);
+    g_value_init (&val, pspec->value_type);
 
     while (1) {
-        g_object_get_property(G_OBJECT(filter), pspec->name, &val);
+        g_object_get_property (G_OBJECT (filter), pspec->name, &val);
 
-        if (condition(&val, user_data))
+        if (condition (&val, user_data))
             break;
 
-        g_usleep(10000);
+        g_usleep (10000);
     }
 
-    g_value_unset(&val);
-}
-
-static GError *
-ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes)
-{
-    g_warning ("UfoFilter->initialize() is not implemented\n");
-    return NULL;
+    g_value_unset (&val);
 }
 
 static void
-ufo_filter_finalize(GObject *object)
+ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error)
+{
+    g_warning ("UfoFilter->initialize() is not implemented\n");
+}
+
+static void
+ufo_filter_finalize (GObject *object)
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (object);
 
@@ -277,7 +302,7 @@ ufo_filter_finalize(GObject *object)
 }
 
 static void
-ufo_filter_class_init(UfoFilterClass *klass)
+ufo_filter_class_init (UfoFilterClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->finalize = ufo_filter_finalize;
@@ -286,11 +311,11 @@ ufo_filter_class_init(UfoFilterClass *klass)
     klass->process_gpu = NULL;
     klass->post_process_cpu = NULL;
     klass->post_process_gpu = NULL;
-    g_type_class_add_private (klass, sizeof(UfoFilterPrivate));
+    g_type_class_add_private (klass, sizeof (UfoFilterPrivate));
 }
 
 static void
-ufo_filter_init(UfoFilter *self)
+ufo_filter_init (UfoFilter *self)
 {
     UfoFilterPrivate *priv;
     self->priv = priv = UFO_FILTER_GET_PRIVATE (self);

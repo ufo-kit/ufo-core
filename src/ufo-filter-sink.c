@@ -27,14 +27,14 @@ void
 ufo_filter_sink_initialize (UfoFilterSink *filter, UfoBuffer *work[], GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_SINK (filter));
-    *error = UFO_FILTER_SINK_GET_CLASS (filter)->initialize (filter, work);
+    UFO_FILTER_SINK_GET_CLASS (filter)->initialize (filter, work, error);
 }
 
 void
 ufo_filter_sink_consume (UfoFilterSink  *filter, UfoBuffer *work[], gpointer cmd_queue, GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_SINK (filter));
-    *error = UFO_FILTER_SINK_GET_CLASS (filter)->consume (filter, work, cmd_queue);
+    UFO_FILTER_SINK_GET_CLASS (filter)->consume (filter, work, cmd_queue, error);
 }
 
 static void
@@ -43,18 +43,16 @@ ufo_filter_sink_finalize(GObject *object)
     G_OBJECT_CLASS (ufo_filter_sink_parent_class)->finalize (object);
 }
 
-static GError *
-ufo_filter_sink_initialize_real (UfoFilterSink *filter, UfoBuffer *work[])
+static void
+ufo_filter_sink_initialize_real (UfoFilterSink *filter, UfoBuffer *work[], GError **error)
 {
     g_warning ("%s->initialize not implemented", ufo_filter_get_plugin_name (UFO_FILTER (filter)));
-    return NULL;
 }
 
-static GError *
-ufo_filter_sink_consume_real (UfoFilterSink *filter, UfoBuffer *work[], gpointer cmd_queue)
+static void
+ufo_filter_sink_consume_real (UfoFilterSink *filter, UfoBuffer *work[], gpointer cmd_queue, GError **error)
 {
     g_warning ("%s->consume not implemented", ufo_filter_get_plugin_name (UFO_FILTER (filter)));
-    return NULL;
 }
 
 static void

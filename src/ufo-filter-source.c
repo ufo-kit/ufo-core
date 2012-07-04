@@ -23,11 +23,11 @@ struct _UfoFilterSourcePrivate {
     gboolean            finished;
 };
 
-GError *
-ufo_filter_source_initialize (UfoFilterSource *filter, guint **output_dim_sizes)
+void
+ufo_filter_source_initialize (UfoFilterSource *filter, guint **output_dim_sizes, GError **error)
 {
-    g_return_val_if_fail (UFO_IS_FILTER_SOURCE (filter), NULL);
-    return UFO_FILTER_SOURCE_GET_CLASS (filter)->source_initialize (filter, output_dim_sizes);
+    g_return_if_fail (UFO_IS_FILTER_SOURCE (filter));
+    UFO_FILTER_SOURCE_GET_CLASS (filter)->source_initialize (filter, output_dim_sizes, error);
 }
 
 gboolean

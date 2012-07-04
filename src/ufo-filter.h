@@ -68,16 +68,26 @@ struct _UfoFilterClass {
     /*< private >*/
     GObjectClass parent;
 
-    GError * (*initialize) (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes);
-    GError * (*process_cpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
-    GError * (*process_gpu) (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue);
-    GError * (*post_process_cpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue);
-    GError * (*post_process_gpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue);
+    void    (*initialize)       (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error);
+    void    (*process_cpu)      (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    GList * (*process_gpu)      (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    void    (*post_process_cpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    void    (*post_process_gpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
 };
 
 void            ufo_filter_initialize           (UfoFilter                 *filter,
                                                  UfoBuffer                 *params[],
                                                  guint                    **output_dim_sizes,
+                                                 GError                   **error);
+void            ufo_filter_process_cpu          (UfoFilter                 *filter,
+                                                 UfoBuffer                 *params[],
+                                                 UfoBuffer                 *results[],
+                                                 gpointer                   cmd_queue,
+                                                 GError                   **error);
+GList *         ufo_filter_process_gpu          (UfoFilter                 *filter,
+                                                 UfoBuffer                 *params[],
+                                                 UfoBuffer                 *results[],
+                                                 gpointer                   cmd_queue,
                                                  GError                   **error);
 void            ufo_filter_set_plugin_name      (UfoFilter                 *filter,
                                                  const gchar               *plugin_name);

@@ -192,7 +192,7 @@ process_source_filter (ThreadInfo *info)
     GError                  *error = NULL;
     gboolean                 cont = TRUE;
 
-    error = source_class->source_initialize (UFO_FILTER_SOURCE (filter), info->output_dims);
+    source_class->source_initialize (UFO_FILTER_SOURCE (filter), info->output_dims, &error);
 
     if (error != NULL)
         return error;
@@ -239,10 +239,13 @@ process_synchronous_filter (ThreadInfo *info)
     while (cont) {
         fetch_result (info);
 
-        if (filter_class->process_gpu != NULL)
-            error = filter_class->process_gpu (filter, info->work, info->result, info->cmd_queues[0]);
+        if (filter_class->process_gpu != NULL) {
+            GList *events;
+
+            events = filter_class->process_gpu (filter, info->work, info->result, info->cmd_queues[0], &error);
+        }
         else
-            error = filter_class->process_cpu (filter, info->work, info->result, info->cmd_queues[0]);
+            filter_class->process_cpu (filter, info->work, info->result, info->cmd_queues[0], &error);
 
         if (error != NULL)
             return error;
@@ -255,40 +258,6 @@ process_synchronous_filter (ThreadInfo *info)
 
     return NULL;
 }
-
-/* static GError * */
-/* process_arbitrary_filter (ThreadInfo *info) */
-/* { */
-/*     gint        pop_count; */
-/*     guint       push_count; */
-
-/*     UfoFilterArbitrary *filter = UFO_FILTER_ARBITRARY (info->filter); */
-
-/*     if (fetch_work (info)) { */
-/*         ufo_filter_arbitrary_initialize (filter, info->work, &pop_count, &push_count, &error); */
-
-/*         if (error != NULL) */
-/*             return error; */
-/*     } */
-
-/*     if (pop_count < 0) { */
-/*         gboolean cont = TRUE; */
-
-/*         while (cont) { */
-/*             ufo_filter_arbitrary_consume (filter, info->work, info->cmd_queues[0], &error); */
-
-/*             if (error != NULL) */
-/*                 return error; */
-
-/*             push_work (info); */
-/*             cont = fetch_work (info); */
-/*         } */
-
-/*         fetch_result (info); */
-/*         ufo_filter_arbitrary_generate (filter, info->result, info->cmd_queues[0], &error); */
-/*         push_result (info); */
-/*     } */
-/* } */
 
 static GError *
 process_sink_filter (ThreadInfo *info)

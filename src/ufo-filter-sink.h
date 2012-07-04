@@ -42,8 +42,8 @@ struct _UfoFilterSinkClass {
     /*< private >*/
     UfoFilterClass parent;
 
-    GError * (*initialize)  (UfoFilterSink *filter, UfoBuffer *work[]);
-    GError * (*consume)     (UfoFilterSink *filter, UfoBuffer *work[], gpointer cmd_queue);
+    void (*initialize)  (UfoFilterSink *filter, UfoBuffer *work[], GError **error);
+    void (*consume)     (UfoFilterSink *filter, UfoBuffer *work[], gpointer cmd_queue, GError **error);
 };
 
 void  ufo_filter_sink_initialize (UfoFilterSink  *filter,
