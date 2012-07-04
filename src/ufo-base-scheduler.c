@@ -42,6 +42,7 @@ typedef struct {
     UfoBuffer         **work;
     UfoBuffer         **result;
     GTimer            **timers;
+    GTimer             *cpu_timer;
 } ThreadInfo;
 
 struct _UfoBaseSchedulerPrivate {
@@ -201,7 +202,10 @@ process_source_filter (ThreadInfo *info)
 
     while (cont) {
         fetch_result (info);
+
+        g_timer_continue (info->cpu_timer);
         cont = source_class->generate (UFO_FILTER_SOURCE (filter), info->result, info->cmd_queues[0], &error);
+        g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
             return error;
@@ -243,9 +247,13 @@ process_synchronous_filter (ThreadInfo *info)
             GList *events;
 
             events = filter_class->process_gpu (filter, info->work, info->result, info->cmd_queues[0], &error);
+            g_list_free (events);
         }
-        else
+        else {
+            g_timer_continue (info->cpu_timer);
             filter_class->process_cpu (filter, info->work, info->result, info->cmd_queues[0], &error);
+            g_timer_stop (info->cpu_timer);
+        }
 
         if (error != NULL)
             return error;
@@ -278,7 +286,9 @@ process_sink_filter (ThreadInfo *info)
         return NULL;
 
     while (cont) {
+        g_timer_continue (info->cpu_timer);
         ufo_filter_sink_consume (sink_filter, info->work, info->cmd_queues[0], &error);
+        g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
             return error;
@@ -341,6 +351,9 @@ process_thread (gpointer data)
         error = process_synchronous_filter (info);
 
     push_poison_pill (producing_relations);
+
+    g_print ("%s took %3.5f CPU seconds\n", ufo_filter_get_plugin_name (filter),
+            g_timer_elapsed (info->cpu_timer, NULL));
 
     g_free (info->output_dims);
     g_free (info->work);
@@ -410,6 +423,9 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
         thread_info[i].relations = relations;
         thread_info[i].num_cmd_queues = num_queues;
         thread_info[i].cmd_queues = cmd_queues;
+        thread_info[i].cpu_timer = g_timer_new ();
+        g_timer_stop (thread_info[i].cpu_timer);
+
         threads = g_list_append (threads, g_thread_create (process_thread, &thread_info[i], TRUE, &tmp_error));
 
         if (tmp_error != NULL) {
@@ -430,6 +446,8 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
             return;
         }
     }
+
+    /* TODO: free the cpu timers */
 
     g_free (thread_info);
     g_list_free (threads);
