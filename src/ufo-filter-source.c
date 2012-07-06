@@ -34,20 +34,26 @@ ufo_filter_source_generate (UfoFilterSource *filter, UfoBuffer *results[], gpoin
 }
 
 static void
-ufo_filter_source_finalize(GObject *object)
+ufo_filter_source_initialize_real (UfoFilterSource *filter, guint **output_dim_sizes, GError **error)
 {
-    G_OBJECT_CLASS (ufo_filter_source_parent_class)->finalize (object);
+    g_debug ("%s->initialize not implemented", ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+}
+
+static gboolean
+ufo_filter_source_generate_real (UfoFilterSource *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error)
+{
+    g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
+            "Virtual method `generate` of %s is not implemented",
+            ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+
+    return FALSE;
 }
 
 static void
 ufo_filter_source_class_init(UfoFilterSourceClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-
-    gobject_class->finalize = ufo_filter_source_finalize;
-
-    klass->initialize = NULL;
-    klass->generate = NULL;
+    klass->initialize = ufo_filter_source_initialize_real;
+    klass->generate = ufo_filter_source_generate_real;
 }
 
 static void

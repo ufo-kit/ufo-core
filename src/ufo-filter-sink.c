@@ -19,10 +19,6 @@ G_DEFINE_TYPE (UfoFilterSink, ufo_filter_sink, UFO_TYPE_FILTER)
 
 #define UFO_FILTER_SINK_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_SINK, UfoFilterSinkPrivate))
 
-struct _UfoFilterSinkPrivate {
-    gboolean            finished;
-};
-
 void
 ufo_filter_sink_initialize (UfoFilterSink *filter, UfoBuffer *work[], GError **error)
 {
@@ -38,34 +34,24 @@ ufo_filter_sink_consume (UfoFilterSink  *filter, UfoBuffer *work[], gpointer cmd
 }
 
 static void
-ufo_filter_sink_finalize(GObject *object)
-{
-    G_OBJECT_CLASS (ufo_filter_sink_parent_class)->finalize (object);
-}
-
-static void
 ufo_filter_sink_initialize_real (UfoFilterSink *filter, UfoBuffer *work[], GError **error)
 {
-    g_warning ("%s->initialize not implemented", ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+    g_debug ("%s->initialize not implemented", ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 }
 
 static void
 ufo_filter_sink_consume_real (UfoFilterSink *filter, UfoBuffer *work[], gpointer cmd_queue, GError **error)
 {
-    g_warning ("%s->consume not implemented", ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+    g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
+            "Virtual method `consume` of %s is not implemented",
+            ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 }
 
 static void
 ufo_filter_sink_class_init(UfoFilterSinkClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-
-    gobject_class->finalize = ufo_filter_sink_finalize;
-
     klass->initialize = ufo_filter_sink_initialize_real;
     klass->consume = ufo_filter_sink_consume_real;
-
-    g_type_class_add_private (klass, sizeof(UfoFilterSinkPrivate));
 }
 
 static void

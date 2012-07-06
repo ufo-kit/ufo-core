@@ -43,6 +43,8 @@ struct _UfoFilterPrivate {
  * @UFO_FILTER_ERROR_NOSUCHOUTPUT: Filter does not provide an output with that
  *      name.
  * @UFO_FILTER_ERROR_INITIALIZATION: Filter could not be initialized.
+ * @UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED: A method, further specified in the
+ *      message, is not implemented.
  *
  * Possible errors that ufo_filter_connect_to() and ufo_filter_connect_by_name()
  * can return.
@@ -286,7 +288,7 @@ ufo_filter_wait_until (UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionF
 static void
 ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error)
 {
-    g_warning ("UfoFilter->initialize() is not implemented\n");
+    g_debug ("%s->initialize() not implemented\n", filter->priv->plugin_name);
 }
 
 static void
