@@ -29,6 +29,16 @@ typedef struct {
 } ExecutionInformation;
 
 typedef struct {
+    cl_command_queue    cmd_queue;
+    cl_command_type     cmd_type;
+    cl_int              cmd_status;
+    cl_ulong            submitted;
+    cl_ulong            queued;
+    cl_ulong            started;
+    cl_ulong            ended;
+} cl_event_info_row;
+
+typedef struct {
     UfoFilter          *filter;
     GList              *relations;
     guint               num_cmd_queues;
@@ -44,6 +54,9 @@ typedef struct {
     UfoBuffer         **result;
     GTimer            **timers;
     GTimer             *cpu_timer;
+    cl_event_info_row  *event_rows;
+    guint               n_event_rows;
+    guint               n_available_event_rows;
 } ThreadInfo;
 
 struct _UfoBaseSchedulerPrivate {
@@ -217,6 +230,34 @@ process_source_filter (ThreadInfo *info)
     return NULL;
 }
 
+static void
+log_cl_event (cl_event *event_location, ThreadInfo *info)
+{
+    cl_event event;
+    cl_event_info_row *row;
+
+    event = *event_location;
+    row = &info->event_rows[info->n_event_rows];
+
+    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_QUEUE, sizeof (cl_command_queue), &row->cmd_queue, NULL));
+    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_TYPE, sizeof (cl_command_type), &row->cmd_type, NULL));
+    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof (cl_int), &row->cmd_status, NULL));
+
+    if (row->cmd_status == CL_COMPLETE) {
+        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_QUEUED, sizeof (cl_ulong), &row->queued, NULL));
+        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_SUBMIT, sizeof (cl_ulong), &row->submitted, NULL));
+        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_START, sizeof (cl_ulong), &row->started, NULL));
+        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_END, sizeof (cl_ulong), &row->ended, NULL));
+    }
+
+    info->n_event_rows++;
+
+    if (info->n_event_rows == info->n_available_event_rows) {
+        info->n_available_event_rows *= 2;
+        info->event_rows = g_realloc_n (info->event_rows, info->n_available_event_rows, sizeof (cl_event_info_row));
+    }
+}
+
 static GError *
 process_synchronous_filter (ThreadInfo *info)
 {
@@ -245,8 +286,14 @@ process_synchronous_filter (ThreadInfo *info)
 
         if (filter_class->process_gpu != NULL) {
             UfoEventList *events;
+            GList *list;
 
+            g_timer_continue (info->cpu_timer);
             events = ufo_filter_process_gpu (filter, info->work, info->result, info->cmd_queues[0], &error);
+            g_timer_stop (info->cpu_timer);
+
+            list = ufo_event_list_get_list (events);
+            g_list_foreach (list, (GFunc) log_cl_event, info);
             ufo_event_list_free (events);
         }
         else {
@@ -352,9 +399,6 @@ process_thread (gpointer data)
 
     push_poison_pill (producing_relations);
 
-    g_print ("%s took %3.5f CPU seconds\n", ufo_filter_get_plugin_name (filter),
-            g_timer_elapsed (info->cpu_timer, NULL));
-
     g_free (info->output_dims);
     g_free (info->work);
     g_free (info->result);
@@ -379,11 +423,19 @@ process_thread (gpointer data)
  */
 void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GError **error)
 {
+    cl_command_queue *cmd_queues;
+    GTimer *timer;
+    GList *filters;
+    GThread **threads;
+    GError *tmp_error = NULL;
+    ThreadInfo *thread_info;
+    guint n_queues;
+    guint n_threads;
+    guint i = 0;
+
     g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
 
-    cl_command_queue *cmd_queues;
-    guint num_queues;
-    ufo_resource_manager_get_command_queues (ufo_resource_manager (), (void **) &cmd_queues, &num_queues);
+    ufo_resource_manager_get_command_queues (ufo_resource_manager (), (void **) &cmd_queues, &n_queues);
 
     /*
      * Unfortunately, there is no set data type in GLib. Thus we have to write
@@ -402,16 +454,13 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
             g_hash_table_insert (filter_set, jt->data, NULL);
     }
 
-    GList *filters = g_hash_table_get_keys (filter_set);
-    GList *threads = NULL;
-    GError *tmp_error = NULL;
-    ThreadInfo *thread_info = g_new0(ThreadInfo, g_list_length (filters));
+    filters = g_hash_table_get_keys (filter_set);
+    n_threads = g_list_length (filters);
+    threads = g_new0 (GThread *, n_threads);
+    thread_info = g_new0 (ThreadInfo, n_threads);
+
     g_thread_init (NULL);
-
-    GTimer *timer = g_timer_new ();
-    g_timer_start (timer);
-
-    guint i = 0;
+    timer = g_timer_new ();
 
     /*
      * Start each filter in its own thread
@@ -421,12 +470,16 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
 
         thread_info[i].filter = filter;
         thread_info[i].relations = relations;
-        thread_info[i].num_cmd_queues = num_queues;
+        thread_info[i].num_cmd_queues = n_queues;
         thread_info[i].cmd_queues = cmd_queues;
+        thread_info[i].n_available_event_rows = 256;
+        thread_info[i].event_rows = g_new0 (cl_event_info_row, thread_info[i].n_available_event_rows);
+        thread_info[i].n_event_rows = 0;
+
         thread_info[i].cpu_timer = g_timer_new ();
         g_timer_stop (thread_info[i].cpu_timer);
 
-        threads = g_list_append (threads, g_thread_create (process_thread, &thread_info[i], TRUE, &tmp_error));
+        threads[i] = g_thread_create (process_thread, &thread_info[i], TRUE, &tmp_error);
 
         if (tmp_error != NULL) {
             /* FIXME: kill already started threads */
@@ -438,19 +491,31 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
     /*
      * Wait for them to finish
      */
-    for (GList *it = g_list_first (threads); it != NULL; it = g_list_next (it)) {
-        tmp_error = (GError *) g_thread_join (it->data);
+    for (i = 0; i < n_threads; i++) {
+        UfoFilter *filter;
+        ThreadInfo *info;
+
+        tmp_error = (GError *) g_thread_join (threads[i]);
+
         if (tmp_error != NULL) {
-            /* FIXME: wait for the rest? */
             g_propagate_error (error, tmp_error);
             return;
+        }
+
+        info = &thread_info[i];
+        filter = info->filter;
+        g_print ("%s-%p\n", ufo_filter_get_plugin_name (filter), (gpointer) filter);
+
+        for (guint row = 0; row < info->n_event_rows; row++) {
+            cl_event_info_row *event_row = &info->event_rows[row];
+            g_print ("%lu %lu %lu %lu\n", event_row->queued, event_row->submitted, event_row->started, event_row->ended);
         }
     }
 
     /* TODO: free the cpu timers */
 
     g_free (thread_info);
-    g_list_free (threads);
+    g_free (threads);
     g_list_free (filters);
     g_hash_table_destroy (filter_set);
 

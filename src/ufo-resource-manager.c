@@ -694,7 +694,7 @@ static void ufo_resource_manager_init(UfoResourceManager *self)
     }
 
     g_free(info_buffer);
-    cl_command_queue_properties queue_properties = 0;
+    cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
 
     /* XXX: create context for each platform?! */
     if (priv->num_platforms > 0) {
