@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "ufo-aux.h"
 #include "ufo-base-scheduler.h"
 #include "ufo-filter.h"
 #include "ufo-filter-source.h"
@@ -243,10 +244,10 @@ process_synchronous_filter (ThreadInfo *info)
         fetch_result (info);
 
         if (filter_class->process_gpu != NULL) {
-            GList *events;
+            UfoEventList *events;
 
             events = ufo_filter_process_gpu (filter, info->work, info->result, info->cmd_queues[0], &error);
-            g_list_free (events);
+            ufo_event_list_free (events);
         }
         else {
             g_timer_continue (info->cpu_timer);

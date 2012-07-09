@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 
+#include "ufo-aux.h"
 #include "ufo-resource-manager.h"
 #include "ufo-buffer.h"
 #include "ufo-channel.h"
@@ -69,11 +70,11 @@ struct _UfoFilterClass {
     /*< private >*/
     GObjectClass parent;
 
-    void    (*initialize)       (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error);
-    void    (*process_cpu)      (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error);
-    GList * (*process_gpu)      (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error);
-    void    (*post_process_cpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
-    void    (*post_process_gpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    void           (*initialize)       (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error);
+    void           (*process_cpu)      (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    UfoEventList * (*process_gpu)      (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    void           (*post_process_cpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    void           (*post_process_gpu) (UfoFilter *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
 };
 
 void            ufo_filter_initialize           (UfoFilter                 *filter,
@@ -85,7 +86,7 @@ void            ufo_filter_process_cpu          (UfoFilter                 *filt
                                                  UfoBuffer                 *results[],
                                                  gpointer                   cmd_queue,
                                                  GError                   **error);
-GList *         ufo_filter_process_gpu          (UfoFilter                 *filter,
+UfoEventList *  ufo_filter_process_gpu          (UfoFilter                 *filter,
                                                  UfoBuffer                 *params[],
                                                  UfoBuffer                 *results[],
                                                  gpointer                   cmd_queue,

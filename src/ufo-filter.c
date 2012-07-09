@@ -69,7 +69,7 @@ ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *resul
     UFO_FILTER_GET_CLASS (filter)->process_cpu (filter, params, results, cmd_queue, error);
 }
 
-GList *
+UfoEventList *
 ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error)
 {
     g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
