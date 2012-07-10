@@ -281,9 +281,9 @@ process_synchronous_filter (ThreadInfo *info)
         return NULL;
     }
 
-    while (cont) {
-        fetch_result (info);
+    fetch_result (info);
 
+    while (cont) {
         if (filter_class->process_gpu != NULL) {
             UfoEventList *events;
             GList *list;
@@ -306,9 +306,18 @@ process_synchronous_filter (ThreadInfo *info)
             return error;
 
         push_work (info);
-        push_result (info);
+
+        if ((filter_class->post_process_cpu == NULL) && (filter_class->post_process_gpu == NULL)) {
+            push_result (info);
+            fetch_result (info);
+        }
 
         cont = fetch_work (info);
+    }
+
+    if (filter_class->post_process_cpu != NULL) {
+        filter_class->post_process_cpu (filter, info->result, info->cmd_queues[0], &error);
+        push_result (info);
     }
 
     return NULL;
