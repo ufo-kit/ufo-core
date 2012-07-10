@@ -359,12 +359,13 @@ process_reduce_filter (ThreadInfo *info)
     UfoFilterReduce *filter = UFO_FILTER_REDUCE (info->filter);
     GError *error = NULL;
     gboolean cont = TRUE;
+    gfloat default_value = 0.0f;
 
     /*
      * Initialize
      */
     if (fetch_work (info)) {
-        ufo_filter_reduce_initialize (filter, info->work, info->output_dims, &error);
+        ufo_filter_reduce_initialize (filter, info->work, info->output_dims, &default_value, &error);
 
         if (error != NULL)
             return error;
@@ -375,9 +376,14 @@ process_reduce_filter (ThreadInfo *info)
         return NULL;
     }
 
+    fetch_result (info);
+
+    /* TODO: this should be done generically for each output! */
+    ufo_buffer_fill_with_value (info->result[0], default_value);
+
     while (cont) {
         g_timer_continue (info->cpu_timer);
-        ufo_filter_reduce_collect (filter, info->work, info->cmd_queues[0], &error);
+        ufo_filter_reduce_collect (filter, info->work, info->result, info->cmd_queues[0], &error);
         g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
@@ -387,7 +393,6 @@ process_reduce_filter (ThreadInfo *info)
         cont = fetch_work (info);
     }
 
-    fetch_result (info);
     ufo_filter_reduce_reduce (filter, info->result, info->cmd_queues[0], &error);
     push_result (info);
 

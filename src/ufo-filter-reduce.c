@@ -20,17 +20,17 @@ G_DEFINE_TYPE (UfoFilterReduce, ufo_filter_reduce, UFO_TYPE_FILTER)
 #define UFO_FILTER_REDUCE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_REDUCE, UfoFilterReducePrivate))
 
 void
-ufo_filter_reduce_initialize (UfoFilterReduce *filter, UfoBuffer *input[], guint **output_dims, GError **error)
+ufo_filter_reduce_initialize (UfoFilterReduce *filter, UfoBuffer *input[], guint **output_dims, gfloat *default_value, GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_REDUCE (filter));
-    UFO_FILTER_REDUCE_GET_CLASS (filter)->initialize (filter, input, output_dims, error);
+    UFO_FILTER_REDUCE_GET_CLASS (filter)->initialize (filter, input, output_dims, default_value, error);
 }
 
 void
-ufo_filter_reduce_collect (UfoFilterReduce  *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error)
+ufo_filter_reduce_collect (UfoFilterReduce  *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_REDUCE (filter));
-    UFO_FILTER_REDUCE_GET_CLASS (filter)->collect (filter, input, cmd_queue, error);
+    UFO_FILTER_REDUCE_GET_CLASS (filter)->collect (filter, input, output, cmd_queue, error);
 }
 
 void
@@ -41,13 +41,13 @@ ufo_filter_reduce_reduce (UfoFilterReduce  *filter, UfoBuffer *output[], gpointe
 }
 
 static void
-ufo_filter_reduce_initialize_real (UfoFilterReduce *filter, UfoBuffer *input[], guint **output_dims, GError **error)
+ufo_filter_reduce_initialize_real (UfoFilterReduce *filter, UfoBuffer *input[], guint **output_dims, gfloat *default_value, GError **error)
 {
     g_debug ("%s->initialize not implemented", ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 }
 
 static void
-ufo_filter_reduce_collect_real (UfoFilterReduce *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error)
+ufo_filter_reduce_collect_real (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
             "Virtual method `collect` of %s is not implemented",

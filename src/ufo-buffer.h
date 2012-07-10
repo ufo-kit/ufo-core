@@ -87,6 +87,8 @@ void        ufo_buffer_reinterpret          (UfoBuffer*     buffer,
                                              gsize          source_depth, 
                                              gsize          num_pixels, 
                                              gboolean       normalize);
+void        ufo_buffer_fill_with_value      (UfoBuffer*     buffer,
+                                             gfloat         value);
 void        ufo_buffer_set_host_array       (UfoBuffer*     buffer, 
                                              gfloat*        data, 
                                              gsize          num_bytes, 

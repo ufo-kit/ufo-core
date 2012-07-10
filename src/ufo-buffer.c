@@ -86,7 +86,6 @@ ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_si
         priv->host_array.dim_size[i] = dim_size[i];
         priv->size *= dim_size[i];
     }
-
 }
 
 /**
@@ -277,7 +276,7 @@ ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
 void
 ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, gboolean normalize)
 {
-    g_return_if_fail(UFO_IS_BUFFER(buffer));
+    g_return_if_fail (UFO_IS_BUFFER(buffer));
     gfloat *dst = buffer->priv->host_array.data;
 
     /* To save a memory allocation and several copies, we process data from back
@@ -297,6 +296,31 @@ ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, 
         for (gint index = (((gint) num_pixels) - 1); index >= 0; index--)
             dst[index] = ((gfloat) src[index]) / scale;
     }
+}
+
+/**
+ * ufo_buffer_fill_with_value:
+ * @buffer: A #UfoBuffer.
+ * @value: Buffer is filled with this value
+ *
+ * Fill buffer with the same value.
+ */
+void ufo_buffer_fill_with_value (UfoBuffer* buffer, gfloat value)
+{
+    UfoBufferPrivate *priv;
+    gfloat *data;
+    guint n_elements = 1;
+
+    g_return_if_fail (UFO_IS_BUFFER(buffer));
+
+    priv = UFO_BUFFER_GET_PRIVATE (buffer);
+    data = ufo_buffer_get_host_array (buffer, NULL);
+
+    for (guint i = 0; i < priv->host_array.num_dims; i++)
+        n_elements *= priv->host_array.dim_size[i];
+
+    for (guint i = 0; i < n_elements; i++)
+        data[i] = value;
 }
 
 /**

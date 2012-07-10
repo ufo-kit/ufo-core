@@ -42,17 +42,19 @@ struct _UfoFilterReduceClass {
     /*< private >*/
     UfoFilterClass parent;
 
-    void (*initialize)  (UfoFilterReduce *filter, UfoBuffer *input[], guint **output_dims, GError **error);
-    void (*collect)     (UfoFilterReduce *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error);
+    void (*initialize)  (UfoFilterReduce *filter, UfoBuffer *input[], guint **output_dims, gfloat *default_value, GError **error);
+    void (*collect)     (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error);
     void (*reduce)      (UfoFilterReduce *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error);
 };
 
 void  ufo_filter_reduce_initialize (UfoFilterReduce *filter,
                                     UfoBuffer       *input[],
                                     guint          **output_dims,
+                                    gfloat          *default_value,
                                     GError         **error);
 void  ufo_filter_reduce_collect    (UfoFilterReduce *filter,
                                     UfoBuffer       *input[],
+                                    UfoBuffer       *output[],
                                     gpointer         cmd_queue,
                                     GError         **error);
 void  ufo_filter_reduce_reduce     (UfoFilterReduce *filter,
