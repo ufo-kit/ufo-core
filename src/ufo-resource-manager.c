@@ -593,6 +593,25 @@ void ufo_resource_manager_get_command_queues(UfoResourceManager *manager, gpoint
 }
 
 /**
+ * ufo_resource_manager_get_command_queue:
+ * @manager: A #UfoResourceManager
+ * @queue: The number of the queue which must be less than the number returned
+ *      by ufo_resource_manager_get_number_of_devices().
+ *
+ * Return a specific command queue.
+ *
+ * Return value: The ith cl_command_queue
+ * Since: 0.2
+ */
+gpointer
+ufo_resource_manager_get_command_queue (UfoResourceManager *manager, guint queue)
+{
+    g_return_val_if_fail (UFO_IS_RESOURCE_MANAGER (manager), NULL);
+    g_return_val_if_fail (queue >= manager->priv->num_devices[0], NULL);
+    return manager->priv->command_queues[queue];
+}
+
+/**
  * ufo_resource_manager_get_number_of_devices:
  * @manager: A #UfoResourceManager
  *
