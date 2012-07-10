@@ -17,6 +17,7 @@
 #include "ufo-filter.h"
 #include "ufo-filter-source.h"
 #include "ufo-filter-sink.h"
+#include "ufo-filter-reduce.h"
 #include "ufo-relation.h"
 
 G_DEFINE_TYPE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT)
@@ -308,18 +309,10 @@ process_synchronous_filter (ThreadInfo *info)
             return error;
 
         push_work (info);
-
-        if ((filter_class->post_process_cpu == NULL) && (filter_class->post_process_gpu == NULL)) {
-            push_result (info);
-            fetch_result (info);
-        }
+        push_result (info);
+        fetch_result (info);
 
         cont = fetch_work (info);
-    }
-
-    if (filter_class->post_process_cpu != NULL) {
-        filter_class->post_process_cpu (filter, info->result, info->cmd_queues[0], &error);
-        push_result (info);
     }
 
     return NULL;
@@ -358,6 +351,47 @@ process_sink_filter (ThreadInfo *info)
     }
 
     return NULL;
+}
+
+static GError *
+process_reduce_filter (ThreadInfo *info)
+{
+    UfoFilterReduce *filter = UFO_FILTER_REDUCE (info->filter);
+    GError *error = NULL;
+    gboolean cont = TRUE;
+
+    /*
+     * Initialize
+     */
+    if (fetch_work (info)) {
+        ufo_filter_reduce_initialize (filter, info->work, info->output_dims, &error);
+
+        if (error != NULL)
+            return error;
+
+        alloc_output_buffers (UFO_FILTER (filter), info->output_pop_queues, info->output_dims);
+    }
+    else {
+        return NULL;
+    }
+
+    while (cont) {
+        g_timer_continue (info->cpu_timer);
+        ufo_filter_reduce_collect (filter, info->work, info->cmd_queues[0], &error);
+        g_timer_stop (info->cpu_timer);
+
+        if (error != NULL)
+            return error;
+
+        push_work (info);
+        cont = fetch_work (info);
+    }
+
+    fetch_result (info);
+    ufo_filter_reduce_reduce (filter, info->result, info->cmd_queues[0], &error);
+    push_result (info);
+
+    return error;
 }
 
 static void
@@ -405,6 +439,8 @@ process_thread (gpointer data)
         error = process_source_filter (info);
     else if (UFO_IS_FILTER_SINK (filter))
         error = process_sink_filter (info);
+    else if (UFO_IS_FILTER_REDUCE (filter))
+        error = process_reduce_filter (info);
     else
         error = process_synchronous_filter (info);
 
