@@ -292,9 +292,11 @@ process_synchronous_filter (ThreadInfo *info)
             events = ufo_filter_process_gpu (filter, info->work, info->result, info->cmd_queues[0], &error);
             g_timer_stop (info->cpu_timer);
 
-            list = ufo_event_list_get_list (events);
-            g_list_foreach (list, (GFunc) log_cl_event, info);
-            ufo_event_list_free (events);
+            if (events != NULL) {
+                list = ufo_event_list_get_list (events);
+                g_list_foreach (list, (GFunc) log_cl_event, info);
+                ufo_event_list_free (events);
+            }
         }
         else {
             g_timer_continue (info->cpu_timer);
