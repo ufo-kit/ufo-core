@@ -341,7 +341,7 @@ static cl_program resource_manager_add_program(UfoResourceManager *manager,
     return program;
 }
 
-static cl_kernel resource_manager_get_kernel(UfoResourceManagerPrivate *priv, 
+static cl_kernel resource_manager_get_kernel(UfoResourceManagerPrivate *priv,
         cl_program program, const gchar *kernel_name, GError **error)
 {
     cl_int errcode = CL_SUCCESS;
@@ -374,15 +374,15 @@ static cl_kernel resource_manager_get_kernel(UfoResourceManagerPrivate *priv,
  *
  * Returns: a cl_kernel object that is load from @filename or %NULL on error
  */
-gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager, 
+gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager,
         const gchar *filename, const gchar *kernel_name, GError **error)
 {
-    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) && 
+    g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) &&
             (filename != NULL) && (kernel_name != NULL), NULL);
 
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(manager);
     GError *tmp_error = NULL;
-    
+
     cl_program program = resource_manager_add_program(manager, filename, "", &tmp_error);
 
     if (program == NULL) {
@@ -400,7 +400,7 @@ gpointer ufo_resource_manager_get_kernel(UfoResourceManager *manager,
  * @kernel_name: Name of a kernel
  * @error: Return location for a GError from #UfoResourceManagerError, or NULL
  *
- * Loads and builds a kernel from a string.  
+ * Loads and builds a kernel from a string.
  *
  * Returns: a cl_kernel object that is load from @filename
  */
@@ -537,17 +537,31 @@ gpointer ufo_resource_manager_memalloc(UfoResourceManager *manager, gsize size)
  * @manager: A #UfoResourceManager
  * @memobj: A cl_mem object
  *
- * Creates a new cl_mem object with the same size as a given cl_mem object.
+ * Creates a new cl_mem object with the same size and content as a given cl_mem
+ * object.
  *
  * Return value: A new cl_mem object
  */
 gpointer ufo_resource_manager_memdup(UfoResourceManager *manager, gpointer memobj)
 {
     g_return_val_if_fail(UFO_IS_RESOURCE_MANAGER(manager) || (memobj == NULL), NULL);
-    size_t size = 0;
-    cl_mem mem = (cl_mem) memobj;
-    CHECK_OPENCL_ERROR(clGetMemObjectInfo(mem, CL_MEM_SIZE, sizeof(size_t), &size, NULL));
-    cl_mem dup = ufo_resource_manager_memalloc(manager, size);
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (manager);
+    cl_int errcode;
+    cl_event event;
+    cl_mem mem, dup;
+    size_t size;
+
+    mem = (cl_mem) memobj;
+    CHECK_OPENCL_ERROR (clGetMemObjectInfo (mem, CL_MEM_SIZE, sizeof(size_t), &size, NULL));
+    dup = clCreateBuffer (priv->opencl_context, CL_MEM_READ_WRITE, size, NULL, &errcode);
+    CHECK_OPENCL_ERROR (errcode);
+
+    CHECK_OPENCL_ERROR (clEnqueueCopyBuffer (priv->command_queues[0],
+                mem, dup, 0, 0, size, 0, NULL, &event));
+
+    CHECK_OPENCL_ERROR (clWaitForEvents (1, &event));
+    CHECK_OPENCL_ERROR (clReleaseEvent (event));
+
     return dup;
 }
 
