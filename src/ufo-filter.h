@@ -148,8 +148,6 @@ UfoInputParameter  *ufo_filter_get_input_parameters     (UfoFilter              
 UfoOutputParameter *ufo_filter_get_output_parameters    (UfoFilter              *filter);
 guint               ufo_filter_get_num_inputs           (UfoFilter              *filter);
 guint               ufo_filter_get_num_outputs          (UfoFilter              *filter);
-void                ufo_filter_finish                   (UfoFilter              *filter);
-gboolean            ufo_filter_is_finished              (UfoFilter              *filter);
 void                ufo_filter_wait_until               (UfoFilter              *filter,
                                                          GParamSpec             *pspec,
                                                          UfoFilterConditionFunc  condition,

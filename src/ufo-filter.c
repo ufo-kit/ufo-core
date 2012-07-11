@@ -273,36 +273,6 @@ ufo_filter_get_num_outputs (UfoFilter *filter)
 }
 
 /**
- * ufo_filter_finish:
- * @filter: A #UfoFilter
- *
- * Pure producer filters have to call this method to signal that no more data
- * can be expected.
- */
-void
-ufo_filter_finish (UfoFilter *filter)
-{
-    g_return_if_fail (UFO_IS_FILTER (filter));
-    filter->priv->finished = TRUE;
-}
-
-/**
- * ufo_filter_is_finished:
- * @filter: A #UfoFilter
- *
- * Get information about the current execution status of a pure producer filter.
- * Any other filters are driven by their inputs and are implicitly taken as finished
- * if no data is pushed into them.
- *
- * Return value: TRUE if no more data is pushed.
- */
-gboolean
-ufo_filter_is_finished (UfoFilter *filter)
-{
-    return filter->priv->finished;
-}
-
-/**
  * ufo_filter_get_plugin_name:
  * @filter: A #UfoFilter.
  *

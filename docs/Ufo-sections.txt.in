@@ -75,8 +75,6 @@ ufo_filter_get_input_parameters
 ufo_filter_get_output_parameters
 ufo_filter_set_plugin_name
 ufo_filter_get_plugin_name
-ufo_filter_finish
-ufo_filter_is_finished
 ufo_filter_wait_until
 <SUBSECTION Standard>
 UFO_FILTER
