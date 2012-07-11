@@ -55,6 +55,30 @@ ufo_filter_error_quark(void)
     return g_quark_from_static_string ("ufo-filter-error-quark");
 }
 
+/**
+ * ufo_filter_initialize:
+ * @filter: A #UfoFilter.
+ * @input: An array of buffers for each input port
+ * @output_dim_sizes: The size of each dimension for each output
+ * @error: Location for #GError.
+ *
+ * This function calls the implementation for the virtual initialize method. The
+ * filter can use the input buffers as a hint to setup its own internal
+ * structures. Moreover, it needs to return size of each output dimension in
+ * each port as specified with ufo_filter_register_outputs():
+ * <programlisting>
+ * // register a 1-dimensional and a 2-dimensional output in object::init
+ * ufo_filter_register_outputs (self, 1, 2, NULL);
+ *
+ * // specify sizes in object::initialize
+ * output_dim_sizes[0][0] = 1024;
+ *
+ * output_dim_sizes[1][0] = 640;
+ * output_dim_sizes[1][1] = 480;
+ * </programlisting>
+ *
+ * Since: 0.2
+ */
 void
 ufo_filter_initialize (UfoFilter *filter, UfoBuffer *input[], guint **output_dim_sizes, GError **error)
 {
@@ -62,6 +86,19 @@ ufo_filter_initialize (UfoFilter *filter, UfoBuffer *input[], guint **output_dim
     UFO_FILTER_GET_CLASS (filter)->initialize (filter, input, output_dim_sizes, error);
 }
 
+/**
+ * ufo_filter_process_cpu:
+ * @filter: A #UfoFilter.
+ * @input: An array of buffers for each input port
+ * @output: An array of buffers for each output port
+ * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
+ * @error: Location for #GError.
+ *
+ * Process input data from a buffer array on the CPU and put the results into
+ * buffers in the #output array.
+ *
+ * Since: 0.2
+ */
 void
 ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
@@ -69,6 +106,29 @@ ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output
     UFO_FILTER_GET_CLASS (filter)->process_cpu (filter, input, output, cmd_queue, error);
 }
 
+/**
+ * ufo_filter_process_gpu:
+ * @filter: A #UfoFilter.
+ * @input: An array of buffers for each input port
+ * @output: An array of buffers for each output port
+ * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
+ * @error: Location for an error.
+ *
+ * Process input data from a buffer array on the GPU and put the results into
+ * buffers in the #output array. For each enqueue command, a %cl_event object
+ * should be created and put into a #UfoEventList that is returned at the end:
+ * <programlisting>
+ * UfoEventList *event_list = ufo_event_list_new (2);
+ * cl_event *events = ufo_event_list_get_event_array (event_list);
+ *
+ * clEnqueueNDRangeKernel(..., 0, NULL, &events[0]);
+ *
+ * return event_list;
+ * </programlisting>
+ *
+ * Returns: A #UfoEventList object containing cl_events.
+ * Since: 0.2
+ */
 UfoEventList *
 ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {

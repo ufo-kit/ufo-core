@@ -62,10 +62,10 @@ UfoFilter
 UfoFilterClass
 UfoFilterConditionFunc
 ufo_filter_initialize
-ufo_filter_register_inputs
-ufo_filter_register_outputs
 ufo_filter_process_cpu
 ufo_filter_process_gpu
+ufo_filter_register_inputs
+ufo_filter_register_outputs
 ufo_filter_get_num_inputs
 ufo_filter_get_num_outputs
 ufo_filter_get_input_num_dims

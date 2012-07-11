@@ -224,6 +224,7 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_MKDB}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
+                    --sgml-mode
                     --output-format=xml
                     DEPENDS ${docs_out}/Ufo-decl.txt ${docs_out}/Ufo-sections.txt ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})

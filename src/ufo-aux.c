@@ -11,16 +11,34 @@
 #endif
 #include "ufo-aux.h"
 
+/**
+ * UfoEventList:
+ *
+ * An object to encapsulate %cl_event lists returned by
+ * ufo_filter_process_gpu().
+ */
 struct _UfoEventList {
     GList       *list;
     cl_event    *events;
     guint        n_events;
 };
 
+/**
+ * ufo_event_list_new:
+ * @n_events: Number of %cl_events
+ *
+ * Create a new event list.
+ *
+ * Returns: A newly created event list or %NULL if #n_events is 0.
+ * Since: 0.2
+ */
 UfoEventList *
 ufo_event_list_new (guint n_events)
 {
     UfoEventList *event_list;
+
+    if (n_events == 0)
+        return NULL;
 
     event_list = g_new0 (UfoEventList, 1);
     event_list->list = NULL;
@@ -33,20 +51,54 @@ ufo_event_list_new (guint n_events)
     return event_list;
 }
 
+static
+void unref_cl_event (cl_event *event, gpointer user_data)
+{
+    clReleaseEvent (*event);
+}
+
+/**
+ * ufo_event_list_free:
+ * @list: A #UfoEventList
+ *
+ * Free's the list and reduces the reference count of the contained %cl_event
+ * objects.
+ *
+ * Since: 0.2
+ */
 void
 ufo_event_list_free (UfoEventList  *list)
 {
+    g_list_foreach (list->list, (GFunc) unref_cl_event, NULL);
     g_list_free (list->list);
     g_free (list->events);
     g_free (list);
 }
 
+/**
+ * ufo_event_list_get_event_array:
+ * @list: A #UfoEventList
+ *
+ * Return an array of %cl_event objects.
+ *
+ * Returns: An array.
+ * Since: 0.2
+ */
 gpointer
 ufo_event_list_get_event_array (UfoEventList *list)
 {
     return list->events;
 }
 
+/**
+ * ufo_event_list_get_list:
+ * @list: A #UfoEventList
+ *
+ * Return a #GList containing pointers to the %cl_event objects.
+ *
+ * Returns: A #GList.
+ * Since: 0.2
+ */
 GList *
 ufo_event_list_get_list (UfoEventList *list)
 {

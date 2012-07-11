@@ -22,6 +22,18 @@ G_DEFINE_TYPE (UfoFilterSink, ufo_filter_sink, UFO_TYPE_FILTER)
 
 #define UFO_FILTER_SINK_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_SINK, UfoFilterSinkPrivate))
 
+/**
+ * ufo_filter_sink_initialize:
+ * @filter: A #UfoFilter.
+ * @input: An array of buffers for each input port
+ * @error: Location for #GError.
+ *
+ * This function calls the implementation for the virtual initialize method. The
+ * filter can use the input buffers as a hint to setup its own internal
+ * structures.
+ *
+ * Since: 0.2
+ */
 void
 ufo_filter_sink_initialize (UfoFilterSink *filter, UfoBuffer *input[], GError **error)
 {
@@ -29,8 +41,19 @@ ufo_filter_sink_initialize (UfoFilterSink *filter, UfoBuffer *input[], GError **
     UFO_FILTER_SINK_GET_CLASS (filter)->initialize (filter, input, error);
 }
 
+/**
+ * ufo_filter_sink_consume:
+ * @filter: A #UfoFilter.
+ * @input: An array of buffers for each input port
+ * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
+ * @error: Location for #GError.
+ *
+ * Process input data from a buffer array.
+ *
+ * Since: 0.2
+ */
 void
-ufo_filter_sink_consume (UfoFilterSink  *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error)
+ufo_filter_sink_consume (UfoFilterSink *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_SINK (filter));
     UFO_FILTER_SINK_GET_CLASS (filter)->consume (filter, input, cmd_queue, error);
