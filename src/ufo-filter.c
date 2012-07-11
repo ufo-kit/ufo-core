@@ -311,8 +311,6 @@ ufo_filter_class_init (UfoFilterClass *klass)
     klass->initialize = ufo_filter_initialize_real;
     klass->process_cpu = NULL;
     klass->process_gpu = NULL;
-    klass->post_process_cpu = NULL;
-    klass->post_process_gpu = NULL;
     g_type_class_add_private (klass, sizeof (UfoFilterPrivate));
 }
 
