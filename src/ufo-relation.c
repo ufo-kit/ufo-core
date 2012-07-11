@@ -99,8 +99,8 @@ void
 ufo_relation_add_consumer (UfoRelation *relation, UfoFilter *consumer, guint input_port, GError **error)
 {
     UfoRelationPrivate *priv;
-    GList *output_num_dims_list;
-    GList *input_num_dims_list;
+    UfoInputParameter *input_params;
+    UfoOutputParameter *output_params;
     guint num_input_ports;
     guint input_num_dims;
     guint output_num_dims;
@@ -108,9 +108,10 @@ ufo_relation_add_consumer (UfoRelation *relation, UfoFilter *consumer, guint inp
     g_return_if_fail (UFO_IS_RELATION (relation));
 
     priv = UFO_RELATION_GET_PRIVATE (relation);
-    output_num_dims_list = ufo_filter_get_output_num_dims (priv->producer);
-    input_num_dims_list = ufo_filter_get_input_num_dims (consumer);
-    num_input_ports = g_list_length (input_num_dims_list);
+
+    num_input_ports = ufo_filter_get_num_inputs (consumer);
+    input_params = ufo_filter_get_input_parameters (consumer);
+    output_params = ufo_filter_get_output_parameters (priv->producer);
 
     if (input_port >= num_input_ports) {
         g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_INSUFFICIENTINPUTS,
@@ -119,8 +120,8 @@ ufo_relation_add_consumer (UfoRelation *relation, UfoFilter *consumer, guint inp
         return;
     }
 
-    input_num_dims = (guint) GPOINTER_TO_INT (g_list_nth_data (input_num_dims_list, input_port));
-    output_num_dims = (guint) GPOINTER_TO_INT (g_list_nth_data (output_num_dims_list, priv->output_port));
+    input_num_dims = input_params[input_port].n_dims;
+    output_num_dims = output_params[priv->output_port].n_dims;
 
     if (input_num_dims != output_num_dims) {
         g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_NUMDIMSMISMATCH,

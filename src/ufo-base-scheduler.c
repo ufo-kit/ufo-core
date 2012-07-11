@@ -46,6 +46,8 @@ typedef struct {
     cl_command_queue   *cmd_queues;
     guint               num_inputs;
     guint               num_outputs;
+    UfoInputParameter  *input_params;
+    UfoOutputParameter *output_params;
     guint             **output_dims;
     GAsyncQueue       **input_pop_queues;
     GAsyncQueue       **input_push_queues;
@@ -79,15 +81,6 @@ ufo_base_scheduler_new (void)
 }
 
 static void
-alloc_dim_sizes (GList *num_dims, guint **dims)
-{
-    guint i = 0;
-
-    for (GList *it = g_list_first (num_dims); it != NULL; it = g_list_next (it), i++)
-        dims[i] = g_malloc0 (((gsize) GPOINTER_TO_INT (it->data)) * sizeof (guint));
-}
-
-static void
 push_poison_pill (GList *relations)
 {
     g_list_foreach (relations, (GFunc) ufo_relation_push_poison_pill, NULL);
@@ -97,14 +90,14 @@ static void
 alloc_output_buffers (UfoFilter *filter, GAsyncQueue *pop_queues[], guint **output_dims)
 {
     UfoResourceManager *manager = ufo_resource_manager ();
-    GList *output_num_dims = ufo_filter_get_output_num_dims (filter);
+    UfoOutputParameter *output_params = ufo_filter_get_output_parameters (filter);
     const guint num_outputs = ufo_filter_get_num_outputs (filter);
 
     for (guint port = 0; port < num_outputs; port++) {
-        for (GList *it = g_list_first (output_num_dims); it != NULL; it = g_list_next (it)) {
-            guint num_dims = (guint) GPOINTER_TO_INT (it->data);
-            UfoBuffer *buffer = ufo_resource_manager_request_buffer (manager,
-                    num_dims, output_dims[port], NULL, NULL);
+        const guint num_dims = output_params[port].n_dims;
+
+        for (guint i = 0; i < num_outputs; i++) {
+            UfoBuffer *buffer = ufo_resource_manager_request_buffer (manager, num_dims, output_dims[port], NULL, NULL);
 
             /*
              * For some reason, if we don't reference the buffer again,
@@ -168,7 +161,12 @@ fetch_work (ThreadInfo *info)
     gboolean success = TRUE;
 
     for (guint i = 0; i < info->num_inputs; i++) {
-        info->work[i] = g_async_queue_pop (info->input_pop_queues[i]);
+        if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
+            (info->input_params[i].n_expected_items < info->input_params[i].n_fetched_items))
+        {
+            info->work[i] = g_async_queue_pop (info->input_pop_queues[i]);
+            info->input_params[i].n_fetched_items++;
+        }
 
         if (info->work[i] == POISON_PILL) {
             g_async_queue_push (info->input_push_queues[i], POISON_PILL);
@@ -182,8 +180,13 @@ fetch_work (ThreadInfo *info)
 static void
 push_work (ThreadInfo *info)
 {
-    for (guint port = 0; port < info->num_inputs; port++)
-        g_async_queue_push (info->input_push_queues[port], info->work[port]);
+    for (guint i = 0; i < info->num_inputs; i++) {
+        if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
+            (info->input_params[i].n_expected_items < info->input_params[i].n_fetched_items))
+        {
+            g_async_queue_push (info->input_push_queues[i], info->work[i]);
+        }
+    }
 }
 
 static void
@@ -417,17 +420,24 @@ process_thread (gpointer data)
 
     g_object_ref (filter);
 
-    GList *output_num_dims = ufo_filter_get_output_num_dims (filter);
+    UfoOutputParameter *output_params = ufo_filter_get_output_parameters (filter);
     GList *producing_relations = NULL;
 
     info->num_inputs = ufo_filter_get_num_inputs (filter);
     info->num_outputs = ufo_filter_get_num_outputs (filter);
+    info->input_params = ufo_filter_get_input_parameters (filter);
+    info->output_params = ufo_filter_get_output_parameters (filter);
+
+    for (guint i = 0; i < info->num_inputs; i++)
+        info->input_params[i].n_fetched_items = 0;
 
     get_input_queues (info->relations, filter, &info->input_push_queues, &info->input_pop_queues);
     get_output_queues (info->relations, filter, &info->output_push_queues, &info->output_pop_queues);
 
     alloc_info_data (info);
-    alloc_dim_sizes (output_num_dims, info->output_dims);
+
+    for (guint i = 0; i < info->num_outputs; i++)
+        info->output_dims[i] = g_malloc0 (output_params[i].n_dims * sizeof(guint));
 
     /*
      * Find out, in which relations we are involved with this filter. This is

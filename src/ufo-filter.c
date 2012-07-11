@@ -11,9 +11,12 @@
 #else
 #include <CL/cl.h>
 #endif
+#include <string.h>
 
 #include "config.h"
 #include "ufo-filter.h"
+#include "ufo-filter-source.h"
+#include "ufo-filter-sink.h"
 
 G_DEFINE_TYPE(UfoFilter, ufo_filter, G_TYPE_OBJECT)
 
@@ -22,10 +25,11 @@ G_DEFINE_TYPE(UfoFilter, ufo_filter, G_TYPE_OBJECT)
 struct _UfoFilterPrivate {
     gchar               *plugin_name;
 
-    guint               num_inputs;
-    guint               num_outputs;
-    GList               *input_num_dims;
-    GList               *output_num_dims;
+    guint               n_inputs;
+    guint               n_outputs;
+
+    UfoInputParameter   *input_parameters;
+    UfoOutputParameter  *output_parameters;
 
     cl_command_queue    command_queue;
     gboolean            finished;
@@ -153,64 +157,88 @@ ufo_filter_set_plugin_name (UfoFilter *filter, const gchar *plugin_name)
 /**
  * ufo_filter_register_inputs:
  * @filter: A #UfoFilter.
- * @Varargs: a %NULL-terminated list of dimensionalities
+ * @n_inputs: Number of inputs
+ * @input_parameters: An array of #UfoInputParameter structures
  *
- * Specifies the number of dimensions for each input.
+ * Specifies the number of dimensions and expected number of data elements for
+ * each input.
  *
  * Since: 0.2
  */
 void
-ufo_filter_register_inputs (UfoFilter *filter, ...)
+ufo_filter_register_inputs (UfoFilter *filter, guint n_inputs, UfoInputParameter *parameters)
 {
+    UfoFilterPrivate *priv;
+
     g_return_if_fail (UFO_IS_FILTER (filter));
-    g_return_if_fail (filter->priv->num_inputs == 0);
+    g_return_if_fail (parameters != NULL);
 
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (filter);
-    guint num_dims;
-    va_list ap;
-    va_start (ap, filter);
-    priv->num_inputs = 0;
+    if (UFO_IS_FILTER_SOURCE (filter))
+        g_warning ("A source does not receive any inputs");
 
-    va_start (ap, filter);
-
-    while ((num_dims = va_arg (ap, guint)) != 0) {
-        priv->num_inputs++;
-        priv->input_num_dims = g_list_append (priv->input_num_dims, GINT_TO_POINTER (num_dims));
-    }
-
-    va_end (ap);
+    priv = UFO_FILTER_GET_PRIVATE (filter);
+    priv->n_inputs = n_inputs;
+    priv->input_parameters = g_new0 (UfoInputParameter, n_inputs);
+    g_memmove (priv->input_parameters, parameters, n_inputs * sizeof(UfoInputParameter));
 }
 
 /**
  * ufo_filter_register_outputs:
  * @filter: A #UfoFilter.
- * @Varargs: a %NULL-terminated list of dimensionalities
+ * @n_outputs: Number of outputs
+ * @output_parameters: An array of #UfoOutputParameter structures
  *
  * Specifies the number of dimensions for each output.
  *
  * Since: 0.2
  */
 void
-ufo_filter_register_outputs (UfoFilter *filter, ...)
+ufo_filter_register_outputs (UfoFilter *filter, guint n_outputs, UfoOutputParameter *parameters)
 {
+    UfoFilterPrivate *priv;
+
     g_return_if_fail (UFO_IS_FILTER (filter));
-    g_return_if_fail (filter->priv->num_outputs == 0);
+    g_return_if_fail (parameters != NULL);
 
-    UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (filter);
-    va_list ap;
-    va_start (ap, filter);
-    guint num_dims;
-    priv->num_outputs = 0;
+    if (UFO_IS_FILTER_SINK (filter))
+        g_warning ("A sink does not output any data");
 
-    va_start (ap, filter);
-
-    while ((num_dims = va_arg (ap, guint)) != 0) {
-        priv->num_outputs++;
-        priv->output_num_dims = g_list_append (priv->output_num_dims, GINT_TO_POINTER (num_dims));
-    }
-
-    va_end (ap);
+    priv = UFO_FILTER_GET_PRIVATE (filter);
+    priv->n_outputs = n_outputs;
+    priv->output_parameters = g_new0 (UfoOutputParameter, n_outputs);
+    g_memmove (priv->output_parameters, parameters, n_outputs * sizeof(UfoOutputParameter));
 }
+
+/**
+ * ufo_filter_get_input_parameters:
+ * @filter: A #UfoFilter.
+ *
+ * Get input parameters.
+ *
+ * Return: An array of #UfoInputParameter structures. This array must not be
+ *      freed.
+ */
+UfoInputParameter *ufo_filter_get_input_parameters (UfoFilter *filter)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    return filter->priv->input_parameters;
+}
+
+/**
+ * ufo_filter_get_input_parameters:
+ * @filter: A #UfoFilter.
+ *
+ * Get input parameters.
+ *
+ * Return: An array of #UfoInputParameter structures. This array must not be
+ *      freed.
+ */
+UfoOutputParameter *ufo_filter_get_output_parameters (UfoFilter *filter)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    return filter->priv->output_parameters;
+}
+
 
 /**
  * ufo_filter_get_num_inputs:
@@ -224,7 +252,8 @@ ufo_filter_register_outputs (UfoFilter *filter, ...)
 guint
 ufo_filter_get_num_inputs (UfoFilter *filter)
 {
-    return filter->priv->num_inputs;
+    g_return_val_if_fail (UFO_IS_FILTER (filter), 0);
+    return filter->priv->n_inputs;
 }
 
 /**
@@ -239,39 +268,8 @@ ufo_filter_get_num_inputs (UfoFilter *filter)
 guint
 ufo_filter_get_num_outputs (UfoFilter *filter)
 {
-    return filter->priv->num_outputs;
-}
-
-/**
- * ufo_filter_get_input_num_dims:
- * @filter: A #UfoFilter.
- *
- * Get a list with the number of dimensions for each input.
- *
- * Returns: (transfer none): A list with number of input dimensions.
- * Since: 0.2
- */
-GList *
-ufo_filter_get_input_num_dims (UfoFilter *filter)
-{
-    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
-    return filter->priv->input_num_dims;
-}
-
-/**
- * ufo_filter_get_output_num_dims:
- * @filter: A #UfoFilter.
- *
- * Get a list with the number of dimensions for each output.
- *
- * Returns: (transfer none): A list with number of output dimensions.
- * Since: 0.2
- */
-GList *
-ufo_filter_get_output_num_dims (UfoFilter *filter)
-{
-    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
-    return filter->priv->output_num_dims;
+    g_return_val_if_fail (UFO_IS_FILTER (filter), 0);
+    return filter->priv->n_outputs;
 }
 
 /**
@@ -356,8 +354,8 @@ ufo_filter_finalize (GObject *object)
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (object);
 
-    g_list_free (priv->input_num_dims);
-    g_list_free (priv->output_num_dims);
+    g_free (priv->input_parameters);
+    g_free (priv->output_parameters);
     g_free (priv->plugin_name);
 
     G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
@@ -381,9 +379,9 @@ ufo_filter_init (UfoFilter *self)
     self->priv = priv = UFO_FILTER_GET_PRIVATE (self);
     priv->command_queue = NULL;
     priv->finished = FALSE;
-    priv->num_inputs = 0;
-    priv->num_outputs = 0;
-    priv->input_num_dims = NULL;
-    priv->output_num_dims = NULL;
+    priv->n_inputs = 0;
+    priv->n_outputs = 0;
+    priv->input_parameters = NULL;
+    priv->output_parameters = NULL;
 }
 

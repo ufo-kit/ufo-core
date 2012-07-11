@@ -28,9 +28,11 @@ static void ufo_relation_fixture_teardown(UfoRelationFixture *fixture, gconstpoi
 static void test_relation_dim_match(UfoRelationFixture *fixture, gconstpointer data)
 {
     GError *error = NULL;
+    UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT }};
+    UfoOutputParameter output_params[] = {{2}};
 
-    ufo_filter_register_outputs (fixture->producer, 2, NULL);
-    ufo_filter_register_inputs (fixture->consumer, 2, NULL);
+    ufo_filter_register_inputs (fixture->consumer, 1, input_params);
+    ufo_filter_register_outputs (fixture->producer, 1, output_params);
     ufo_relation_add_consumer (fixture->relation, fixture->consumer, 0, &error);
     g_assert_no_error (error);
 }
@@ -38,9 +40,11 @@ static void test_relation_dim_match(UfoRelationFixture *fixture, gconstpointer d
 static void test_relation_dim_mismatch(UfoRelationFixture *fixture, gconstpointer data)
 {
     GError *error = NULL;
+    UfoInputParameter input_params[] = {{1, UFO_FILTER_INFINITE_INPUT }};
+    UfoOutputParameter output_params[] = {{3}};
 
-    ufo_filter_register_outputs (fixture->producer, 3, NULL);
-    ufo_filter_register_inputs (fixture->consumer, 1, NULL);
+    ufo_filter_register_inputs (fixture->consumer, 1, input_params);
+    ufo_filter_register_outputs (fixture->producer, 1, output_params);
     ufo_relation_add_consumer (fixture->relation, fixture->consumer, 0, &error);
     g_assert (error != NULL);
 }
@@ -48,9 +52,11 @@ static void test_relation_dim_mismatch(UfoRelationFixture *fixture, gconstpointe
 static void test_relation_invalid_input_port(UfoRelationFixture *fixture, gconstpointer data)
 {
     GError *error = NULL;
+    UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT }};
+    UfoOutputParameter output_params[] = {{2}};
 
-    ufo_filter_register_outputs (fixture->producer, 2, NULL);
-    ufo_filter_register_inputs (fixture->consumer, 2, NULL);
+    ufo_filter_register_inputs (fixture->consumer, 1, input_params);
+    ufo_filter_register_outputs (fixture->producer, 1, output_params);
     ufo_relation_add_consumer (fixture->relation, fixture->consumer, 1, &error);
     g_assert (error != NULL);
 }
