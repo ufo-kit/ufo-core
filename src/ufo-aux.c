@@ -1,3 +1,8 @@
+/**
+ * SECTION:ufo-aux
+ * @Short_description: Auxiliary functions and macros
+ * @Title: Auxiliary functions
+ */
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>

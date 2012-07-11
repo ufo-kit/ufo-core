@@ -108,10 +108,12 @@ ufo_buffer_new(guint num_dims, const guint *dim_size)
 
 /**
  * ufo_buffer_resize:
+ * @buffer: A #UfoBuffer
  * @num_dims: New number of dimensions
  * @dim_size: New dimension sizes
  *
  * Resize an existing buffer.
+ * Since: 0.2
  */
 void
 ufo_buffer_resize (UfoBuffer *buffer, guint num_dims, const guint *dim_size)

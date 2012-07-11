@@ -22,9 +22,7 @@ typedef struct _UfoFilterReducePrivate    UfoFilterReducePrivate;
 /**
  * UfoFilterReduce:
  *
- * Creates #UfoFilterReduce instances by loading corresponding shared objects. The
- * contents of the #UfoFilterReduce structure are private and should only be
- * accessed via the provided API.
+ * The contents of this object is opaque to the user.
  */
 struct _UfoFilterReduce {
     /*< private >*/
@@ -35,16 +33,35 @@ struct _UfoFilterReduce {
 
 /**
  * UfoFilterReduceClass:
- *
- * #UfoFilterReduce class
+ * @parent: the parent class
+ * @initialize: the @initialize function is called by an UfoBaseScheduler to set
+ *      up a filter before actual execution happens. It receives the first input
+ *      data to which the filter can get adjust. The reduce filter should return
+ *      the default value that is used to fill the output buffer.
+ * @collect: the @collect function is called for each new input. The output
+ *      buffer will be the same for all invocations and can be used to
+ *      accumulate results.
+ * @reduce: the @reduce function is called after the data stream end. It is used
+ *      to finish any remaining work on the output.
  */
 struct _UfoFilterReduceClass {
-    /*< private >*/
     UfoFilterClass parent;
 
-    void (*initialize)  (UfoFilterReduce *filter, UfoBuffer *input[], guint **output_dims, gfloat *default_value, GError **error);
-    void (*collect)     (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error);
-    void (*reduce)      (UfoFilterReduce *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error);
+    /* overridable */
+    void (*initialize)  (UfoFilterReduce    *filter,
+                         UfoBuffer          *input[],
+                         guint             **output_dims,
+                         gfloat             *default_value,
+                         GError            **error);
+    void (*collect)     (UfoFilterReduce    *filter,
+                         UfoBuffer          *input[],
+                         UfoBuffer          *output[],
+                         gpointer            cmd_queue,
+                         GError            **error);
+    void (*reduce)      (UfoFilterReduce    *filter,
+                         UfoBuffer          *output[],
+                         gpointer            cmd_queue,
+                         GError            **error);
 };
 
 void  ufo_filter_reduce_initialize (UfoFilterReduce *filter,

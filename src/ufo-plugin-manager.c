@@ -44,12 +44,12 @@ static GParamSpec *plugin_manager_properties[N_PROPERTIES] = { NULL, };
  *
  * Possible errors that ufo_plugin_manager_get_filter() can return.
  */
-GQuark ufo_plugin_manager_error_quark(void)
+GQuark ufo_plugin_manager_error_quark (void)
 {
-    return g_quark_from_static_string("ufo-plugin-manager-error-quark");
+    return g_quark_from_static_string ("ufo-plugin-manager-error-quark");
 }
 
-static gchar *plugin_manager_get_path(UfoPluginManagerPrivate *priv, const gchar *name)
+static gchar *plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 {
     /* Check first if filename is already a path */
     if (g_path_is_absolute (name)) {
@@ -90,14 +90,14 @@ static void add_paths (UfoPluginManager *manager, const gchar *paths)
 
 /**
  * ufo_plugin_manager_new:
- * @param paths (allow-none): String with a colon-separated list of additional
+ * @paths: (allow-none): String with a colon-separated list of additional
  *      paths to search for plugins or %NULL.
  *
  * Create a plugin manager object to instantiate filter objects.
  *
  * Return value: A new plugin manager object.
  */
-UfoPluginManager *ufo_plugin_manager_new(const gchar *paths)
+UfoPluginManager *ufo_plugin_manager_new (const gchar *paths)
 {
     UfoPluginManager *manager = UFO_PLUGIN_MANAGER (g_object_new (UFO_TYPE_PLUGIN_MANAGER, 
             "paths", paths, 
@@ -119,10 +119,10 @@ UfoPluginManager *ufo_plugin_manager_new(const gchar *paths)
  *
  * Since: 0.2, the error parameter is available
  */
-UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar *name, GError **error)
+UfoFilter *ufo_plugin_manager_get_filter (UfoPluginManager *manager, const gchar *name, GError **error)
 {
-    g_return_val_if_fail(UFO_IS_PLUGIN_MANAGER(manager) || (name != NULL), NULL);
-    UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE(manager);
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) || (name != NULL), NULL);
+    UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     UfoFilter *filter;
     GetFilterFunc *func = NULL;
     GModule *module = NULL;
@@ -151,15 +151,15 @@ UfoFilter *ufo_plugin_manager_get_filter(UfoPluginManager *manager, const gchar 
             goto handle_error;
         }
 
-        func = g_malloc0 (sizeof(GetFilterFunc));
+        func = g_malloc0 (sizeof (GetFilterFunc));
 
         if (!g_module_symbol (module, entry_symbol_name, (gpointer *) func)) {
             g_set_error (error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND,
-                    "%s is not exported by module %s: %s", entry_symbol_name, module_name, g_module_error());
+                    "%s is not exported by module %s: %s", entry_symbol_name, module_name, g_module_error ());
             g_free (func);
 
             if (!g_module_close (module))
-                g_warning("%s", g_module_error ());
+                g_warning ("%s", g_module_error ());
 
             goto handle_error;
         }
@@ -188,14 +188,14 @@ handle_error:
  *
  * Return value: (element-type utf8) (transfer full): List of strings with filter names
  */
-GList *ufo_plugin_manager_available_filters(UfoPluginManager *manager)
+GList *ufo_plugin_manager_available_filters (UfoPluginManager *manager)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     GList *result = NULL;
     GSList *path = g_slist_nth (priv->search_paths, 0);
 
-    GRegex *regex = g_regex_new ("libufofilter([A-Za-z]+).so", 0, 0, NULL);
+    GRegex *regex = g_regex_new ("libufofilter ([A-Za-z]+).so", 0, 0, NULL);
     GMatchInfo *match_info = NULL;
 
     while (path != NULL) {
@@ -222,7 +222,7 @@ GList *ufo_plugin_manager_available_filters(UfoPluginManager *manager)
     return result;
 }
 
-static void ufo_plugin_manager_get_property(GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
+static void ufo_plugin_manager_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
     switch (property_id) {
         default:
@@ -231,7 +231,7 @@ static void ufo_plugin_manager_get_property(GObject *object, guint property_id, 
     }
 }
 
-static void ufo_plugin_manager_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
+static void ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
     switch (property_id) {
         case PROP_PATHS:
@@ -243,7 +243,7 @@ static void ufo_plugin_manager_set_property(GObject *object, guint property_id, 
     }
 }
 
-static void ufo_plugin_manager_finalize(GObject *gobject)
+static void ufo_plugin_manager_finalize (GObject *gobject)
 {
     UfoPluginManager *manager = UFO_PLUGIN_MANAGER (gobject);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
@@ -261,7 +261,7 @@ static void ufo_plugin_manager_finalize(GObject *gobject)
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);
 }
 
-static void ufo_plugin_manager_class_init(UfoPluginManagerClass *klass)
+static void ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->get_property = ufo_plugin_manager_get_property;
@@ -269,17 +269,17 @@ static void ufo_plugin_manager_class_init(UfoPluginManagerClass *klass)
     gobject_class->finalize = ufo_plugin_manager_finalize;
 
     plugin_manager_properties[PROP_PATHS] =
-        g_param_spec_string("paths",
+        g_param_spec_string ("paths",
                 "List of colong-separated paths",
                 "List of colong-separated paths pointing to filter locations",
                 ".",
                 G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
 
-    g_object_class_install_property(gobject_class, PROP_PATHS, plugin_manager_properties[PROP_PATHS]);
-    g_type_class_add_private (klass, sizeof(UfoPluginManagerPrivate));
+    g_object_class_install_property (gobject_class, PROP_PATHS, plugin_manager_properties[PROP_PATHS]);
+    g_type_class_add_private (klass, sizeof (UfoPluginManagerPrivate));
 }
 
-static void ufo_plugin_manager_init(UfoPluginManager *manager)
+static void ufo_plugin_manager_init (UfoPluginManager *manager)
 {
     UfoPluginManagerPrivate *priv;
     manager->priv = priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);

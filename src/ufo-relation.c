@@ -51,34 +51,52 @@ static GParamSpec *relation_properties[N_PROPERTIES] = { NULL, };
  * @producer and an arbitrary number of consumers..
  *
  * Return value: A new #UfoRelation
+ * Since: 0.2
  */
-UfoRelation *ufo_relation_new(UfoFilter *producer, guint output_port, UfoRelationMode mode)
+UfoRelation *
+ufo_relation_new (UfoFilter *producer, guint output_port, UfoRelationMode mode)
 {
     UfoRelation *relation;
-    
-    relation = UFO_RELATION(g_object_new(UFO_TYPE_RELATION, 
-            "producer", producer, 
-            "output-port", output_port, 
-            "mode", mode, 
+
+    relation = UFO_RELATION (g_object_new (UFO_TYPE_RELATION,
+            "producer", producer,
+            "output-port", output_port,
+            "mode", mode,
             NULL));
 
     g_object_ref (producer);
     return relation;
 }
 
-UfoFilter *ufo_relation_get_producer(UfoRelation *relation)
+/**
+ * ufo_relation_get_producer:
+ * @relation: A #UfoRelation object
+ *
+ * Get the producer associated with the relation.
+ *
+ * Returns: A #UfoFilter
+ * Since: 0.2
+ */
+UfoFilter *
+ufo_relation_get_producer (UfoRelation *relation)
 {
-    g_return_val_if_fail(UFO_IS_RELATION(relation), NULL);
+    g_return_val_if_fail (UFO_IS_RELATION (relation), NULL);
     return relation->priv->producer;
 }
 
-GList *ufo_relation_get_consumers(UfoRelation *relation)
-{
-    g_return_val_if_fail(UFO_IS_RELATION(relation), NULL);
-    return relation->priv->consumers;
-}
-
-void ufo_relation_add_consumer(UfoRelation *relation, UfoFilter *consumer, guint input_port, GError **error)
+/**
+ * ufo_relation_add_consumer:
+ * @relation: A #UfoRelation object
+ * @consumer: The consumer that takes input from the #relation
+ * @input_port: The input port number of the consumer
+ * @error: Location for #GError
+ *
+ * Add a consumer to this relation.
+ *
+ * Since: 0.2
+ */
+void
+ufo_relation_add_consumer (UfoRelation *relation, UfoFilter *consumer, guint input_port, GError **error)
 {
     UfoRelationPrivate *priv;
     GList *output_num_dims_list;
@@ -87,9 +105,9 @@ void ufo_relation_add_consumer(UfoRelation *relation, UfoFilter *consumer, guint
     guint input_num_dims;
     guint output_num_dims;
 
-    g_return_if_fail(UFO_IS_RELATION(relation));
-    
-    priv = UFO_RELATION_GET_PRIVATE(relation);
+    g_return_if_fail (UFO_IS_RELATION (relation));
+
+    priv = UFO_RELATION_GET_PRIVATE (relation);
     output_num_dims_list = ufo_filter_get_output_num_dims (priv->producer);
     input_num_dims_list = ufo_filter_get_input_num_dims (consumer);
     num_input_ports = g_list_length (input_num_dims_list);
@@ -114,18 +132,18 @@ void ufo_relation_add_consumer(UfoRelation *relation, UfoFilter *consumer, guint
     g_hash_table_insert (priv->consumer_ports, consumer, GINT_TO_POINTER (input_port));
 
     if (priv->producer_pop_queue == NULL)
-        priv->producer_pop_queue = g_async_queue_new();
+        priv->producer_pop_queue = g_async_queue_new ();
 
     if (priv->producer_push_queue == NULL)
-        priv->producer_push_queue = g_async_queue_new();
+        priv->producer_push_queue = g_async_queue_new ();
 
     if (priv->mode == UFO_RELATION_MODE_DISTRIBUTE) {
-        /* 
+        /*
          * In distribute mode, each consumer consumes from the same input queue and
          * has to push it back to the same used output queue.
          */
-        g_hash_table_insert(priv->consumer_push_queues, consumer, priv->producer_pop_queue);
-        g_hash_table_insert(priv->consumer_pop_queues, consumer, priv->producer_push_queue);
+        g_hash_table_insert (priv->consumer_push_queues, consumer, priv->producer_pop_queue);
+        g_hash_table_insert (priv->consumer_pop_queues, consumer, priv->producer_push_queue);
     }
     else {
         /*
@@ -133,128 +151,214 @@ void ufo_relation_add_consumer(UfoRelation *relation, UfoFilter *consumer, guint
          * produced buffer from one consumer to the next until it is placed back
          * again in the producers pop queue.
          */
-        GList *last_element = g_list_last(priv->consumers);
+        GList *last_element = g_list_last (priv->consumers);
 
         if (last_element == NULL) {
-            g_hash_table_insert(priv->consumer_push_queues, consumer, priv->producer_pop_queue);
-            g_hash_table_insert(priv->consumer_pop_queues, consumer, priv->producer_push_queue);
+            g_hash_table_insert (priv->consumer_push_queues, consumer, priv->producer_pop_queue);
+            g_hash_table_insert (priv->consumer_pop_queues, consumer, priv->producer_push_queue);
         }
         else {
-            UfoFilter *last_consumer = UFO_FILTER(last_element->data);
-            GAsyncQueue *queue = g_async_queue_new(); 
-            g_hash_table_insert(priv->consumer_push_queues, last_consumer, queue);
-            g_hash_table_insert(priv->consumer_pop_queues, consumer, queue);
-            g_hash_table_insert(priv->consumer_push_queues, consumer, priv->producer_pop_queue);
+            UfoFilter *last_consumer = UFO_FILTER (last_element->data);
+            GAsyncQueue *queue = g_async_queue_new ();
+            g_hash_table_insert (priv->consumer_push_queues, last_consumer, queue);
+            g_hash_table_insert (priv->consumer_pop_queues, consumer, queue);
+            g_hash_table_insert (priv->consumer_push_queues, consumer, priv->producer_pop_queue);
         }
     }
 
     g_object_ref (consumer);
-    priv->consumers = g_list_append(priv->consumers, consumer);
+    priv->consumers = g_list_append (priv->consumers, consumer);
 }
 
-guint ufo_relation_get_producer_port(UfoRelation *relation)
+/**
+ * ufo_relation_get_producer:
+ * @relation: A #UfoRelation object
+ *
+ * Get the consumers associated with this relation
+ *
+ * Returns: A list with #UfoFilter consumers
+ * Since: 0.2
+ */
+GList *
+ufo_relation_get_consumers (UfoRelation *relation)
 {
-    g_return_val_if_fail(UFO_IS_RELATION(relation), 0);
+    g_return_val_if_fail (UFO_IS_RELATION (relation), NULL);
+    return relation->priv->consumers;
+}
+
+/**
+ * ufo_relation_get_producer_port:
+ * @relation: A #UfoRelation object
+ *
+ * Get the producer's output port number
+ *
+ * Returns: The producer's output port number
+ * Since: 0.2
+ */
+guint
+ufo_relation_get_producer_port (UfoRelation *relation)
+{
+    g_return_val_if_fail (UFO_IS_RELATION (relation), 0);
     return relation->priv->output_port;
 }
 
-guint ufo_relation_get_consumer_port(UfoRelation *relation, UfoFilter *consumer)
+/**
+ * ufo_relation_get_consumer_port:
+ * @relation: A #UfoRelation object
+ * @consumer: A consumer that is
+ *
+ * Get the #consumer's input port number
+ *
+ * Returns: The consumer's output port number
+ * Since: 0.2
+ */
+guint
+ufo_relation_get_consumer_port (UfoRelation *relation, UfoFilter *consumer)
 {
-    return (guint) GPOINTER_TO_INT(g_hash_table_lookup(relation->priv->consumer_ports, consumer));
+    if (!ufo_relation_has_consumer (relation, consumer))
+        g_warning ("Consumer is not part of this relation. Expect wrong port 0.");
+
+    return (guint) GPOINTER_TO_INT (g_hash_table_lookup (relation->priv->consumer_ports, consumer));
 }
 
-void ufo_relation_get_producer_queues(UfoRelation *relation, GAsyncQueue **push_queue, GAsyncQueue **pop_queue)
+/**
+ * ufo_relation_get_producer_queues:
+ * @relation: A #UfoRelation object
+ * @push_queue: A location for the queue into which to push fresh output data
+ * @pop_queue: A location for the queue from which to pop used output buffers
+ *
+ * Get queues for the producer.
+ *
+ * Since: 0.2
+ */
+void
+ufo_relation_get_producer_queues (UfoRelation *relation, GAsyncQueue **push_queue, GAsyncQueue **pop_queue)
 {
-    g_return_if_fail(UFO_IS_RELATION(relation));
-    g_return_if_fail(push_queue != NULL && pop_queue != NULL);
+    g_return_if_fail (UFO_IS_RELATION (relation));
+    g_return_if_fail (push_queue != NULL && pop_queue != NULL);
 
-    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE(relation);
+    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (relation);
     *push_queue = priv->producer_push_queue;
     *pop_queue = priv->producer_pop_queue;
 }
 
-void ufo_relation_get_consumer_queues(UfoRelation *relation, 
-        UfoFilter *consumer, GAsyncQueue **push_queue, GAsyncQueue **pop_queue)
+/**
+ * ufo_relation_get_consumer_queues:
+ * @relation: A #UfoRelation object
+ * @consumer: The #UfoFilter for which to get the queues
+ * @push_queue: A location for the queue into which to push used input data
+ * @pop_queue: A location for the queue from which to pop fresh input buffers
+ *
+ * Get queues for #consumer.
+ *
+ * Since: 0.2
+ */
+void
+ufo_relation_get_consumer_queues (UfoRelation *relation, UfoFilter *consumer, GAsyncQueue **push_queue, GAsyncQueue **pop_queue)
 {
-    g_return_if_fail(UFO_IS_RELATION(relation) && UFO_IS_FILTER(consumer));
-    g_return_if_fail(push_queue != NULL && pop_queue != NULL);
+    g_return_if_fail (UFO_IS_RELATION (relation) && UFO_IS_FILTER (consumer));
+    g_return_if_fail (push_queue != NULL && pop_queue != NULL);
 
-    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE(relation);
-    *push_queue = g_hash_table_lookup(priv->consumer_push_queues, consumer); 
-    *pop_queue = g_hash_table_lookup(priv->consumer_pop_queues, consumer);
+    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (relation);
+    *push_queue = g_hash_table_lookup (priv->consumer_push_queues, consumer);
+    *pop_queue = g_hash_table_lookup (priv->consumer_pop_queues, consumer);
 }
 
-gboolean ufo_relation_has_consumer(UfoRelation *relation, UfoFilter *consumer)
+/**
+ * ufo_relation_has_consumer:
+ * @relation: A #UfoRelation object
+ * @consumer: A #UfoFilter consumer
+ *
+ * Check if #consumer is part of #relation.
+ *
+ * Returns: %TRUE if #consumer is part of #relation, otherwise %FALSE.
+ * Since: 0.2
+ */
+gboolean
+ufo_relation_has_consumer (UfoRelation *relation, UfoFilter *consumer)
 {
-    g_return_val_if_fail(UFO_IS_RELATION(relation), FALSE);
-    return g_hash_table_lookup_extended(relation->priv->consumer_ports, consumer, NULL, NULL);
+    g_return_val_if_fail (UFO_IS_RELATION (relation), FALSE);
+    return g_hash_table_lookup_extended (relation->priv->consumer_ports, consumer, NULL, NULL);
 }
 
-void ufo_relation_push_poison_pill(UfoRelation *relation)
+/**
+ * ufo_relation_push_poison_pill:
+ * @relation: A #UfoRelation object
+ *
+ * Tell all consumers that the producer does not provide any more data.
+ *
+ * Since: 0.2
+ */
+void
+ufo_relation_push_poison_pill (UfoRelation *relation)
 {
-    g_return_if_fail(UFO_IS_RELATION(relation));
+    g_return_if_fail (UFO_IS_RELATION (relation));
 
-    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE(relation);
+    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (relation);
 
     /*
      * The mode doesn't matter here. If it is distributed, pop_queue will be the
      * same for each consumer thus pushing the pill n times. If copy mode is
      * enable, the pill will be inserted into each consumer's pop queue.
      */
-    for (GList *it = g_list_first(priv->consumers); it != NULL; it = g_list_next(it)) {
-        UfoFilter *consumer = UFO_FILTER(it->data);
-        GAsyncQueue *pop_queue = g_hash_table_lookup(priv->consumer_pop_queues, consumer);
-        g_async_queue_push(pop_queue, GINT_TO_POINTER(1));
+    for (GList *it = g_list_first (priv->consumers); it != NULL; it = g_list_next (it)) {
+        UfoFilter *consumer = UFO_FILTER (it->data);
+        GAsyncQueue *pop_queue = g_hash_table_lookup (priv->consumer_pop_queues, consumer);
+        g_async_queue_push (pop_queue, GINT_TO_POINTER (1));
     }
 }
 
-static void ufo_relation_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
+static void
+ufo_relation_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
-    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE(object);
+    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (object);
 
     switch (property_id) {
         case PROP_PRODUCER:
             priv->producer = g_value_get_object (value);
             break;
         case PROP_OUTPUT_PORT:
-            priv->output_port = g_value_get_uint(value);
+            priv->output_port = g_value_get_uint (value);
             break;
         case PROP_MODE:
-            priv->mode = g_value_get_enum(value);
+            priv->mode = g_value_get_enum (value);
             break;
         default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
     }
 }
 
-static void ufo_relation_get_property(GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
+static void
+ufo_relation_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
-    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE(object);
+    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (object);
 
     switch (property_id) {
         case PROP_PRODUCER:
-            g_value_set_object(value, priv->producer);
+            g_value_set_object (value, priv->producer);
             break;
         case PROP_OUTPUT_PORT:
-            g_value_set_uint(value, priv->output_port);
+            g_value_set_uint (value, priv->output_port);
             break;
         case PROP_MODE:
-            g_value_set_enum(value, priv->mode);
+            g_value_set_enum (value, priv->mode);
             break;
         default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
     }
 }
 
-static void g_async_queue_safe_unref (GAsyncQueue *queue)
+static void
+g_async_queue_safe_unref (GAsyncQueue *queue)
 {
     if (queue)
         g_async_queue_unref (queue);
 }
 
-static void ufo_relation_dispose(GObject *object)
+static void
+ufo_relation_dispose (GObject *object)
 {
     UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (object);
 
@@ -269,9 +373,10 @@ static void ufo_relation_dispose(GObject *object)
     G_OBJECT_CLASS (ufo_relation_parent_class)->dispose (object);
 }
 
-static void ufo_relation_finalize(GObject *object)
+static void
+ufo_relation_finalize (GObject *object)
 {
-    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE(object);
+    UfoRelationPrivate *priv = UFO_RELATION_GET_PRIVATE (object);
 
     if (priv->mode == UFO_RELATION_MODE_DISTRIBUTE) {
         g_async_queue_safe_unref (priv->producer_pop_queue);
@@ -292,55 +397,57 @@ static void ufo_relation_finalize(GObject *object)
     g_hash_table_destroy (priv->consumer_pop_queues);
     g_hash_table_destroy (priv->consumer_ports);
 
-    G_OBJECT_CLASS(ufo_relation_parent_class)->finalize(object);
+    G_OBJECT_CLASS (ufo_relation_parent_class)->finalize (object);
 }
 
-static void ufo_relation_class_init(UfoRelationClass *klass)
+static void
+ufo_relation_class_init (UfoRelationClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->get_property = ufo_relation_get_property;
     gobject_class->set_property = ufo_relation_set_property;
     gobject_class->dispose      = ufo_relation_dispose;
     gobject_class->finalize     = ufo_relation_finalize;
 
     relation_properties[PROP_PRODUCER] =
-        g_param_spec_object("producer",
+        g_param_spec_object ("producer",
                 "An UfoFilter",
                 "An UfoFilter",
                 UFO_TYPE_FILTER,
                 G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
     relation_properties[PROP_OUTPUT_PORT] =
-        g_param_spec_uint("output-port",
+        g_param_spec_uint ("output-port",
                 "Number of the producer output port",
                 "Number of the producer output port",
                 0, 256, 0,
                 G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
     relation_properties[PROP_MODE] =
-        g_param_spec_enum("mode",
+        g_param_spec_enum ("mode",
                 "Work item mode",
                 "Work item mode",
                 UFO_TYPE_RELATION_MODE, UFO_RELATION_MODE_DISTRIBUTE,
                 G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
-        g_object_class_install_property(gobject_class, i, relation_properties[i]);
+        g_object_class_install_property (gobject_class, i, relation_properties[i]);
 
-    g_type_class_add_private(klass, sizeof(UfoRelationPrivate));
+    g_type_class_add_private (klass, sizeof (UfoRelationPrivate));
 }
 
-static void ufo_relation_init(UfoRelation *relation)
+static void
+ufo_relation_init (UfoRelation *relation)
 {
     UfoRelationPrivate *priv;
-    relation->priv = priv = UFO_RELATION_GET_PRIVATE(relation);
+    relation->priv = priv = UFO_RELATION_GET_PRIVATE (relation);
     priv->producer = NULL;
     priv->output_port = 0;
     priv->consumers = NULL;
-    priv->consumer_ports = g_hash_table_new(g_direct_hash, g_direct_equal);
+    priv->consumer_ports = g_hash_table_new (g_direct_hash, g_direct_equal);
 
     priv->producer_push_queue= NULL;
     priv->producer_pop_queue = NULL;
-    priv->consumer_pop_queues = g_hash_table_new(g_direct_hash, g_direct_equal);
-    priv->consumer_push_queues = g_hash_table_new(g_direct_hash, g_direct_equal);
+    priv->consumer_pop_queues = g_hash_table_new (g_direct_hash, g_direct_equal);
+    priv->consumer_push_queues = g_hash_table_new (g_direct_hash, g_direct_equal);
 }

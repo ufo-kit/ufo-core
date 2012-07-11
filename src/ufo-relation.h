@@ -17,6 +17,13 @@ typedef struct _UfoRelation           UfoRelation;
 typedef struct _UfoRelationClass      UfoRelationClass;
 typedef struct _UfoRelationPrivate    UfoRelationPrivate;
 
+/**
+ * UfoRelationMode:
+ * @UFO_RELATION_MODE_DISTRIBUTE: Data from the producer is distributed in a
+ *      non-predictable way to one consumer.
+ * @UFO_RELATION_MODE_COPY: The data from the producer is copied and send to all
+ *      producers.
+ */
 typedef enum {
     UFO_RELATION_MODE_DISTRIBUTE,
     UFO_RELATION_MODE_COPY

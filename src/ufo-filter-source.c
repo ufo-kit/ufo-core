@@ -1,7 +1,10 @@
 /**
- * SECTION:ufo-filter
- * @Short_description: Single unit of computation
+ * SECTION:ufo-filter-source
+ * @Short_description: A source filter provides data but does not consume any
  * @Title: UfoFilterSource
+ *
+ * A source filter produces data but does not accept any inputs. This can be
+ * used to implement file readers or acquisition devices.
  */
 
 #include <glib.h>
@@ -27,10 +30,10 @@ ufo_filter_source_initialize (UfoFilterSource *filter, guint **output_dim_sizes,
 }
 
 gboolean
-ufo_filter_source_generate (UfoFilterSource *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error)
+ufo_filter_source_generate (UfoFilterSource *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_return_val_if_fail (UFO_IS_FILTER_SOURCE (filter), FALSE);
-    return UFO_FILTER_SOURCE_GET_CLASS (filter)->generate (filter, results, cmd_queue, error);
+    return UFO_FILTER_SOURCE_GET_CLASS (filter)->generate (filter, output, cmd_queue, error);
 }
 
 static void
@@ -40,7 +43,7 @@ ufo_filter_source_initialize_real (UfoFilterSource *filter, guint **output_dim_s
 }
 
 static gboolean
-ufo_filter_source_generate_real (UfoFilterSource *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error)
+ufo_filter_source_generate_real (UfoFilterSource *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
             "Virtual method `generate` of %s is not implemented",
@@ -50,14 +53,14 @@ ufo_filter_source_generate_real (UfoFilterSource *filter, UfoBuffer *results[], 
 }
 
 static void
-ufo_filter_source_class_init(UfoFilterSourceClass *klass)
+ufo_filter_source_class_init (UfoFilterSourceClass *klass)
 {
     klass->initialize = ufo_filter_source_initialize_real;
     klass->generate = ufo_filter_source_generate_real;
 }
 
 static void
-ufo_filter_source_init(UfoFilterSource *self)
+ufo_filter_source_init (UfoFilterSource *self)
 {
     self->priv = UFO_FILTER_SOURCE_GET_PRIVATE (self);
 }

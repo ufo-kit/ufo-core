@@ -1,7 +1,11 @@
 /**
- * SECTION:ufo-filter
- * @Short_description: Single unit of computation
+ * SECTION:ufo-filter-reduce
+ * @Short_description: A reduction filter accumulates one output from all inputs
  * @Title: UfoFilterReduce
+ *
+ * A reduction filter takes an arbitrary number of data input and produces one
+ * output when the stream has finished. This scheme is useful for averaging the
+ * data stream or producing a volume from a series of projections.
  */
 
 #include <glib.h>
@@ -63,7 +67,7 @@ ufo_filter_reduce_reduce_real (UfoFilterReduce *filter, UfoBuffer *output[], gpo
 }
 
 static void
-ufo_filter_reduce_class_init(UfoFilterReduceClass *klass)
+ufo_filter_reduce_class_init (UfoFilterReduceClass *klass)
 {
     klass->initialize = ufo_filter_reduce_initialize_real;
     klass->collect = ufo_filter_reduce_collect_real;
@@ -71,7 +75,7 @@ ufo_filter_reduce_class_init(UfoFilterReduceClass *klass)
 }
 
 static void
-ufo_filter_reduce_init(UfoFilterReduce *self)
+ufo_filter_reduce_init (UfoFilterReduce *self)
 {
     self->priv = UFO_FILTER_REDUCE_GET_PRIVATE (self);
 }

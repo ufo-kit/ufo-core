@@ -22,9 +22,7 @@ typedef struct _UfoFilterSourcePrivate    UfoFilterSourcePrivate;
 /**
  * UfoFilterSource:
  *
- * Creates #UfoFilterSource instances by loading corresponding shared objects. The
- * contents of the #UfoFilterSource structure are private and should only be
- * accessed via the provided API.
+ * The contents of this object is opaque to the user.
  */
 struct _UfoFilterSource {
     /*< private >*/
@@ -35,22 +33,30 @@ struct _UfoFilterSource {
 
 /**
  * UfoFilterSourceClass:
- *
- * #UfoFilterSource class
+ * @parent: the parent class
+ * @initialize: the @initialize function is called by an UfoBaseScheduler to set
+ *      up a filter before actual execution happens.
+ * @generate: the @generate function produces data for subsequent filters. It
+ *      returns TRUE if is produced.
  */
 struct _UfoFilterSourceClass {
-    /*< private >*/
     UfoFilterClass parent;
 
-    void     (*initialize)  (UfoFilterSource *filter, guint **output_dim_sizes, GError **error);
-    gboolean (*generate)    (UfoFilterSource *filter, UfoBuffer *results[], gpointer cmd_queue, GError **error);
+    /* overridable */
+    void     (*initialize)  (UfoFilterSource    *filter,
+                             guint             **output_dim_sizes,
+                             GError            **error);
+    gboolean (*generate)    (UfoFilterSource    *filter,
+                             UfoBuffer          *output[],
+                             gpointer            cmd_queue,
+                             GError            **error);
 };
 
 void     ufo_filter_source_initialize (UfoFilterSource   *filter,
                                        guint            **output_dim_sizes,
                                        GError           **error);
 gboolean ufo_filter_source_generate   (UfoFilterSource   *filter,
-                                       UfoBuffer         *results[],
+                                       UfoBuffer         *output[],
                                        gpointer           cmd_queue,
                                        GError            **error);
 GType    ufo_filter_source_get_type   (void);

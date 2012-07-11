@@ -63,11 +63,14 @@ struct _UfoFilter {
 
 /**
  * UfoFilterClass:
- *
- * #UfoFilter class
+ * @parent: the parent class
+ * @initialize: the @initialize function is called by an UfoBaseScheduler to set
+ *      up a filter before actual execution happens. It receives the first input
+ *      data to which the filter can get adjust.
+ * @process_cpu: this method implements data processing on CPU.
+ * @process_gpu: this method implements data processing on GPU.
  */
 struct _UfoFilterClass {
-    /*< private >*/
     GObjectClass parent;
 
     void           (*initialize)       (UfoFilter   *filter,
@@ -80,24 +83,24 @@ struct _UfoFilterClass {
                                         gpointer     cmd_queue,
                                         GError     **error);
     UfoEventList * (*process_gpu)      (UfoFilter   *filter,
-                                        UfoBuffer   *params[],
-                                        UfoBuffer   *results[],
+                                        UfoBuffer   *input[],
+                                        UfoBuffer   *output[],
                                         gpointer     cmd_queue,
                                         GError     **error);
 };
 
 void            ufo_filter_initialize           (UfoFilter                 *filter,
-                                                 UfoBuffer                 *params[],
+                                                 UfoBuffer                 *input[],
                                                  guint                    **output_dim_sizes,
                                                  GError                   **error);
 void            ufo_filter_process_cpu          (UfoFilter                 *filter,
-                                                 UfoBuffer                 *params[],
-                                                 UfoBuffer                 *results[],
+                                                 UfoBuffer                 *input[],
+                                                 UfoBuffer                 *output[],
                                                  gpointer                   cmd_queue,
                                                  GError                   **error);
 UfoEventList *  ufo_filter_process_gpu          (UfoFilter                 *filter,
-                                                 UfoBuffer                 *params[],
-                                                 UfoBuffer                 *results[],
+                                                 UfoBuffer                 *input[],
+                                                 UfoBuffer                 *output[],
                                                  gpointer                   cmd_queue,
                                                  GError                   **error);
 void            ufo_filter_set_plugin_name      (UfoFilter                 *filter,

@@ -56,24 +56,24 @@ ufo_filter_error_quark(void)
 }
 
 void
-ufo_filter_initialize (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error)
+ufo_filter_initialize (UfoFilter *filter, UfoBuffer *input[], guint **output_dim_sizes, GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER (filter));
-    UFO_FILTER_GET_CLASS (filter)->initialize (filter, params, output_dim_sizes, error);
+    UFO_FILTER_GET_CLASS (filter)->initialize (filter, input, output_dim_sizes, error);
 }
 
 void
-ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error)
+ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER (filter));
-    UFO_FILTER_GET_CLASS (filter)->process_cpu (filter, params, results, cmd_queue, error);
+    UFO_FILTER_GET_CLASS (filter)->process_cpu (filter, input, output, cmd_queue, error);
 }
 
 UfoEventList *
-ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue, GError **error)
+ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
-    return UFO_FILTER_GET_CLASS (filter)->process_gpu (filter, params, results, cmd_queue, error);
+    return UFO_FILTER_GET_CLASS (filter)->process_gpu (filter, input, output, cmd_queue, error);
 }
 
 /**
@@ -188,7 +188,7 @@ ufo_filter_get_num_outputs (UfoFilter *filter)
  *
  * Get a list with the number of dimensions for each input.
  *
- * Returns (transfer none): A list with number of input dimensions.
+ * Returns: (transfer none): A list with number of input dimensions.
  * Since: 0.2
  */
 GList *
@@ -204,7 +204,7 @@ ufo_filter_get_input_num_dims (UfoFilter *filter)
  *
  * Get a list with the number of dimensions for each output.
  *
- * Returns (transfer none): A list with number of output dimensions.
+ * Returns: (transfer none): A list with number of output dimensions.
  * Since: 0.2
  */
 GList *
@@ -286,7 +286,7 @@ ufo_filter_wait_until (UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionF
 }
 
 static void
-ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *params[], guint **output_dim_sizes, GError **error)
+ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *input[], guint **output_dim_sizes, GError **error)
 {
     g_debug ("%s->initialize() not implemented\n", filter->priv->plugin_name);
 }

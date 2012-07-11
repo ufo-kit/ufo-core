@@ -22,9 +22,7 @@ typedef struct _UfoFilterSinkPrivate    UfoFilterSinkPrivate;
 /**
  * UfoFilterSink:
  *
- * Creates #UfoFilterSink instances by loading corresponding shared objects. The
- * contents of the #UfoFilterSink structure are private and should only be
- * accessed via the provided API.
+ * The contents of this object is opaque to the user.
  */
 struct _UfoFilterSink {
     /*< private >*/
@@ -35,22 +33,31 @@ struct _UfoFilterSink {
 
 /**
  * UfoFilterSinkClass:
- *
- * #UfoFilterSink class
+ * @parent: the parent class
+ * @initialize: the @initialize function is called by an UfoBaseScheduler to set
+ *      up a filter before actual execution happens. It receives the first input
+ *      data to which the filter can get adjust.
+ * @consume: the @consume function implements what is going to happen with the
+ *      input.
  */
 struct _UfoFilterSinkClass {
-    /*< private >*/
     UfoFilterClass parent;
 
-    void (*initialize)  (UfoFilterSink *filter, UfoBuffer *work[], GError **error);
-    void (*consume)     (UfoFilterSink *filter, UfoBuffer *work[], gpointer cmd_queue, GError **error);
+    /* overridable methods */
+    void (*initialize)  (UfoFilterSink  *filter,
+                         UfoBuffer      *input[],
+                         GError        **error);
+    void (*consume)     (UfoFilterSink  *filter,
+                         UfoBuffer      *input[],
+                         gpointer        cmd_queue,
+                         GError        **error);
 };
 
 void  ufo_filter_sink_initialize (UfoFilterSink  *filter,
-                                  UfoBuffer      *work[],
+                                  UfoBuffer      *input[],
                                   GError        **error);
 void  ufo_filter_sink_consume    (UfoFilterSink  *filter,
-                                  UfoBuffer      *work[],
+                                  UfoBuffer      *input[],
                                   gpointer        cmd_queue,
                                   GError        **error);
 GType ufo_filter_sink_get_type   (void);
