@@ -220,6 +220,7 @@ ufo_graph_new
 ufo_graph_run
 ufo_graph_add_relation
 ufo_graph_connect_filters
+ufo_graph_connect_filters_full
 ufo_graph_read_from_json
 ufo_graph_save_to_json
 <SUBSECTION Standard>

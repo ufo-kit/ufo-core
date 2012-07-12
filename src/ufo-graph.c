@@ -254,7 +254,8 @@ void ufo_graph_run(UfoGraph *graph, GError **error)
  *
  * Add a new relation to the graph.
  */
-void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
+void
+ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) && UFO_IS_RELATION(relation));
     g_object_ref (relation);
@@ -270,7 +271,25 @@ void ufo_graph_add_relation(UfoGraph *graph, UfoRelation *relation)
  *
  * Connect to filters using their default input and output ports.
  */
-void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GError **error)
+void
+ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GError **error)
+{
+    ufo_graph_connect_filters_full (graph, from, 0, to, 0, error);
+}
+
+/**
+ * ufo_graph_connect_filters_full:
+ * @graph: A #UfoGraph
+ * @from: Source filter
+ * @from_port: Source output port
+ * @to: Destination filter
+ * @to_port: Destination input port
+ * @error: return location for error
+ *
+ * Connect to filters.
+ */
+void
+ufo_graph_connect_filters_full (UfoGraph *graph, UfoFilter *from, guint from_port, UfoFilter *to, guint to_port, GError **error)
 {
     UfoGraphPrivate *priv;
     UfoRelation     *relation;
@@ -294,8 +313,8 @@ void ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to,
         }
     }
 
-    relation = ufo_relation_new (from, 0, UFO_RELATION_MODE_DISTRIBUTE);
-    ufo_relation_add_consumer (relation, to, 0, &tmp_error);
+    relation = ufo_relation_new (from, from_port, UFO_RELATION_MODE_DISTRIBUTE);
+    ufo_relation_add_consumer (relation, to, to_port, &tmp_error);
 
     if (tmp_error == NULL) {
         /*
