@@ -17,6 +17,12 @@ G_BEGIN_DECLS
 #define UFO_IS_FILTER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_FILTER))
 #define UFO_FILTER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_FILTER, UfoFilterClass))
 
+/**
+ * UFO_FILTER_INFINITE_INPUT:
+ *
+ * Use this to specify that you accept an infinite data stream on an input for
+ * #UfoInputParameter and ufo_filter_register_inputs().
+ */
 #define UFO_FILTER_INFINITE_INPUT   -1
 
 #define UFO_FILTER_ERROR ufo_filter_error_quark()
@@ -82,9 +88,7 @@ typedef struct _UfoOutputParameter {
 /**
  * UfoFilter:
  *
- * Creates #UfoFilter instances by loading corresponding shared objects. The
- * contents of the #UfoFilter structure are private and should only be
- * accessed via the provided API.
+ * The contents of this object is opaque to the user.
  */
 struct _UfoFilter {
     /*< private >*/
@@ -101,6 +105,8 @@ struct _UfoFilter {
  *      data to which the filter can get adjust.
  * @process_cpu: this method implements data processing on CPU.
  * @process_gpu: this method implements data processing on GPU.
+ *
+ * The class structure for the UfoFilter type.
  */
 struct _UfoFilterClass {
     GObjectClass parent;
