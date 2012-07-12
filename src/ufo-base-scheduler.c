@@ -162,7 +162,7 @@ fetch_work (ThreadInfo *info)
 
     for (guint i = 0; i < info->num_inputs; i++) {
         if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
-            (info->input_params[i].n_expected_items < info->input_params[i].n_fetched_items))
+            (info->input_params[i].n_fetched_items < info->input_params[i].n_expected_items))
         {
             info->work[i] = g_async_queue_pop (info->input_pop_queues[i]);
             info->input_params[i].n_fetched_items++;
@@ -182,7 +182,7 @@ push_work (ThreadInfo *info)
 {
     for (guint i = 0; i < info->num_inputs; i++) {
         if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
-            (info->input_params[i].n_expected_items < info->input_params[i].n_fetched_items))
+            (info->input_params[i].n_fetched_items < info->input_params[i].n_expected_items))
         {
             g_async_queue_push (info->input_push_queues[i], info->work[i]);
         }
