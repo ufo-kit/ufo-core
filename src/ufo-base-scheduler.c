@@ -178,6 +178,15 @@ fetch_work (ThreadInfo *info)
 }
 
 static void
+cleanup_fetched (ThreadInfo *info)
+{
+    for (guint i = 0; i < info->num_inputs; i++) {
+        if ((info->input_params[i].n_fetched_items == info->input_params[i].n_expected_items))
+            g_async_queue_push (info->input_push_queues[i], info->work[i]);
+    }
+}
+
+static void
 push_work (ThreadInfo *info)
 {
     for (guint i = 0; i < info->num_inputs; i++) {
@@ -201,6 +210,34 @@ push_result (ThreadInfo *info)
 {
     for (guint port = 0; port < info->num_outputs; port++)
         g_async_queue_push (info->output_push_queues[port], info->result[port]);
+}
+
+static void
+log_cl_event (cl_event *event_location, ThreadInfo *info)
+{
+    cl_event event;
+    cl_event_info_row *row;
+
+    event = *event_location;
+    row = &info->event_rows[info->n_event_rows];
+
+    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_QUEUE, sizeof (cl_command_queue), &row->cmd_queue, NULL));
+    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_TYPE, sizeof (cl_command_type), &row->cmd_type, NULL));
+    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof (cl_int), &row->cmd_status, NULL));
+
+    if (row->cmd_status == CL_COMPLETE) {
+        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_QUEUED, sizeof (cl_ulong), &row->queued, NULL));
+        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_SUBMIT, sizeof (cl_ulong), &row->submitted, NULL));
+        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_START, sizeof (cl_ulong), &row->started, NULL));
+        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_END, sizeof (cl_ulong), &row->ended, NULL));
+    }
+
+    info->n_event_rows++;
+
+    if (info->n_event_rows == info->n_available_event_rows) {
+        info->n_available_event_rows *= 2;
+        info->event_rows = g_realloc_n (info->event_rows, info->n_available_event_rows, sizeof (cl_event_info_row));
+    }
 }
 
 static GError *
@@ -232,34 +269,6 @@ process_source_filter (ThreadInfo *info)
     }
 
     return NULL;
-}
-
-static void
-log_cl_event (cl_event *event_location, ThreadInfo *info)
-{
-    cl_event event;
-    cl_event_info_row *row;
-
-    event = *event_location;
-    row = &info->event_rows[info->n_event_rows];
-
-    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_QUEUE, sizeof (cl_command_queue), &row->cmd_queue, NULL));
-    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_TYPE, sizeof (cl_command_type), &row->cmd_type, NULL));
-    CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof (cl_int), &row->cmd_status, NULL));
-
-    if (row->cmd_status == CL_COMPLETE) {
-        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_QUEUED, sizeof (cl_ulong), &row->queued, NULL));
-        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_SUBMIT, sizeof (cl_ulong), &row->submitted, NULL));
-        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_START, sizeof (cl_ulong), &row->started, NULL));
-        CHECK_OPENCL_ERROR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_END, sizeof (cl_ulong), &row->ended, NULL));
-    }
-
-    info->n_event_rows++;
-
-    if (info->n_event_rows == info->n_available_event_rows) {
-        info->n_available_event_rows *= 2;
-        info->event_rows = g_realloc_n (info->event_rows, info->n_available_event_rows, sizeof (cl_event_info_row));
-    }
 }
 
 static GError *
@@ -313,10 +322,17 @@ process_synchronous_filter (ThreadInfo *info)
 
         push_work (info);
         push_result (info);
-        fetch_result (info);
 
+        fetch_result (info);
         cont = fetch_work (info);
     }
+
+    /*
+     * In case this buffer keeps some of its inputs (if n_expected_items <
+     * UFO_FILTER_INPUT_INFINITE), then we need to return those buffers to the
+     * preceding filter. Otherwise we get stuck.
+     */
+    cleanup_fetched (info);
 
     return NULL;
 }
@@ -328,7 +344,6 @@ process_sink_filter (ThreadInfo *info)
     UfoFilterSink *sink_filter = UFO_FILTER_SINK (filter);
     GError *error = NULL;
     gboolean cont = TRUE;
-    const guint num_inputs = ufo_filter_get_num_inputs (filter);
 
     if (fetch_work (info)) {
         ufo_filter_sink_initialize (sink_filter, info->work, &error);
@@ -347,9 +362,7 @@ process_sink_filter (ThreadInfo *info)
         if (error != NULL)
             return error;
 
-        for (guint port = 0; port < num_inputs; port++)
-            g_async_queue_push (info->input_push_queues[port], info->work[port]);
-
+        push_work (info);
         cont = fetch_work (info);
     }
 
@@ -359,7 +372,7 @@ process_sink_filter (ThreadInfo *info)
 static GError *
 process_reduce_filter (ThreadInfo *info)
 {
-    UfoFilterReduce *filter = UFO_FILTER_REDUCE (info->filter);
+    UfoFilter *filter = UFO_FILTER (info->filter);
     GError *error = NULL;
     gboolean cont = TRUE;
     gfloat default_value = 0.0f;
@@ -368,12 +381,12 @@ process_reduce_filter (ThreadInfo *info)
      * Initialize
      */
     if (fetch_work (info)) {
-        ufo_filter_reduce_initialize (filter, info->work, info->output_dims, &default_value, &error);
+        ufo_filter_reduce_initialize (UFO_FILTER_REDUCE (filter), info->work, info->output_dims, &default_value, &error);
 
         if (error != NULL)
             return error;
 
-        alloc_output_buffers (UFO_FILTER (filter), info->output_pop_queues, info->output_dims);
+        alloc_output_buffers (filter, info->output_pop_queues, info->output_dims);
     }
     else {
         return NULL;
@@ -386,7 +399,7 @@ process_reduce_filter (ThreadInfo *info)
 
     while (cont) {
         g_timer_continue (info->cpu_timer);
-        ufo_filter_reduce_collect (filter, info->work, info->result, info->cmd_queues[0], &error);
+        ufo_filter_reduce_collect (UFO_FILTER_REDUCE (filter), info->work, info->result, info->cmd_queues[0], &error);
         g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
@@ -396,7 +409,7 @@ process_reduce_filter (ThreadInfo *info)
         cont = fetch_work (info);
     }
 
-    ufo_filter_reduce_reduce (filter, info->result, info->cmd_queues[0], &error);
+    ufo_filter_reduce_reduce (UFO_FILTER_REDUCE (filter), info->result, info->cmd_queues[0], &error);
     push_result (info);
 
     return error;
