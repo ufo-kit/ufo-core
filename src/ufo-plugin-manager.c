@@ -115,7 +115,7 @@ UfoPluginManager *ufo_plugin_manager_new (const gchar *paths)
  * Load a #UfoFilter module and return an instance. The shared object name must
  * be * constructed as "libfilter@name.so".
  *
- * Return value (transfer full) (allow-none): #UfoFilter or %NULL if module cannot be found
+ * Returns: (transfer full) (allow-none): #UfoFilter or %NULL if module cannot be found
  *
  * Since: 0.2, the error parameter is available
  */
