@@ -219,8 +219,11 @@ log_cl_event (cl_event *event_location, ThreadInfo *info)
     cl_event_info_row *row;
 
     event = *event_location;
-    row = &info->event_rows[info->n_event_rows];
 
+    if (event == NULL)
+        return;
+
+    row = &info->event_rows[info->n_event_rows];
     CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_QUEUE, sizeof (cl_command_queue), &row->cmd_queue, NULL));
     CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_TYPE, sizeof (cl_command_type), &row->cmd_type, NULL));
     CHECK_OPENCL_ERROR (clGetEventInfo (event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof (cl_int), &row->cmd_status, NULL));
