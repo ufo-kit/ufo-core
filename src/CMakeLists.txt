@@ -144,6 +144,7 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
                     --include=GModule-2.0
                     -I${OPENCL_INCLUDE_DIRS}
                     --output ${GIR_XML}
+                    --warn-all
                     ${_gir_input}
                     2> /dev/null
             DEPENDS ${ufocore_SRCS}
