@@ -69,9 +69,16 @@ void unref_cl_event (cl_event *event, gpointer user_data)
 void
 ufo_event_list_free (UfoEventList  *list)
 {
+    g_return_if_fail (list != NULL);
+
     g_list_foreach (list->list, (GFunc) unref_cl_event, NULL);
+
+    /* FIXME: This is really strange. If we free the events array, the allocator
+     * complains on ufosrv1 about freeing an undefined pointer, although we
+     * really allocated it on our own in ufo_event_list_free(). */
+    /* g_free (list->events); */
+
     g_list_free (list->list);
-    g_free (list->events);
     g_free (list);
 }
 
