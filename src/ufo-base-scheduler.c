@@ -154,11 +154,18 @@ get_output_queues (GList *relations, UfoFilter *filter, GAsyncQueue ***output_pu
     *output_pop_queues = pop_queues;
 }
 
+static void
+print_prefixed(const gchar *text, ThreadInfo *info)
+{
+    g_print ("%s:%s\n", ufo_filter_get_plugin_name (info->filter), text);
+}
+
 static gboolean
 fetch_work (ThreadInfo *info)
 {
     const gpointer POISON_PILL = GINT_TO_POINTER (1);
     gboolean success = TRUE;
+    print_prefixed ("fetch:work", info);
 
     for (guint i = 0; i < info->num_inputs; i++) {
         if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
@@ -173,6 +180,7 @@ fetch_work (ThreadInfo *info)
             success = FALSE;
         }
     }
+    print_prefixed ("fetch:done", info);
 
     return success;
 }
@@ -189,6 +197,7 @@ cleanup_fetched (ThreadInfo *info)
 static void
 push_work (ThreadInfo *info)
 {
+    print_prefixed ("release:work", info);
     for (guint i = 0; i < info->num_inputs; i++) {
         if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
             (info->input_params[i].n_fetched_items < info->input_params[i].n_expected_items))
@@ -196,20 +205,25 @@ push_work (ThreadInfo *info)
             g_async_queue_push (info->input_push_queues[i], info->work[i]);
         }
     }
+    print_prefixed ("release:done", info);
 }
 
 static void
 fetch_result (ThreadInfo *info)
 {
+    print_prefixed ("fetch:result", info);
     for (guint port = 0; port < info->num_outputs; port++)
         info->result[port] = g_async_queue_pop (info->output_pop_queues[port]);
+    print_prefixed ("fetch:done", info);
 }
 
 static void
 push_result (ThreadInfo *info)
 {
+    print_prefixed ("release:result", info);
     for (guint port = 0; port < info->num_outputs; port++)
         g_async_queue_push (info->output_push_queues[port], info->result[port]);
+    print_prefixed ("release:done", info);
 }
 
 static void
@@ -286,10 +300,14 @@ process_synchronous_filter (ThreadInfo *info)
      * Initialize
      */
     if (fetch_work (info)) {
+        print_prefixed ("init", info);
         ufo_filter_initialize (filter, info->work, info->output_dims, &error);
+        print_prefixed ("init:done", info);
 
-        if (error != NULL)
+        if (error != NULL) {
+            g_print ("error: %s\n", error->message);
             return error;
+        }
 
         alloc_output_buffers (filter, info->output_pop_queues, info->output_dims);
     }
@@ -474,6 +492,14 @@ process_thread (gpointer data)
         error = process_reduce_filter (info);
     else
         error = process_synchronous_filter (info);
+
+    /*
+     * In case of an error something really bad happened and data is corrupted
+     * anyway, so don't bother with freeing resources. We need to show the error
+     * ASAP...
+     */
+    if (error != NULL)
+        return error;
 
     push_poison_pill (producing_relations);
 
