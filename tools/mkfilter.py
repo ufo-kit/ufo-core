@@ -6,243 +6,71 @@ implement their own filters.
 """
 
 import sys
+import re
 import string
 import textwrap
+import argparse
 
-SKELETON_C="""#include <gmodule.h>
-#ifdef __APPLE__
-#include <OpenCL/cl.h>
-#else
-#include <CL/cl.h>
-#endif
+FILTER_TYPES = ['source', 'sink', 'process', 'reduce']
 
-#include <ufo/ufo-resource-manager.h>
-#include <ufo/ufo-filter.h>
-#include <ufo/ufo-buffer.h>
-#include "ufo-filter-${prefix_hyphen}.h"
+def type_list():
+    return ', '.join(['`' + f + '\'' for f in FILTER_TYPES])
 
-/**
- * SECTION:ufo-filter-${prefix_hyphen}
- * @Short_description:
- * @Title: ${prefix_lower}
- *
- * Detailed description.
- */
-
-struct _UfoFilter${prefix_camel}Private {
-    /* add your private data here */
-    cl_kernel kernel;
-    gdouble example;
-};
-
-G_DEFINE_TYPE(UfoFilter${prefix_camel}, ufo_filter_${prefix_underscore}, UFO_TYPE_FILTER)
-
-#define UFO_FILTER_${prefix_upper}_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}Private))
-
-enum {
-    PROP_0,
-    PROP_EXAMPLE, /* remove this or add more */
-    N_PROPERTIES
-};
-
-static GParamSpec *${prefix_underscore}_properties[N_PROPERTIES] = { NULL, };
+class FilternameAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if not re.match(r"^[A-Z][a-z]([A-Z][a-z0-9]*)*", values):
+            raise argparse.ArgumentTypeError('Name must be a camel-cased C identifier')
+        setattr(namespace, self.dest, values)
 
 
-static GError *
-ufo_filter_${prefix_underscore}_initialize (UfoFilter *filter, UfoBuffer *params[])
-{
-    /* Here you can prepare your data structures that keep state accross process
-     * calls */
-    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (filter);
-    UfoResourceManager *manager = ufo_resource_manager ();
-    GError *error = NULL;
-    priv->kernel = ufo_resource_manager_get_kernel (manager, "kernel-file.cl", "kernelname", &error);
-    return error;
-}
+class TypeAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if values not in FILTER_TYPES:
+            raise argparse.ArgumentTypeError('Type must be one of ' + type_list())
+        setattr(namespace, self.dest, values)
 
-static GError *
-ufo_filter_${prefix_underscore}_process_cpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
-{
-    /* Use params and write into results */
-    return NULL;
-}
 
-static GError *
-ufo_filter_${prefix_underscore}_process_gpu (UfoFilter *filter, UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
-{
-    /* Use params and write into results */
-    return NULL;
-}
+def generate_file(name, ftype, suffix='h'):
+    filter_camel = name
+    filter_hyphen = name[0].lower() + name[1:]
 
-static void
-ufo_filter_${prefix_underscore}_finalize(GObject *object)
-{
-    /* Free resources here */
-    G_OBJECT_CLASS(ufo_filter_${prefix_underscore}_parent_class)->finalize(object);
-}
-
-static void
-ufo_filter_${prefix_underscore}_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
-{
-    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (self);
-
-    switch (property_id) {
-        case PROP_EXAMPLE:
-            priv->example = g_value_get_double (value);
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-            break;
-    }
-}
-
-static void
-ufo_filter_${prefix_underscore}_get_property(GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
-{
-    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (self);
-
-    switch (property_id) {
-        case PROP_EXAMPLE:
-            g_value_set_double (value, priv->example);
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-            break;
-    }
-}
-
-static void
-ufo_filter_${prefix_underscore}_class_init (UfoFilter${prefix_camel}Class *klass)
-{
-    GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-    UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
-
-    gobject_class->set_property = ufo_filter_${prefix_underscore}_set_property;
-    gobject_class->get_property = ufo_filter_${prefix_underscore}_get_property;
-    gobject_class->finalize = ufo_filter_${prefix_underscore}_finalize;
-    filter_class->initialize = ufo_filter_${prefix_underscore}_initialize;
-    filter_class->process_cpu = ufo_filter_${prefix_underscore}_process_cpu;
-    filter_class->process_gpu = ufo_filter_${prefix_underscore}_process_gpu;
-
-    /* You can document properties more in-depth if you think that the
-     * description given as a parameter is not enough like this: */
-    /**
-     * UfoFilter${prefix_camel}:example
-     *
-     * Information about this property
-     */
-    ${prefix_underscore}_properties[PROP_EXAMPLE] = 
-        g_param_spec_double ("example",
-            "This is an example property",
-            "You should definately replace this with some meaningful property",
-            -1.0,   /* minimum */
-             1.0,   /* maximum */
-             1.0,   /* default */
-            G_PARAM_READWRITE);
-
-    g_object_class_install_property (gobject_class, PROP_EXAMPLE, ${prefix_underscore}_properties[PROP_EXAMPLE]);
-
-    g_type_class_add_private (gobject_class, sizeof(UfoFilter${prefix_camel}Private));
-}
-
-static void
-ufo_filter_${prefix_underscore}_init (UfoFilter${prefix_camel} *self)
-{
-    UfoFilter${prefix_camel}Private *priv = self->priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (self);
-    priv->example = 1.0;
-
-    /* 
-     * Use this place to register your inputs and outputs with the number
-     * of dimensions that the input is accepting and the output providing. You
-     * must terminate the variable argument list with a NULL.
-     */
-    ufo_filter_register_inputs (UFO_FILTER(self), 2, NULL);
-    ufo_filter_register_outputs (UFO_FILTER(self), 2, NULL);
-}
-
-G_MODULE_EXPORT UfoFilter *
-ufo_filter_plugin_new(void)
-{
-    return g_object_new (UFO_TYPE_FILTER_${prefix_upper}, NULL);
-}
-"""
-
-SKELETON_H="""#ifndef __UFO_FILTER_${prefix_upper}_H
-#define __UFO_FILTER_${prefix_upper}_H
-
-#include <glib.h>
-#include <glib-object.h>
-
-#include <ufo/ufo-filter.h>
-
-#define UFO_TYPE_FILTER_${prefix_upper}             (ufo_filter_${prefix_underscore}_get_type())
-#define UFO_FILTER_${prefix_upper}(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}))
-#define UFO_IS_FILTER_${prefix_upper}(obj)          (G_TYPE_CHECK_INSTANCE_TYPE((obj), UFO_TYPE_FILTER_${prefix_upper}))
-#define UFO_FILTER_${prefix_upper}_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST((klass), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}Class))
-#define UFO_IS_FILTER_${prefix_upper}_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_FILTER_${prefix_upper}))
-#define UFO_FILTER_${prefix_upper}_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}Class))
-
-typedef struct _UfoFilter${prefix_camel}           UfoFilter${prefix_camel};
-typedef struct _UfoFilter${prefix_camel}Class      UfoFilter${prefix_camel}Class;
-typedef struct _UfoFilter${prefix_camel}Private    UfoFilter${prefix_camel}Private;
-
-struct _UfoFilter${prefix_camel} {
-    /*< private >*/
-    UfoFilter parent_instance;
-
-    UfoFilter${prefix_camel}Private *priv;
-};
-
-/**
- * UfoFilter${prefix_camel}Class:
- *
- * #UfoFilter${prefix_camel} class
- */
-struct _UfoFilter${prefix_camel}Class {
-    /*< private >*/
-    UfoFilterClass parent_class;
-};
-
-GType ufo_filter_${prefix_underscore}_get_type(void);
-UfoFilter *ufo_filter_plugin_new(void);
-
-#endif
-"""
-
-if __name__ == '__main__':
-    filter_name = raw_input("Name of the new filter in CamelCase (e.g. MySuperFilter): ")
-
-    if filter_name == "":
-        print "Error: You should enter a better name than nothing"
-        sys.exit(1)
-
-    if filter_name[0] not in string.ascii_letters:
-        print "Error: Filter name must begin with a letter"
-        sys.exit(1)
-
-    filter_camel = filter_name[0].upper() + filter_name[1:]
-    filter_hyphen = filter_name[0].lower() + filter_name[1:]
     for letter in string.ascii_uppercase:
         filter_hyphen = filter_hyphen.replace(letter, "-" + letter.lower())
-    filter_underscore = filter_hyphen.replace('-', '_')
-    filter_upper = filter_underscore.upper()
-    filter_lower = filter_camel.lower()
 
-    filename_map = { 
-            ("ufo-filter-%s.c" % filter_hyphen) : SKELETON_C, 
-            ("ufo-filter-%s.h" % filter_hyphen) : SKELETON_H }
-    for filename in filename_map.keys():
-        template = string.Template(filename_map[filename])
-        source = template.substitute(prefix_underscore=filter_underscore,
-                prefix_camel=filter_camel,
-                prefix_hyphen=filter_hyphen,
-                prefix_upper=filter_upper,
-                prefix_lower=filter_lower)
+    filter_underscore = filter_hyphen.replace('-', '_')
+
+    d = {'prefix_underscore': filter_underscore,
+         'prefix_camel': name,
+         'prefix_hyphen': filter_hyphen,
+         'prefix_upper': filter_underscore.upper()}
+
+    filename = "ufo-filter-%s.%s" % (filter_hyphen, suffix)
+
+    with open('templates/ufo-filter-%s.%s.in' % (ftype, suffix)) as f:
+        template = string.Template(f.read())
+        source = template.substitute(d)
 
         file = open(filename, "w")
         file.writelines(source)
         file.close()
         print "Wrote %s" % filename
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Generate UfoFilter skeletons')
+    parser.add_argument('--name', required=True, type=str,
+            action=FilternameAction, help='Name of the new filter in CamelCase')
+    parser.add_argument('--type', required=True, type=str, action=TypeAction,
+            help='Type of the new filter [one of %s]' % type_list())
+
+    try:
+        args = parser.parse_args()
+    except argparse.ArgumentTypeError as err:
+        print err
+        sys.exit(1)
+
+    generate_file(args.name, args.type, 'h')
+    generate_file(args.name, args.type, 'c')
 
     message = "If you are about to write a UFO internal filter, you should copy \
 the generated files into core/filters and adapt the CMakeLists.txt file. You \

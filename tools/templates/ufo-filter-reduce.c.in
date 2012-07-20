@@ -1,0 +1,147 @@
+#include <gmodule.h>
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
+#include <CL/cl.h>
+#endif
+
+#include <ufo/ufo-filter-reduce.h>
+#include <ufo/ufo-buffer.h>
+#include "ufo-filter-${prefix_hyphen}.h"
+
+/**
+ * SECTION:ufo-filter-${prefix_hyphen}
+ * @Short_description: A short description
+ * @Title: A short title
+ *
+ * Some in-depth information
+ */
+
+struct _UfoFilter${prefix_camel}Private {
+};
+
+G_DEFINE_TYPE(UfoFilter${prefix_camel}, ufo_filter_${prefix_underscore}, UFO_TYPE_FILTER_SOURCE)
+
+#define ufo_filter_${prefix_underscore}_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_READER, UfoFilter${prefix_camel}Private))
+
+enum {
+    PROP_0,
+    N_PROPERTIES
+};
+
+static GParamSpec *${prefix_underscore}_properties[N_PROPERTIES] = { NULL, };
+
+static void
+ufo_filter_${prefix_underscore}_initialize (UfoFilterReduce *filter, guint **dims, GError **error)
+{
+    UfoFilter${prefix_camel}Private *priv;
+
+    priv = ufo_filter_${prefix_underscore}_GET_PRIVATE (filter);
+}
+
+static gboolean
+ufo_filter_${prefix_underscore}_collect (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
+{
+    UfoFilter${prefix_camel}Private *priv;
+    gboolean more;
+
+    priv = ufo_filter_${prefix_underscore}_GET_PRIVATE (filter);
+    more = TRUE;
+
+    if (more) {
+        more = FALSE;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static gboolean
+ufo_filter_${prefix_underscore}_reduce (UfoFilterReduce *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
+{
+    UfoFilter${prefix_camel}Private *priv;
+    gboolean more;
+
+    priv = ufo_filter_${prefix_underscore}_GET_PRIVATE (filter);
+    more = TRUE;
+
+    if (more) {
+        more = FALSE;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static void
+ufo_filter_${prefix_underscore}_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
+{
+    UfoFilter${prefix_camel}Private *priv;
+
+    priv = UFO_FILTER_${prefix_underscore}_GET_PRIVATE (object);
+
+    switch (property_id) {
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+ufo_filter_${prefix_underscore}_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
+{
+    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (object);
+
+    switch (property_id) {
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+ufo_filter_${prefix_underscore}_finalize (GObject *object)
+{
+    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (object);
+
+    /* Use this place to free any memory/resources allocated before */
+
+    G_OBJECT_CLASS (ufo_filter_${prefix_underscore}_parent_class)->finalize (object);
+}
+
+static void
+ufo_filter_${prefix_underscore}_class_init (UfoFilter${prefix_camel}Class *klass)
+{
+    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+    UfoFilterReduceClass *filter_class = UFO_FILTER_REDUCE_CLASS (klass);
+
+    gobject_class->set_property = ufo_filter_${prefix_underscore}_set_property;
+    gobject_class->get_property = ufo_filter_${prefix_underscore}_get_property;
+    gobject_class->finalize = ufo_filter_${prefix_underscore}_finalize;
+    filter_class->initialize = ufo_filter_${prefix_underscore}_initialize;
+    filter_class->collect = ufo_filter_${prefix_underscore}_collect;
+    filter_class->reduce = ufo_filter_${prefix_underscore}_reduce;
+
+    for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
+        g_object_class_install_property (gobject_class, i, ${prefix_underscore}_properties[i]);
+
+    g_type_class_add_private (gobject_class, sizeof (UfoFilter${prefix_camel}Private));
+}
+
+static void
+ufo_filter_${prefix_underscore}_init (UfoFilter${prefix_camel} *self)
+{
+    /* Define number and dimensions of the outputs */
+    UfoOutputParameter output_params[] = {{2}};
+
+    self->priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (self);
+
+    /* Register the outputs */
+    ufo_filter_register_outputs (UFO_FILTER (self), 1, output_params);
+}
+
+G_MODULE_EXPORT UfoFilter *
+ufo_filter_plugin_new (void)
+{
+    return g_object_new (UFO_TYPE_FILTER_READER, NULL);
+}

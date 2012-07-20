@@ -1,0 +1,38 @@
+#ifndef __UFO_FILTER_${prefix_upper}_H
+#define __UFO_FILTER_${prefix_upper}_H
+
+#include <glib.h>
+#include <ufo/ufo-filter.h>
+
+#define UFO_TYPE_FILTER_${prefix_upper}             (ufo_filter_${prefix_underscore}_get_type())
+#define UFO_FILTER_${prefix_upper}(obj)             (G_TYPE_CHECK_INSTANCE_CAST((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}))
+#define UFO_IS_FILTER_${prefix_upper}(obj)          (G_TYPE_CHECK_INSTANCE_TYPE((obj), UFO_TYPE_FILTER_${prefix_upper}))
+#define UFO_FILTER_${prefix_upper}_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST((klass), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}Class))
+#define UFO_IS_FILTER_${prefix_upper}_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_FILTER_${prefix_upper}))
+#define UFO_FILTER_${prefix_upper}_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}Class))
+
+typedef struct _UfoFilter${prefix_camel}           UfoFilter${prefix_camel};
+typedef struct _UfoFilter${prefix_camel}Class      UfoFilter${prefix_camel}Class;
+typedef struct _UfoFilter${prefix_camel}Private    UfoFilter${prefix_camel}Private;
+
+struct _UfoFilter${prefix_camel} {
+    /*< private >*/
+    UfoFilter parent_instance;
+
+    UfoFilter${prefix_camel}Private *priv;
+};
+
+/**
+ * UfoFilter${prefix_camel}Class:
+ *
+ * #UfoFilter${prefix_camel} class
+ */
+struct _UfoFilter${prefix_camel}Class {
+    /*< private >*/
+    UfoFilterClass parent_class;
+};
+
+GType ufo_filter_${prefix_underscore}_get_type (void);
+UfoFilter *ufo_filter_plugin_new (void);
+
+#endif
