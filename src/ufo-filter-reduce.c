@@ -89,13 +89,15 @@ ufo_filter_reduce_collect (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffe
  * input data stream has finished. The reduce method can be used to finalize
  * work on the output buffers.
  *
+ * Returns: TRUE if data is produced or FALSE if reduction has stopped
+ *
  * Since: 0.2
  */
-void
+gboolean
 ufo_filter_reduce_reduce (UfoFilterReduce *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
-    g_return_if_fail (UFO_IS_FILTER_REDUCE (filter));
-    UFO_FILTER_REDUCE_GET_CLASS (filter)->reduce (filter, output, cmd_queue, error);
+    g_return_val_if_fail (UFO_IS_FILTER_REDUCE (filter), FALSE);
+    return UFO_FILTER_REDUCE_GET_CLASS (filter)->reduce (filter, output, cmd_queue, error);
 }
 
 static void
@@ -112,12 +114,14 @@ ufo_filter_reduce_collect_real (UfoFilterReduce *filter, UfoBuffer *input[], Ufo
             ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 }
 
-static void
+static gboolean
 ufo_filter_reduce_reduce_real (UfoFilterReduce *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
             "Virtual method `collect` of %s is not implemented",
             ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+
+    return FALSE;
 }
 
 static void

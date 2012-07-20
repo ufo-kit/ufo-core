@@ -58,27 +58,27 @@ struct _UfoFilterReduceClass {
                          UfoBuffer          *output[],
                          gpointer            cmd_queue,
                          GError            **error);
-    void (*reduce)      (UfoFilterReduce    *filter,
+    gboolean (*reduce)  (UfoFilterReduce    *filter,
                          UfoBuffer          *output[],
                          gpointer            cmd_queue,
                          GError            **error);
 };
 
-void  ufo_filter_reduce_initialize (UfoFilterReduce *filter,
-                                    UfoBuffer       *input[],
-                                    guint          **output_dims,
-                                    gfloat          *default_value,
-                                    GError         **error);
-void  ufo_filter_reduce_collect    (UfoFilterReduce *filter,
-                                    UfoBuffer       *input[],
-                                    UfoBuffer       *output[],
-                                    gpointer         cmd_queue,
-                                    GError         **error);
-void  ufo_filter_reduce_reduce     (UfoFilterReduce *filter,
-                                    UfoBuffer       *output[],
-                                    gpointer         cmd_queue,
-                                    GError         **error);
-GType ufo_filter_reduce_get_type   (void);
+void     ufo_filter_reduce_initialize (UfoFilterReduce *filter,
+                                       UfoBuffer       *input[],
+                                       guint          **output_dims,
+                                       gfloat          *default_value,
+                                       GError         **error);
+void     ufo_filter_reduce_collect    (UfoFilterReduce *filter,
+                                       UfoBuffer       *input[],
+                                       UfoBuffer       *output[],
+                                       gpointer         cmd_queue,
+                                       GError         **error);
+gboolean ufo_filter_reduce_reduce     (UfoFilterReduce *filter,
+                                       UfoBuffer       *output[],
+                                       gpointer         cmd_queue,
+                                       GError         **error);
+GType    ufo_filter_reduce_get_type   (void);
 
 G_END_DECLS
 

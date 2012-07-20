@@ -401,12 +401,9 @@ process_reduce_filter (ThreadInfo *info)
 {
     UfoFilter *filter = UFO_FILTER (info->filter);
     GError *error = NULL;
-    gboolean cont = TRUE;
+    gboolean cont;
     gfloat default_value = 0.0f;
 
-    /*
-     * Initialize
-     */
     if (fetch_work (info)) {
         ufo_filter_reduce_initialize (UFO_FILTER_REDUCE (filter), info->work, info->output_dims, &default_value, &error);
 
@@ -419,10 +416,20 @@ process_reduce_filter (ThreadInfo *info)
         return NULL;
     }
 
+    /*
+     * Fetch the first result buffers and initialize them with the requested
+     * default value. These buffer will be used throughout the collection phase.
+     */
     fetch_result (info);
 
-    /* TODO: this should be done generically for each output! */
-    ufo_buffer_fill_with_value (info->result[0], default_value);
+    for (guint i = 0; i < info->num_outputs; i++)
+        ufo_buffer_fill_with_value (info->result[i], default_value);
+
+    /*
+     * Collect until no more data is available for consumption. The filter is
+     * given the same result buffers, so that results can be accumulated.
+     */
+    cont = TRUE;
 
     while (cont) {
         g_timer_continue (info->cpu_timer);
@@ -436,8 +443,27 @@ process_reduce_filter (ThreadInfo *info)
         cont = fetch_work (info);
     }
 
-    ufo_filter_reduce_reduce (UFO_FILTER_REDUCE (filter), info->result, info->cmd_queues[0], &error);
-    push_result (info);
+    /*
+     * Calculate reduction results until the filter finishes.
+     */
+    cont = TRUE;
+
+    while (cont) {
+        g_timer_continue (info->cpu_timer);
+        cont = ufo_filter_reduce_reduce (UFO_FILTER_REDUCE (filter),
+                                         info->result,
+                                         info->cmd_queues[0],
+                                         &error);
+        g_timer_stop (info->cpu_timer);
+
+        if (error != NULL)
+            return error;
+
+        if (cont) {
+            push_result (info);
+            fetch_result (info);
+        }
+    }
 
     return error;
 }
