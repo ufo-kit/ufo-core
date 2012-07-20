@@ -12,6 +12,9 @@ void          ufo_event_list_free               (UfoEventList  *list);
 gpointer      ufo_event_list_get_event_array    (UfoEventList  *list);
 GList        *ufo_event_list_get_list           (UfoEventList  *list);
 
+void          ufo_debug_cl                      (const gchar   *format,
+                                                 ...);
+
 G_END_DECLS
 
 #endif

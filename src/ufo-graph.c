@@ -339,6 +339,7 @@ static void ufo_graph_dispose(GObject *object)
 
     priv->resource_manager = NULL;
     G_OBJECT_CLASS (ufo_graph_parent_class)->dispose (object);
+    g_debug ("UfoGraph: disposed");
 }
 
 static void ufo_graph_finalize(GObject *object)
@@ -353,6 +354,7 @@ static void ufo_graph_finalize(GObject *object)
     priv->property_sets = NULL;
     priv->paths = NULL;
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
+    g_debug ("UfoGraph: finalized");
 }
 
 static void ufo_graph_constructed(GObject *object)

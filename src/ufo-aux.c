@@ -111,3 +111,15 @@ ufo_event_list_get_list (UfoEventList *list)
 {
     return list->list;
 }
+
+void
+ufo_debug_cl (const gchar *format, ...)
+{
+    va_list args;
+
+    va_start (args, format);
+    g_logv ("ocl", G_LOG_LEVEL_DEBUG, format, args);
+    va_end (args);
+}
+
+

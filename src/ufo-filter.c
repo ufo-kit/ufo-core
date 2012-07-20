@@ -329,6 +329,7 @@ ufo_filter_finalize (GObject *object)
     g_free (priv->plugin_name);
 
     G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
+    g_debug ("UfoFilter (%p): finalized", (gpointer) object);
 }
 
 static void

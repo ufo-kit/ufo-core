@@ -157,7 +157,7 @@ get_output_queues (GList *relations, UfoFilter *filter, GAsyncQueue ***output_pu
 static void
 print_prefixed(const gchar *text, ThreadInfo *info)
 {
-    g_print ("%s:%s\n", ufo_filter_get_plugin_name (info->filter), text);
+    g_debug ("%s-%p:%s", ufo_filter_get_plugin_name (info->filter), (gpointer) info->filter, text);
 }
 
 static gboolean
@@ -180,8 +180,8 @@ fetch_work (ThreadInfo *info)
             success = FALSE;
         }
     }
-    print_prefixed ("fetch:done", info);
 
+    print_prefixed ("fetch:done", info);
     return success;
 }
 
@@ -198,6 +198,7 @@ static void
 push_work (ThreadInfo *info)
 {
     print_prefixed ("release:work", info);
+
     for (guint i = 0; i < info->num_inputs; i++) {
         if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
             (info->input_params[i].n_fetched_items < info->input_params[i].n_expected_items))
@@ -205,6 +206,7 @@ push_work (ThreadInfo *info)
             g_async_queue_push (info->input_push_queues[i], info->work[i]);
         }
     }
+
     print_prefixed ("release:done", info);
 }
 
@@ -212,8 +214,10 @@ static void
 fetch_result (ThreadInfo *info)
 {
     print_prefixed ("fetch:result", info);
+
     for (guint port = 0; port < info->num_outputs; port++)
         info->result[port] = g_async_queue_pop (info->output_pop_queues[port]);
+
     print_prefixed ("fetch:done", info);
 }
 
@@ -221,8 +225,10 @@ static void
 push_result (ThreadInfo *info)
 {
     print_prefixed ("release:result", info);
+
     for (guint port = 0; port < info->num_outputs; port++)
         g_async_queue_push (info->output_push_queues[port], info->result[port]);
+
     print_prefixed ("release:done", info);
 }
 
@@ -305,7 +311,7 @@ process_synchronous_filter (ThreadInfo *info)
         print_prefixed ("init:done", info);
 
         if (error != NULL) {
-            g_print ("error: %s\n", error->message);
+            g_error ("%s", error->message);
             return error;
         }
 
@@ -597,8 +603,8 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
      * Wait for them to finish
      */
     for (i = 0; i < n_threads; i++) {
-        UfoFilter *filter;
-        ThreadInfo *info;
+        /* UfoFilter *filter; */
+        /* ThreadInfo *info; */
 
         tmp_error = (GError *) g_thread_join (threads[i]);
 
@@ -607,14 +613,14 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
             return;
         }
 
-        info = &thread_info[i];
-        filter = info->filter;
-        g_print ("%s-%p\n", ufo_filter_get_plugin_name (filter), (gpointer) filter);
+        /* info = &thread_info[i]; */
+        /* filter = info->filter; */
+        /* g_print ("%s-%p\n", ufo_filter_get_plugin_name (filter), (gpointer) filter); */
 
-        for (guint row = 0; row < info->n_event_rows; row++) {
-            cl_event_info_row *event_row = &info->event_rows[row];
-            g_print ("%lu %lu %lu %lu\n", event_row->queued, event_row->submitted, event_row->started, event_row->ended);
-        }
+        /* for (guint row = 0; row < info->n_event_rows; row++) { */
+        /*     cl_event_info_row *event_row = &info->event_rows[row]; */
+        /*     g_print ("%lu %lu %lu %lu\n", event_row->queued, event_row->submitted, event_row->started, event_row->ended); */
+        /* } */
     }
 
     /* TODO: free the cpu timers */
@@ -634,11 +640,13 @@ static void ufo_base_scheduler_dispose (GObject *object)
     UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
     g_hash_table_destroy (priv->exec_info);
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->dispose (object);
+    g_debug ("UfoBaseScheduler: disposed");
 }
 
 static void ufo_base_scheduler_finalize (GObject *object)
 {
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->finalize (object);
+    g_debug ("UfoBaseScheduler: finalized");
 }
 
 static void ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)

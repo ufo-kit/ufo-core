@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "ufo-resource-manager.h"
+#include "ufo-aux.h"
 
 G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT)
 
@@ -119,7 +120,8 @@ const gchar *opencl_error_msgs[] = {
  * \return A string containing a human-readable constant or NULL if error is
  *      invalid
  */
-const gchar *opencl_map_error (int error)
+const gchar *
+opencl_map_error (int error)
 {
     if (error >= -14)
         return opencl_error_msgs[-error];
@@ -130,7 +132,8 @@ const gchar *opencl_map_error (int error)
     return NULL;
 }
 
-static gchar *resource_manager_load_opencl_program (const gchar *filename)
+static gchar *
+resource_manager_load_opencl_program (const gchar *filename)
 {
     FILE *fp = fopen (filename, "r");
 
@@ -158,20 +161,24 @@ static gchar *resource_manager_load_opencl_program (const gchar *filename)
     return buffer;
 }
 
-static void resource_manager_release_kernel (gpointer data, gpointer user_data)
+static void
+resource_manager_release_kernel (gpointer data, gpointer user_data)
 {
     cl_kernel kernel = (cl_kernel) data;
     CHECK_OPENCL_ERROR (clReleaseKernel (kernel));
+    ufo_debug_cl ("Released kernel %p", (gpointer) kernel);
 }
 
-static void resource_manager_release_program (gpointer data)
+static void
+resource_manager_release_program (gpointer data)
 {
     cl_program program = (cl_program) data;
     CHECK_OPENCL_ERROR (clReleaseProgram (program));
+    ufo_debug_cl ("Released program %p", (gpointer) program);
 }
 
-static gchar *resource_manager_find_path (UfoResourceManagerPrivate *priv,
-        const gchar *filename)
+static gchar *
+resource_manager_find_path (UfoResourceManagerPrivate *priv, const gchar *filename)
 {
     /* Check first if filename is already a path */
     if (g_path_is_absolute (filename)) {
@@ -245,16 +252,19 @@ void ufo_resource_manager_add_paths (UfoResourceManager *manager, const gchar *p
 static cl_program
 resource_manager_add_program_from_source (UfoResourceManagerPrivate *priv, const gchar *source, const gchar *options, GError **error)
 {
+    cl_program program;
     gchar *build_options = NULL;
     cl_int errcode = CL_SUCCESS;
-    cl_program program = clCreateProgramWithSource (priv->opencl_context,
-                         1, &source, NULL, &errcode);
+
+    program = clCreateProgramWithSource (priv->opencl_context,
+                                         1, &source, NULL, &errcode);
+    ufo_debug_cl ("Created program %p with error code %i", (gpointer) program, errcode);
 
     if (errcode != CL_SUCCESS) {
         g_set_error (error,
-                    UFO_RESOURCE_MANAGER_ERROR,
-                    UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
-                    "Failed to create OpenCL program: %s", opencl_map_error (errcode));
+                     UFO_RESOURCE_MANAGER_ERROR,
+                     UFO_RESOURCE_MANAGER_ERROR_CREATE_PROGRAM,
+                     "Failed to create OpenCL program: %s", opencl_map_error (errcode));
         return NULL;
     }
 
@@ -268,6 +278,8 @@ resource_manager_add_program_from_source (UfoResourceManagerPrivate *priv, const
                               priv->opencl_devices[0],
                               build_options,
                               NULL, NULL);
+
+    ufo_debug_cl ("Build program %p with error code %i", (gpointer) program, errcode);
     g_free (build_options);
 
     if (errcode != CL_SUCCESS) {
@@ -278,8 +290,10 @@ resource_manager_add_program_from_source (UfoResourceManagerPrivate *priv, const
 
         const gsize LOG_SIZE = 4096;
         gchar *log = (gchar *) g_malloc0(LOG_SIZE * sizeof (char));
-        CHECK_OPENCL_ERROR (clGetProgramBuildInfo (program, priv->opencl_devices[0][0],
-                                          CL_PROGRAM_BUILD_LOG, LOG_SIZE, (void *) log, NULL));
+        CHECK_OPENCL_ERROR (clGetProgramBuildInfo (program,
+                                                   priv->opencl_devices[0][0],
+                                                   CL_PROGRAM_BUILD_LOG,
+                                                   LOG_SIZE, (void *) log, NULL));
         g_print ("\n=== Build log for s===%s\n\n", log);
         g_free (log);
         return NULL;
@@ -294,7 +308,7 @@ resource_manager_add_program (UfoResourceManager *manager, const gchar *filename
     g_return_val_if_fail (UFO_IS_RESOURCE_MANAGER (manager) || (filename != NULL), FALSE);
     UfoResourceManagerPrivate *priv = manager->priv;
 
-    /* programs might be added multiple times if this is not locked */
+    /* Programs might be added multiple times if this is not locked */
     static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
     g_static_mutex_lock (&mutex);
 
@@ -310,10 +324,9 @@ resource_manager_add_program (UfoResourceManager *manager, const gchar *filename
 
     if (path == NULL) {
         g_set_error (error,
-                    UFO_RESOURCE_MANAGER_ERROR,
-                    UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
-                    "Could not find %s",
-                    filename);
+                     UFO_RESOURCE_MANAGER_ERROR,
+                     UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
+                     "Could not find %s", filename);
         g_static_mutex_unlock (&mutex);
         return NULL;
     }
@@ -323,15 +336,15 @@ resource_manager_add_program (UfoResourceManager *manager, const gchar *filename
 
     if (buffer == NULL) {
         g_set_error (error,
-                    UFO_RESOURCE_MANAGER_ERROR,
-                    UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
-                    "Could not open %s",
-                    filename);
+                     UFO_RESOURCE_MANAGER_ERROR,
+                     UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
+                     "Could not open %s", filename);
         g_static_mutex_unlock (&mutex);
         return NULL;
     }
 
     program = resource_manager_add_program_from_source (priv, buffer, options, error);
+    g_debug ("Added program %p from `%s`", (gpointer) program, filename);
 
     if (program != NULL)
         g_hash_table_insert (priv->opencl_programs, g_strdup (filename), program);
@@ -347,8 +360,9 @@ resource_manager_get_kernel (UfoResourceManagerPrivate *priv, cl_program program
     cl_int errcode = CL_SUCCESS;
     cl_kernel kernel = clCreateKernel (program, kernel_name, &errcode);
 
-    /* TODO: check real OpenCL error code */
-    if (kernel == NULL) {
+    ufo_debug_cl ("Created kernel `%s` from program %p", kernel_name, (gpointer) program);
+
+    if (kernel == NULL || errcode != CL_SUCCESS) {
         g_set_error (error,
                      UFO_RESOURCE_MANAGER_ERROR,
                      UFO_RESOURCE_MANAGER_ERROR_CREATE_KERNEL,
@@ -490,7 +504,10 @@ ufo_resource_manager_get_context (UfoResourceManager *manager)
  */
 UfoBuffer *
 ufo_resource_manager_request_buffer (UfoResourceManager *manager,
-        guint num_dims, const guint *dim_size, gfloat *data, gpointer command_queue)
+                                     guint               num_dims,
+                                     const guint        *dim_size,
+                                     gfloat             *data,
+                                     gpointer            command_queue)
 {
     g_return_val_if_fail (UFO_IS_RESOURCE_MANAGER (manager), NULL);
     g_return_val_if_fail ((num_dims > UFO_BUFFER_MAX_NDIMS) || (dim_size != NULL), NULL);
@@ -642,7 +659,7 @@ static void ufo_resource_manager_finalize (GObject *gobject)
     g_list_free (priv->opencl_kernels);
 
     for (guint i = 0; i < priv->num_devices[0]; i++)
-        clReleaseCommandQueue (priv->command_queues[i]);
+        CHECK_OPENCL_ERROR (clReleaseCommandQueue (priv->command_queues[i]));
 
     CHECK_OPENCL_ERROR (clReleaseContext (priv->opencl_context));
     g_string_free (priv->opencl_build_options, TRUE);
@@ -663,6 +680,7 @@ static void ufo_resource_manager_finalize (GObject *gobject)
     manager_singleton = NULL;
 
     G_OBJECT_CLASS (ufo_resource_manager_parent_class)->finalize (gobject);
+    g_debug ("UfoResourceManager: finalized");
 }
 
 static void
@@ -671,13 +689,6 @@ ufo_resource_manager_class_init (UfoResourceManagerClass *klass)
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->finalize = ufo_resource_manager_finalize;
     g_type_class_add_private (klass, sizeof (UfoResourceManagerPrivate));
-}
-
-static void
-on_cl_context_error (const gchar *errinfo, const void *info, gsize cb, gpointer user_data)
-{
-    g_print ("Detailed OpenCL error: %s\n", errinfo);
-    g_print (" Private: %s\n", (const gchar *) info);
 }
 
 static void
@@ -696,7 +707,7 @@ ufo_resource_manager_init (UfoResourceManager *self)
     priv->opencl_build_options = g_string_new ("-cl-mad-enable ");
     priv->include_paths = g_string_new ("-I. ");
 
-    g_debug ("Ufo version %s\n", UFO_VERSION);
+    g_message ("Ufo version %s\n", UFO_VERSION);
 
     /* initialize OpenCL subsystem */
     int errcode = CL_SUCCESS;
@@ -707,7 +718,7 @@ ufo_resource_manager_init (UfoResourceManager *self)
     priv->num_devices = g_malloc0(priv->num_platforms * sizeof (cl_uint));
     priv->opencl_devices = g_malloc0(priv->num_platforms * sizeof (cl_device_id *));
 
-    g_debug ("Number of OpenCL platforms: %i", priv->num_platforms);
+    ufo_debug_cl ("Number of OpenCL platforms: %i", priv->num_platforms);
     /* Get devices for each available platform */
     gchar *info_buffer = g_malloc0(256);
 
@@ -716,9 +727,9 @@ ufo_resource_manager_init (UfoResourceManager *self)
         cl_platform_id platform = priv->opencl_platforms[i];
 
         CHECK_OPENCL_ERROR (clGetPlatformInfo (platform, CL_PLATFORM_NAME, 256, info_buffer, NULL));
-        g_debug ("--- %s ---", info_buffer);
+        ufo_debug_cl ("--- %s ---", info_buffer);
         CHECK_OPENCL_ERROR (clGetPlatformInfo (platform, CL_PLATFORM_VENDOR, 256, info_buffer, NULL));
-        g_debug (" Vendor...........: %s", info_buffer);
+        ufo_debug_cl (" Vendor        : %s", info_buffer);
 
         if (g_str_has_prefix (info_buffer, "NVIDIA"))
             g_string_append (priv->opencl_build_options, "-cl-nv-verbose -DVENDOR=NVIDIA");
@@ -726,7 +737,7 @@ ufo_resource_manager_init (UfoResourceManager *self)
             g_string_append (priv->opencl_build_options, "-DVENDOR=AMD");
 
         CHECK_OPENCL_ERROR (clGetPlatformInfo (platform, CL_PLATFORM_VERSION, 256, info_buffer, NULL));
-        g_debug (" Version..........: %s", info_buffer);
+        ufo_debug_cl (" Version       : %s", info_buffer);
 
         CHECK_OPENCL_ERROR (clGetDeviceIDs (platform,
                                    CL_DEVICE_TYPE_ALL,
@@ -740,8 +751,8 @@ ufo_resource_manager_init (UfoResourceManager *self)
                                    NULL));
         priv->num_devices[i] = num_devices;
 
-        g_debug (" Number of devices: %i", num_devices);
-        g_debug (" Build options....: %s", priv->opencl_build_options->str);
+        ufo_debug_cl (" Device count  : %i", num_devices);
+        ufo_debug_cl (" Build options : %s", priv->opencl_build_options->str);
     }
 
     g_free (info_buffer);
@@ -752,7 +763,7 @@ ufo_resource_manager_init (UfoResourceManager *self)
         priv->opencl_context = clCreateContext (NULL,
                                                 priv->num_devices[0],
                                                 priv->opencl_devices[0],
-                                                on_cl_context_error, NULL, &errcode);
+                                                NULL, NULL, &errcode);
         CHECK_OPENCL_ERROR (errcode);
         priv->command_queues = g_malloc0(priv->num_devices[0] * sizeof (cl_command_queue));
 
