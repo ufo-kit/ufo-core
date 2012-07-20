@@ -165,7 +165,7 @@ void ufo_channel_allocate_output_buffers_like(UfoChannel *channel, UfoBuffer *bu
 }
 
 /**
- * ufo_channel_get_input_buffer:
+ * ufo_channel_get_input_buffer: (skip)
  * @channel: A #UfoChannel
  *
  * This method blocks execution as long as no new input buffer is readily
@@ -193,7 +193,7 @@ UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel)
 }
 
 /**
- * ufo_channel_get_output_buffer:
+ * ufo_channel_get_output_buffer: (skip)
  * @channel: A #UfoChannel
  *
  * This method blocks execution as long as no new output buffer is readily

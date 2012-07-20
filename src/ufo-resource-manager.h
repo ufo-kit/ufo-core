@@ -27,6 +27,9 @@ typedef enum {
 } UfoResourceManagerError;
 
 
+/**
+ * opencl_map_error: (skip)
+ */
 const gchar *opencl_map_error(int error);
 
 /**

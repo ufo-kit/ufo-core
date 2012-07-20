@@ -111,7 +111,7 @@ ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output
 }
 
 /**
- * ufo_filter_process_gpu:
+ * ufo_filter_process_gpu: (skip)
  * @filter: A #UfoFilter.
  * @input: An array of buffers for each input port
  * @output: An array of buffers for each output port
@@ -155,7 +155,7 @@ ufo_filter_set_plugin_name (UfoFilter *filter, const gchar *plugin_name)
 }
 
 /**
- * ufo_filter_register_inputs:
+ * ufo_filter_register_inputs: (skip)
  * @filter: A #UfoFilter.
  * @n_inputs: Number of inputs
  * @input_parameters: An array of #UfoInputParameter structures
@@ -183,7 +183,7 @@ ufo_filter_register_inputs (UfoFilter *filter, guint n_inputs, UfoInputParameter
 }
 
 /**
- * ufo_filter_register_outputs:
+ * ufo_filter_register_outputs: (skip)
  * @filter: A #UfoFilter.
  * @n_outputs: Number of outputs
  * @output_parameters: An array of #UfoOutputParameter structures
@@ -225,7 +225,7 @@ UfoInputParameter *ufo_filter_get_input_parameters (UfoFilter *filter)
 }
 
 /**
- * ufo_filter_get_input_parameters:
+ * ufo_filter_get_input_parameters: (skip)
  * @filter: A #UfoFilter.
  *
  * Get input parameters.
@@ -287,7 +287,7 @@ ufo_filter_get_plugin_name (UfoFilter *filter)
 }
 
 /**
- * ufo_filter_wait_until:
+ * ufo_filter_wait_until: (skip)
  * @filter: A #UfoFilter
  * @pspec: The specification of the property
  * @condition: A condition function to wait until it is satisfied

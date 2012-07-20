@@ -209,7 +209,7 @@ resource_manager_find_path (UfoResourceManagerPrivate *priv, const gchar *filena
  *
  * Create a new #UfoResourceManager instance.
  *
- * Return value: A new #UfoResourceManager
+ * Returns: (transfer none): A new #UfoResourceManager
  */
 UfoResourceManager *ufo_resource_manager (void)
 {
@@ -376,7 +376,7 @@ resource_manager_get_kernel (UfoResourceManagerPrivate *priv, cl_program program
 }
 
 /**
- * ufo_resource_manager_get_kernel:
+ * ufo_resource_manager_get_kernel: (skip)
  * @manager: A #UfoResourceManager
  * @filename: Name of the .cl kernel file
  * @kernel_name: Name of a kernel
@@ -408,7 +408,7 @@ ufo_resource_manager_get_kernel (UfoResourceManager *manager, const gchar *filen
 }
 
 /**
- * ufo_resource_manager_get_kernel_from_source:
+ * ufo_resource_manager_get_kernel_from_source: (skip)
  * @manager: A #UfoResourceManager
  * @source: OpenCL source string
  * @kernel_name: Name of a kernel
@@ -472,7 +472,7 @@ ufo_resource_manager_get_kernel_from_source (UfoResourceManager *manager, const 
 /* } */
 
 /**
- * ufo_resource_manager_get_context:
+ * ufo_resource_manager_get_context: (skip)
  * @manager: A #UfoResourceManager
  *
  * Returns the OpenCL context object that is used by the resource manager. This
@@ -488,7 +488,7 @@ ufo_resource_manager_get_context (UfoResourceManager *manager)
 }
 
 /**
- * ufo_resource_manager_request_buffer:
+ * ufo_resource_manager_request_buffer: (skip)
  * @manager: A #UfoResourceManager
  * @num_dims: (in): Number of dimensions
  * @dim_size: (in) (array): Size of each dimension
@@ -535,7 +535,7 @@ ufo_resource_manager_request_buffer (UfoResourceManager *manager,
 }
 
 /**
- * ufo_resource_manager_memalloc:
+ * ufo_resource_manager_memalloc: (skip)
  * @manager: A #UfoResourceManager
  * @size: Size of cl_mem in bytes
  *
@@ -554,7 +554,7 @@ ufo_resource_manager_memalloc (UfoResourceManager *manager, gsize size)
 }
 
 /**
- * ufo_resource_manager_memdup:
+ * ufo_resource_manager_memdup: (skip)
  * @manager: A #UfoResourceManager
  * @memobj: A cl_mem object
  *
@@ -615,7 +615,7 @@ void ufo_resource_manager_get_command_queues (UfoResourceManager *manager, gpoin
 }
 
 /**
- * ufo_resource_manager_get_command_queue:
+ * ufo_resource_manager_get_command_queue: (skip)
  * @manager: A #UfoResourceManager
  * @queue: The number of the queue which must be less than the number returned
  *      by ufo_resource_manager_get_number_of_devices ().

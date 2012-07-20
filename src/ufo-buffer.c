@@ -409,7 +409,7 @@ ufo_buffer_clear_events(UfoBuffer *buffer)
 }
 
 /**
- * ufo_buffer_get_transfer_timer:
+ * ufo_buffer_get_transfer_timer: (skip)
  * @buffer: A #UfoBuffer.
  *
  * Each buffer has a timer object that measures time spent for transfering data
@@ -512,7 +512,7 @@ ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
 }
 
 /**
- * ufo_buffer_get_device_array:
+ * ufo_buffer_get_device_array: (skip)
  * @buffer: A #UfoBuffer
  * @command_queue: A cl_command_queue object that is used to access the device
  * memory.
@@ -603,7 +603,7 @@ ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b)
  * Creates a new #UfoBufferParamSpec instance specifying a #UFO_TYPE_BUFFER
  * property.
  *
- * Returns: a newly created parameter specification
+ * Returns: (transfer none): a newly created parameter specification
  * 
  * @see g_param_spec_internal() for details on property names.
  */

@@ -24,7 +24,7 @@ struct _UfoEventList {
 };
 
 /**
- * ufo_event_list_new:
+ * ufo_event_list_new: (skip)
  * @n_events: Number of %cl_events
  *
  * Create a new event list.
@@ -83,7 +83,7 @@ ufo_event_list_free (UfoEventList  *list)
 }
 
 /**
- * ufo_event_list_get_event_array:
+ * ufo_event_list_get_event_array: (skip)
  * @list: A #UfoEventList
  *
  * Return an array of %cl_event objects.
@@ -98,7 +98,7 @@ ufo_event_list_get_event_array (UfoEventList *list)
 }
 
 /**
- * ufo_event_list_get_list:
+ * ufo_event_list_get_list: (skip)
  * @list: A #UfoEventList
  *
  * Return a #GList containing pointers to the %cl_event objects.

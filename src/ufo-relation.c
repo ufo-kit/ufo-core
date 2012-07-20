@@ -69,7 +69,7 @@ ufo_relation_new (UfoFilter *producer, guint output_port, UfoRelationMode mode)
 }
 
 /**
- * ufo_relation_get_producer:
+ * ufo_relation_get_producer: (skip)
  * @relation: A #UfoRelation object
  *
  * Get the producer associated with the relation.
@@ -172,7 +172,7 @@ ufo_relation_add_consumer (UfoRelation *relation, UfoFilter *consumer, guint inp
 }
 
 /**
- * ufo_relation_get_consumers:
+ * ufo_relation_get_consumers: (skip)
  * @relation: A #UfoRelation object
  *
  * Get the consumers associated with this relation
