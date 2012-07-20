@@ -22,9 +22,6 @@ G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT)
 
 #define UFO_BUFFER_ERROR ufo_buffer_error_quark()
 
-enum UfoBufferError {
-    UFO_BUFFER_ERROR_WRONG_SIZE
-};
 
 enum {
     PROP_0,
@@ -66,6 +63,12 @@ struct _UfoBufferPrivate {
     cl_ulong    time_download;
 };
 
+/**
+ * UfoBufferError:
+ * @UFO_BUFFER_ERROR_WRONG_SIZE: Wrongly sized array passed to the buffer
+ *
+ * Possible errors when using a UfoBuffer.
+ */
 GQuark ufo_buffer_error_quark(void)
 {
     return g_quark_from_static_string("ufo-buffer-error-quark");

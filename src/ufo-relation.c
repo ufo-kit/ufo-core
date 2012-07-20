@@ -172,12 +172,12 @@ ufo_relation_add_consumer (UfoRelation *relation, UfoFilter *consumer, guint inp
 }
 
 /**
- * ufo_relation_get_producer:
+ * ufo_relation_get_consumers:
  * @relation: A #UfoRelation object
  *
  * Get the consumers associated with this relation
  *
- * Returns: A list with #UfoFilter consumers
+ * Returns: (transfer none) (element-type UfoFilter): A list with #UfoFilter consumers
  * Since: 0.2
  */
 GList *

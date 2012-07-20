@@ -16,6 +16,11 @@ G_BEGIN_DECLS
 #define UFO_IS_PARAM_SPEC_BUFFER(pspec)  (G_TYPE_CHECK_INSTANCE_TYPE((pspec), UFO_TYPE_PARAM_BUFFER))
 #define UFO_BUFFER_PARAM_SPEC(pspec)     (G_TYPE_CHECK_INSTANCE_CAST((pspec), UFO_TYPE_PARAM_BUFFER, UfoBufferParamSpec))
 
+#define UFO_BUFFER_ERROR ufo_buffer_error_quark()
+typedef enum {
+    UFO_BUFFER_ERROR_WRONG_SIZE
+} UfoBufferError;
+
 typedef struct _UfoBuffer           UfoBuffer;
 typedef struct _UfoBufferClass      UfoBufferClass;
 typedef struct _UfoBufferPrivate    UfoBufferPrivate;

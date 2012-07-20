@@ -552,7 +552,7 @@ process_thread (gpointer data)
 /**
  * ufo_base_scheduler_run:
  * @scheduler: A #UfoBaseScheduler object
- * @relations: A list of all relations that should be scheduled
+ * @relations: (in) (element-type UfoRelation): A list of all relations that should be scheduled
  * @error: return location for a GError with error codes from
  * #UfoPluginManagerError or %NULL
  *

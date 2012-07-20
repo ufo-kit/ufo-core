@@ -103,7 +103,7 @@ ufo_event_list_get_event_array (UfoEventList *list)
  *
  * Return a #GList containing pointers to the %cl_event objects.
  *
- * Returns: A #GList.
+ * Returns: (transfer none) (element-type gpointer): A #GList.
  * Since: 0.2
  */
 GList *
