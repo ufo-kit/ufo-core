@@ -110,16 +110,16 @@ static void
 ufo_filter_reduce_collect_real (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
-            "Virtual method `collect` of %s is not implemented",
-            ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+                 "Virtual method `collect' of %s is not implemented",
+                 ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 }
 
 static gboolean
 ufo_filter_reduce_reduce_real (UfoFilterReduce *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
-            "Virtual method `collect` of %s is not implemented",
-            ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+                 "Virtual method `reduce' of %s is not implemented",
+                 ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 
     return FALSE;
 }

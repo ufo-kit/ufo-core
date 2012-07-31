@@ -75,15 +75,16 @@ ufo_filter_source_generate (UfoFilterSource *filter, UfoBuffer *output[], gpoint
 static void
 ufo_filter_source_initialize_real (UfoFilterSource *filter, guint **output_dim_sizes, GError **error)
 {
-    g_debug ("%s->initialize not implemented", ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+    g_debug ("Virtual method `initialize' of %s not implemented",
+             ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 }
 
 static gboolean
 ufo_filter_source_generate_real (UfoFilterSource *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
-            "Virtual method `generate` of %s is not implemented",
-            ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+                 "Virtual method `generate' of %s is not implemented",
+                 ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 
     return FALSE;
 }

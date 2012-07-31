@@ -63,15 +63,14 @@ static void
 ufo_filter_sink_initialize_real (UfoFilterSink *filter, UfoBuffer *input[], GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_SINK (filter));
-    /* Don't do anything. */
 }
 
 static void
 ufo_filter_sink_consume_real (UfoFilterSink *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
-            "Virtual method `consume` of %s is not implemented",
-            ufo_filter_get_plugin_name (UFO_FILTER (filter)));
+                 "Virtual method `consume' of %s is not implemented",
+                 ufo_filter_get_plugin_name (UFO_FILTER (filter)));
 }
 
 static void

@@ -173,10 +173,14 @@ ufo_filter_register_inputs (UfoFilter *filter, guint n_inputs, UfoInputParameter
     g_return_if_fail (UFO_IS_FILTER (filter));
     g_return_if_fail (parameters != NULL);
 
-    if (UFO_IS_FILTER_SOURCE (filter))
-        g_warning ("A source does not receive any inputs");
-
     priv = UFO_FILTER_GET_PRIVATE (filter);
+
+    if (UFO_IS_FILTER_SOURCE (filter)) {
+        g_warning ("%s is a source filter and cannot receive any inputs",
+                   priv->plugin_name);
+        return;
+    }
+
     priv->n_inputs = n_inputs;
     priv->input_parameters = g_new0 (UfoInputParameter, n_inputs);
     g_memmove (priv->input_parameters, parameters, n_inputs * sizeof(UfoInputParameter));
@@ -200,10 +204,14 @@ ufo_filter_register_outputs (UfoFilter *filter, guint n_outputs, UfoOutputParame
     g_return_if_fail (UFO_IS_FILTER (filter));
     g_return_if_fail (parameters != NULL);
 
-    if (UFO_IS_FILTER_SINK (filter))
-        g_warning ("A sink does not output any data");
-
     priv = UFO_FILTER_GET_PRIVATE (filter);
+
+    if (UFO_IS_FILTER_SINK (filter)) {
+        g_warning ("%s is a sink filter and cannnot output any data",
+                   priv->plugin_name);
+        return;
+    }
+
     priv->n_outputs = n_outputs;
     priv->output_parameters = g_new0 (UfoOutputParameter, n_outputs);
     g_memmove (priv->output_parameters, parameters, n_outputs * sizeof(UfoOutputParameter));
@@ -238,7 +246,6 @@ UfoOutputParameter *ufo_filter_get_output_parameters (UfoFilter *filter)
     g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
     return filter->priv->output_parameters;
 }
-
 
 /**
  * ufo_filter_get_num_inputs:
@@ -316,7 +323,8 @@ ufo_filter_wait_until (UfoFilter *filter, GParamSpec *pspec, UfoFilterConditionF
 static void
 ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *input[], guint **output_dim_sizes, GError **error)
 {
-    g_debug ("%s->initialize() not implemented\n", filter->priv->plugin_name);
+    g_debug ("Virtual method `initialize' of %s not implemented\n",
+             filter->priv->plugin_name);
 }
 
 static void
