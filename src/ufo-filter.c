@@ -218,21 +218,6 @@ ufo_filter_register_outputs (UfoFilter *filter, guint n_outputs, UfoOutputParame
 }
 
 /**
- * ufo_filter_get_input_parameters:
- * @filter: A #UfoFilter.
- *
- * Get input parameters.
- *
- * Return: An array of #UfoInputParameter structures. This array must not be
- *      freed.
- */
-UfoInputParameter *ufo_filter_get_input_parameters (UfoFilter *filter)
-{
-    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
-    return filter->priv->input_parameters;
-}
-
-/**
  * ufo_filter_get_input_parameters: (skip)
  * @filter: A #UfoFilter.
  *
@@ -241,7 +226,24 @@ UfoInputParameter *ufo_filter_get_input_parameters (UfoFilter *filter)
  * Return: An array of #UfoInputParameter structures. This array must not be
  *      freed.
  */
-UfoOutputParameter *ufo_filter_get_output_parameters (UfoFilter *filter)
+UfoInputParameter *
+ufo_filter_get_input_parameters (UfoFilter *filter)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    return filter->priv->input_parameters;
+}
+
+/**
+ * ufo_filter_get_output_parameters: (skip)
+ * @filter: A #UfoFilter.
+ *
+ * Get ouput parameters.
+ *
+ * Return: An array of #UfoOuputParameter structures. This array must not be
+ *      freed.
+ */
+UfoOutputParameter *
+ufo_filter_get_output_parameters (UfoFilter *filter)
 {
     g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
     return filter->priv->output_parameters;

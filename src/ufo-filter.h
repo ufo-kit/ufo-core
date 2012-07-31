@@ -41,6 +41,8 @@ typedef enum {
 typedef struct _UfoFilter           UfoFilter;
 typedef struct _UfoFilterClass      UfoFilterClass;
 typedef struct _UfoFilterPrivate    UfoFilterPrivate;
+typedef struct _UfoInputParameter   UfoInputParameter;
+typedef struct _UfoOutputParameter  UfoOutputParameter;
 
 /**
  * UfoFilterConditionFunc:
@@ -65,14 +67,14 @@ typedef gboolean (*UfoFilterConditionFunc) (GValue *value, gpointer user_data);
  * Data structure for describing the parameters of an input as used by
  * ufo_filter_register_inputs().
  */
-typedef struct _UfoInputParameter {
+struct _UfoInputParameter {
     /* To be initialized by filter implementation */
     guint   n_dims;
     gint    n_expected_items;
 
     /* Do not have to be set */
     gint    n_fetched_items;
-} UfoInputParameter;
+};
 
 /**
  * UfoOutputParameter:
@@ -81,9 +83,9 @@ typedef struct _UfoInputParameter {
  * Data structure for describing the parameters of an output as used by
  * ufo_filter_register_outputs().
  */
-typedef struct _UfoOutputParameter {
+struct _UfoOutputParameter {
     guint   n_dims;
-} UfoOutputParameter;
+};
 
 /**
  * UfoFilter:
@@ -157,8 +159,8 @@ guint               ufo_filter_get_num_outputs          (UfoFilter              
 void                ufo_filter_wait_until               (UfoFilter              *filter,
                                                          GParamSpec             *pspec,
                                                          UfoFilterConditionFunc  condition,
-                                                        gpointer                 user_data);
-GType           ufo_filter_get_type                     (void);
+                                                         gpointer                user_data);
+GType               ufo_filter_get_type                 (void);
 
 G_END_DECLS
 
