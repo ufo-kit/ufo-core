@@ -36,28 +36,21 @@ GQuark ufo_resource_manager_error_quark (void)
     return g_quark_from_static_string ("ufo-resource-manager-error-quark");
 }
 
-static UfoResourceManager *manager_singleton = NULL;
-
 struct _UfoResourceManagerPrivate {
-    cl_uint num_platforms;
-    cl_platform_id *opencl_platforms;
+    cl_uint              num_platforms;
+    cl_platform_id      *opencl_platforms;
+    cl_context           opencl_context;
+    cl_uint             *num_devices;       /**< Number of OpenCL devices per platform id */
+    cl_device_id       **opencl_devices;    /**< Array of OpenCL devices per platform id */
+    cl_command_queue    *command_queues;    /**< Array of command queues per device */
 
-    cl_context opencl_context;
-
-    cl_uint *num_devices;               /**< Number of OpenCL devices per platform id */
-    cl_device_id **opencl_devices;      /**< Array of OpenCL devices per platform id */
-    cl_command_queue *command_queues;   /**< Array of command queues per device */
-
-    GList *kernel_paths;                /**< Colon-separated string with paths to kernel files */
-    GHashTable *opencl_programs;        /**< Map from filename to cl_program */
-    GList *opencl_kernels;
-    GString *opencl_build_options;
-    GString *include_paths;             /**< List of include paths "-I/foo/bar" built from added paths */
+    GList       *kernel_paths;          /**< Colon-separated string with paths to kernel files */
+    GHashTable  *opencl_programs;       /**< Map from filename to cl_program */
+    GList       *opencl_kernels;
+    GString     *opencl_build_options;
+    GString     *include_paths;         /**< List of include paths "-I/foo/bar" built from added paths */
 
     guint current_id;                   /**< current non-assigned buffer id */
-
-    float upload_time;
-    float download_time;
 };
 
 const gchar *opencl_error_msgs[] = {
@@ -205,18 +198,16 @@ resource_manager_find_path (UfoResourceManagerPrivate *priv, const gchar *filena
 }
 
 /**
- * ufo_resource_manager:
+ * ufo_resource_manager_new:
  *
  * Create a new #UfoResourceManager instance.
  *
  * Returns: (transfer none): A new #UfoResourceManager
  */
-UfoResourceManager *ufo_resource_manager (void)
+UfoResourceManager *
+ufo_resource_manager_new (void)
 {
-    if (manager_singleton == NULL)
-        manager_singleton = UFO_RESOURCE_MANAGER (g_object_new (UFO_TYPE_RESOURCE_MANAGER, NULL));
-
-    return manager_singleton;
+    return UFO_RESOURCE_MANAGER (g_object_new (UFO_TYPE_RESOURCE_MANAGER, NULL));
 }
 
 /**
@@ -227,7 +218,8 @@ UfoResourceManager *ufo_resource_manager (void)
  * Each path in @paths is used when searching for kernel files using
  * ufo_resource_manager_get_kernel() in the order that they are passed in.
  */
-void ufo_resource_manager_add_paths (UfoResourceManager *manager, const gchar *paths)
+void
+ufo_resource_manager_add_paths (UfoResourceManager *manager, const gchar *paths)
 {
     g_return_if_fail (UFO_IS_RESOURCE_MANAGER (manager));
     UfoResourceManagerPrivate *priv = manager->priv;
@@ -250,7 +242,10 @@ void ufo_resource_manager_add_paths (UfoResourceManager *manager, const gchar *p
 }
 
 static cl_program
-resource_manager_add_program_from_source (UfoResourceManagerPrivate *priv, const gchar *source, const gchar *options, GError **error)
+add_program_from_source (UfoResourceManagerPrivate *priv,
+                         const gchar *source,
+                         const gchar *options,
+                         GError **error)
 {
     cl_program program;
     gchar *build_options = NULL;
@@ -343,7 +338,7 @@ resource_manager_add_program (UfoResourceManager *manager, const gchar *filename
         return NULL;
     }
 
-    program = resource_manager_add_program_from_source (priv, buffer, options, error);
+    program = add_program_from_source (priv, buffer, options, error);
     g_debug ("Added program %p from `%s`", (gpointer) program, filename);
 
     if (program != NULL)
@@ -423,7 +418,7 @@ ufo_resource_manager_get_kernel_from_source (UfoResourceManager *manager, const 
 {
     g_return_val_if_fail (UFO_IS_RESOURCE_MANAGER (manager) && (source != NULL) && (kernel_name != NULL), NULL);
     UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (manager);
-    cl_program program = resource_manager_add_program_from_source (priv, source, NULL, error);
+    cl_program program = add_program_from_source (priv, source, NULL, error);
 
     /*
      * We add the program under a fake file name. This looks very brittle to me
@@ -677,8 +672,6 @@ static void ufo_resource_manager_finalize (GObject *gobject)
     priv->opencl_devices = NULL;
     priv->opencl_platforms = NULL;
 
-    manager_singleton = NULL;
-
     G_OBJECT_CLASS (ufo_resource_manager_parent_class)->finalize (gobject);
     g_debug ("UfoResourceManager: finalized");
 }
@@ -696,8 +689,6 @@ ufo_resource_manager_init (UfoResourceManager *self)
 {
     UfoResourceManagerPrivate *priv;
     self->priv = priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (self);
-    priv->upload_time = 0.0f;
-    priv->download_time = 0.0f;
     priv->current_id = 0;
 
     priv->opencl_programs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, resource_manager_release_program);
@@ -719,6 +710,7 @@ ufo_resource_manager_init (UfoResourceManager *self)
     priv->opencl_devices = g_malloc0(priv->num_platforms * sizeof (cl_device_id *));
 
     ufo_debug_cl ("Number of OpenCL platforms: %i", priv->num_platforms);
+
     /* Get devices for each available platform */
     gchar *info_buffer = g_malloc0(256);
 

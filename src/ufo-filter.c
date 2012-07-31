@@ -28,6 +28,7 @@ struct _UfoFilterPrivate {
     guint               n_inputs;
     guint               n_outputs;
 
+    UfoResourceManager  *manager;
     UfoInputParameter   *input_parameters;
     UfoOutputParameter  *output_parameters;
 
@@ -88,6 +89,38 @@ ufo_filter_initialize (UfoFilter *filter, UfoBuffer *input[], guint **output_dim
 {
     g_return_if_fail (UFO_IS_FILTER (filter));
     UFO_FILTER_GET_CLASS (filter)->initialize (filter, input, output_dim_sizes, error);
+}
+
+/**
+ * ufo_filter_set_resource_manager:
+ * @filter: A #UfoFilter.
+ * @manager: A #UfoResourceManager
+ *
+ * Set the resource manager that this filter uses for requesting resources.
+ *
+ * Since: 0.2
+ */
+void ufo_filter_set_resource_manager (UfoFilter *filter,
+                                      UfoResourceManager *manager)
+{
+    g_return_if_fail (UFO_IS_FILTER (filter));
+    g_return_if_fail (UFO_IS_RESOURCE_MANAGER (manager));
+
+    filter->priv->manager = manager;
+}
+/**
+ * ufo_filter_get_resource_manager:
+ * @filter: A #UfoFilter.
+ *
+ * Get the resource manager that this filter uses for requesting resources.
+ *
+ * Returns: A #UfoResourceManager
+ * Since: 0.2
+ */
+UfoResourceManager *ufo_filter_get_resource_manager (UfoFilter *filter)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    return filter->priv->manager;
 }
 
 /**

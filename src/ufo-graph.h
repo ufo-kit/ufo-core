@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 #include "ufo-plugin-manager.h"
+#include "ufo-resource-manager.h"
 #include "ufo-filter.h"
 #include "ufo-relation.h"
 
@@ -47,28 +48,29 @@ struct _UfoGraphClass {
     GObjectClass parent_class;
 };
 
-UfoGraph   *ufo_graph_new                   (const gchar   *paths);
+UfoGraph   *ufo_graph_new                   (const gchar        *paths,
+                                             UfoResourceManager *manager);
 void        ufo_graph_read_from_json        (UfoGraph      *graph,
                                              UfoPluginManager *manager,
                                              const gchar   *filename,
                                              GError       **error);
-void        ufo_graph_save_to_json          (UfoGraph      *graph,
-                                             const gchar   *filename,
-                                             GError       **error);
-void        ufo_graph_run                   (UfoGraph      *graph,
-                                             GError       **error);
-void        ufo_graph_connect_filters       (UfoGraph      *graph,
-                                             UfoFilter     *from,
-                                             UfoFilter     *to,
-                                             GError       **error);
-void        ufo_graph_connect_filters_full  (UfoGraph      *graph,
-                                             UfoFilter     *from,
-                                             guint          from_port,
-                                             UfoFilter     *to,
-                                             guint          to_port,
-                                             GError       **error);
-void        ufo_graph_add_relation          (UfoGraph      *graph,
-                                             UfoRelation   *relation);
+void        ufo_graph_save_to_json          (UfoGraph           *graph,
+                                             const gchar        *filename,
+                                             GError            **error);
+void        ufo_graph_run                   (UfoGraph           *graph,
+                                             GError             **error);
+void        ufo_graph_connect_filters       (UfoGraph           *graph,
+                                             UfoFilter          *from,
+                                             UfoFilter          *to,
+                                             GError            **error);
+void        ufo_graph_connect_filters_full  (UfoGraph           *graph,
+                                             UfoFilter          *from,
+                                             guint               from_port,
+                                             UfoFilter          *to,
+                                             guint               to_port,
+                                             GError            **error);
+void        ufo_graph_add_relation          (UfoGraph           *graph,
+                                             UfoRelation        *relation);
 GType       ufo_graph_get_type              (void);
 GQuark      ufo_graph_error_quark           (void);
 

@@ -63,21 +63,27 @@ typedef struct {
 } ThreadInfo;
 
 struct _UfoBaseSchedulerPrivate {
-    GHashTable *exec_info;    /**< maps from gpointer to ExecutionInformation* */
+    UfoResourceManager  *manager;
+    GHashTable          *exec_info;    /**< maps from gpointer to ExecutionInformation* */
 };
 
 /**
  * ufo_base_scheduler_new:
+ * @manager: A #UfoResourceManager
  *
  * Creates a new #UfoBaseScheduler.
  *
  * Return value: A new #UfoBaseScheduler
  */
 UfoBaseScheduler *
-ufo_base_scheduler_new (void)
+ufo_base_scheduler_new (UfoResourceManager *manager)
 {
-    UfoBaseScheduler *base_scheduler = UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_BASE_SCHEDULER, NULL));
-    return base_scheduler;
+    UfoBaseScheduler *scheduler;
+
+    scheduler = UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_BASE_SCHEDULER, NULL));
+    scheduler->priv->manager = manager;
+    g_object_ref (manager);
+    return scheduler;
 }
 
 static void
@@ -87,10 +93,12 @@ push_poison_pill (GList *relations)
 }
 
 static void
-alloc_output_buffers (UfoFilter *filter, GAsyncQueue *pop_queues[], guint **output_dims)
+alloc_output_buffers (UfoFilter *filter,
+                      GAsyncQueue *pop_queues[],
+                      guint **output_dims)
 {
-    UfoResourceManager *manager = ufo_resource_manager ();
     UfoOutputParameter *output_params = ufo_filter_get_output_parameters (filter);
+    UfoResourceManager *manager = ufo_filter_get_resource_manager (filter);
     const guint num_outputs = ufo_filter_get_num_outputs (filter);
 
     for (guint port = 0; port < num_outputs; port++) {
@@ -275,7 +283,9 @@ process_source_filter (ThreadInfo *info)
     if (error != NULL)
         return error;
 
-    alloc_output_buffers (filter, info->output_pop_queues, info->output_dims);
+    alloc_output_buffers (filter,
+                          info->output_pop_queues,
+                          info->output_dims);
 
     while (cont) {
         fetch_result (info);
@@ -315,7 +325,9 @@ process_synchronous_filter (ThreadInfo *info)
             return error;
         }
 
-        alloc_output_buffers (filter, info->output_pop_queues, info->output_dims);
+        alloc_output_buffers (filter,
+                              info->output_pop_queues,
+                              info->output_dims);
     }
     else {
         return NULL;
@@ -410,7 +422,9 @@ process_reduce_filter (ThreadInfo *info)
         if (error != NULL)
             return error;
 
-        alloc_output_buffers (filter, info->output_pop_queues, info->output_dims);
+        alloc_output_buffers (filter,
+                              info->output_pop_queues,
+                              info->output_dims);
     }
     else {
         return NULL;
@@ -561,18 +575,18 @@ process_thread (gpointer data)
 void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GError **error)
 {
     cl_command_queue *cmd_queues;
-    GTimer *timer;
-    GList *filters;
-    GThread **threads;
-    GError *tmp_error = NULL;
-    ThreadInfo *thread_info;
-    guint n_queues;
-    guint n_threads;
-    guint i = 0;
+    GTimer      *timer;
+    GList       *filters;
+    GThread    **threads;
+    GError      *tmp_error = NULL;
+    ThreadInfo  *thread_info;
+    guint        n_queues;
+    guint        n_threads;
+    guint        i = 0;
 
     g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
 
-    ufo_resource_manager_get_command_queues (ufo_resource_manager (), (void **) &cmd_queues, &n_queues);
+    ufo_resource_manager_get_command_queues (scheduler->priv->manager, (void **) &cmd_queues, &n_queues);
 
     /*
      * Unfortunately, there is no set data type in GLib. Thus we have to write
@@ -591,9 +605,9 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
             g_hash_table_insert (filter_set, jt->data, NULL);
     }
 
-    filters = g_hash_table_get_keys (filter_set);
-    n_threads = g_list_length (filters);
-    threads = g_new0 (GThread *, n_threads);
+    filters     = g_hash_table_get_keys (filter_set);
+    n_threads   = g_list_length (filters);
+    threads     = g_new0 (GThread *, n_threads);
     thread_info = g_new0 (ThreadInfo, n_threads);
 
     g_thread_init (NULL);
@@ -664,6 +678,7 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
 static void ufo_base_scheduler_dispose (GObject *object)
 {
     UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
+    g_object_unref (priv->manager);
     g_hash_table_destroy (priv->exec_info);
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->dispose (object);
     g_debug ("UfoBaseScheduler: disposed");

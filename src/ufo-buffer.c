@@ -209,33 +209,6 @@ ufo_buffer_transfer_id(UfoBuffer *from, UfoBuffer *to)
 }
 
 /**
- * ufo_buffer_copy:
- * @from: A #UfoBuffer to copy from.
- * @to: A #UfoBuffer to copy into.
- * @command_queue: A cl_command_queue.
- *
- * Copy the content of one buffer into another.
- */
-void
-ufo_buffer_copy(UfoBuffer *from, UfoBuffer *to, gpointer command_queue)
-{
-    g_return_if_fail(UFO_IS_BUFFER(from) || UFO_IS_BUFFER(to));
-
-    if (from->priv->location == DEVICE_ARRAY_VALID) {
-        UfoResourceManager *manager = ufo_resource_manager();
-        to->priv->device_array = ufo_resource_manager_memdup(manager, from->priv->device_array);
-        cl_event event;
-        CHECK_OPENCL_ERROR(clEnqueueCopyBuffer(command_queue, from->priv->device_array,
-                                        to->priv->device_array, 0, 0, from->priv->size, 0, NULL, &event));
-        ufo_buffer_attach_event(to, event);
-    }
-    else if (from->priv->location == HOST_ARRAY_VALID)
-        ufo_buffer_set_host_array(to, from->priv->host_array.data, from->priv->size, NULL);
-
-    to->priv->location = from->priv->location;
-}
-
-/**
  * ufo_buffer_get_2d_dimensions:
  * @buffer: A #UfoBuffer.
  * @width: (out): Location to store the width of the buffer

@@ -3,10 +3,9 @@
 
 #include <glib-object.h>
 
-#include "ufo-aux.h"
 #include "ufo-resource-manager.h"
+#include "ufo-aux.h"
 #include "ufo-buffer.h"
-#include "ufo-channel.h"
 
 G_BEGIN_DECLS
 
@@ -133,6 +132,9 @@ void                ufo_filter_initialize               (UfoFilter              
                                                          UfoBuffer              *input[],
                                                          guint                 **output_dim_sizes,
                                                          GError                **error);
+void                ufo_filter_set_resource_manager     (UfoFilter              *filter,
+                                                         UfoResourceManager     *manager);
+UfoResourceManager *ufo_filter_get_resource_manager     (UfoFilter              *filter);
 void                ufo_filter_process_cpu              (UfoFilter              *filter,
                                                          UfoBuffer              *input[],
                                                          UfoBuffer              *output[],

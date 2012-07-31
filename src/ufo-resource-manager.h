@@ -65,7 +65,7 @@ struct _UfoResourceManagerClass {
     GObjectClass parent_class;
 };
 
-UfoResourceManager *ufo_resource_manager (void);
+UfoResourceManager *ufo_resource_manager_new                    (void);
 
 void                ufo_resource_manager_add_paths              (UfoResourceManager *manager,
                                                                  const gchar        *paths);
