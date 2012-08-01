@@ -99,5 +99,4 @@ ufo_filter_source_class_init (UfoFilterSourceClass *klass)
 static void
 ufo_filter_source_init (UfoFilterSource *self)
 {
-    self->priv = UFO_FILTER_SOURCE_GET_PRIVATE (self);
 }

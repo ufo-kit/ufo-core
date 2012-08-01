@@ -83,5 +83,4 @@ ufo_filter_sink_class_init (UfoFilterSinkClass *klass)
 static void
 ufo_filter_sink_init (UfoFilterSink *self)
 {
-    self->priv = UFO_FILTER_SINK_GET_PRIVATE (self);
 }

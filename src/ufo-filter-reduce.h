@@ -27,8 +27,6 @@ typedef struct _UfoFilterReducePrivate    UfoFilterReducePrivate;
 struct _UfoFilterReduce {
     /*< private >*/
     UfoFilter parent;
-
-    UfoFilterReducePrivate *priv;
 };
 
 /**

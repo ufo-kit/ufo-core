@@ -27,8 +27,6 @@ typedef struct _UfoFilterSinkPrivate    UfoFilterSinkPrivate;
 struct _UfoFilterSink {
     /*< private >*/
     UfoFilter parent;
-
-    UfoFilterSinkPrivate *priv;
 };
 
 /**

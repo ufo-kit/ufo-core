@@ -135,5 +135,4 @@ ufo_filter_reduce_class_init (UfoFilterReduceClass *klass)
 static void
 ufo_filter_reduce_init (UfoFilterReduce *self)
 {
-    self->priv = UFO_FILTER_REDUCE_GET_PRIVATE (self);
 }
