@@ -37,4 +37,6 @@ if (WITH_TESTS)
 
     add_executable(runjson test.c)
     target_link_libraries(runjson ufo ${GLIB2_LIBRARIES})
+    install(TARGETS runjson
+        RUNTIME DESTINATION bin)
 endif()

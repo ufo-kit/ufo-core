@@ -2,6 +2,7 @@
 #define __UFO_GRAPH_H
 
 #include <glib-object.h>
+#include "ufo-plugin-manager.h"
 #include "ufo-filter.h"
 #include "ufo-relation.h"
 
@@ -48,6 +49,7 @@ struct _UfoGraphClass {
 
 UfoGraph   *ufo_graph_new                   (const gchar   *paths);
 void        ufo_graph_read_from_json        (UfoGraph      *graph,
+                                             UfoPluginManager *manager,
                                              const gchar   *filename,
                                              GError       **error);
 void        ufo_graph_save_to_json          (UfoGraph      *graph,

@@ -35,10 +35,12 @@ GQuark ufo_graph_error_quark(void)
 
 struct _UfoGraphPrivate {
     UfoResourceManager  *resource_manager;
+    UfoPluginManager    *plugin_manager;
     UfoBaseScheduler    *scheduler;
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
     gchar               *paths;
     GList               *relations;
+    GHashTable          *json_filters;
 };
 
 enum {
@@ -49,28 +51,134 @@ enum {
 
 static GParamSpec *graph_properties[N_PROPERTIES] = { NULL, };
 
+static void
+handle_json_single_prop (JsonObject  *object,
+                         const gchar *name,
+                         JsonNode    *node,
+                         gpointer     user)
+{
+    GValue val = {0,};
+    json_node_get_value (node, &val);
+    g_object_set_property (G_OBJECT(user), name, &val);
+}
 
-/* static void graph_build(UfoGraph *self, JsonNode *root) */
-/* { */
-/*     JsonObject *root_object = json_node_get_object(root); */
+static void
+handle_json_filter_node (JsonArray *array,
+                         guint      index,
+                         JsonNode  *element,
+                         gpointer   user)
+{
+    UfoGraph *graph = user;
+    UfoGraphPrivate *priv = graph->priv;
+    UfoFilter *plugin;
+    JsonObject *object;
+    GError *error = NULL;
+    const gchar *name;
+    const gchar *plugin_name;
 
-/*     if (json_object_has_member(root_object, "prop-sets")) { */
-/*         JsonObject *sets = json_object_get_object_member(root_object, "prop-sets"); */
-/*         json_object_foreach_member(sets, graph_handle_json_propset, self); */
-/*     } */
+    object = json_node_get_object (element);
 
-/*     if (json_object_has_member(root_object, "nodes")) { */
-/*         JsonArray *nodes = json_object_get_array_member(root_object, "nodes"); */
-/*         json_array_foreach_element(nodes, graph_handle_json_filter_node, self); */
+    if (!json_object_has_member (object, "plugin") ||
+        !json_object_has_member (object, "name")) {
+        g_error ("Node does not have `plugin' or `name' key");
+        return;
+    }
 
-/*         /1* We only check edges if we have nodes, anything else doesn't make much */
-/*          * sense. *1/ */
-/*         if (json_object_has_member(root_object, "edges")) { */
-/*             JsonArray *edges = json_object_get_array_member(root_object, "edges"); */
-/*             json_array_foreach_element(edges, graph_handle_json_filter_edge, self); */
-/*         } */
-/*     } */
-/* } */
+    plugin_name = json_object_get_string_member (object, "plugin");
+    plugin = ufo_plugin_manager_get_filter (priv->plugin_manager, plugin_name, &error);
+
+    name = json_object_get_string_member (object, "name");
+    g_hash_table_insert (priv->json_filters, g_strdup (name), plugin);
+
+    if (json_object_has_member (object, "properties")) {
+        JsonObject *prop_object = json_object_get_object_member (object, "properties");
+        json_object_foreach_member (prop_object, handle_json_single_prop, plugin);
+    }
+}
+
+static void
+handle_json_filter_edge (JsonArray *array,
+                         guint      index,
+                         JsonNode  *element,
+                         gpointer   user)
+{
+    UfoGraph *graph = user;
+    UfoGraphPrivate *priv = graph->priv;
+    JsonObject *edge;
+    UfoFilter  *from_filter, *to_filter;
+    JsonObject *from_object, *to_object;
+    guint from_port, to_port;
+    const gchar *from_name;
+    const gchar *to_name;
+    GError *error = NULL;
+
+    edge = json_node_get_object (element);
+
+    if (!json_object_has_member (edge, "from") ||
+        !json_object_has_member (edge, "to")) {
+        g_error ("Edge does not have `from' or `to' key");
+        return;
+    }
+
+    /* Get from details */
+    from_object = json_object_get_object_member (edge, "from");
+
+    if (!json_object_has_member (from_object, "name") ||
+        !json_object_has_member (from_object, "output")) {
+        g_error ("From node does not have `name' or `output' key");
+        return;
+    }
+
+    from_name = json_object_get_string_member (from_object, "name");
+    from_port = (guint) json_object_get_int_member (from_object, "output");
+
+    /* Get to details */
+    to_object = json_object_get_object_member (edge, "to");
+
+    if (!json_object_has_member (to_object, "name") ||
+        !json_object_has_member (to_object, "input")) {
+        g_error ("From node does not have `name' or `input' key");
+        return;
+    }
+
+    to_name   = json_object_get_string_member (to_object, "name");
+    to_port   = (guint) json_object_get_int_member (to_object, "input");
+
+    /* Get actual filters and connect them */
+    from_filter = g_hash_table_lookup (priv->json_filters, from_name);
+    to_filter   = g_hash_table_lookup (priv->json_filters, to_name);
+
+    ufo_graph_connect_filters_full (graph,
+                                    from_filter, from_port,
+                                    to_filter, to_port,
+                                    &error);
+
+    if (error != NULL)
+        g_warning ("%s", error->message);
+}
+
+static void
+graph_build(UfoGraph *self, JsonNode *root)
+{
+    JsonObject *root_object = json_node_get_object(root);
+
+    /* if (json_object_has_member(root_object, "prop-sets")) { */
+    /*     JsonObject *sets = json_object_get_object_member(root_object, "prop-sets"); */
+    /*     json_object_foreach_member(sets, graph_handle_json_propset, self); */
+    /* } */
+
+    if (json_object_has_member(root_object, "nodes")) {
+        JsonArray *nodes = json_object_get_array_member(root_object, "nodes");
+        json_array_foreach_element(nodes, handle_json_filter_node, self);
+
+        /* We only check edges if we have nodes, anything else doesn't make much
+         * sense. */
+        if (json_object_has_member(root_object, "edges")) {
+            JsonArray *edges = json_object_get_array_member(root_object, "edges");
+            json_array_foreach_element(edges, handle_json_filter_edge, self);
+        }
+    }
+}
 
 static JsonObject *
 json_object_from_ufo_filter (UfoFilter *filter)
@@ -171,7 +279,7 @@ ufo_graph_new(const gchar *paths)
  *
  * Read a JSON configuration file to fill the filter structure of @graph.
  */
-void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **error)
+void ufo_graph_read_from_json(UfoGraph *graph, UfoPluginManager *manager, const gchar *filename, GError **error)
 {
     g_return_if_fail(UFO_IS_GRAPH(graph) || (filename != NULL));
     JsonParser *json_parser = json_parser_new();
@@ -182,7 +290,8 @@ void ufo_graph_read_from_json(UfoGraph *graph, const gchar *filename, GError **e
         return;
     }
 
-    /* graph_build(graph, json_parser_get_root(json_parser)); */
+    graph->priv->plugin_manager = manager;
+    graph_build(graph, json_parser_get_root(json_parser));
     g_object_unref(json_parser);
 }
 
@@ -289,7 +398,12 @@ ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GErr
  * Connect to filters.
  */
 void
-ufo_graph_connect_filters_full (UfoGraph *graph, UfoFilter *from, guint from_port, UfoFilter *to, guint to_port, GError **error)
+ufo_graph_connect_filters_full (UfoGraph    *graph,
+                                UfoFilter   *from,
+                                guint        from_port,
+                                UfoFilter   *to,
+                                guint        to_port,
+                                GError     **error)
 {
     UfoGraphPrivate *priv;
     UfoRelation     *relation;
@@ -440,5 +554,6 @@ static void ufo_graph_init(UfoGraph *self)
     priv->property_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->paths = NULL;
     priv->relations = NULL;
+    priv->json_filters = g_hash_table_new (g_str_hash, g_str_equal);
 }
 
