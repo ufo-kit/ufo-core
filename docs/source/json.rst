@@ -15,8 +15,11 @@ description you may refer to the complete reference at `json.org
 
 The configuration of a filter setup is stored in a JSON-encoded text file with a
 ``.json`` suffix. The root object must at least contain a ``nodes`` and an
-``edges`` array. It may also define several ``prop-set`` s for further
-reference.
+``edges`` array ::
+
+    { "nodes": [], "edges": [] }
+
+The root object may also define several ``prop-set`` s for further reference.
 
 
 Nodes array
@@ -72,23 +75,23 @@ Edges array
 ===========
 
 The edges array specifies how the nodes in a `Nodes array`_ are connected. Each
-entry is an object that contains two arrays ``from`` and ``to``. In these
-arrays, the first entry is the name of the node and the second the name of the
-input or output. You can omit the second entry if you want to connect the
-default inputs and outputs. 
+entry is an object that contains two objects ``from`` and ``to``. In both
+objects you have to specify at least the node name with the ``name`` key.
+Furthermore, if there are several inputs or outputs on a node, you have to tell
+which input and output to use with the ``input`` on the ``to`` node and the
+``output`` key on the ``from`` node. If you omit these, they are assumed to be
+0.
 
 To connect the nodes defined in the `Example nodes array`_ all you have to do is ::
 
     "edges" : [
         { 
-            "from": ["reader"],
-            "to": ["writer"]
+            "from": {"name": "reader"},
+            "to": {"name": "writer", "input": 2}
         } 
     ]
 
-Note, that the names specify the name of the node, not the plugin which are
-identical in this example.
-
+Note, that the names specify the name of the node, not the plugin.
 
 Property sets
 =============
