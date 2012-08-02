@@ -50,6 +50,7 @@ ELSE (APPLE)
             FIND_LIBRARY(OPENCL_LIBRARIES OpenCL
               ENV LD_LIBRARY_PATH
               /usr/lib/nvidia-current
+              /usr/lib64/nvidia
               /opt/nvidia-current
               /opt/AMDAPP/lib
             )
