@@ -123,26 +123,30 @@ handle_json_filter_edge (JsonArray *array,
     /* Get from details */
     from_object = json_object_get_object_member (edge, "from");
 
-    if (!json_object_has_member (from_object, "name") ||
-        !json_object_has_member (from_object, "output")) {
-        g_error ("From node does not have `name' or `output' key");
+    if (!json_object_has_member (from_object, "name")) {
+        g_error ("From node does not have `name' key");
         return;
     }
 
     from_name = json_object_get_string_member (from_object, "name");
-    from_port = (guint) json_object_get_int_member (from_object, "output");
+    from_port = 0;
+
+    if (json_object_has_member (from_object, "output"))
+        from_port = (guint) json_object_get_int_member (from_object, "output");
 
     /* Get to details */
     to_object = json_object_get_object_member (edge, "to");
 
-    if (!json_object_has_member (to_object, "name") ||
-        !json_object_has_member (to_object, "input")) {
-        g_error ("From node does not have `name' or `input' key");
+    if (!json_object_has_member (to_object, "name")) {
+        g_error ("To node does not have `name' key");
         return;
     }
 
-    to_name   = json_object_get_string_member (to_object, "name");
-    to_port   = (guint) json_object_get_int_member (to_object, "input");
+    to_name = json_object_get_string_member (to_object, "name");
+    to_port = 0;
+
+    if (json_object_has_member (to_object, "input"))
+        to_port = (guint) json_object_get_int_member (to_object, "input");
 
     /* Get actual filters and connect them */
     from_filter = g_hash_table_lookup (priv->json_filters, from_name);
