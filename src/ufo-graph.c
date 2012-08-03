@@ -87,6 +87,8 @@ handle_json_filter_node (JsonArray *array,
     plugin_name = json_object_get_string_member (object, "plugin");
     plugin = ufo_plugin_manager_get_filter (priv->plugin_manager, plugin_name, &error);
 
+    ufo_filter_set_resource_manager (plugin, priv->manager);
+
     name = json_object_get_string_member (object, "name");
     g_hash_table_insert (priv->json_filters, g_strdup (name), plugin);
 
@@ -162,7 +164,7 @@ handle_json_filter_edge (JsonArray *array,
 }
 
 static void
-graph_build(UfoGraph *self, JsonNode *root)
+graph_build (UfoGraph *self, JsonNode *root)
 {
     JsonObject *root_object = json_node_get_object(root);
 
@@ -171,15 +173,15 @@ graph_build(UfoGraph *self, JsonNode *root)
     /*     json_object_foreach_member(sets, graph_handle_json_propset, self); */
     /* } */
 
-    if (json_object_has_member(root_object, "nodes")) {
-        JsonArray *nodes = json_object_get_array_member(root_object, "nodes");
-        json_array_foreach_element(nodes, handle_json_filter_node, self);
+    if (json_object_has_member (root_object, "nodes")) {
+        JsonArray *nodes = json_object_get_array_member (root_object, "nodes");
+        json_array_foreach_element (nodes, handle_json_filter_node, self);
 
         /* We only check edges if we have nodes, anything else doesn't make much
          * sense. */
-        if (json_object_has_member(root_object, "edges")) {
-            JsonArray *edges = json_object_get_array_member(root_object, "edges");
-            json_array_foreach_element(edges, handle_json_filter_edge, self);
+        if (json_object_has_member (root_object, "edges")) {
+            JsonArray *edges = json_object_get_array_member (root_object, "edges");
+            json_array_foreach_element (edges, handle_json_filter_edge, self);
         }
     }
 }
