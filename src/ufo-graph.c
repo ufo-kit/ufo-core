@@ -523,6 +523,8 @@ ufo_graph_constructed (GObject *object)
     else
         g_message ("UfoGraph: Use provided resource manager %p", (gpointer) priv->manager);
 
+    g_object_ref (priv->manager);
+
     /* Append LIB_FILTER_DIR to the search path */
     g_free (priv->paths);
     priv->paths = paths;
@@ -549,7 +551,6 @@ ufo_graph_set_property(GObject      *object,
 
         case PROP_RESOURCE_MANAGER:
             priv->manager = g_value_get_object (value);
-            g_object_ref (priv->manager);
             break;
 
         default:
