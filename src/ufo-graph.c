@@ -90,6 +90,10 @@ handle_json_filter_node (JsonArray *array,
     ufo_filter_set_resource_manager (plugin, priv->manager);
 
     name = json_object_get_string_member (object, "name");
+
+    if (g_hash_table_lookup (priv->json_filters, name) != NULL)
+        g_error ("Duplicate name `%s' found", name);
+
     g_hash_table_insert (priv->json_filters, g_strdup (name), plugin);
 
     if (json_object_has_member (object, "properties")) {
@@ -478,6 +482,10 @@ ufo_graph_dispose(GObject *object)
     UfoGraph *graph = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
 
+    g_list_foreach (g_hash_table_get_values (priv->json_filters),
+                    (GFunc) g_object_unref,
+                    NULL);
+
     g_list_foreach (priv->relations, (GFunc) g_object_unref, NULL);
 
     if (priv->plugin_manager != NULL) {
@@ -499,6 +507,7 @@ ufo_graph_finalize (GObject *object)
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (self);
 
     g_hash_table_destroy (priv->property_sets);
+    g_hash_table_destroy (priv->json_filters);
     g_list_free (priv->relations);
     g_free (priv->paths);
 
@@ -627,6 +636,6 @@ ufo_graph_init (UfoGraph *self)
     priv->paths = NULL;
     priv->relations = NULL;
     priv->manager = NULL;
-    priv->json_filters = g_hash_table_new (g_str_hash, g_str_equal);
+    priv->json_filters = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 }
 

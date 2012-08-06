@@ -363,6 +363,13 @@ ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *input[], guint **outpu
 }
 
 static void
+ufo_filter_dispose (GObject *object)
+{
+    G_OBJECT_CLASS (ufo_filter_parent_class)->dispose(object);
+    g_message ("UfoFilter (%p): disposed", (gpointer) object);
+}
+
+static void
 ufo_filter_finalize (GObject *object)
 {
     UfoFilterPrivate *priv = UFO_FILTER_GET_PRIVATE (object);
@@ -372,7 +379,7 @@ ufo_filter_finalize (GObject *object)
     g_free (priv->plugin_name);
 
     G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
-    g_debug ("UfoFilter (%p): finalized", (gpointer) object);
+    g_message ("UfoFilter (%p): finalized", (gpointer) object);
 }
 
 static void
@@ -380,6 +387,7 @@ ufo_filter_class_init (UfoFilterClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->finalize = ufo_filter_finalize;
+    gobject_class->dispose = ufo_filter_dispose;
     klass->initialize = ufo_filter_initialize_real;
     klass->process_cpu = NULL;
     klass->process_gpu = NULL;

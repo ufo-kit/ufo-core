@@ -180,6 +180,7 @@ ufo_plugin_manager_get_filter (UfoPluginManager *manager, const gchar *name, GEr
 
     filter = (*func) ();
     ufo_filter_set_plugin_name (filter, name);
+    g_message ("UfoPluginManager: Created %s-%p", name, (gpointer) filter);
 
     return filter;
 
@@ -256,6 +257,13 @@ ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValu
 }
 
 static void
+ufo_plugin_manager_dispose (GObject *gobject)
+{
+    G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->dispose (gobject);
+    g_message ("UfoPluginManager: disposed");
+}
+
+static void
 ufo_plugin_manager_finalize (GObject *gobject)
 {
     UfoPluginManager *manager = UFO_PLUGIN_MANAGER (gobject);
@@ -272,6 +280,7 @@ ufo_plugin_manager_finalize (GObject *gobject)
     g_slist_free (priv->search_paths);
     g_hash_table_destroy (priv->filter_funcs);
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);
+    g_message ("UfoPluginManager: finalized");
 }
 
 static void
@@ -280,6 +289,7 @@ ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->get_property = ufo_plugin_manager_get_property;
     gobject_class->set_property = ufo_plugin_manager_set_property;
+    gobject_class->dispose = ufo_plugin_manager_dispose;
     gobject_class->finalize = ufo_plugin_manager_finalize;
 
     plugin_manager_properties[PROP_PATHS] =
