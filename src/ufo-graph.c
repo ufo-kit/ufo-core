@@ -45,6 +45,7 @@ struct _UfoGraphPrivate {
 enum {
     PROP_0,
     PROP_PATHS,
+    PROP_RESOURCE_MANAGER,
     N_PROPERTIES
 };
 
@@ -362,10 +363,8 @@ void ufo_graph_run(UfoGraph *graph, GError **error)
     g_return_if_fail (UFO_IS_GRAPH(graph));
 
     priv = UFO_GRAPH_GET_PRIVATE (graph);
-
     scheduler = ufo_base_scheduler_new (priv->manager);
     ufo_base_scheduler_run (scheduler, priv->relations, error);
-
     g_object_unref (scheduler);
 }
 
@@ -465,7 +464,8 @@ ufo_graph_get_resource_manager (UfoGraph *graph)
     return graph->priv->manager;
 }
 
-static void ufo_graph_dispose(GObject *object)
+static void
+ufo_graph_dispose(GObject *object)
 {
     UfoGraph *graph = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
@@ -481,10 +481,11 @@ static void ufo_graph_dispose(GObject *object)
 
     priv->manager = NULL;
     G_OBJECT_CLASS (ufo_graph_parent_class)->dispose (object);
-    g_debug ("UfoGraph: disposed");
+    g_message ("UfoGraph: disposed");
 }
 
-static void ufo_graph_finalize(GObject *object)
+static void
+ufo_graph_finalize (GObject *object)
 {
     UfoGraph *self = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (self);
@@ -496,25 +497,39 @@ static void ufo_graph_finalize(GObject *object)
     priv->property_sets = NULL;
     priv->paths = NULL;
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
-    g_debug ("UfoGraph: finalized");
+    g_message ("UfoGraph: finalized");
 }
 
-static void ufo_graph_constructed(GObject *object)
+static void
+ufo_graph_constructed (GObject *object)
 {
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (object);
+
     gchar *paths = g_strdup_printf ("%s:%s", priv->paths, LIB_FILTER_DIR);
 
+    /* Create a new resource manager if none was passed during construction */
+    if (priv->manager == NULL) {
+        priv->manager = ufo_resource_manager_new ();
+        g_message ("UfoGraph: Created new resource manager %p", (gpointer) priv->manager);
+    }
+    else
+        g_message ("UfoGraph: Use provided resource manager %p", (gpointer) priv->manager);
+
+    /* Append LIB_FILTER_DIR to the search path */
+    g_free (priv->paths);
+    priv->paths = paths;
+
+    ufo_resource_manager_add_paths (priv->manager, priv->paths);
 
     if (G_OBJECT_CLASS (ufo_graph_parent_class)->constructed != NULL)
         G_OBJECT_CLASS (ufo_graph_parent_class)->constructed (object);
-
-    g_free (paths);
 }
 
-static void ufo_graph_set_property(GObject *object,
-                                   guint           property_id,
-                                   const GValue    *value,
-                                   GParamSpec      *pspec)
+static void
+ufo_graph_set_property(GObject      *object,
+                       guint         property_id,
+                       const GValue *value,
+                       GParamSpec   *pspec)
 {
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
 
@@ -522,32 +537,44 @@ static void ufo_graph_set_property(GObject *object,
         case PROP_PATHS:
             g_free(priv->paths);
             priv->paths = g_strdup(g_value_get_string(value));
-            ufo_resource_manager_add_paths (priv->manager, priv->paths);
             break;
+
+        case PROP_RESOURCE_MANAGER:
+            priv->manager = g_value_get_object (value);
+            g_object_ref (priv->manager);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
     }
 }
 
-static void ufo_graph_get_property(GObject *object,
-                                   guint       property_id,
-                                   GValue      *value,
-                                   GParamSpec  *pspec)
+static void
+ufo_graph_get_property(GObject      *object,
+                       guint         property_id,
+                       GValue       *value,
+                       GParamSpec   *pspec)
 {
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
 
     switch (property_id) {
         case PROP_PATHS:
-            g_value_set_string(value, priv->paths);
+            g_value_set_string (value, priv->paths);
             break;
+
+        case PROP_RESOURCE_MANAGER:
+            g_value_set_object (value, priv->manager);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
     }
 }
 
-static void ufo_graph_class_init(UfoGraphClass *klass)
+static void
+ufo_graph_class_init (UfoGraphClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->set_property = ufo_graph_set_property;
@@ -563,24 +590,34 @@ static void ufo_graph_class_init(UfoGraphClass *klass)
      * locations.
      */
     graph_properties[PROP_PATHS] =
-        g_param_spec_string("paths",
-                "List of :-separated paths pointing to possible filter locations",
-                "List of :-separated paths pointing to possible filter locations",
-                ".",
-                G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+        g_param_spec_string ("paths",
+                             "List of :-separated paths pointing to possible filter locations",
+                             "List of :-separated paths pointing to possible filter locations",
+                             ".",
+                             G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
-    g_object_class_install_property(gobject_class, PROP_PATHS, graph_properties[PROP_PATHS]);
+    graph_properties[PROP_RESOURCE_MANAGER] =
+        g_param_spec_object ("resource-manager",
+                             "A UfoResourceManager",
+                             "The UfoResourceManager that is used to access resources",
+                             UFO_TYPE_RESOURCE_MANAGER,
+                             G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+
+    g_object_class_install_property (gobject_class, PROP_PATHS, graph_properties[PROP_PATHS]);
+    g_object_class_install_property (gobject_class, PROP_RESOURCE_MANAGER, graph_properties[PROP_RESOURCE_MANAGER]);
+
     g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
 }
 
-static void ufo_graph_init(UfoGraph *self)
+static void
+ufo_graph_init (UfoGraph *self)
 {
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
     priv->property_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->paths = NULL;
     priv->relations = NULL;
+    priv->manager = NULL;
     priv->json_filters = g_hash_table_new (g_str_hash, g_str_equal);
-    priv->manager = ufo_resource_manager_new ();
 }
 

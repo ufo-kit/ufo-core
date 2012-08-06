@@ -163,9 +163,9 @@ get_output_queues (GList *relations, UfoFilter *filter, GAsyncQueue ***output_pu
 }
 
 static void
-print_prefixed(const gchar *text, ThreadInfo *info)
+print_prefixed (const gchar *text, ThreadInfo *info)
 {
-    g_debug ("%s-%p:%s", ufo_filter_get_plugin_name (info->filter), (gpointer) info->filter, text);
+    /* g_debug ("%s-%p:%s", ufo_filter_get_plugin_name (info->filter), (gpointer) info->filter, text); */
 }
 
 static gboolean
@@ -681,13 +681,13 @@ static void ufo_base_scheduler_dispose (GObject *object)
     g_object_unref (priv->manager);
     g_hash_table_destroy (priv->exec_info);
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->dispose (object);
-    g_debug ("UfoBaseScheduler: disposed");
+    g_message ("UfoBaseScheduler: disposed");
 }
 
 static void ufo_base_scheduler_finalize (GObject *object)
 {
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->finalize (object);
-    g_debug ("UfoBaseScheduler: finalized");
+    g_message ("UfoBaseScheduler: finalized");
 }
 
 static void ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)

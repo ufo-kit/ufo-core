@@ -339,7 +339,7 @@ resource_manager_add_program (UfoResourceManager *manager, const gchar *filename
     }
 
     program = add_program_from_source (priv, buffer, options, error);
-    g_debug ("Added program %p from `%s`", (gpointer) program, filename);
+    g_message ("Added program %p from `%s`", (gpointer) program, filename);
 
     if (program != NULL)
         g_hash_table_insert (priv->opencl_programs, g_strdup (filename), program);
@@ -673,7 +673,7 @@ static void ufo_resource_manager_finalize (GObject *gobject)
     priv->opencl_platforms = NULL;
 
     G_OBJECT_CLASS (ufo_resource_manager_parent_class)->finalize (gobject);
-    g_debug ("UfoResourceManager: finalized");
+    g_message ("UfoResourceManager: finalized");
 }
 
 static void
