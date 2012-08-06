@@ -48,12 +48,11 @@ struct _UfoGraphClass {
     GObjectClass parent_class;
 };
 
-UfoGraph   *ufo_graph_new                   (const gchar        *paths,
-                                             UfoResourceManager *manager);
-void        ufo_graph_read_from_json        (UfoGraph      *graph,
-                                             UfoPluginManager *manager,
-                                             const gchar   *filename,
-                                             GError       **error);
+UfoGraph   *ufo_graph_new                   (const gchar        *paths);
+void        ufo_graph_read_from_json        (UfoGraph           *graph,
+                                             UfoPluginManager   *manager,
+                                             const gchar        *filename,
+                                             GError            **error);
 void        ufo_graph_save_to_json          (UfoGraph           *graph,
                                              const gchar        *filename,
                                              GError            **error);
@@ -71,6 +70,8 @@ void        ufo_graph_connect_filters_full  (UfoGraph           *graph,
                                              GError            **error);
 void        ufo_graph_add_relation          (UfoGraph           *graph,
                                              UfoRelation        *relation);
+UfoResourceManager *
+            ufo_graph_get_resource_manager  (UfoGraph           *graph);
 GType       ufo_graph_get_type              (void);
 GQuark      ufo_graph_error_quark           (void);
 

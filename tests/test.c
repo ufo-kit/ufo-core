@@ -27,11 +27,11 @@ int main(int argc, char const* argv[])
     }
 
     if (argc == 2) {
-        graph = ufo_graph_new("", NULL);
+        graph = ufo_graph_new("");
         manager = ufo_plugin_manager_new ("");
     }
     else {
-        graph = ufo_graph_new(argv[2], NULL);
+        graph = ufo_graph_new(argv[2]);
         manager = ufo_plugin_manager_new (argv[2]);
     }
 
