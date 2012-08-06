@@ -457,6 +457,14 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
     ufo_filter_set_resource_manager (to, priv->manager);
 }
 
+/**
+ * ufo_graph_get_resource_manager:
+ * @graph: A #UfoGraph
+ *
+ * Returns the #UfoResourceManager associated with this graph.
+ *
+ * Returns: (transfer full): A #UfoResourceManager
+ */
 UfoResourceManager *
 ufo_graph_get_resource_manager (UfoGraph *graph)
 {

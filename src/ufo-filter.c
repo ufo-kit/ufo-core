@@ -114,7 +114,7 @@ void ufo_filter_set_resource_manager (UfoFilter *filter,
  *
  * Get the resource manager that this filter uses for requesting resources.
  *
- * Returns: A #UfoResourceManager
+ * Returns: (transfer full): A #UfoResourceManager
  * Since: 0.2
  */
 UfoResourceManager *ufo_filter_get_resource_manager (UfoFilter *filter)
