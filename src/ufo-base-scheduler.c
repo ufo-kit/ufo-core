@@ -547,6 +547,8 @@ process_thread (gpointer data)
     if (error != NULL)
         return error;
 
+    g_message ("UfoBaseScheduler: %s-%p finished", ufo_filter_get_plugin_name (filter), filter);
+
     push_poison_pill (producing_relations);
 
     g_free (info->output_dims);

@@ -168,7 +168,7 @@ handle_json_filter_edge (JsonArray *array,
 }
 
 static void
-graph_build (UfoGraph *self, JsonNode *root)
+graph_build (UfoGraph *graph, JsonNode *root)
 {
     JsonObject *root_object = json_node_get_object(root);
 
@@ -179,13 +179,13 @@ graph_build (UfoGraph *self, JsonNode *root)
 
     if (json_object_has_member (root_object, "nodes")) {
         JsonArray *nodes = json_object_get_array_member (root_object, "nodes");
-        json_array_foreach_element (nodes, handle_json_filter_node, self);
+        json_array_foreach_element (nodes, handle_json_filter_node, graph);
 
         /* We only check edges if we have nodes, anything else doesn't make much
          * sense. */
         if (json_object_has_member (root_object, "edges")) {
             JsonArray *edges = json_object_get_array_member (root_object, "edges");
-            json_array_foreach_element (edges, handle_json_filter_edge, self);
+            json_array_foreach_element (edges, handle_json_filter_edge, graph);
         }
     }
 }
@@ -289,20 +289,21 @@ ufo_graph_new (const gchar *paths)
  *
  * Read a JSON configuration file to fill the filter structure of @graph.
  */
-void ufo_graph_read_from_json(UfoGraph *graph, UfoPluginManager *manager, const gchar *filename, GError **error)
+void
+ufo_graph_read_from_json (UfoGraph *graph, UfoPluginManager *manager, const gchar *filename, GError **error)
 {
-    g_return_if_fail(UFO_IS_GRAPH(graph) || (filename != NULL));
-    JsonParser *json_parser = json_parser_new();
+    g_return_if_fail (UFO_IS_GRAPH(graph) || (filename != NULL));
+    JsonParser *json_parser = json_parser_new ();
     GError *tmp_error = NULL;
 
-    if (!json_parser_load_from_file(json_parser, filename, &tmp_error)) {
-        g_propagate_error(error, tmp_error);
+    if (!json_parser_load_from_file (json_parser, filename, &tmp_error)) {
+        g_propagate_error (error, tmp_error);
         return;
     }
 
     graph->priv->plugin_manager = manager;
-    graph_build(graph, json_parser_get_root(json_parser));
-    g_object_unref(json_parser);
+    graph_build (graph, json_parser_get_root (json_parser));
+    g_object_unref (json_parser);
 }
 
 
@@ -437,10 +438,11 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
 
         if (ufo_relation_get_producer (relation) == from) {
             GList *consumers = ufo_relation_get_consumers (relation);
+
             if ((g_list_first (consumers))->data == to)
                 g_warning ("Primary connection between %s-%p and %s-%p exists already",
-                        ufo_filter_get_plugin_name (from), (gpointer) from,
-                        ufo_filter_get_plugin_name (to), (gpointer) to);
+                           ufo_filter_get_plugin_name (from), (gpointer) from,
+                           ufo_filter_get_plugin_name (to), (gpointer) to);
         }
     }
 
@@ -477,16 +479,19 @@ ufo_graph_get_resource_manager (UfoGraph *graph)
 }
 
 static void
+unref_list_elements (GList *l)
+{
+    g_list_foreach (l, (GFunc) g_object_unref, NULL);
+}
+
+static void
 ufo_graph_dispose(GObject *object)
 {
     UfoGraph *graph = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
 
-    g_list_foreach (g_hash_table_get_values (priv->json_filters),
-                    (GFunc) g_object_unref,
-                    NULL);
-
-    g_list_foreach (priv->relations, (GFunc) g_object_unref, NULL);
+    unref_list_elements (g_hash_table_get_values (priv->json_filters));
+    unref_list_elements (priv->relations);
 
     if (priv->plugin_manager != NULL) {
         g_object_unref (priv->plugin_manager);
