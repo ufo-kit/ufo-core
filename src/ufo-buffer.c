@@ -500,11 +500,14 @@ ufo_buffer_get_device_array(UfoBuffer *buffer, gpointer command_queue)
     g_return_val_if_fail(UFO_IS_BUFFER(buffer) || (command_queue != NULL), NULL);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE(buffer);
     cl_event event;
+    cl_int cl_err = CL_SUCCESS;
 
     switch (priv->location) {
         case HOST_ARRAY_VALID:
             if (priv->device_array == NULL)
-                priv->device_array = clCreateBuffer(NULL, CL_MEM_READ_WRITE, priv->size, NULL, NULL);
+                priv->device_array = clCreateBuffer(NULL, CL_MEM_READ_WRITE, priv->size, NULL, &cl_err);
+
+            CHECK_OPENCL_ERROR (cl_err);
 
             g_timer_start(priv->timer);
             CHECK_OPENCL_ERROR(clEnqueueWriteBuffer((cl_command_queue) command_queue,
