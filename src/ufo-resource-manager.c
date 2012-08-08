@@ -116,13 +116,16 @@ const gchar *opencl_error_msgs[] = {
 const gchar *
 opencl_map_error (int error)
 {
-    if (error >= -14)
-        return opencl_error_msgs[-error];
+    static const gchar *invalid = "Invalid error code";
+    const gint array_size = sizeof opencl_error_msgs/sizeof(gchar*);
+    gint index;
 
-    if (error <= -30)
-        return opencl_error_msgs[-error-15];
+    index = error >= -14 ? -error : -error-15;
 
-    return NULL;
+    if (index >= 0 && index < array_size)
+        return opencl_error_msgs[index];
+
+    return invalid;
 }
 
 static gchar *
