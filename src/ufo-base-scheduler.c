@@ -181,6 +181,7 @@ fetch_work (ThreadInfo *info)
         {
             info->work[i] = g_async_queue_pop (info->input_pop_queues[i]);
             info->input_params[i].n_fetched_items++;
+
         }
 
         if (info->work[i] == POISON_PILL) {
@@ -547,7 +548,7 @@ process_thread (gpointer data)
     if (error != NULL)
         return error;
 
-    g_message ("UfoBaseScheduler: %s-%p finished", ufo_filter_get_plugin_name (filter), filter);
+    g_message ("UfoBaseScheduler: %s-%p finished", ufo_filter_get_plugin_name (filter), (gpointer) filter);
 
     push_poison_pill (producing_relations);
 
