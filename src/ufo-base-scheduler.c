@@ -93,9 +93,11 @@ push_poison_pill (GList *relations)
 }
 
 static void
-alloc_output_buffers (UfoFilter *filter,
-                      GAsyncQueue *pop_queues[],
-                      guint **output_dims)
+alloc_output_buffers (UfoFilter     *filter,
+                      GAsyncQueue   *pop_queues[],
+                      guint        **output_dims,
+                      gboolean       use_default_value,
+                      gfloat         default_value)
 {
     UfoOutputParameter *output_params = ufo_filter_get_output_parameters (filter);
     UfoResourceManager *manager = ufo_filter_get_resource_manager (filter);
@@ -116,6 +118,9 @@ alloc_output_buffers (UfoFilter *filter,
              * out what the problem is.
              */
             g_object_ref (buffer);
+
+            if (use_default_value)
+                ufo_buffer_fill_with_value (buffer, default_value);
 
             g_async_queue_push (pop_queues[port], buffer);
         }
@@ -286,7 +291,9 @@ process_source_filter (ThreadInfo *info)
 
     alloc_output_buffers (filter,
                           info->output_pop_queues,
-                          info->output_dims);
+                          info->output_dims,
+                          FALSE,
+                          0.0);
 
     while (cont) {
         fetch_result (info);
@@ -328,7 +335,9 @@ process_synchronous_filter (ThreadInfo *info)
 
         alloc_output_buffers (filter,
                               info->output_pop_queues,
-                              info->output_dims);
+                              info->output_dims,
+                              FALSE,
+                              0.0);
     }
     else {
         return NULL;
@@ -423,9 +432,12 @@ process_reduce_filter (ThreadInfo *info)
         if (error != NULL)
             return error;
 
+        g_print (">>> %s: initializing output buffers with %f\n", ufo_filter_get_plugin_name (filter), default_value);
         alloc_output_buffers (filter,
                               info->output_pop_queues,
-                              info->output_dims);
+                              info->output_dims,
+                              TRUE,
+                              default_value);
     }
     else {
         return NULL;

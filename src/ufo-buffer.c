@@ -299,6 +299,8 @@ void ufo_buffer_fill_with_value (UfoBuffer* buffer, gfloat value)
 
     for (guint i = 0; i < n_elements; i++)
         data[i] = value;
+
+    priv->location = HOST_ARRAY_VALID;
 }
 
 /**
