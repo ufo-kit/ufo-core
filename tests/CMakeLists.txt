@@ -35,8 +35,11 @@ if (WITH_TESTS)
         list(APPEND TEST_DEPENDENCIES "${CMAKE_CURRENT_SOURCE_DIR}/../src/${_dependency}")
     endforeach()
 
-    add_executable(runjson test.c)
-    target_link_libraries(runjson ufo ${GLIB2_LIBRARIES})
-    install(TARGETS runjson
-        RUNTIME DESTINATION bin)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gtester.xsl"
+        "${CMAKE_CURRENT_BINARY_DIR}/gtester.xsl" @ONLY IMMEDIATE)
 endif()
+
+add_executable(runjson test.c)
+target_link_libraries(runjson ufo ${GLIB2_LIBRARIES})
+install(TARGETS runjson
+    RUNTIME DESTINATION bin)
