@@ -1,5 +1,5 @@
-
 #include <glib.h>
+#include "test-suite.h"
 #include "ufo-filter.h"
 
 typedef struct {
@@ -41,17 +41,11 @@ static void test_filter_register_outputs (UfoFilterFixture *fixture, gconstpoint
     g_assert (num_outputs == 3);
 }
 
-int main(int argc, char *argv[])
+void test_add_filter (void)
 {
-    g_type_init();
-    g_test_init(&argc, &argv, NULL);
-    g_test_bug_base("http://ufo.kit.edu/ufo/ticket");
-
     g_test_add("/filter/register/inputs", UfoFilterFixture, NULL, ufo_filter_fixture_setup, 
             test_filter_register_inputs, ufo_filter_fixture_teardown);
 
     g_test_add("/filter/register/outputs", UfoFilterFixture, NULL, ufo_filter_fixture_setup, 
             test_filter_register_outputs, ufo_filter_fixture_teardown);
-
-    return g_test_run();
 }

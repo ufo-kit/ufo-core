@@ -1,6 +1,7 @@
 
 #include <glib.h>
 #include <math.h>
+#include "test-suite.h"
 #include "ufo-buffer.h"
 
 static gboolean float_eq(float n1, float n2)
@@ -141,12 +142,8 @@ static void test_buffer_swap(void)
     g_object_unref(b);
 }
 
-int main(int argc, char *argv[])
+void test_add_buffer (void)
 {
-    g_type_init();
-    g_test_init(&argc, &argv, NULL);
-    g_test_bug_base("http://ufo.kit.edu/ufo/ticket");
-
     g_test_add_func("/buffer/new", test_buffer_new);
     g_test_add_func("/buffer/dimensions", test_buffer_dimensions);
     g_test_add_func("/buffer/set-too-much-data", test_buffer_set_too_much_data);
@@ -155,7 +152,4 @@ int main(int argc, char *argv[])
     g_test_add_func("/buffer/reinterpret/16bit", test_buffer_reinterpret_16bit);
     g_test_add_func("/buffer/size", test_buffer_size);
     g_test_add_func("/buffer/swap", test_buffer_swap);
-    g_test_run();
-
-    return 0;
 }

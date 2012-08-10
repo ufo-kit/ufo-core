@@ -1,5 +1,5 @@
-
 #include <glib.h>
+#include "test-suite.h"
 #include "ufo-filter.h"
 #include "ufo-relation.h"
 
@@ -61,12 +61,8 @@ static void test_relation_invalid_input_port(UfoRelationFixture *fixture, gconst
     g_assert (error != NULL);
 }
 
-int main(int argc, char *argv[])
+void test_add_relation (void)
 {
-    g_type_init();
-    g_test_init(&argc, &argv, NULL);
-    g_test_bug_base("http://ufo.kit.edu/ufo/ticket");
-
     g_test_add("/relation/dim/match", UfoRelationFixture, NULL, ufo_relation_fixture_setup, 
             test_relation_dim_match, ufo_relation_fixture_teardown);
 
@@ -75,6 +71,4 @@ int main(int argc, char *argv[])
 
     g_test_add("/relation/input/invalid", UfoRelationFixture, NULL, ufo_relation_fixture_setup, 
             test_relation_invalid_input_port, ufo_relation_fixture_teardown);
-
-    return g_test_run();
 }

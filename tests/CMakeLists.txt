@@ -12,28 +12,21 @@ cmake_minimum_required(VERSION 2.8)
 
 # configure unit tests
 set(TEST_SRCS
+    test-suite.c
     test-buffer.c
     test-filter.c
     test-relation.c
     )
 
+set(SUITE_BIN "test-suite")
+
 option(WITH_TESTS "Run tests on each build" ON)
+
 if (WITH_TESTS)
-    set(TEST_DEPENDENCIES)
-    set(TEST_BINARIES)
-
-    foreach(_src ${TEST_SRCS})
-        string(REPLACE ".c" "" _binary ${_src})
-        list(APPEND TEST_BINARIES ${_binary})
-
-        add_executable(${_binary} ${_src})
-        target_link_libraries(${_binary} ufo ${GLIB2_LIBRARIES})
-        add_test(${_binary} ${_binary})
-
-        string(REPLACE "test" "ufo" _dependency ${_src})
-        list(APPEND TEST_DEPENDENCIES "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
-        list(APPEND TEST_DEPENDENCIES "${CMAKE_CURRENT_SOURCE_DIR}/../src/${_dependency}")
-    endforeach()
+    include_directories({CMAKE_CURRENT_SOURCE_DIR})
+    add_executable(${SUITE_BIN} ${TEST_SRCS})
+    target_link_libraries(${SUITE_BIN} ufo ${GLIB2_LIBRARIES})
+    add_test(${SUITE_BIN} ${SUITE_BIN})
 
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gtester.xsl"
         "${CMAKE_CURRENT_BINARY_DIR}/gtester.xsl" @ONLY IMMEDIATE)
