@@ -85,7 +85,7 @@ set(VERSION ${PACKAGE_VERSION})
 
 set(CPACK_GENERATOR "DEB;RPM;")
 set(CPACK_SOURCE_GENERATOR "TGZ")
-set(CPACK_SOURCE_IGNORE_FILES "tags" ".bzr" ".swp" "~1~")
+set(CPACK_SOURCE_IGNORE_FILES "tags" ".bzr" ".swp" "~1~" ".git" ".xml")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_NAME}-${PACKAGE_VERSION}" CACHE INTERNAL "tarball basename")
 
 # --- Distro specific
