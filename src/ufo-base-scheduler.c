@@ -625,7 +625,6 @@ void ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GErr
     threads     = g_new0 (GThread *, n_threads);
     thread_info = g_new0 (ThreadInfo, n_threads);
 
-    g_thread_init (NULL);
     timer = g_timer_new ();
 
     /*

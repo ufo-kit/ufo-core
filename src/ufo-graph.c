@@ -642,5 +642,7 @@ ufo_graph_init (UfoGraph *self)
     priv->relations = NULL;
     priv->manager = NULL;
     priv->json_filters = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+    g_thread_init (NULL);
 }
 
