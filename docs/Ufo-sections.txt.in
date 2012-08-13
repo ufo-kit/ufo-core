@@ -26,7 +26,7 @@ ufo_plugin_manager_error_quark
 CHECK_OPENCL_ERROR
 UfoResourceManagerError
 UfoResourceManager
-ufo_resource_manager
+ufo_resource_manager_new
 ufo_resource_manager_add_paths
 ufo_resource_manager_get_kernel
 ufo_resource_manager_get_kernel_from_source
@@ -75,6 +75,8 @@ ufo_filter_get_input_parameters
 ufo_filter_get_output_parameters
 ufo_filter_set_plugin_name
 ufo_filter_get_plugin_name
+ufo_filter_set_resource_manager
+ufo_filter_get_resource_manager
 ufo_filter_wait_until
 <SUBSECTION Standard>
 UFO_FILTER
@@ -217,6 +219,7 @@ UfoChannelPrivate
 UfoGraphError
 UfoGraph
 ufo_graph_new
+ufo_graph_get_resource_manager
 ufo_graph_run
 ufo_graph_add_relation
 ufo_graph_connect_filters
@@ -241,10 +244,10 @@ ufo_graph_error_quark
 <SECTION>
 <FILE>ufo-buffer</FILE>
 <TITLE>UfoBuffer</TITLE>
+UfoBufferError
 UfoBuffer
 UFO_BUFFER_MAX_NDIMS
 ufo_buffer_new
-ufo_buffer_copy
 ufo_buffer_transfer_id
 ufo_buffer_get_size
 ufo_buffer_get_id
@@ -279,6 +282,7 @@ UFO_IS_PARAM_SPEC_BUFFER
 UFO_TYPE_PARAM_BUFFER
 ufo_buffer_param_get_type
 <SUBSECTION Private>
+UFO_BUFFER_ERROR
 UfoBufferPrivate
 UfoBufferClass
 ufo_buffer_error_quark

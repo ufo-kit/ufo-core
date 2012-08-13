@@ -284,6 +284,7 @@ ufo_graph_new (const gchar *paths)
 /**
  * ufo_graph_read_from_json:
  * @graph: A #UfoGraph.
+ * @manager: A #UfoPluginManager used to load the filters
  * @filename: Path and filename to the JSON file
  * @error: Indicates error in case of failed file loading or parsing
  *
