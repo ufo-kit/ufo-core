@@ -107,7 +107,7 @@ alloc_output_buffers (UfoFilter     *filter,
     for (guint port = 0; port < num_outputs; port++) {
         const guint num_dims = output_params[port].n_dims;
 
-        for (guint i = 0; i < num_outputs; i++) {
+        for (guint i = 0; i < 3*num_outputs; i++) {
             UfoBuffer *buffer = ufo_resource_manager_request_buffer (manager, num_dims, output_dims[port], NULL, NULL);
 
             /*
@@ -287,8 +287,10 @@ process_synchronous_filter (ThreadInfo *info)
 {
     UfoFilter *filter = UFO_FILTER (info->filter);
     UfoFilterClass *filter_class = UFO_FILTER_GET_CLASS (filter);
-    GError *error = NULL;
-    gboolean cont = TRUE;
+    cl_command_queue queue;
+    GError      *error = NULL;
+    gboolean     cont = TRUE;
+    guint        iteration = 0;
 
     /*
      * Initialize
@@ -314,13 +316,16 @@ process_synchronous_filter (ThreadInfo *info)
     }
 
     fetch_result (info);
+    queue = info->cmd_queues[0];
 
     while (cont) {
+        g_message ("`%s-%p' processing item %i", ufo_filter_get_plugin_name (filter), (gpointer) filter, iteration++);
+
         if (filter_class->process_gpu != NULL) {
             UfoEventList *events;
 
             g_timer_continue (info->cpu_timer);
-            events = ufo_filter_process_gpu (filter, info->work, info->result, info->cmd_queues[0], &error);
+            events = ufo_filter_process_gpu (filter, info->work, info->result, queue, &error);
             g_timer_stop (info->cpu_timer);
 
             if (events != NULL)
@@ -328,7 +333,7 @@ process_synchronous_filter (ThreadInfo *info)
         }
         else {
             g_timer_continue (info->cpu_timer);
-            ufo_filter_process_cpu (filter, info->work, info->result, info->cmd_queues[0], &error);
+            ufo_filter_process_cpu (filter, info->work, info->result, queue, &error);
             g_timer_stop (info->cpu_timer);
         }
 
