@@ -631,6 +631,22 @@ ufo_resource_manager_get_command_queue (UfoResourceManager *manager, guint queue
     return manager->priv->command_queues[queue];
 }
 
+gint
+ufo_resource_manager_get_queue_number (UfoResourceManager *manager,
+                                       gpointer            command_queue)
+{
+    UfoResourceManagerPrivate *priv;
+
+    g_return_val_if_fail (UFO_IS_RESOURCE_MANAGER (manager), -1);
+    priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (manager);
+
+    for (guint i = 0; i < priv->num_devices[0]; i++)
+        if (priv->command_queues[i] == command_queue)
+            return (gint) i;
+
+    return -1;
+}
+
 /**
  * ufo_resource_manager_get_number_of_devices:
  * @manager: A #UfoResourceManager

@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 
+#include "ufo-profiler.h"
 #include "ufo-resource-manager.h"
 #include "ufo-aux.h"
 #include "ufo-buffer.h"
@@ -135,6 +136,9 @@ void                ufo_filter_initialize               (UfoFilter              
 void                ufo_filter_set_resource_manager     (UfoFilter              *filter,
                                                          UfoResourceManager     *manager);
 UfoResourceManager *ufo_filter_get_resource_manager     (UfoFilter              *filter);
+void                ufo_filter_set_profiler             (UfoFilter              *filter,
+                                                         UfoProfiler            *profiler);
+UfoProfiler *       ufo_filter_get_profiler             (UfoFilter              *filter);
 void                ufo_filter_process_cpu              (UfoFilter              *filter,
                                                          UfoBuffer              *input[],
                                                          UfoBuffer              *output[],

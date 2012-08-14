@@ -29,6 +29,7 @@ struct _UfoFilterPrivate {
     guint               n_outputs;
 
     UfoResourceManager  *manager;
+    UfoProfiler         *profiler;
     UfoInputParameter   *input_parameters;
     UfoOutputParameter  *output_parameters;
 
@@ -108,6 +109,7 @@ void ufo_filter_set_resource_manager (UfoFilter *filter,
 
     filter->priv->manager = manager;
 }
+
 /**
  * ufo_filter_get_resource_manager:
  * @filter: A #UfoFilter.
@@ -121,6 +123,38 @@ UfoResourceManager *ufo_filter_get_resource_manager (UfoFilter *filter)
 {
     g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
     return filter->priv->manager;
+}
+
+/**
+ * ufo_filter_set_profiler:
+ * @filter: A #UfoFilter.
+ * @manager: A #UfoProfiler
+ *
+ * Set the resource manager that this filter uses for requesting resources.
+ *
+ * Since: 0.2
+ */
+void ufo_filter_set_profiler (UfoFilter     *filter,
+                              UfoProfiler   *profiler)
+{
+    g_return_if_fail (UFO_IS_FILTER (filter) && UFO_IS_PROFILER (profiler));
+    g_object_ref (profiler);
+    filter->priv->profiler = profiler;
+}
+
+/**
+ * ufo_filter_get_profiler:
+ * @filter: A #UfoFilter.
+ *
+ * Get the resource manager that this filter uses for requesting resources.
+ *
+ * Returns: (transfer full): A #UfoProfiler
+ * Since: 0.2
+ */
+UfoProfiler *ufo_filter_get_profiler (UfoFilter *filter)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    return filter->priv->profiler;
 }
 
 /**
@@ -365,6 +399,11 @@ ufo_filter_initialize_real (UfoFilter *filter, UfoBuffer *input[], guint **outpu
 static void
 ufo_filter_dispose (GObject *object)
 {
+    UfoFilterPrivate *priv;
+
+    priv = UFO_FILTER_GET_PRIVATE (object);
+    g_object_unref (priv->profiler);
+
     G_OBJECT_CLASS (ufo_filter_parent_class)->dispose(object);
     g_message ("UfoFilter (%p): disposed", (gpointer) object);
 }

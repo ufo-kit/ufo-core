@@ -81,6 +81,8 @@ gpointer            ufo_resource_manager_get_context            (UfoResourceMana
 void                ufo_resource_manager_get_command_queues     (UfoResourceManager *manager,
                                                                  gpointer           *command_queues,
                                                                  guint              *num_queues);
+gint                ufo_resource_manager_get_queue_number       (UfoResourceManager *manager,
+                                                                 gpointer            command_queue);
 gpointer            ufo_resource_manager_get_command_queue      (UfoResourceManager *manager,
                                                                  guint              queue);
 guint               ufo_resource_manager_get_number_of_devices  (UfoResourceManager *manager);
