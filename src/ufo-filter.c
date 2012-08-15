@@ -32,6 +32,8 @@ struct _UfoFilterPrivate {
     UfoProfiler         *profiler;
     UfoInputParameter   *input_parameters;
     UfoOutputParameter  *output_parameters;
+    UfoChannel         **input_channels;
+    UfoChannel         **output_channels;
 
     cl_command_queue    command_queue;
     gboolean            finished;
@@ -104,10 +106,16 @@ ufo_filter_initialize (UfoFilter *filter, UfoBuffer *input[], guint **output_dim
 void ufo_filter_set_resource_manager (UfoFilter *filter,
                                       UfoResourceManager *manager)
 {
-    g_return_if_fail (UFO_IS_FILTER (filter));
-    g_return_if_fail (UFO_IS_RESOURCE_MANAGER (manager));
+    UfoFilterPrivate *priv;
 
-    filter->priv->manager = manager;
+    g_return_if_fail (UFO_IS_FILTER (filter) && UFO_IS_RESOURCE_MANAGER (manager));
+    priv = filter->priv;
+
+    if (priv->manager)
+        g_object_unref (priv->manager);
+
+    g_object_ref (manager);
+    priv->manager = manager;
 }
 
 /**
@@ -137,9 +145,16 @@ UfoResourceManager *ufo_filter_get_resource_manager (UfoFilter *filter)
 void ufo_filter_set_profiler (UfoFilter     *filter,
                               UfoProfiler   *profiler)
 {
+    UfoFilterPrivate *priv;
+
     g_return_if_fail (UFO_IS_FILTER (filter) && UFO_IS_PROFILER (profiler));
+    priv = filter->priv;
+
+    if (priv->profiler != NULL)
+        g_object_unref (priv->profiler);
+
     g_object_ref (profiler);
-    filter->priv->profiler = profiler;
+    priv->profiler = profiler;
 }
 
 /**
@@ -249,6 +264,7 @@ ufo_filter_register_inputs (UfoFilter *filter, guint n_inputs, UfoInputParameter
     }
 
     priv->n_inputs = n_inputs;
+    priv->input_channels = g_new0 (UfoChannel *, n_inputs);
     priv->input_parameters = g_new0 (UfoInputParameter, n_inputs);
     g_memmove (priv->input_parameters, parameters, n_inputs * sizeof(UfoInputParameter));
 }
@@ -280,6 +296,7 @@ ufo_filter_register_outputs (UfoFilter *filter, guint n_outputs, UfoOutputParame
     }
 
     priv->n_outputs = n_outputs;
+    priv->output_channels = g_new0 (UfoChannel *, n_outputs);
     priv->output_parameters = g_new0 (UfoOutputParameter, n_outputs);
     g_memmove (priv->output_parameters, parameters, n_outputs * sizeof(UfoOutputParameter));
 }
@@ -362,6 +379,56 @@ ufo_filter_get_plugin_name (UfoFilter *filter)
     return filter->priv->plugin_name;
 }
 
+void
+ufo_filter_set_output_channel (UfoFilter *filter, guint port, UfoChannel *channel)
+{
+    UfoFilterPrivate *priv;
+
+    g_return_if_fail (UFO_IS_FILTER (filter) && UFO_IS_CHANNEL (channel));
+    g_return_if_fail (port < filter->priv->n_outputs);
+
+    priv = filter->priv;
+
+    if (priv->output_channels[port] != NULL)
+        g_object_unref (priv->output_channels[port]);
+
+    g_object_ref (channel);
+    priv->output_channels[port] = channel;
+}
+
+UfoChannel *
+ufo_filter_get_output_channel (UfoFilter *filter, guint port)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    g_return_val_if_fail (port < filter->priv->n_outputs, NULL);
+    return filter->priv->output_channels[port];
+}
+
+void
+ufo_filter_set_input_channel (UfoFilter *filter, guint port, UfoChannel *channel)
+{
+    UfoFilterPrivate *priv;
+
+    g_return_if_fail (UFO_IS_FILTER (filter) && UFO_IS_CHANNEL (channel));
+    g_return_if_fail (port < filter->priv->n_inputs);
+
+    priv = filter->priv;
+
+    if (priv->input_channels[port] != NULL)
+        g_object_unref (priv->input_channels[port]);
+
+    g_object_ref (channel);
+    filter->priv->input_channels[port] = channel;
+}
+
+UfoChannel *
+ufo_filter_get_input_channel (UfoFilter *filter, guint port)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    g_return_val_if_fail (port < filter->priv->n_inputs, NULL);
+    return filter->priv->input_channels[port];
+}
+
 /**
  * ufo_filter_wait_until: (skip)
  * @filter: A #UfoFilter
@@ -408,6 +475,21 @@ ufo_filter_dispose (GObject *object)
         priv->profiler = NULL;
     }
 
+    if (priv->manager != NULL) {
+        g_object_unref (priv->manager);
+        priv->manager = NULL;
+    }
+
+    for (guint port = 0; port < priv->n_inputs; port++) {
+        if (priv->input_channels[port] != NULL)
+            g_object_unref (priv->input_channels[port]);
+    }
+
+    for (guint port = 0; port < priv->n_outputs; port++) {
+        if (priv->output_channels[port] != NULL)
+            g_object_unref (priv->output_channels[port]);
+    }
+
     G_OBJECT_CLASS (ufo_filter_parent_class)->dispose(object);
     g_message ("UfoFilter (%p): disposed", (gpointer) object);
 }
@@ -419,6 +501,8 @@ ufo_filter_finalize (GObject *object)
 
     g_free (priv->input_parameters);
     g_free (priv->output_parameters);
+    g_free (priv->input_channels);
+    g_free (priv->output_channels);
     g_free (priv->plugin_name);
 
     G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
@@ -448,6 +532,8 @@ ufo_filter_init (UfoFilter *self)
     priv->n_outputs = 0;
     priv->input_parameters = NULL;
     priv->output_parameters = NULL;
+    priv->input_channels = NULL;
+    priv->output_channels = NULL;
     priv->profiler = NULL;
 }
 

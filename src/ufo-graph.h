@@ -5,7 +5,6 @@
 #include "ufo-plugin-manager.h"
 #include "ufo-resource-manager.h"
 #include "ufo-filter.h"
-#include "ufo-relation.h"
 
 G_BEGIN_DECLS
 
@@ -68,8 +67,6 @@ void        ufo_graph_connect_filters_full  (UfoGraph           *graph,
                                              UfoFilter          *to,
                                              guint               to_port,
                                              GError            **error);
-void        ufo_graph_add_relation          (UfoGraph           *graph,
-                                             UfoRelation        *relation);
 UfoResourceManager *
             ufo_graph_get_resource_manager  (UfoGraph           *graph);
 GType       ufo_graph_get_type              (void);

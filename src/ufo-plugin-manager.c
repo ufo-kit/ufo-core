@@ -22,9 +22,9 @@ G_DEFINE_TYPE(UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT)
 typedef UfoFilter* (* GetFilterFunc) (void);
 
 struct _UfoPluginManagerPrivate {
-    GSList *search_paths;
-    GSList *modules;
-    GHashTable *filter_funcs;  /**< maps from gchar* to GetFilterFunc* */
+    GSList      *search_paths;
+    GSList      *modules;
+    GHashTable  *filter_funcs;  /**< maps from gchar* to GetFilterFunc* */
 };
 
 enum {
@@ -123,7 +123,7 @@ ufo_plugin_manager_new (const gchar *paths)
  * Load a #UfoFilter module and return an instance. The shared object name must
  * be * constructed as "libfilter@name.so".
  *
- * Returns: (transfer full) (allow-none): #UfoFilter or %NULL if module cannot be found
+ * Returns: (transfer none) (allow-none): #UfoFilter or %NULL if module cannot be found
  *
  * Since: 0.2, the error parameter is available
  */
@@ -257,9 +257,9 @@ ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValu
 }
 
 static void
-ufo_plugin_manager_dispose (GObject *gobject)
+ufo_plugin_manager_dispose (GObject *object)
 {
-    G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->dispose (gobject);
+    G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->dispose (object);
     g_message ("UfoPluginManager: disposed");
 }
 
@@ -276,8 +276,10 @@ ufo_plugin_manager_finalize (GObject *gobject)
     }
 
     g_slist_free (priv->modules);
+
     g_slist_foreach (priv->search_paths, (GFunc) g_free, NULL);
     g_slist_free (priv->search_paths);
+
     g_hash_table_destroy (priv->filter_funcs);
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);
     g_message ("UfoPluginManager: finalized");
@@ -308,8 +310,8 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
 {
     UfoPluginManagerPrivate *priv;
     manager->priv = priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
-    priv->search_paths = NULL;
-    priv->modules = NULL;
-    priv->filter_funcs = g_hash_table_new_full (g_str_hash, g_str_equal,
-            g_free, g_free);
+    priv->search_paths  = NULL;
+    priv->modules       = NULL;
+    priv->filter_funcs  = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, g_free);
 }

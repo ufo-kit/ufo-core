@@ -41,6 +41,8 @@ int main(int argc, char const* argv[])
     ufo_graph_run(graph, &error);
     handle_error(error, graph);
 
+    ufo_graph_save_to_json (graph, "dump.json", NULL);
+
     g_object_unref(graph);
     return 0;
 }

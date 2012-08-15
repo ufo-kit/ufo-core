@@ -18,30 +18,13 @@
 #include "ufo-filter-source.h"
 #include "ufo-filter-sink.h"
 #include "ufo-filter-reduce.h"
-#include "ufo-relation.h"
 
 G_DEFINE_TYPE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT)
 
 #define UFO_BASE_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BASE_SCHEDULER, UfoBaseSchedulerPrivate))
 
 typedef struct {
-    gfloat cpu_time;
-    gfloat gpu_time;
-} ExecutionInformation;
-
-typedef struct {
-    cl_command_queue    cmd_queue;
-    cl_command_type     cmd_type;
-    cl_int              cmd_status;
-    cl_ulong            submitted;
-    cl_ulong            queued;
-    cl_ulong            started;
-    cl_ulong            ended;
-} cl_event_info_row;
-
-typedef struct {
     UfoFilter          *filter;
-    GList              *relations;
     guint               num_cmd_queues;
     cl_command_queue   *cmd_queues;
     guint               num_inputs;
@@ -50,22 +33,14 @@ typedef struct {
     UfoInputParameter  *input_params;
     UfoOutputParameter *output_params;
     guint             **output_dims;
-    GAsyncQueue       **input_pop_queues;
-    GAsyncQueue       **input_push_queues;
-    GAsyncQueue       **output_pop_queues;
-    GAsyncQueue       **output_push_queues;
     UfoBuffer         **work;
     UfoBuffer         **result;
     GTimer            **timers;
     GTimer             *cpu_timer;
-    cl_event_info_row  *event_rows;
-    guint               n_event_rows;
-    guint               n_available_event_rows;
 } ThreadInfo;
 
 struct _UfoBaseSchedulerPrivate {
     UfoResourceManager  *manager;
-    GHashTable          *exec_info;    /**< maps from gpointer to ExecutionInformation* */
 };
 
 /**
@@ -88,14 +63,7 @@ ufo_base_scheduler_new (UfoResourceManager *manager)
 }
 
 static void
-push_poison_pill (GList *relations)
-{
-    g_list_foreach (relations, (GFunc) ufo_relation_push_poison_pill, NULL);
-}
-
-static void
 alloc_output_buffers (UfoFilter     *filter,
-                      GAsyncQueue   *pop_queues[],
                       guint        **output_dims,
                       gboolean       use_default_value,
                       gfloat         default_value)
@@ -105,7 +73,10 @@ alloc_output_buffers (UfoFilter     *filter,
     const guint num_outputs = ufo_filter_get_num_outputs (filter);
 
     for (guint port = 0; port < num_outputs; port++) {
+        UfoChannel *channel;
         const guint num_dims = output_params[port].n_dims;
+
+        channel = ufo_filter_get_output_channel (filter, port);
 
         for (guint i = 0; i < 3*num_outputs; i++) {
             UfoBuffer *buffer = ufo_resource_manager_request_buffer (manager, num_dims, output_dims[port], NULL, NULL);
@@ -123,55 +94,20 @@ alloc_output_buffers (UfoFilter     *filter,
             if (use_default_value)
                 ufo_buffer_fill_with_value (buffer, default_value);
 
-            g_async_queue_push (pop_queues[port], buffer);
+            ufo_channel_insert (channel, buffer);
         }
     }
 }
 
 static void
-get_input_queues (GList *relations, UfoFilter *filter, GAsyncQueue ***input_push_queues, GAsyncQueue ***input_pop_queues)
+cleanup_fetched (ThreadInfo *info)
 {
-    const guint num_inputs = ufo_filter_get_num_inputs (filter);
-    GAsyncQueue **pop_queues = g_malloc0 (sizeof(GAsyncQueue *) * num_inputs);
-    GAsyncQueue **push_queues = g_malloc0 (sizeof(GAsyncQueue *) * num_inputs);
-
-    for (GList *it = g_list_first (relations); it != NULL; it = g_list_next (it)) {
-        UfoRelation *relation = UFO_RELATION(it->data);
-
-        if (ufo_relation_has_consumer (relation, filter)) {
-            guint port = ufo_relation_get_consumer_port (relation, filter);
-            ufo_relation_get_consumer_queues (relation, filter, &push_queues[port], &pop_queues[port]);
+    for (guint i = 0; i < info->num_inputs; i++) {
+        if ((info->input_params[i].n_fetched_items == info->input_params[i].n_expected_items)) {
+            UfoChannel *channel = ufo_filter_get_input_channel (info->filter, i);
+            ufo_channel_release_input (channel, info->work[i]);
         }
     }
-
-    *input_push_queues = push_queues;
-    *input_pop_queues = pop_queues;
-}
-
-static void
-get_output_queues (GList *relations, UfoFilter *filter, GAsyncQueue ***output_push_queues, GAsyncQueue ***output_pop_queues)
-{
-    const guint num_outputs = ufo_filter_get_num_outputs (filter);
-    GAsyncQueue **pop_queues = g_malloc0 (sizeof (GAsyncQueue *) * num_outputs);
-    GAsyncQueue **push_queues = g_malloc0 (sizeof (GAsyncQueue *) * num_outputs);
-
-    for (GList *it = g_list_first (relations); it != NULL; it = g_list_next (it)) {
-        UfoRelation *relation = UFO_RELATION (it->data);
-
-        if (filter == ufo_relation_get_producer (relation)) {
-            guint port = ufo_relation_get_producer_port (relation);
-            ufo_relation_get_producer_queues (relation, &push_queues[port], &pop_queues[port]);
-        }
-    }
-
-    *output_push_queues = push_queues;
-    *output_pop_queues = pop_queues;
-}
-
-static void
-print_prefixed (const gchar *text, ThreadInfo *info)
-{
-    /* g_debug ("%s-%p:%s", ufo_filter_get_plugin_name (info->filter), (gpointer) info->filter, text); */
 }
 
 static gboolean
@@ -179,71 +115,57 @@ fetch_work (ThreadInfo *info)
 {
     const gpointer POISON_PILL = GINT_TO_POINTER (1);
     gboolean success = TRUE;
-    print_prefixed ("fetch:work", info);
 
-    for (guint i = 0; i < info->num_inputs; i++) {
-        if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
-            (info->input_params[i].n_fetched_items < info->input_params[i].n_expected_items))
+    for (guint port = 0; port < info->num_inputs; port++) {
+        UfoChannel *channel = ufo_filter_get_input_channel (info->filter, port);
+
+        if ((info->input_params[port].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
+            (info->input_params[port].n_fetched_items < info->input_params[port].n_expected_items))
         {
-            info->work[i] = g_async_queue_pop (info->input_pop_queues[i]);
-            info->input_params[i].n_fetched_items++;
+            info->work[port] = ufo_channel_fetch_input (channel);
+            info->input_params[port].n_fetched_items++;
         }
 
-        if (info->work[i] == POISON_PILL) {
-            g_async_queue_push (info->input_push_queues[i], POISON_PILL);
+        if (info->work[port] == POISON_PILL) {
+            ufo_channel_finish (channel);
             success = FALSE;
         }
     }
 
-    print_prefixed ("fetch:done", info);
     return success;
-}
-
-static void
-cleanup_fetched (ThreadInfo *info)
-{
-    for (guint i = 0; i < info->num_inputs; i++) {
-        if ((info->input_params[i].n_fetched_items == info->input_params[i].n_expected_items))
-            g_async_queue_push (info->input_push_queues[i], info->work[i]);
-    }
 }
 
 static void
 push_work (ThreadInfo *info)
 {
-    print_prefixed ("release:work", info);
-
-    for (guint i = 0; i < info->num_inputs; i++) {
-        if ((info->input_params[i].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
-            (info->input_params[i].n_fetched_items < info->input_params[i].n_expected_items))
+    for (guint port = 0; port < info->num_inputs; port++) {
+        if ((info->input_params[port].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
+            (info->input_params[port].n_fetched_items < info->input_params[port].n_expected_items))
         {
-            g_async_queue_push (info->input_push_queues[i], info->work[i]);
+            UfoChannel *channel = ufo_filter_get_input_channel (info->filter, port);
+            ufo_channel_release_input (channel, info->work[port]);
         }
     }
-
-    print_prefixed ("release:done", info);
 }
 
 static void
 fetch_result (ThreadInfo *info)
 {
-    print_prefixed ("fetch:result", info);
+    for (guint port = 0; port < info->num_outputs; port++) {
+        UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
 
-    for (guint port = 0; port < info->num_outputs; port++)
-        info->result[port] = g_async_queue_pop (info->output_pop_queues[port]);
-
-    print_prefixed ("fetch:done", info);
+        info->result[port] = ufo_channel_fetch_output (channel);
+    }
 }
 
 static void
 push_result (ThreadInfo *info)
 {
-    print_prefixed ("release:result", info);
+    for (guint port = 0; port < info->num_outputs; port++) {
+        UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
 
-    for (guint port = 0; port < info->num_outputs; port++)
-        g_async_queue_push (info->output_push_queues[port], info->result[port]);
-
-    print_prefixed ("release:done", info);
+        ufo_channel_release_output (channel, info->result[port]);
+    }
 }
 
 static GError *
@@ -259,7 +181,6 @@ process_source_filter (ThreadInfo *info)
         return error;
 
     alloc_output_buffers (filter,
-                          info->output_pop_queues,
                           info->output_dims,
                           FALSE,
                           0.0);
@@ -295,9 +216,7 @@ process_synchronous_filter (ThreadInfo *info)
      * Initialize
      */
     if (fetch_work (info)) {
-        print_prefixed ("init", info);
         ufo_filter_initialize (filter, info->work, info->output_dims, &error);
-        print_prefixed ("init:done", info);
 
         if (error != NULL) {
             g_error ("%s", error->message);
@@ -305,7 +224,6 @@ process_synchronous_filter (ThreadInfo *info)
         }
 
         alloc_output_buffers (filter,
-                              info->output_pop_queues,
                               info->output_dims,
                               FALSE,
                               0.0);
@@ -403,7 +321,6 @@ process_reduce_filter (ThreadInfo *info)
             return error;
 
         alloc_output_buffers (filter,
-                              info->output_pop_queues,
                               info->output_dims,
                               TRUE,
                               default_value);
@@ -464,15 +381,6 @@ process_reduce_filter (ThreadInfo *info)
     return error;
 }
 
-static void
-alloc_info_data (ThreadInfo *info)
-{
-    info->work = g_malloc (info->num_inputs * sizeof (UfoBuffer *));
-    info->result = g_malloc (info->num_outputs * sizeof (UfoBuffer *));
-    info->timers = g_malloc (info->num_inputs * sizeof (GTimer *));
-    info->output_dims = g_malloc0(info->num_outputs * sizeof (guint *));
-}
-
 static gpointer
 process_thread (gpointer data)
 {
@@ -480,40 +388,22 @@ process_thread (gpointer data)
     ThreadInfo  *info = (ThreadInfo *) data;
     UfoFilter   *filter = info->filter;
 
-    g_object_ref (filter);
-
-    /*
-     * Setup parameter queues
-     */
     UfoOutputParameter *output_params = ufo_filter_get_output_parameters (filter);
-    GList *producing_relations = NULL;
 
-    info->num_inputs = ufo_filter_get_num_inputs (filter);
-    info->num_outputs = ufo_filter_get_num_outputs (filter);
-    info->input_params = ufo_filter_get_input_parameters (filter);
+    info->num_inputs    = ufo_filter_get_num_inputs (filter);
+    info->num_outputs   = ufo_filter_get_num_outputs (filter);
+    info->input_params  = ufo_filter_get_input_parameters (filter);
     info->output_params = ufo_filter_get_output_parameters (filter);
+    info->work          = g_malloc (info->num_inputs * sizeof (UfoBuffer *));
+    info->result        = g_malloc (info->num_outputs * sizeof (UfoBuffer *));
+    info->timers        = g_malloc (info->num_inputs * sizeof (GTimer *));
+    info->output_dims   = g_malloc0(info->num_outputs * sizeof (guint *));
 
     for (guint i = 0; i < info->num_inputs; i++)
         info->input_params[i].n_fetched_items = 0;
 
-    get_input_queues (info->relations, filter, &info->input_push_queues, &info->input_pop_queues);
-    get_output_queues (info->relations, filter, &info->output_push_queues, &info->output_pop_queues);
-
-    alloc_info_data (info);
-
     for (guint i = 0; i < info->num_outputs; i++)
         info->output_dims[i] = g_malloc0 (output_params[i].n_dims * sizeof(guint));
-
-    /*
-     * Find out, in which relations we are involved with this filter. This is
-     * rather ugly and should be refactored at a later time.
-     */
-    for (GList *it = g_list_first (info->relations); it != NULL; it = g_list_next (it)) {
-        UfoRelation *relation = UFO_RELATION (it->data);
-
-        if (filter == ufo_relation_get_producer (relation))
-            producing_relations = g_list_append (producing_relations, relation);
-    }
 
     if (UFO_IS_FILTER_SOURCE (filter))
         error = process_source_filter (info);
@@ -532,21 +422,18 @@ process_thread (gpointer data)
     if (error != NULL)
         return error;
 
-    g_message ("UfoBaseScheduler: %s-%p finished", ufo_filter_get_plugin_name (filter), (gpointer) filter);
+    for (guint port = 0; port < info->num_outputs; port++) {
+        UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
 
-    push_poison_pill (producing_relations);
+        ufo_channel_finish (channel);
+    }
+
+    g_message ("UfoBaseScheduler: %s-%p finished", ufo_filter_get_plugin_name (filter), (gpointer) filter);
 
     g_free (info->output_dims);
     g_free (info->work);
     g_free (info->result);
     g_free (info->timers);
-    g_free (info->input_pop_queues);
-    g_free (info->input_push_queues);
-    g_free (info->output_pop_queues);
-    g_free (info->output_push_queues);
-    g_list_free (producing_relations);
-
-    g_object_unref (filter);
 
     return error;
 }
@@ -560,18 +447,17 @@ print_row (const gchar *row, gpointer user_data)
 /**
  * ufo_base_scheduler_run:
  * @scheduler: A #UfoBaseScheduler object
- * @relations: (in) (element-type UfoRelation): A list of all relations that should be scheduled
+ * @filters: (in) (element-type UfoFilter): A list of all filters that should be scheduled
  * @error: return location for a GError with error codes from
  * #UfoPluginManagerError or %NULL
  *
- * Start executing all filters from the @relations list in their own threads.
+ * Start executing all filters from the @filters list in their own threads.
  */
 void
-ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GError **error)
+ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *filters, GError **error)
 {
     cl_command_queue *cmd_queues;
     GTimer      *timer;
-    GList       *filters;
     GThread    **threads;
     GError      *tmp_error = NULL;
     ThreadInfo  *thread_info;
@@ -583,24 +469,6 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GError **
 
     ufo_resource_manager_get_command_queues (scheduler->priv->manager, (void **) &cmd_queues, &n_queues);
 
-    /*
-     * Unfortunately, there is no set data type in GLib. Thus we have to write
-     * this here.
-     */
-    GHashTable *filter_set = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-    for (GList *it = g_list_first (relations); it != NULL; it = g_list_next (it)) {
-        UfoRelation *relation   = UFO_RELATION (it->data);
-        UfoFilter   *producer   = ufo_relation_get_producer (relation);
-        GList       *consumers  = ufo_relation_get_consumers (relation);
-
-        g_hash_table_insert (filter_set, producer, NULL);
-
-        for (GList *jt = g_list_first (consumers); jt != NULL; jt = g_list_next (jt))
-            g_hash_table_insert (filter_set, jt->data, NULL);
-    }
-
-    filters     = g_hash_table_get_keys (filter_set);
     n_threads   = g_list_length (filters);
     threads     = g_new0 (GThread *, n_threads);
     thread_info = g_new0 (ThreadInfo, n_threads);
@@ -617,12 +485,8 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GError **
 
         thread_info[i].profiler = ufo_profiler_new ();
         thread_info[i].filter = filter;
-        thread_info[i].relations = relations;
         thread_info[i].num_cmd_queues = n_queues;
         thread_info[i].cmd_queues = cmd_queues;
-        thread_info[i].n_available_event_rows = 256;
-        thread_info[i].event_rows = g_new0 (cl_event_info_row, thread_info[i].n_available_event_rows);
-        thread_info[i].n_event_rows = 0;
 
         ufo_filter_set_profiler (filter, thread_info[i].profiler);
 
@@ -638,9 +502,7 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GError **
         }
     }
 
-    /*
-     * Wait for them to finish
-     */
+    /* Wait for them to finish */
     for (i = 0; i < n_threads; i++) {
         tmp_error = (GError *) g_thread_join (threads[i]);
 
@@ -650,18 +512,12 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GError **
         }
     }
 
-    /*
-     * Dump OpenCL events.
-     */
+    /* Dump OpenCL events. */
     for (GList *it = filters; it != NULL; it = g_list_next (it)) {
-        UfoFilter   *filter;
         UfoProfiler *profiler;
 
-        filter = UFO_FILTER (it->data);
-        profiler = ufo_filter_get_profiler (filter);
-
+        profiler = ufo_filter_get_profiler (UFO_FILTER (it->data));
         ufo_profiler_foreach (profiler, print_row, NULL);
-
         g_object_unref (profiler);
     }
 
@@ -669,8 +525,6 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *relations, GError **
 
     g_free (thread_info);
     g_free (threads);
-    g_list_free (filters);
-    g_hash_table_destroy (filter_set);
 
     g_timer_stop (timer);
     g_message ("Processing finished after %3.5f seconds", g_timer_elapsed (timer, NULL));
@@ -681,7 +535,6 @@ static void ufo_base_scheduler_dispose (GObject *object)
 {
     UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
     g_object_unref (priv->manager);
-    g_hash_table_destroy (priv->exec_info);
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->dispose (object);
     g_message ("UfoBaseScheduler: disposed");
 }
@@ -704,5 +557,4 @@ static void ufo_base_scheduler_init (UfoBaseScheduler *base_scheduler)
 {
     UfoBaseSchedulerPrivate *priv;
     base_scheduler->priv = priv = UFO_BASE_SCHEDULER_GET_PRIVATE (base_scheduler);
-    priv->exec_info = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_free);
 }

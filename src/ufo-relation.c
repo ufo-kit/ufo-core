@@ -59,10 +59,10 @@ ufo_relation_new (UfoFilter *producer, guint output_port, UfoRelationMode mode)
     UfoRelation *relation;
 
     relation = UFO_RELATION (g_object_new (UFO_TYPE_RELATION,
-            "producer", producer,
-            "output-port", output_port,
-            "mode", mode,
-            NULL));
+                             "producer", producer,
+                             "output-port", output_port,
+                             "mode", mode,
+                             NULL));
 
     g_object_ref (producer);
     return relation;

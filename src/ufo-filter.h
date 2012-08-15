@@ -7,6 +7,7 @@
 #include "ufo-resource-manager.h"
 #include "ufo-aux.h"
 #include "ufo-buffer.h"
+#include "ufo-channel.h"
 
 G_BEGIN_DECLS
 
@@ -162,6 +163,16 @@ UfoInputParameter  *ufo_filter_get_input_parameters     (UfoFilter              
 UfoOutputParameter *ufo_filter_get_output_parameters    (UfoFilter              *filter);
 guint               ufo_filter_get_num_inputs           (UfoFilter              *filter);
 guint               ufo_filter_get_num_outputs          (UfoFilter              *filter);
+void                ufo_filter_set_output_channel       (UfoFilter              *filter,
+                                                         guint                   port,
+                                                         UfoChannel             *channel);
+UfoChannel *        ufo_filter_get_output_channel       (UfoFilter              *filter,
+                                                         guint                   port);
+void                ufo_filter_set_input_channel        (UfoFilter              *filter,
+                                                         guint                   port,
+                                                         UfoChannel             *channel);
+UfoChannel *        ufo_filter_get_input_channel        (UfoFilter              *filter,
+                                                         guint                   port);
 void                ufo_filter_wait_until               (UfoFilter              *filter,
                                                          GParamSpec             *pspec,
                                                          UfoFilterConditionFunc  condition,

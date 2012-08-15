@@ -17,6 +17,7 @@ int main(int argc, char *argv[])
     g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
 
     test_add_buffer ();
+    test_add_channel ();
     test_add_filter ();
     test_add_relation ();
 

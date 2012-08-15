@@ -14,6 +14,7 @@ cmake_minimum_required(VERSION 2.8)
 set(TEST_SRCS
     test-suite.c
     test-buffer.c
+    test-channel.c
     test-filter.c
     test-relation.c
     )

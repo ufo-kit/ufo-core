@@ -41,19 +41,18 @@ struct _UfoChannelClass {
     GObjectClass parent_class;
 };
 
-UfoChannel *ufo_channel_new(void);
-void ufo_channel_ref(UfoChannel *channel);
-
-void ufo_channel_finish(UfoChannel *channel);
-
-void ufo_channel_allocate_output_buffers(UfoChannel *channel, guint num_dims, const guint *dim_size);
-void ufo_channel_allocate_output_buffers_like(UfoChannel *channel, UfoBuffer *buffer);
-UfoBuffer *ufo_channel_get_input_buffer(UfoChannel *channel);
-UfoBuffer *ufo_channel_get_output_buffer(UfoChannel *channel);
-void ufo_channel_finalize_input_buffer(UfoChannel *channel, UfoBuffer *buffer);
-void ufo_channel_finalize_output_buffer(UfoChannel *channel, UfoBuffer *buffer);
-
-GType ufo_channel_get_type(void);
+UfoChannel *ufo_channel_new             (void);
+void        ufo_channel_ref             (UfoChannel *channel);
+void        ufo_channel_finish          (UfoChannel *channel);
+void        ufo_channel_insert          (UfoChannel *channel,
+                                         UfoBuffer  *buffer);
+UfoBuffer * ufo_channel_fetch_input     (UfoChannel *channel);
+void        ufo_channel_release_input   (UfoChannel *channel,
+                                         UfoBuffer  *buffer);
+UfoBuffer * ufo_channel_fetch_output    (UfoChannel *channel);
+void        ufo_channel_release_output  (UfoChannel *channel,
+                                         UfoBuffer  *buffer);
+GType       ufo_channel_get_type        (void);
 
 G_END_DECLS
 

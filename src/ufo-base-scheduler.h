@@ -44,7 +44,7 @@ struct _UfoBaseSchedulerClass {
 
 UfoBaseScheduler*   ufo_base_scheduler_new          (UfoResourceManager *manager);
 void                ufo_base_scheduler_run          (UfoBaseScheduler*   scheduler,
-                                                     GList*              relations,
+                                                     GList*              filters,
                                                      GError**            error);
 GType               ufo_base_scheduler_get_type     (void);
 
