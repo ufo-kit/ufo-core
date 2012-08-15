@@ -25,10 +25,10 @@ struct _UfoRelationPrivate {
     guint        output_port;
     GAsyncQueue *producer_pop_queue;
     GAsyncQueue *producer_push_queue;
-    GList       *consumers;                   /* contains UfoFilter * */
-    GHashTable  *consumer_ports;         /* maps from UfoFilter* to input port */
-    GHashTable  *consumer_pop_queues;    /* maps from UfoFilter* to GAsyncQueue */
-    GHashTable  *consumer_push_queues;   /* maps from UfoFilter* to GAsyncQueue */
+    GList       *consumers;             /* contains UfoFilter * */
+    GHashTable  *consumer_ports;        /* maps from UfoFilter* to input port */
+    GHashTable  *consumer_pop_queues;   /* maps from UfoFilter* to GAsyncQueue */
+    GHashTable  *consumer_push_queues;  /* maps from UfoFilter* to GAsyncQueue */
 };
 
 enum {

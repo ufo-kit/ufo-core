@@ -317,7 +317,7 @@ ufo_graph_read_from_json (UfoGraph *graph, UfoPluginManager *manager, const gcha
  * Save a JSON configuration file with the filter structure of @graph.
  */
 void
-ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **error)
+ufo_graph_save_to_json (UfoGraph *graph, const gchar *filename, GError **error)
 {
     g_return_if_fail (UFO_IS_GRAPH (graph) && (filename != NULL));
 
@@ -361,7 +361,8 @@ ufo_graph_save_to_json(UfoGraph *graph, const gchar *filename, GError **error)
  * Start execution of all UfoElements in the UfoGraph until no more data is
  * produced
  */
-void ufo_graph_run(UfoGraph *graph, GError **error)
+void
+ufo_graph_run (UfoGraph *graph, GError **error)
 {
     UfoGraphPrivate  *priv;
     UfoBaseScheduler *scheduler;
@@ -425,39 +426,38 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
                                 GError     **error)
 {
     UfoGraphPrivate *priv;
-    UfoRelation     *relation;
+    UfoRelation     *relation = NULL;
     GError          *tmp_error = NULL;
 
     g_return_if_fail (UFO_IS_GRAPH (graph) && UFO_IS_FILTER (from) && UFO_IS_FILTER (to));
     priv = UFO_GRAPH_GET_PRIVATE (graph);
 
     /*
-     * Check that we do not make the connection twice.
+     * Check that we do not make the same connection twice.
      */
     for (GList *it = g_list_first (priv->relations); it != NULL; it = g_list_next (it)) {
-        relation = UFO_RELATION (it->data);
+        UfoRelation *checked_relation = UFO_RELATION (it->data);
 
-        if (ufo_relation_get_producer (relation) == from) {
-            GList *consumers = ufo_relation_get_consumers (relation);
+        if (ufo_relation_get_producer (checked_relation) == from) {
+            GList *consumers = ufo_relation_get_consumers (checked_relation);
 
             if ((g_list_first (consumers))->data == to)
                 g_warning ("Primary connection between %s-%p and %s-%p exists already",
                            ufo_filter_get_plugin_name (from), (gpointer) from,
                            ufo_filter_get_plugin_name (to), (gpointer) to);
+
+            relation = checked_relation;
         }
     }
 
-    relation = ufo_relation_new (from, from_port, UFO_RELATION_MODE_DISTRIBUTE);
-    ufo_relation_add_consumer (relation, to, to_port, &tmp_error);
-
-    if (tmp_error == NULL) {
-        /*
-         * We don't call ufo_graph_add_relation() because we don't want to
-         * reference the relation object once again.
-         */
+    if (relation == NULL) {
+        relation = ufo_relation_new (from, from_port, UFO_RELATION_MODE_DISTRIBUTE);
         priv->relations = g_list_append (priv->relations, relation);
     }
-    else
+
+    ufo_relation_add_consumer (relation, to, to_port, &tmp_error);
+
+    if (tmp_error != NULL)
         g_propagate_error (error, tmp_error);
 
     ufo_filter_set_resource_manager (from, priv->manager);
