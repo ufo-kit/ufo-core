@@ -402,7 +402,11 @@ ufo_filter_dispose (GObject *object)
     UfoFilterPrivate *priv;
 
     priv = UFO_FILTER_GET_PRIVATE (object);
-    g_object_unref (priv->profiler);
+
+    if (priv->profiler != NULL) {
+        g_object_unref (priv->profiler);
+        priv->profiler = NULL;
+    }
 
     G_OBJECT_CLASS (ufo_filter_parent_class)->dispose(object);
     g_message ("UfoFilter (%p): disposed", (gpointer) object);
@@ -444,5 +448,6 @@ ufo_filter_init (UfoFilter *self)
     priv->n_outputs = 0;
     priv->input_parameters = NULL;
     priv->output_parameters = NULL;
+    priv->profiler = NULL;
 }
 
