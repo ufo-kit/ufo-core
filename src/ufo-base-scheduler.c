@@ -239,14 +239,9 @@ process_synchronous_filter (ThreadInfo *info)
         g_message ("`%s-%p' processing item %i", ufo_filter_get_plugin_name (filter), (gpointer) filter, iteration++);
 
         if (filter_class->process_gpu != NULL) {
-            UfoEventList *events;
-
             g_timer_continue (info->cpu_timer);
-            events = ufo_filter_process_gpu (filter, info->work, info->result, queue, &error);
+            ufo_filter_process_gpu (filter, info->work, info->result, queue, &error);
             g_timer_stop (info->cpu_timer);
-
-            if (events != NULL)
-                ufo_event_list_free (events);
         }
         else {
             g_timer_continue (info->cpu_timer);

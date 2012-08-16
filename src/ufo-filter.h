@@ -114,20 +114,20 @@ struct _UfoFilter {
 struct _UfoFilterClass {
     GObjectClass parent;
 
-    void           (*initialize)       (UfoFilter   *filter,
-                                        UfoBuffer   *input[],
-                                        guint      **output_dim_sizes,
-                                        GError     **error);
-    void           (*process_cpu)      (UfoFilter   *filter,
-                                        UfoBuffer   *input[],
-                                        UfoBuffer   *output[],
-                                        gpointer     cmd_queue,
-                                        GError     **error);
-    UfoEventList * (*process_gpu)      (UfoFilter   *filter,
-                                        UfoBuffer   *input[],
-                                        UfoBuffer   *output[],
-                                        gpointer     cmd_queue,
-                                        GError     **error);
+    void (*initialize)       (UfoFilter   *filter,
+                              UfoBuffer   *input[],
+                              guint      **output_dim_sizes,
+                              GError     **error);
+    void (*process_cpu)      (UfoFilter   *filter,
+                              UfoBuffer   *input[],
+                              UfoBuffer   *output[],
+                              gpointer     cmd_queue,
+                              GError     **error);
+    void (*process_gpu)      (UfoFilter   *filter,
+                              UfoBuffer   *input[],
+                              UfoBuffer   *output[],
+                              gpointer     cmd_queue,
+                              GError     **error);
 };
 
 void                ufo_filter_initialize               (UfoFilter              *filter,
@@ -145,7 +145,7 @@ void                ufo_filter_process_cpu              (UfoFilter              
                                                          UfoBuffer              *output[],
                                                          gpointer                cmd_queue,
                                                          GError                **error);
-UfoEventList *      ufo_filter_process_gpu              (UfoFilter              *filter,
+void                ufo_filter_process_gpu              (UfoFilter              *filter,
                                                          UfoBuffer              *input[],
                                                          UfoBuffer              *output[],
                                                          gpointer                cmd_queue,

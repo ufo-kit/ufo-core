@@ -212,14 +212,13 @@ ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output
  * return event_list;
  * </programlisting>
  *
- * Returns: A #UfoEventList object containing cl_events.
  * Since: 0.2
  */
-UfoEventList *
+void
 ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
-    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
-    return UFO_FILTER_GET_CLASS (filter)->process_gpu (filter, input, output, cmd_queue, error);
+    g_return_if_fail (UFO_IS_FILTER (filter));
+    UFO_FILTER_GET_CLASS (filter)->process_gpu (filter, input, output, cmd_queue, error);
 }
 
 /**
