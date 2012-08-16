@@ -68,6 +68,7 @@ add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 add_subdirectory(src)
 add_subdirectory(docs)
 add_subdirectory(tests)
+add_subdirectory(tools)
 
 
 # --- Package generation ------------------------------------------------------

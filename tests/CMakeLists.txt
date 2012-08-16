@@ -1,13 +1,3 @@
-#
-# We create two targets that call the unit test binaries in core/tests in
-# different ways:
-#    - test
-#    - gtest
-# The first target uses CMake's own testing facilities and gives a simple
-# overview if a certain test module passed or not. 'gtest' on the other hand
-# runs the `gtester` tool which outputs failing test cases and creates a summary
-# HTML file called results.html using the `gtester-report` tool.
-#
 cmake_minimum_required(VERSION 2.8)
 
 # configure unit tests
@@ -21,7 +11,7 @@ set(TEST_SRCS
 
 set(SUITE_BIN "test-suite")
 
-option(WITH_TESTS "Run tests on each build" ON)
+option(WITH_TESTS "Build test suite" ON)
 
 if (WITH_TESTS)
     include_directories({CMAKE_CURRENT_SOURCE_DIR})
@@ -32,8 +22,3 @@ if (WITH_TESTS)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gtester.xsl"
         "${CMAKE_CURRENT_BINARY_DIR}/gtester.xsl" @ONLY IMMEDIATE)
 endif()
-
-add_executable(runjson test.c)
-target_link_libraries(runjson ufo ${GLIB2_LIBRARIES})
-install(TARGETS runjson
-    RUNTIME DESTINATION bin)
