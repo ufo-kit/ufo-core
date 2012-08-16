@@ -121,7 +121,7 @@ get_time_stamps (cl_event event, gulong *queued, gulong *submitted, gulong *star
 /**
  * ufo_profiler_foreach:
  * @profiler: A #UfoProfiler object.
- * @func: The function to be called for an entry
+ * @func: (scope call): The function to be called for an entry
  * @user_data: User parameters
  *
  * Iterates through the recorded events and calls @func for each entry.
