@@ -71,16 +71,24 @@ ufo_channel_finish (UfoChannel *channel)
         g_async_queue_push (priv->input_queue, GINT_TO_POINTER (1));
 }
 
+/**
+ * ufo_channel_insert:
+ * @channel: A #UfoChannel
+ * @buffer: A #UfoBuffer to be inserted
+ *
+ * Inserts an initial @buffer that can be consumed with
+ * ufo_channel_fetch_output().
+ */
 void
 ufo_channel_insert (UfoChannel *channel,
-                         UfoBuffer  *buffer)
+                    UfoBuffer  *buffer)
 {
     g_return_if_fail (UFO_IS_CHANNEL (channel));
     g_async_queue_push (channel->priv->output_queue, buffer);
 }
 
 /**
- * ufo_channel_get_input_buffer: (skip)
+ * ufo_channel_fetch_input: (skip)
  * @channel: A #UfoChannel
  *
  * This method blocks execution as long as no new input buffer is readily
@@ -96,7 +104,7 @@ ufo_channel_fetch_input (UfoChannel *channel)
 }
 
 /**
- * ufo_channel_finalize_input_buffer:
+ * ufo_channel_release_input:
  * @channel: A #UfoChannel
  * @buffer: The #UfoBuffer input acquired with ufo_channel_get_input_buffer ()
  *
@@ -112,7 +120,7 @@ ufo_channel_release_input (UfoChannel *channel, UfoBuffer *buffer)
 }
 
 /**
- * ufo_channel_get_output_buffer: (skip)
+ * ufo_channel_fetch_output: (skip)
  * @channel: A #UfoChannel
  *
  * This method blocks execution as long as no new output buffer is readily
@@ -128,7 +136,7 @@ ufo_channel_fetch_output (UfoChannel *channel)
 }
 
 /**
- * ufo_channel_finalize_output_buffer:
+ * ufo_channel_release_output:
  * @channel: A #UfoChannel
  * @buffer: The #UfoBuffer input acquired with ufo_channel_get_output_buffer ()
  *

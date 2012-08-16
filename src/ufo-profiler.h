@@ -30,6 +30,13 @@ struct _UfoProfiler {
     UfoProfilerPrivate *priv;
 };
 
+/**
+ * UfoProfilerFunc:
+ * @row: A string with profiling information for a certain event.
+ * @user_data: User data passed to ufo_profiler_foreach().
+ *
+ * Specifies the type of functions passed to ufo_profiler_foreach().
+ */
 typedef void (*UfoProfilerFunc) (const gchar *row, gpointer user_data);
 
 /**

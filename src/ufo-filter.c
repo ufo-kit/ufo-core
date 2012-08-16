@@ -136,9 +136,9 @@ UfoResourceManager *ufo_filter_get_resource_manager (UfoFilter *filter)
 /**
  * ufo_filter_set_profiler:
  * @filter: A #UfoFilter.
- * @manager: A #UfoProfiler
+ * @profiler: A #UfoProfiler
  *
- * Set the resource manager that this filter uses for requesting resources.
+ * Set this filter's profiler.
  *
  * Since: 0.2
  */
@@ -161,7 +161,7 @@ void ufo_filter_set_profiler (UfoFilter     *filter,
  * ufo_filter_get_profiler:
  * @filter: A #UfoFilter.
  *
- * Get the resource manager that this filter uses for requesting resources.
+ * Get this filter's profiler.
  *
  * Returns: (transfer full): A #UfoProfiler
  * Since: 0.2
@@ -379,6 +379,16 @@ ufo_filter_get_plugin_name (UfoFilter *filter)
     return filter->priv->plugin_name;
 }
 
+/**
+ * ufo_filter_set_output_channel:
+ * @filter: A #UfoFilter.
+ * @port: Output port number
+ * @channel: A #UfoChannel.
+ *
+ * Set a filter's output channel for a certain output port.
+ *
+ * Since: 0.2
+ */
 void
 ufo_filter_set_output_channel (UfoFilter *filter, guint port, UfoChannel *channel)
 {
@@ -396,6 +406,16 @@ ufo_filter_set_output_channel (UfoFilter *filter, guint port, UfoChannel *channe
     priv->output_channels[port] = channel;
 }
 
+/**
+ * ufo_filter_get_output_channel:
+ * @filter: A #UfoFilter.
+ * @port: Output port number
+ *
+ * Return a filter's output channel for a certain output port.
+ *
+ * Returns: (transfer none) (allow-none): The associated output channel.
+ * Since: 0.2
+ */
 UfoChannel *
 ufo_filter_get_output_channel (UfoFilter *filter, guint port)
 {
@@ -404,6 +424,16 @@ ufo_filter_get_output_channel (UfoFilter *filter, guint port)
     return filter->priv->output_channels[port];
 }
 
+/**
+ * ufo_filter_set_input_channel:
+ * @filter: A #UfoFilter.
+ * @port: input port number
+ * @channel: A #UfoChannel.
+ *
+ * Set a filter's input channel for a certain input port.
+ *
+ * Since: 0.2
+ */
 void
 ufo_filter_set_input_channel (UfoFilter *filter, guint port, UfoChannel *channel)
 {
@@ -421,6 +451,16 @@ ufo_filter_set_input_channel (UfoFilter *filter, guint port, UfoChannel *channel
     filter->priv->input_channels[port] = channel;
 }
 
+/**
+ * ufo_filter_get_input_channel:
+ * @filter: A #UfoFilter.
+ * @port: input port number
+ *
+ * Return a filter's input channel for a certain input port.
+ *
+ * Returns: (transfer none) (allow-none): The associated input channel.
+ * Since: 0.2
+ */
 UfoChannel *
 ufo_filter_get_input_channel (UfoFilter *filter, guint port)
 {

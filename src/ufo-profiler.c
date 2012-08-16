@@ -53,6 +53,21 @@ ufo_profiler_new (void)
     return UFO_PROFILER (g_object_new (UFO_TYPE_PROFILER, NULL));
 }
 
+/**
+ * ufo_profiler_call:
+ * @profiler: A #UfoProfiler object.
+ * @command_queue: An OpenCL command queue.
+ * @kernel: An OpenCL kernel.
+ * @work_dim: Number of working dimensions.
+ * @global_work_size: Sizes of global dimensions. The array must have at least
+ *      @work_dim entries.
+ * @local_work_size: Sizes of local work group dimensions. The array must have
+ *      at least @work_dim entries.
+ *
+ * Execute the @kernel using the command queue and execution parameters. The
+ * event associated with the clEnqueueNDRangeKernel() call is recorded and may
+ * be used for profiling purposes later on.
+ */
 void
 ufo_profiler_call (UfoProfiler    *profiler,
                    gpointer        command_queue,
@@ -103,6 +118,14 @@ get_time_stamps (cl_event event, gulong *queued, gulong *submitted, gulong *star
     clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_END, sizeof (cl_ulong), end, NULL);
 }
 
+/**
+ * ufo_profiler_foreach:
+ * @profiler: A #UfoProfiler object.
+ * @func: The function to be called for an entry
+ * @user_data: User parameters
+ *
+ * Iterates through the recorded events and calls @func for each entry.
+ */
 void
 ufo_profiler_foreach (UfoProfiler    *profiler,
                       UfoProfilerFunc func,
