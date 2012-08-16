@@ -25,6 +25,7 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT)
 /**
  * UfoGraphError:
  * @UFO_GRAPH_ERROR_ALREADY_LOAD: Graph is already loaded
+ * @UFO_GRAPH_ERROR_JSON_KEY: Specified key not found in JSON file
  *
  * Possible errors when loading the graph from JSON.
  */
@@ -69,17 +70,15 @@ handle_json_single_prop (JsonObject  *object,
     g_object_set_property (G_OBJECT(user), name, &val);
 }
 
-static void
-handle_json_filter_node (JsonArray *array,
-                         guint      index,
-                         JsonNode  *element,
-                         gpointer   user)
+static gboolean
+handle_json_filter_node (JsonNode  *element,
+                         UfoGraph  *graph,
+                         GError   **error)
 {
-    UfoGraph *graph = user;
     UfoGraphPrivate *priv = graph->priv;
     UfoFilter *plugin;
     JsonObject *object;
-    GError *error = NULL;
+    GError *tmp_error = NULL;
     const gchar *name;
     const gchar *plugin_name;
 
@@ -87,12 +86,18 @@ handle_json_filter_node (JsonArray *array,
 
     if (!json_object_has_member (object, "plugin") ||
         !json_object_has_member (object, "name")) {
-        g_error ("Node does not have `plugin' or `name' key");
-        return;
+        g_set_error (error, UFO_GRAPH_ERROR, UFO_GRAPH_ERROR_JSON_KEY,
+                     "Node does not have `plugin' or `name' key");
+        return FALSE;
     }
 
     plugin_name = json_object_get_string_member (object, "plugin");
-    plugin = ufo_plugin_manager_get_filter (priv->plugin_manager, plugin_name, &error);
+    plugin = ufo_plugin_manager_get_filter (priv->plugin_manager, plugin_name, &tmp_error);
+
+    if (tmp_error != NULL) {
+        g_propagate_error (error, tmp_error);
+        return FALSE;
+    }
 
     ufo_filter_set_resource_manager (plugin, priv->manager);
 
@@ -107,6 +112,8 @@ handle_json_filter_node (JsonArray *array,
         JsonObject *prop_object = json_object_get_object_member (object, "properties");
         json_object_foreach_member (prop_object, handle_json_single_prop, plugin);
     }
+
+    return TRUE;
 }
 
 static void
@@ -175,7 +182,7 @@ handle_json_filter_edge (JsonArray *array,
 }
 
 static void
-graph_build (UfoGraph *graph, JsonNode *root)
+graph_build (UfoGraph *graph, JsonNode *root, GError **error)
 {
     JsonObject *root_object = json_node_get_object(root);
 
@@ -186,10 +193,21 @@ graph_build (UfoGraph *graph, JsonNode *root)
 
     if (json_object_has_member (root_object, "nodes")) {
         JsonArray *nodes = json_object_get_array_member (root_object, "nodes");
-        json_array_foreach_element (nodes, handle_json_filter_node, graph);
+        GList *elements = json_array_get_elements (nodes);
 
-        /* We only check edges if we have nodes, anything else doesn't make much
-         * sense. */
+        for (GList *it = g_list_first (elements); it != NULL; it = g_list_next (it)) {
+            if (!handle_json_filter_node (it->data, graph, error)) {
+                g_list_free (elements);
+                return;
+            }
+        }
+
+        g_list_free (elements);
+
+        /*
+         * We only check edges if we have nodes, anything else doesn't make much
+         * sense.
+         */
         if (json_object_has_member (root_object, "edges")) {
             JsonArray *edges = json_object_get_array_member (root_object, "edges");
             json_array_foreach_element (edges, handle_json_filter_edge, graph);
@@ -285,20 +303,21 @@ ufo_graph_new (const gchar *paths)
 void
 ufo_graph_read_from_json (UfoGraph *graph, UfoPluginManager *manager, const gchar *filename, GError **error)
 {
-    g_return_if_fail (UFO_IS_GRAPH(graph) || (filename != NULL));
+    g_return_if_fail (UFO_IS_GRAPH(graph) && UFO_IS_PLUGIN_MANAGER (manager) && (filename != NULL));
     JsonParser *json_parser = json_parser_new ();
     GError *tmp_error = NULL;
 
     if (!json_parser_load_from_file (json_parser, filename, &tmp_error)) {
-        g_propagate_error (error, tmp_error);
+        g_propagate_prefixed_error (error, tmp_error, "Parsing JSON");
         return;
     }
 
     graph->priv->plugin_manager = manager;
-    graph_build (graph, json_parser_get_root (json_parser));
+    g_object_ref (manager);
+
+    graph_build (graph, json_parser_get_root (json_parser), error);
     g_object_unref (json_parser);
 }
-
 
 /**
  * ufo_graph_save_to_json:

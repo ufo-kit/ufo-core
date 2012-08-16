@@ -130,7 +130,7 @@ ufo_plugin_manager_new (const gchar *paths)
 UfoFilter *
 ufo_plugin_manager_get_filter (UfoPluginManager *manager, const gchar *name, GError **error)
 {
-    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) || (name != NULL), NULL);
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && (name != NULL), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     UfoFilter *filter;
     GetFilterFunc *func = NULL;

@@ -17,7 +17,8 @@ G_BEGIN_DECLS
 
 #define UFO_GRAPH_ERROR ufo_graph_error_quark()
 typedef enum {
-    UFO_GRAPH_ERROR_ALREADY_LOAD
+    UFO_GRAPH_ERROR_ALREADY_LOAD,
+    UFO_GRAPH_ERROR_JSON_KEY
 } UfoGraphError;
 
 typedef struct _UfoGraph           UfoGraph;

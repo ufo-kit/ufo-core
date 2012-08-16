@@ -6,6 +6,7 @@ set(TEST_SRCS
     test-buffer.c
     test-channel.c
     test-filter.c
+    test-graph.c
     test-relation.c
     )
 

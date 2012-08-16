@@ -3,13 +3,14 @@
 #include <glib.h>
 #include "ufo-graph.h"
 
-static void handle_error(GError *error, UfoGraph *graph)
+static void
+handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
 {
     if (error) {
-        g_error("%s", error->message);
-        g_error_free(error);
-        g_object_unref(graph);
-        exit(EXIT_FAILURE);
+        g_error ("%s: %s", prefix, error->message);
+        g_error_free (error);
+        g_object_unref (graph);
+        exit (EXIT_FAILURE);
     }
 }
 
@@ -36,12 +37,10 @@ int main(int argc, char const* argv[])
     }
 
     ufo_graph_read_from_json(graph, manager, argv[1], &error);
-    handle_error(error, graph);
+    handle_error("Reading JSON", error, graph);
 
     ufo_graph_run(graph, &error);
-    handle_error(error, graph);
-
-    ufo_graph_save_to_json (graph, "dump.json", NULL);
+    handle_error("Executing graph", error, graph);
 
     g_object_unref(graph);
     return 0;
