@@ -33,7 +33,7 @@ __kernel void nlm(__global float *input, __global float *output, __local float *
 
     float total_weight = 0.0f;
     float pixel_value = 0.0f;
-    
+
     /* Compute the upper left (sx,sy) and lower right (tx, ty) corner points
        of our search window */
     int r = min(NB_RADIUS, min(width - 1 - x, min (height - 1 - y, min(x, y))));

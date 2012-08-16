@@ -1,0 +1,36 @@
+{
+    "nodes" : [
+        {
+            "plugin": "reader",
+            "name": "reader",
+            "properties": {
+                "path": "*.tif"
+            }
+        },
+        {
+            "plugin" : "cl",
+            "name": "denoise",
+            "properties": {
+                "file": "nlm.cl",
+                "kernel": "nlm",
+            }
+        },
+        {
+            "plugin": "writer",
+            "name": "writer",
+            "properties": {
+                "prefix": "denoised-"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "from": { "name": "reader" },
+            "to": { "name": "denoise" }
+        },
+        {
+            "from": { "name": "denoise" },
+            "to": { "name": "writer" }
+        }
+    ]
+}
