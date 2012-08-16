@@ -8,3 +8,6 @@ target_link_libraries(runjson
 
 install(TARGETS runjson
     RUNTIME DESTINATION bin)
+
+install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/clprof
+    DESTINATION bin)
