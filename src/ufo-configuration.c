@@ -47,8 +47,9 @@ ufo_configuration_new (void)
  *
  * Get an array of path strings.
  *
- * Return: A newly-allocated %NULL-terminated array of strings containing file
- * system paths. Use g_strfreev() to free it.
+ * Returns: (transfer full) (array zero-terminated=1): A newly-allocated
+ * %NULL-terminated array of strings containing file system paths. Use
+ * g_strfreev() to free it.
  */
 gchar **
 ufo_configuration_get_paths (UfoConfiguration *config)

@@ -221,7 +221,7 @@ ufo_resource_manager_new (UfoConfiguration *config)
 }
 
 static void
-add_paths (UfoResourceManagerPrivate *priv, const gchar *paths[])
+add_paths (UfoResourceManagerPrivate *priv, gchar *paths[])
 {
     if (paths == NULL)
         return;
@@ -668,7 +668,7 @@ ufo_resource_manager_set_property (GObject      *object,
 
                 config = UFO_CONFIGURATION (value_object);
                 paths = ufo_configuration_get_paths (config);
-                add_paths (priv, (const gchar **) paths);
+                add_paths (priv, paths);
                 g_strfreev (paths);
             }
             break;
