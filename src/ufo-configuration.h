@@ -19,8 +19,7 @@ typedef struct _UfoConfigurationPrivate    UfoConfigurationPrivate;
 /**
  * UfoConfiguration:
  *
- * The #UfoConfiguration collects and records OpenCL events and stores them in a
- * convenient format on disk or prints summaries on screen.
+ * A #UfoConfiguration provides access to run-time specific settings.
  */
 struct _UfoConfiguration {
     /*< private >*/

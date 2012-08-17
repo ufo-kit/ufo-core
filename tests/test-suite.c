@@ -22,7 +22,6 @@ int main(int argc, char *argv[])
     test_add_configuration ();
     test_add_filter ();
     test_add_graph ();
-    test_add_relation ();
 
     g_test_run();
 

@@ -1,13 +1,12 @@
 /**
- * SECTION:ufo-plugin-manager
- * @Short_description: Load an #UfoFilter from a shared object
+ * SECTION:ufo-configuration
+ * @Short_description: Access run-time specific settings
  * @Title: UfoConfiguration
  *
- * The plugin manager opens shared object modules searched for in locations
- * specified with ufo_configuration_add_paths(). An #UfoFilter can be
- * instantiated with ufo_configuration_get_filter() with a one-to-one mapping
- * between filter name xyz and module name libfilterxyz.so. Any errors are
- * reported as one of #UfoConfigurationError codes.
+ * A #UfoConfiguration object is used to keep settings that affect the run-time
+ * rather than the parameters of the filter graph. Each object that implements
+ * the #UfoConfigurable interface can receive a #UfoConfiguration object and use
+ * the information stored in it.
  */
 
 #include "ufo-configuration.h"

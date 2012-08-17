@@ -1,6 +1,6 @@
 /**
  * SECTION:ufo-configurable
- * @Short_description: foo
+ * @Short_description: An interface for configurable objects
  * @Title: UfoConfigurable
  */
 
@@ -16,6 +16,12 @@ ufo_configurable_default_init (UfoConfigurableInterface *iface)
 {
     GParamSpec *config_spec;
 
+    /**
+     * UfoConfigurable:configuration:
+     *
+     * The #UfoConfiguration object that can be passed to all objects that
+     * implement the #UfoConfigurable interface.
+     */
     config_spec = g_param_spec_object ("configuration",
                                        "A UfoConfiguration object",
                                        "A UfoConfiguration object",

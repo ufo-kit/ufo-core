@@ -1,13 +1,15 @@
 /**
- * SECTION:ufo-plugin-manager
- * @Short_description: Load an #UfoFilter from a shared object
+ * SECTION:ufo-profiler
+ * @Short_description: Profile OpenCL kernel calls
  * @Title: UfoProfiler
  *
- * The plugin manager opens shared object modules searched for in locations
- * specified with ufo_profiler_add_paths(). An #UfoFilter can be
- * instantiated with ufo_profiler_get_filter() with a one-to-one mapping
- * between filter name xyz and module name libfilterxyz.so. Any errors are
- * reported as one of #UfoProfilerError codes.
+ * The #UfoProfiler provides a drop-in replacement for a manual
+ * clEnqueueNDRangeKernel() call.
+ *
+ * Each #UfoFilter is assigned a profiler with ufo_profiler_set_profiler() by
+ * the managing #UfoBaseScheduler. Filter implementations should call
+ * ufo_filter_get_profiler() to receive their profiler and make profiled kernel
+ * calls with ufo_profiler_call().
  */
 
 #ifdef __APPLE__

@@ -1,4 +1,38 @@
 <SECTION>
+<FILE>ufo-configuration</FILE>
+<TITLE>UfoConfiguration</TITLE>
+UfoConfiguration
+ufo_configuration_new
+ufo_configuration_get_paths
+<SUBSECTION Standard>
+UFO_CONFIGURATION
+UFO_CONFIGURATION_CLASS
+UFO_CONFIGURATION_GET_CLASS
+UFO_IS_CONFIGURATION
+UFO_IS_CONFIGURATION_CLASS
+UFO_TYPE_CONFIGURATION
+ufo_configuration_get_type
+<SUBSECTION Private>
+UfoConfigurationPrivate
+</SECTION>
+
+<SECTION>
+<FILE>ufo-configurable</FILE>
+<TITLE>UfoConfigurable</TITLE>
+UfoConfigurable
+<SUBSECTION Standard>
+UFO_CONFIGURABLE
+UFO_CONFIGURABLE_CLASS
+UFO_CONFIGURABLE_GET_IFACE
+UFO_IS_CONFIGURABLE
+UFO_IS_CONFIGURABLE_CLASS
+UFO_TYPE_CONFIGURABLE
+ufo_configurable_get_type
+<SUBSECTION Private>
+UfoConfigurableIface
+</SECTION>
+
+<SECTION>
 <FILE>ufo-plugin-manager</FILE>
 <TITLE>UfoPluginManager</TITLE>
 UfoPluginManagerError
@@ -37,6 +71,7 @@ ufo_resource_manager_memdup
 ufo_resource_manager_memalloc
 ufo_resource_manager_request_buffer
 ufo_resource_manager_get_new_id
+ufo_resource_manager_get_queue_number
 <SUBSECTION Standard>
 UFO_RESOURCE_MANAGER
 UFO_IS_RESOURCE_MANAGER
@@ -76,6 +111,12 @@ ufo_filter_set_plugin_name
 ufo_filter_get_plugin_name
 ufo_filter_set_resource_manager
 ufo_filter_get_resource_manager
+ufo_filter_set_profiler
+ufo_filter_get_profiler
+ufo_filter_set_input_channel
+ufo_filter_get_input_channel
+ufo_filter_set_output_channel
+ufo_filter_get_output_channel
 ufo_filter_wait_until
 <SUBSECTION Standard>
 UFO_FILTER
@@ -92,13 +133,24 @@ ufo_filter_error_quark
 </SECTION>
 
 <SECTION>
-<FILE>ufo-aux</FILE>
-<TITLE>UfoEventList</TITLE>
-UfoEventList
-ufo_event_list_new
-ufo_event_list_free
-ufo_event_list_get_event_array
-ufo_event_list_get_list
+<FILE>ufo-profiler</FILE>
+<TITLE>UfoProfiler</TITLE>
+UfoProfilerFunc
+UfoProfiler
+UfoProfilerClass
+ufo_profiler_new
+ufo_profiler_call
+ufo_profiler_foreach
+<SUBSECTION Standard>
+UFO_TYPE_PROFILER
+UFO_IS_PROFILER
+UFO_IS_PROFILER_CLASS
+UFO_PROFILER
+UFO_PROFILER_CLASS
+UFO_PROFILER_GET_CLASS
+ufo_profiler_get_type
+<SUBSECTION Private>
+UfoProfilerPrivate
 </SECTION>
 
 <SECTION>
@@ -192,6 +244,11 @@ UfoRelationPrivate
 UfoChannel
 ufo_channel_new
 ufo_channel_ref
+ufo_channel_insert
+ufo_channel_fetch_input
+ufo_channel_release_input
+ufo_channel_fetch_output
+ufo_channel_release_output
 ufo_channel_finish
 <SUBSECTION Standard>
 UFO_CHANNEL

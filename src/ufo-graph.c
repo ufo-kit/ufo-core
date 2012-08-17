@@ -450,7 +450,7 @@ ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GErr
  * @to_port: Destination input port
  * @error: return location for error
  *
- * Connect to filters.
+ * Connect two filters with the specified input and output ports.
  */
 void
 ufo_graph_connect_filters_full (UfoGraph    *graph,

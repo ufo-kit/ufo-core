@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.6)
 
 # --- Set sources -------------------------------------------------------------
 set(ufocore_SRCS
-    ufo-aux.c
     ufo-base-scheduler.c
     ufo-channel.c
     ufo-configurable.c
@@ -15,7 +14,6 @@ set(ufocore_SRCS
     ufo-filter-reduce.c
     ufo-plugin-manager.c
     ufo-profiler.c
-    ufo-relation.c
     ufo-resource-manager.c
     )
 
@@ -32,8 +30,15 @@ set(ufocore_HDRS
     ufo-filter-reduce.h
     ufo-plugin-manager.h
     ufo-profiler.h
-    ufo-relation.h
     ufo-resource-manager.h
+    )
+
+set(ufocore_NODOC_SRCS
+    ufo-aux.c
+    )
+
+set(ufocore_NODOC_HDRS
+    ufo-aux.h
     )
 
 # --- Find packages and libraries ---------------------------------------------
@@ -91,7 +96,10 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_definitions(-DG_DISABLE_ASSERT)
 endif()
 
-add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
+add_library(ufo SHARED
+    ${ufocore_SRCS}
+    ${ufocore_NODOC_SRCS}
+    ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 set_target_properties(ufo PROPERTIES
     VERSION ${PACKAGE_VERSION}
@@ -226,6 +234,7 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}/../src
+                    --ignore-headers="${ufocore_NODOC_HDRS}"
                     DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 

@@ -91,8 +91,10 @@ ufo_channel_insert (UfoChannel *channel,
  * ufo_channel_fetch_input: (skip)
  * @channel: A #UfoChannel
  *
- * This method blocks execution as long as no new input buffer is readily
- * processed by the preceding filter.
+ * Get a new buffer from the channel that can be consumed as an input.  This
+ * method blocks execution as long as no new input buffer the available from the
+ * preceding filter. Use ufo_channel_release_input() to return the buffer to the
+ * channel.
  *
  * Return value: The next #UfoBuffer input
  */
@@ -106,11 +108,9 @@ ufo_channel_fetch_input (UfoChannel *channel)
 /**
  * ufo_channel_release_input:
  * @channel: A #UfoChannel
- * @buffer: The #UfoBuffer input acquired with ufo_channel_get_input_buffer ()
+ * @buffer: A #UfoBuffer acquired with ufo_channel_fetch_input()
  *
- * An input buffer is owned by a filter by calling
- * ufo_channel_get_input_buffer () and has to be released again with this method,
- * so that a preceding filter can use it again as an output.
+ * Release a buffer that was acquired with ufo_channel_fetch_input().
  */
 void
 ufo_channel_release_input (UfoChannel *channel, UfoBuffer *buffer)
@@ -123,8 +123,10 @@ ufo_channel_release_input (UfoChannel *channel, UfoBuffer *buffer)
  * ufo_channel_fetch_output: (skip)
  * @channel: A #UfoChannel
  *
- * This method blocks execution as long as no new output buffer is readily
- * processed by the subsequent filter.
+ * Get a new buffer from the channel that can be consumed as an output.  This
+ * method blocks execution as long as no new input buffer the available from the
+ * successing filter. Use ufo_channel_release_output() to return the buffer to
+ * the channel.
  *
  * Return value: The next #UfoBuffer for output
  */
@@ -138,11 +140,9 @@ ufo_channel_fetch_output (UfoChannel *channel)
 /**
  * ufo_channel_release_output:
  * @channel: A #UfoChannel
- * @buffer: The #UfoBuffer input acquired with ufo_channel_get_output_buffer ()
+ * @buffer: A #UfoBuffer acquired with ufo_channel_fetch_output()
  *
- * An output buffer is owned by a filter by calling
- * ufo_channel_get_output_buffer () and has to be released again with this method,
- * so that a subsequent filter can use it as an input.
+ * Release a buffer that was acquired with ufo_channel_fetch_output().
  */
 void
 ufo_channel_release_output (UfoChannel *channel, UfoBuffer *buffer)

@@ -5,18 +5,11 @@
 
 G_BEGIN_DECLS
 
-typedef struct _UfoEventList UfoEventList;
-
-UfoEventList *ufo_event_list_new                (guint          n_events);
-void          ufo_event_list_free               (UfoEventList  *list);
-gpointer      ufo_event_list_get_event_array    (UfoEventList  *list);
-GList        *ufo_event_list_get_list           (UfoEventList  *list);
-
-void          ufo_set_property_object           (GObject      **storage,
+void ufo_set_property_object (GObject      **storage,
                                                  GObject       *object);
-void          ufo_unref_stored_object           (GObject      **object);
-void          ufo_debug_cl                      (const gchar   *format,
-                                                 ...);
+void ufo_unref_stored_object (GObject      **object);
+void ufo_debug_cl            (const gchar   *format,
+                              ...);
 
 G_END_DECLS
 
