@@ -2,6 +2,7 @@
 #define __UFO_BASE_SCHEDULER_H
 
 #include <glib-object.h>
+#include "ufo-configuration.h"
 #include "ufo-resource-manager.h"
 #include "ufo-filter.h"
 
@@ -42,7 +43,8 @@ struct _UfoBaseSchedulerClass {
     GObjectClass parent_class;
 };
 
-UfoBaseScheduler*   ufo_base_scheduler_new          (UfoResourceManager *manager);
+UfoBaseScheduler*   ufo_base_scheduler_new          (UfoConfiguration   *config,
+                                                     UfoResourceManager *manager);
 void                ufo_base_scheduler_run          (UfoBaseScheduler*   scheduler,
                                                      GList*              filters,
                                                      GError**            error);

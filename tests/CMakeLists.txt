@@ -5,6 +5,7 @@ set(TEST_SRCS
     test-suite.c
     test-buffer.c
     test-channel.c
+    test-configuration.c
     test-filter.c
     test-graph.c
     test-relation.c

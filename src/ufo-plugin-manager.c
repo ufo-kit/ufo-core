@@ -13,9 +13,10 @@
 #include <glob.h>
 #include "config.h"
 #include "ufo-plugin-manager.h"
+#include "ufo-configurable.h"
 
-
-G_DEFINE_TYPE(UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_CODE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
 
 #define UFO_PLUGIN_MANAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_PLUGIN_MANAGER, UfoPluginManagerPrivate))
 
@@ -29,11 +30,9 @@ struct _UfoPluginManagerPrivate {
 
 enum {
     PROP_0,
-    PROP_PATHS,
+    PROP_CONFIG,
     N_PROPERTIES
 };
-
-static GParamSpec *plugin_manager_properties[N_PROPERTIES] = { NULL, };
 
 /**
  * UfoPluginManagerError:
@@ -78,38 +77,33 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 }
 
 static void
-add_paths (UfoPluginManager *manager, const gchar *paths)
+add_paths (UfoPluginManagerPrivate *priv, const gchar *paths[])
 {
-    if (paths != NULL) {
-        gchar **path_list = g_strsplit (paths, ":", 0);
-        gchar **p = path_list;
+    if (paths == NULL)
+        return;
 
-        while (*p != NULL)
-            manager->priv->search_paths = g_slist_prepend (manager->priv->search_paths, g_strdup (*(p++)));
-
-        g_strfreev (path_list);
-    }
+    for (guint i = 0; paths[i] != NULL; i++)
+        priv->search_paths = g_slist_prepend (priv->search_paths, g_strdup (paths[i]));
 }
 
 /**
  * ufo_plugin_manager_new:
- * @paths: (allow-none): String with a colon-separated list of additional
- *      paths to search for plugins or %NULL.
+ * @config: (allow-none): A #UfoConfiguration object or %NULL.
  *
- * Create a plugin manager object to instantiate filter objects.
+ * Create a plugin manager object to instantiate filter objects. When a config
+ * object is passed to the constructor, its search-path property is added to the
+ * internal search paths.
  *
  * Return value: A new plugin manager object.
  */
 UfoPluginManager *
-ufo_plugin_manager_new (const gchar *paths)
+ufo_plugin_manager_new (UfoConfiguration *config)
 {
     UfoPluginManager *manager;
 
     manager = UFO_PLUGIN_MANAGER (g_object_new (UFO_TYPE_PLUGIN_MANAGER,
-                                                "paths", paths,
+                                                "configuration", config,
                                                 NULL));
-
-    add_paths (manager, LIB_FILTER_DIR);
 
     return manager;
 }
@@ -247,9 +241,25 @@ static void
 ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
     switch (property_id) {
-        case PROP_PATHS:
-            add_paths (UFO_PLUGIN_MANAGER (object), g_value_get_string (value));
+        case PROP_CONFIG:
+            {
+                GObject *value_object;
+
+                value_object = g_value_get_object (value);
+
+                if (value_object != NULL) {
+                    UfoConfiguration *config;
+                    gchar **paths;
+
+                    config = UFO_CONFIGURATION (value_object);
+                    paths = ufo_configuration_get_paths (config);
+                    add_paths (UFO_PLUGIN_MANAGER_GET_PRIVATE (object), (const gchar **) paths);
+
+                    g_strfreev (paths);
+                }
+            }
             break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -291,17 +301,11 @@ ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->get_property = ufo_plugin_manager_get_property;
     gobject_class->set_property = ufo_plugin_manager_set_property;
-    gobject_class->dispose = ufo_plugin_manager_dispose;
-    gobject_class->finalize = ufo_plugin_manager_finalize;
+    gobject_class->dispose      = ufo_plugin_manager_dispose;
+    gobject_class->finalize     = ufo_plugin_manager_finalize;
 
-    plugin_manager_properties[PROP_PATHS] =
-        g_param_spec_string ("paths",
-                "List of colong-separated paths",
-                "List of colong-separated paths pointing to filter locations",
-                ".",
-                G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE);
+    g_object_class_override_property (gobject_class, PROP_CONFIG, "configuration");
 
-    g_object_class_install_property (gobject_class, PROP_PATHS, plugin_manager_properties[PROP_PATHS]);
     g_type_class_add_private (klass, sizeof (UfoPluginManagerPrivate));
 }
 
@@ -309,9 +313,13 @@ static void
 ufo_plugin_manager_init (UfoPluginManager *manager)
 {
     UfoPluginManagerPrivate *priv;
+    const gchar *paths[] = { LIB_FILTER_DIR, NULL };
+
     manager->priv = priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     priv->search_paths  = NULL;
     priv->modules       = NULL;
     priv->filter_funcs  = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                  g_free, g_free);
+
+    add_paths (priv, paths);
 }

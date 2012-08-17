@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
-#include <glib.h>
+#include <glib-object.h>
+#include "ufo-configuration.h"
 #include "ufo-graph.h"
 
 static void
@@ -14,9 +15,31 @@ handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
     }
 }
 
+static GValueArray *
+split_string (const gchar *string)
+{
+    GValueArray *array;
+    gchar **components;
+    GValue  value = {0};
+
+    components = g_strsplit (string, ":", -1);
+    array = g_value_array_new (2);
+    g_value_init (&value, G_TYPE_STRING);
+
+    for (guint i = 0; components[i] != NULL; i++) {
+        g_value_reset (&value);
+        g_value_set_string (&value, components[i]);
+        g_value_array_append (array, &value);
+    }
+
+    g_strfreev (components);
+    return array;
+}
+
 int main(int argc, char const* argv[])
 {
-    UfoGraph *graph;
+    UfoConfiguration *config;
+    UfoGraph         *graph;
     UfoPluginManager *manager;
     GError *error = NULL;
 
@@ -27,13 +50,24 @@ int main(int argc, char const* argv[])
         return 0;
     }
 
+    config = ufo_configuration_new ();
+
     if (argc == 2) {
-        graph = ufo_graph_new("");
-        manager = ufo_plugin_manager_new ("");
+        graph = ufo_graph_new (NULL, NULL);
+        manager = ufo_plugin_manager_new (NULL);
     }
     else {
-        graph = ufo_graph_new(argv[2]);
-        manager = ufo_plugin_manager_new (argv[2]);
+        GValueArray *paths;
+
+        paths = split_string (argv[2]);
+
+        g_object_set (G_OBJECT (config),
+                      "paths", paths,
+                      NULL);
+
+        graph = ufo_graph_new (config, NULL);
+        manager = ufo_plugin_manager_new (config);
+        g_value_array_free (paths);
     }
 
     ufo_graph_read_from_json(graph, manager, argv[1], &error);

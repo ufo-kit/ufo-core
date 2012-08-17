@@ -2,6 +2,7 @@
 #define __UFO_RESOURCE_MANAGER_H
 
 #include <glib-object.h>
+#include "ufo-configuration.h"
 #include "ufo-aux.h"
 #include "ufo-buffer.h"
 
@@ -65,10 +66,7 @@ struct _UfoResourceManagerClass {
     GObjectClass parent_class;
 };
 
-UfoResourceManager *ufo_resource_manager_new                    (void);
-
-void                ufo_resource_manager_add_paths              (UfoResourceManager *manager,
-                                                                 const gchar        *paths);
+UfoResourceManager *ufo_resource_manager_new                    (UfoConfiguration   *config);
 gpointer            ufo_resource_manager_get_kernel             (UfoResourceManager *manager,
                                                                  const gchar        *filename,
                                                                  const gchar        *kernel_name,

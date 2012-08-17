@@ -34,10 +34,10 @@ fixture_setup (Fixture *fixture, gconstpointer data)
     static const gchar *invalid_json = "{\"nodes:[]}"; /* missing " */
     static const gchar *empty_json = "{\"nodes\": [{}]}";
 
-    fixture->graph = ufo_graph_new ("");
+    fixture->graph = ufo_graph_new (NULL, NULL);
     g_assert (UFO_IS_GRAPH (fixture->graph));
 
-    fixture->manager = ufo_plugin_manager_new ("");
+    fixture->manager = ufo_plugin_manager_new (NULL);
     g_assert (UFO_IS_PLUGIN_MANAGER (fixture->manager));
 
     fixture->valid_json_file = g_strdup_printf ("valid.json");

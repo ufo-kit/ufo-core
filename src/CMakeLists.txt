@@ -5,6 +5,8 @@ set(ufocore_SRCS
     ufo-aux.c
     ufo-base-scheduler.c
     ufo-channel.c
+    ufo-configurable.c
+    ufo-configuration.c
     ufo-graph.c
     ufo-buffer.c
     ufo-filter.c
@@ -18,9 +20,10 @@ set(ufocore_SRCS
     )
 
 set(ufocore_HDRS
-    ufo-aux.h
     ufo-base-scheduler.h
     ufo-channel.h
+    ufo-configurable.h
+    ufo-configuration.h
     ufo-graph.h
     ufo-buffer.h
     ufo-filter.h
@@ -200,7 +203,6 @@ if(GTK_DOC_FOUND)
             "${docs_out}/ch01.html"
             "${docs_out}/Ufo-UfoBaseScheduler.html"
             "${docs_out}/Ufo-UfoBuffer.html"
-            "${docs_out}/Ufo-UfoEventList.html"
             "${docs_out}/Ufo-UfoFilter.html"
             "${docs_out}/Ufo-UfoFilterReduce.html"
             "${docs_out}/Ufo-UfoFilterSink.html"

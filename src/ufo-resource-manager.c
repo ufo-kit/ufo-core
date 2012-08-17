@@ -14,9 +14,11 @@
 
 #include "config.h"
 #include "ufo-resource-manager.h"
+#include "ufo-configurable.h"
 #include "ufo-aux.h"
 
-G_DEFINE_TYPE(UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_CODE (UfoResourceManager, ufo_resource_manager, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
 
 #define UFO_RESOURCE_MANAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_RESOURCE_MANAGER, UfoResourceManagerPrivate))
 
@@ -37,6 +39,8 @@ GQuark ufo_resource_manager_error_quark (void)
 }
 
 struct _UfoResourceManagerPrivate {
+    UfoConfiguration    *config;
+
     cl_uint              num_platforms;
     cl_platform_id      *opencl_platforms;
     cl_context           opencl_context;
@@ -51,6 +55,12 @@ struct _UfoResourceManagerPrivate {
     GString     *include_paths;         /**< List of include paths "-I/foo/bar" built from added paths */
 
     guint current_id;                   /**< current non-assigned buffer id */
+};
+
+enum {
+    PROP_0,
+    PROP_CONFIG,
+    N_PROPERTIES
 };
 
 const gchar *opencl_error_msgs[] = {
@@ -107,12 +117,6 @@ const gchar *opencl_error_msgs[] = {
     "CL_INVALID_GLOBAL_WORK_SIZE"
 };
 
-/**
- * \brief Returns the error constant as a string
- * \param[in] error A valid OpenCL constant
- * \return A string containing a human-readable constant or NULL if error is
- *      invalid
- */
 const gchar *
 opencl_map_error (int error)
 {
@@ -202,46 +206,30 @@ resource_manager_find_path (UfoResourceManagerPrivate *priv, const gchar *filena
 
 /**
  * ufo_resource_manager_new:
+ * @config: A #UfoConfiguration object or %NULL
  *
  * Create a new #UfoResourceManager instance.
  *
  * Returns: (transfer none): A new #UfoResourceManager
  */
 UfoResourceManager *
-ufo_resource_manager_new (void)
+ufo_resource_manager_new (UfoConfiguration *config)
 {
-    return UFO_RESOURCE_MANAGER (g_object_new (UFO_TYPE_RESOURCE_MANAGER, NULL));
+    return UFO_RESOURCE_MANAGER (g_object_new (UFO_TYPE_RESOURCE_MANAGER,
+                                               "configuration", config,
+                                               NULL));
 }
 
-/**
- * ufo_resource_manager_add_paths:
- * @manager: A #UfoResourceManager
- * @paths: A string with a list of colon-separated paths
- *
- * Each path in @paths is used when searching for kernel files using
- * ufo_resource_manager_get_kernel() in the order that they are passed in.
- */
-void
-ufo_resource_manager_add_paths (UfoResourceManager *manager, const gchar *paths)
+static void
+add_paths (UfoResourceManagerPrivate *priv, const gchar *paths[])
 {
-    g_return_if_fail (UFO_IS_RESOURCE_MANAGER (manager));
-    UfoResourceManagerPrivate *priv = manager->priv;
-
     if (paths == NULL)
         return;
 
-    /*
-     * Add each of the path to the include paths for header file inclusion
-     */
-    gchar **path_list = g_strsplit (paths, ":", 0);
-    gchar **p = path_list;
-
-    while (*p != NULL) {
-        priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (*p));
-        g_string_append_printf (priv->include_paths, "-I%s ", *(p++));
+    for (guint i = 0; paths[i] != NULL; i++) {
+        priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (paths[i]));
+        g_string_append_printf (priv->include_paths, "-I%s ", paths[i]);
     }
-
-    g_strfreev (path_list);
 }
 
 static cl_program
@@ -661,10 +649,70 @@ guint ufo_resource_manager_get_number_of_devices (UfoResourceManager *manager)
     return manager->priv->num_devices[0];
 }
 
-static void ufo_resource_manager_finalize (GObject *gobject)
+static void
+ufo_resource_manager_set_property (GObject      *object,
+                                   guint         property_id,
+                                   const GValue *value,
+                                   GParamSpec   *pspec)
 {
-    UfoResourceManager *self = UFO_RESOURCE_MANAGER (gobject);
-    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (self);
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(object);
+
+    switch (property_id) {
+        case PROP_CONFIG:
+            {
+                UfoConfiguration *config;
+                gchar **paths;
+                GObject *value_object = g_value_get_object (value);
+
+                ufo_set_property_object ((GObject **) &priv->config, value_object);
+
+                config = UFO_CONFIGURATION (value_object);
+                paths = ufo_configuration_get_paths (config);
+                add_paths (priv, (const gchar **) paths);
+                g_strfreev (paths);
+            }
+            break;
+
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+ufo_resource_manager_get_property (GObject      *object,
+                                   guint         property_id,
+                                   GValue       *value,
+                                   GParamSpec   *pspec)
+{
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE(object);
+
+    switch (property_id) {
+        case PROP_CONFIG:
+            g_value_set_object (value, priv->config);
+            break;
+
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+ufo_resource_manager_dispose (GObject *object)
+{
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (object);
+
+    ufo_unref_stored_object ((GObject **) &priv->config);
+
+    G_OBJECT_CLASS (ufo_resource_manager_parent_class)->finalize (object);
+    g_message ("UfoResourceManager: disposed");
+}
+
+static void
+ufo_resource_manager_finalize (GObject *object)
+{
+    UfoResourceManagerPrivate *priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (object);
 
     g_hash_table_destroy (priv->opencl_programs);
     g_list_foreach (priv->kernel_paths, (GFunc) g_free, NULL);
@@ -691,7 +739,7 @@ static void ufo_resource_manager_finalize (GObject *gobject)
     priv->opencl_devices = NULL;
     priv->opencl_platforms = NULL;
 
-    G_OBJECT_CLASS (ufo_resource_manager_parent_class)->finalize (gobject);
+    G_OBJECT_CLASS (ufo_resource_manager_parent_class)->finalize (object);
     g_message ("UfoResourceManager: finalized");
 }
 
@@ -699,7 +747,14 @@ static void
 ufo_resource_manager_class_init (UfoResourceManagerClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-    gobject_class->finalize = ufo_resource_manager_finalize;
+
+    gobject_class->set_property = ufo_resource_manager_set_property;
+    gobject_class->get_property = ufo_resource_manager_get_property;
+    gobject_class->dispose      = ufo_resource_manager_dispose;
+    gobject_class->finalize     = ufo_resource_manager_finalize;
+
+    g_object_class_override_property (gobject_class, PROP_CONFIG, "configuration");
+
     g_type_class_add_private (klass, sizeof (UfoResourceManagerPrivate));
 }
 
@@ -710,14 +765,13 @@ ufo_resource_manager_init (UfoResourceManager *self)
     self->priv = priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (self);
     priv->current_id = 0;
 
+    priv->config = NULL;
     priv->opencl_programs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, resource_manager_release_program);
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->opencl_kernels = NULL;
     priv->opencl_platforms = NULL;
     priv->opencl_build_options = g_string_new ("-cl-mad-enable ");
     priv->include_paths = g_string_new ("-I. ");
-
-    g_message ("Ufo version %s\n", UFO_VERSION);
 
     /* initialize OpenCL subsystem */
     int errcode = CL_SUCCESS;

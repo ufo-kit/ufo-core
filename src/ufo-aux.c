@@ -23,8 +23,29 @@ struct _UfoEventList {
     guint        n_events;
 };
 
+void
+ufo_set_property_object (GObject **storage, GObject *object)
+{
+    if (*storage != NULL)
+        g_object_unref (*storage);
+
+    *storage = object;
+
+    if (object != NULL)
+        g_object_ref (object);
+}
+
+void
+ufo_unref_stored_object (GObject **object)
+{
+    if (*object != NULL) {
+        g_object_unref (*object);
+        *object = NULL;
+    }
+}
+
 /**
- * ufo_event_list_new: (skip)
+ * ufo_event_list_new:
  * @n_events: Number of %cl_events
  *
  * Create a new event list.

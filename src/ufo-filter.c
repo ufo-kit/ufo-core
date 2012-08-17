@@ -110,11 +110,6 @@ void ufo_filter_set_resource_manager (UfoFilter *filter,
 
     g_return_if_fail (UFO_IS_FILTER (filter) && UFO_IS_RESOURCE_MANAGER (manager));
     priv = filter->priv;
-
-    if (priv->manager)
-        g_object_unref (priv->manager);
-
-    g_object_ref (manager);
     priv->manager = manager;
 }
 
@@ -514,11 +509,6 @@ ufo_filter_dispose (GObject *object)
         priv->profiler = NULL;
     }
 
-    if (priv->manager != NULL) {
-        g_object_unref (priv->manager);
-        priv->manager = NULL;
-    }
-
     for (guint port = 0; port < priv->n_inputs; port++) {
         if (priv->input_channels[port] != NULL)
             g_object_unref (priv->input_channels[port]);
@@ -552,11 +542,14 @@ static void
 ufo_filter_class_init (UfoFilterClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+
     gobject_class->finalize = ufo_filter_finalize;
-    gobject_class->dispose = ufo_filter_dispose;
+    gobject_class->dispose  = ufo_filter_dispose;
+
     klass->initialize = ufo_filter_initialize_real;
     klass->process_cpu = NULL;
     klass->process_gpu = NULL;
+
     g_type_class_add_private (klass, sizeof (UfoFilterPrivate));
 }
 

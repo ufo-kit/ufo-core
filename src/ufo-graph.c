@@ -14,11 +14,12 @@
 
 #include "config.h"
 #include "ufo-graph.h"
-#include "ufo-resource-manager.h"
+#include "ufo-configurable.h"
 #include "ufo-plugin-manager.h"
 #include "ufo-base-scheduler.h"
 
-G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_CODE (UfoGraph, ufo_graph, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
 
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
@@ -29,7 +30,8 @@ G_DEFINE_TYPE(UfoGraph, ufo_graph, G_TYPE_OBJECT)
  *
  * Possible errors when loading the graph from JSON.
  */
-GQuark ufo_graph_error_quark(void)
+GQuark
+ufo_graph_error_quark(void)
 {
     return g_quark_from_static_string("ufo-graph-error-quark");
 }
@@ -42,18 +44,18 @@ typedef struct {
 } Connection;
 
 struct _UfoGraphPrivate {
+    UfoConfiguration    *config;
     UfoPluginManager    *plugin_manager;
-    UfoResourceManager  *manager;
+    UfoBaseScheduler    *scheduler;
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
-    gchar               *paths;
     GList               *connections;
     GHashTable          *json_filters;
 };
 
 enum {
     PROP_0,
-    PROP_PATHS,
-    PROP_RESOURCE_MANAGER,
+    PROP_CONFIG,
+    PROP_SCHEDULER,
     N_PROPERTIES
 };
 
@@ -98,8 +100,6 @@ handle_json_filter_node (JsonNode  *element,
         g_propagate_error (error, tmp_error);
         return FALSE;
     }
-
-    ufo_filter_set_resource_manager (plugin, priv->manager);
 
     name = json_object_get_string_member (object, "name");
 
@@ -278,17 +278,22 @@ add_edge_from_connection (gpointer data, gpointer user)
 
 /**
  * ufo_graph_new:
- * @paths: A string with a colon-separated list of paths that are used to search
- *      for OpenCL kernel files and header files included by OpenCL kernels.
+ * @config: (allow-none): A configuration
+ * @scheduler: (allow-none): A scheduler that should be used for execution
  *
- * Create a new #UfoGraph.
+ * Create a new #UfoGraph. If @scheduler is %NULL a default scheduler will be
+ * created and used.
  *
  * Return value: A #UfoGraph.
  */
 UfoGraph *
-ufo_graph_new (const gchar *paths)
+ufo_graph_new (UfoConfiguration *config,
+               UfoBaseScheduler *scheduler)
 {
-    return UFO_GRAPH (g_object_new (UFO_TYPE_GRAPH, "paths", paths, NULL));
+    return UFO_GRAPH (g_object_new (UFO_TYPE_GRAPH,
+                                    "configuration", config,
+                                    "scheduler", scheduler,
+                                    NULL));
 }
 
 /**
@@ -407,12 +412,16 @@ ufo_graph_run (UfoGraph *graph, GError **error)
         g_hash_table_insert (filters, connection->to, NULL);
     }
 
-    scheduler = ufo_base_scheduler_new (priv->manager);
-    unique = g_hash_table_get_keys (filters);
+    scheduler = priv->scheduler;
 
+    if (scheduler == NULL) {
+        scheduler = ufo_base_scheduler_new (priv->config, NULL);
+        priv->scheduler = scheduler;
+    }
+
+    unique = g_hash_table_get_keys (filters);
     ufo_base_scheduler_run (scheduler, unique, error);
 
-    g_object_unref (scheduler);
     g_list_free (unique);
     g_hash_table_destroy (filters);
 }
@@ -480,24 +489,6 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
     connection->to_port= to_port;
 
     priv->connections = g_list_append (priv->connections, connection);
-
-    ufo_filter_set_resource_manager (from, priv->manager);
-    ufo_filter_set_resource_manager (to, priv->manager);
-}
-
-/**
- * ufo_graph_get_resource_manager:
- * @graph: A #UfoGraph
- *
- * Returns the #UfoResourceManager associated with this graph.
- *
- * Returns: (transfer full): A #UfoResourceManager
- */
-UfoResourceManager *
-ufo_graph_get_resource_manager (UfoGraph *graph)
-{
-    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
-    return graph->priv->manager;
 }
 
 static void
@@ -512,18 +503,12 @@ ufo_graph_dispose(GObject *object)
     UfoGraph *graph = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
 
-    g_message ("UfoGraph: disposing");
-
     unref_list_elements (g_hash_table_get_values (priv->json_filters));
 
-    if (priv->plugin_manager != NULL) {
-        g_object_unref (priv->plugin_manager);
-        priv->plugin_manager = NULL;
-    }
+    ufo_unref_stored_object ((GObject **) &priv->plugin_manager);
+    ufo_unref_stored_object ((GObject **) &priv->scheduler);
+    ufo_unref_stored_object ((GObject **) &priv->config);
 
-    g_object_unref (priv->manager);
-
-    priv->manager = NULL;
     G_OBJECT_CLASS (ufo_graph_parent_class)->dispose (object);
     g_message ("UfoGraph: disposed");
 }
@@ -536,14 +521,12 @@ ufo_graph_finalize (GObject *object)
 
     g_hash_table_destroy (priv->property_sets);
     g_hash_table_destroy (priv->json_filters);
-    g_free (priv->paths);
 
     g_list_foreach (priv->connections, (GFunc) g_free, NULL);
     g_list_free (priv->connections);
 
     priv->connections   = NULL;
     priv->property_sets = NULL;
-    priv->paths         = NULL;
 
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
     g_message ("UfoGraph: finalized");
@@ -552,26 +535,6 @@ ufo_graph_finalize (GObject *object)
 static void
 ufo_graph_constructed (GObject *object)
 {
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (object);
-
-    gchar *paths = g_strdup_printf ("%s:%s", priv->paths, LIB_FILTER_DIR);
-
-    /* Create a new resource manager if none was passed during construction */
-    if (priv->manager == NULL) {
-        priv->manager = ufo_resource_manager_new ();
-        g_message ("UfoGraph: Created new resource manager %p", (gpointer) priv->manager);
-    }
-    else
-        g_message ("UfoGraph: Use provided resource manager %p", (gpointer) priv->manager);
-
-    g_object_ref (priv->manager);
-
-    /* Append LIB_FILTER_DIR to the search path */
-    g_free (priv->paths);
-    priv->paths = paths;
-
-    ufo_resource_manager_add_paths (priv->manager, priv->paths);
-
     if (G_OBJECT_CLASS (ufo_graph_parent_class)->constructed != NULL)
         G_OBJECT_CLASS (ufo_graph_parent_class)->constructed (object);
 }
@@ -585,13 +548,12 @@ ufo_graph_set_property(GObject      *object,
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
 
     switch (property_id) {
-        case PROP_PATHS:
-            g_free(priv->paths);
-            priv->paths = g_strdup(g_value_get_string(value));
+        case PROP_CONFIG:
+            ufo_set_property_object ((GObject **) &priv->config, g_value_get_object (value));
             break;
 
-        case PROP_RESOURCE_MANAGER:
-            priv->manager = g_value_get_object (value);
+        case PROP_SCHEDULER:
+            ufo_set_property_object ((GObject **) &priv->scheduler, g_value_get_object (value));
             break;
 
         default:
@@ -609,12 +571,12 @@ ufo_graph_get_property(GObject      *object,
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
 
     switch (property_id) {
-        case PROP_PATHS:
-            g_value_set_string (value, priv->paths);
+        case PROP_CONFIG:
+            g_value_set_object (value, priv->config);
             break;
 
-        case PROP_RESOURCE_MANAGER:
-            g_value_set_object (value, priv->manager);
+        case PROP_SCHEDULER:
+            g_value_set_object (value, priv->scheduler);
             break;
 
         default:
@@ -627,34 +589,22 @@ static void
 ufo_graph_class_init (UfoGraphClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+
     gobject_class->set_property = ufo_graph_set_property;
     gobject_class->get_property = ufo_graph_get_property;
-    gobject_class->dispose = ufo_graph_dispose;
-    gobject_class->finalize = ufo_graph_finalize;
-    gobject_class->constructed = ufo_graph_constructed;
+    gobject_class->dispose      = ufo_graph_dispose;
+    gobject_class->finalize     = ufo_graph_finalize;
+    gobject_class->constructed  = ufo_graph_constructed;
 
-    /**
-     * UfoGraph:paths:
-     *
-     * List of colon-separated paths pointing to possible filter and kernel file
-     * locations.
-     */
-    graph_properties[PROP_PATHS] =
-        g_param_spec_string ("paths",
-                             "List of :-separated paths pointing to possible filter locations",
-                             "List of :-separated paths pointing to possible filter locations",
-                             ".",
+    graph_properties[PROP_SCHEDULER] =
+        g_param_spec_object ("scheduler",
+                             "A UfoBaseScheduler",
+                             "A UfoBaseScheduler",
+                             UFO_TYPE_BASE_SCHEDULER,
                              G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
-    graph_properties[PROP_RESOURCE_MANAGER] =
-        g_param_spec_object ("resource-manager",
-                             "A UfoResourceManager",
-                             "The UfoResourceManager that is used to access resources",
-                             UFO_TYPE_RESOURCE_MANAGER,
-                             G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
-
-    g_object_class_install_property (gobject_class, PROP_PATHS, graph_properties[PROP_PATHS]);
-    g_object_class_install_property (gobject_class, PROP_RESOURCE_MANAGER, graph_properties[PROP_RESOURCE_MANAGER]);
+    g_object_class_install_property (gobject_class, PROP_SCHEDULER, graph_properties[PROP_SCHEDULER]);
+    g_object_class_override_property (gobject_class, PROP_CONFIG, "configuration");
 
     g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
 }
@@ -665,9 +615,9 @@ ufo_graph_init (UfoGraph *self)
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
     priv->property_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-    priv->paths = NULL;
-    priv->manager = NULL;
     priv->connections = NULL;
+    priv->scheduler = NULL;
+    priv->config = NULL;
     priv->json_filters = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
     g_thread_init (NULL);
