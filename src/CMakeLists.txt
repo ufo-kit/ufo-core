@@ -201,8 +201,23 @@ if(GTK_DOC_FOUND)
         endforeach()
 
         string(REPLACE ";" "\n" _xml_doc_input ${_xml_doc_input})
+
+        get_directory_property(_current_include_dirs INCLUDE_DIRECTORIES)
+        set(GTK_DOC_CFLAGS)
+        foreach(_incl ${_current_include_dirs})
+            set(GTK_DOC_CFLAGS "-I${_incl} ${GTK_DOC_CFLAGS}")
+        endforeach()
+
+        set(GTK_DOC_LDFLAGS)
+        foreach(_lib ${ufocore_LIBS})
+            if (NOT ${_lib} MATCHES "^[/]")
+                set(GTK_DOC_LDFLAGS "-l${_lib} ${GTK_DOC_LDFLAGS}")
+            endif()
+        endforeach()
+
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in" "${docs_out}/Ufo-docs.xml")
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-sections.txt.in" "${docs_out}/Ufo-sections.txt")
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/scangobj.sh.in" "${docs_out}/scangobj.sh")
 
         set(reference_files
             "${docs_out}/index.html"
@@ -230,6 +245,7 @@ if(GTK_DOC_FOUND)
             "${docs_out}/up.png")
 
         find_program(GTK_DOC_SCAN gtkdoc-scan REQUIRED)
+        find_program(GTK_DOC_SCANGOBJ gtkdoc-scangobj REQUIRED)
         find_program(GTK_DOC_MKDB gtkdoc-mkdb REQUIRED)
         find_program(GTK_DOC_MKHTML gtkdoc-mkhtml REQUIRED)
 
@@ -241,13 +257,18 @@ if(GTK_DOC_FOUND)
                     DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 
+        add_custom_command(OUTPUT ${docs_out}/Ufo.args
+            COMMAND sh scangobj.sh
+            DEPENDS ${ufocore_SRCS} ${docs_out}/Ufo-decl.txt ${CMAKE_CURRENT_SOURCE_DIR}/Ufo.types
+            WORKING_DIRECTORY ${docs_out})
+
         add_custom_command(OUTPUT ${docs_out}/sgml.stamp
             COMMAND ${GTK_DOC_MKDB}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --sgml-mode
                     --output-format=xml
-                    DEPENDS ${docs_out}/Ufo-decl.txt ${docs_out}/Ufo-sections.txt ${ufocore_SRCS}
+            DEPENDS ${docs_out}/Ufo.args ${docs_out}/Ufo-sections.txt ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_dir}/html.stamp
