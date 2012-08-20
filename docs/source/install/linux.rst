@@ -4,20 +4,22 @@
 Installation on Linux
 #####################
 
-=======================================
-Installation from pre-compiled binaries
-=======================================
+================================
+Installing pre-compiled binaries
+================================
 
 Debian and RPM packages are provided. To install the Debian package under Ubuntu
 or Debian, issue ::
 
   $ sudo dpkg -i libufo-x.y.deb
+  $ sudo dpkg -i ufo-filters-x.y.deb
 
 Unfortunately, the OpenCL distributions from NVIDIA and AMD are not known to the
 repository system of openSUSE. When installing UFO, ``rpm`` will complain, that
 it cannot find this dependency. To solve this problem use ``zypper`` ::
 
   $ sudo zypper install libufo-x.y.rpm
+  $ sudo zypper install ufo-filters-x.y.rpm
 
 and when asked to fix the dependency, ignore it.
 
@@ -28,7 +30,7 @@ Building from source
 
 UFO has only a few hard source dependencies, namely
 
-  - `GLib 2.0 <http://developer.gnome.org/glib/stable/>`_, 
+  - `GLib 2.0 <http://developer.gnome.org/glib/stable/>`_,
   - `JSON-GLib 1.0 <http://live.gnome.org/JsonGlib>`_ and
   - a valid OpenCL installation.
 
@@ -43,11 +45,11 @@ In case you use openSUSE, just issue ::
     $ zypper install gobject-introspection-devel python-gobject2
     $ zypper install gtk-doc python-Sphinx
     $ zypper install libtiff-devel
-    
+
 to install all dependencies.
 
 
-Building Dependencies
+Building dependencies
 =====================
 
 OpenCL development files must be installed in order to build UFO. However, we
@@ -56,22 +58,35 @@ vendors. However, our CMake build facility is in most cases intelligent enough
 to find header files and libraries.
 
 
-Checking out the Code
-=====================
+Retrieving the source code
+==========================
 
 In an empty directory, issue the following commands to retrieve the current
 unstable version of the source::
 
-    $ git clone http://ufo.kit.edu/git/ufo-core OR
-    $ git clone git@ufo.kit.edu:ufo-core
+    $ git clone http://ufo.kit.edu/git/ufo-core
+    $ git clone http://ufo.kit.edu/git/ufo-filters
 
-All stable versions are tagged. To see a list of all releases issue::
+    OR
+
+    $ git clone git@ufo.kit.edu:ufo-core
+    $ git clone git@ufo.kit.edu:ufo-filters
+
+The latter is used for developers who have write-access to the corresponding
+repositories. All stable versions are tagged. To see a list of all releases
+issue::
 
     $ git tag -l
 
 
-Configuration and Compilation
-=============================
+System-wide installation
+========================
+
+If you have root access on the build machine, you can install the libraries and
+tools system-wide so that every user can access them.
+
+Building ufo-core
+-----------------
 
 Change into another empty `build` directory and issue the following commands to
 configure ::
@@ -84,83 +99,82 @@ Makefiles with ::
 
   $ cmake <path-to-ufo> -DLIB_SUFFIX=64
 
-You can adjust some build parameters later on by using the ``ccmake`` tool in
-the build directory ::
-
-  $ ccmake .
-
 For earlier versions of PyGObject, it is necessary that the introspection files
 are located under ``/usr`` not ``/usr/local``. You can force the prefix by
 calling ::
 
   $ cmake <path-to-ufo> -DCMAKE_INSTALL_PREFIX=/usr
 
-or change ``CMAKE_INSTALL_PREFIX`` variable with ``ccmake``.
-
 Last but not least build the framework, introspection files, API reference and
 the documentation using ::
 
   $ make
 
-You can then proceed to build installation packages in ``RPM`` and ``DEB``
-format by issueing ::
+You should now run some basic tests with ::
 
-  $ make packages
+  $ make test
 
-or source tarballs with ::
-
-  $ make packages_source
-
-To install the library and `pkg-config` files, issue ::
+If everything went well, you can install the library with ::
 
   $ make install
 
+You can also build ``RPM`` and ``DEB`` packages with ::
+
+  $ make packages
+
+and source tarballs with ::
+
+  $ make packages_source
+
 .. seealso:: :ref:`faq-linker-cant-find-libufo`
+
+
+Building ufo-filters
+--------------------
+
+Once ufo-core is installed you can build the filter suite in a pretty similar
+way ::
+
+    $ mkdir -p build/ufo-filters
+    $ cd build/ufo-filters
+    $ cmake <path-to-ufo-filters> -DLIB_SUFFIX=64 -DCMAKE_INSTALL_PREFIX=/usr
+    $ make
+    $ make install
 
 
 .. _inst-installing-into-non-standard-directories:
 
 Installing into non-standard directories
-----------------------------------------
+========================================
 
 It is possible to install the library in a non-standard directory, for example
 in the home directory of a user. In case we want to install in ``~/tmp/usr``, we
-have to configure the project like this ::
+have to configure ufo-core like this ::
 
+  $ mkdir -p build/ufo-core
+  $ cd build/ufo-core
   $ cmake <path-to-ufo> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
+  $ make && make install
 
-After building with ``make`` and installing into ``~/tmp/usr`` with ``make
-install``, we have to adjust the ``pkg-config`` path, so that the library can be
+Now, we have to adjust the ``pkg-config`` path, so that the library can be
 found when configuring the filters ::
 
   $ export PKG_CONFIG_PATH=/home/user/tmp/usr/lib/pkgconfig
+  $ mkdir -p build/ufo-filters
+  $ cd build/ufo-filters
+  $ cmake <path-to-ufo-core> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
+  $ make && make install
 
-Now you can build the filters. After installation you have to set the typelib
-and linker path so that everything is found at run-time ::
+After installation you have to set the typelib and linker path so that
+everything is found at run-time ::
 
   $ export GI_TYPELIB_PATH=/home/user/tmp/usr/lib/girepository-1.0
   $ export LD_LIBRARY_PATH=/home/user/tmp/usr/lib:$LD_LIBRARY_PATH
 
-.. note:: 
+.. note::
 
     It is strongly discouraged to abuse the library path for permanent
     usage. Read some good arguments `here`__ and `here`__.
 
 __ http://web.archive.org/web/20060719201954/http://www.visi.com/~barr/ldpath.html
 __ http://linuxmafia.com/faq/Admin/ld-lib-path.html
-
-
-First Test
-==========
-
-To verify that your UFO version is behaving correctly, you should check its
-functionality by running some builtin tests using ::
-
-  $ make test
-
-which is not that much of a help when things break and ::
-
-  $ make gtest
-
-which tells where the problems are. It also outputs a summary in
-``core/tests/results.html``.

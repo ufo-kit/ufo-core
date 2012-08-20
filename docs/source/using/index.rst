@@ -23,7 +23,7 @@ own image processing pipeline or implement a new filter.
 .. toctree::
     :maxdepth: 2
 
-    helloworld.rst
+    quickstart.rst
     examples.rst
     filters.rst
     

@@ -7,7 +7,7 @@ Filters
 .. default-domain:: c
 
 UFO filters are simple shared objects that expose their ``GType`` and implement
-the :type:`UfoFilter` class. 
+the :type:`UfoFilter` class.
 
 
 Writing a filter in C
@@ -15,14 +15,22 @@ Writing a filter in C
 
 .. highlight:: bash
 
-Writing a new UFO filter is simple and by calling :: 
+Writing a new UFO filter is simple and by calling ::
 
-    ./mkfilter.py
+    ./mkfilter.py --name AwesomeFoo --type TYPE
 
 in the ``tools/`` directory, you can avoid writing that tedious GObject boiler
-plate code on your own. You are asked for a name, so lets pretend you are going
-to build the latest and greatest `AwesomeFoo` filter. After calling the tool and
-typing ``AwesomeFoo`` you are left with two files: ``ufo-filter-awesome-foo.c``,
+plate code on your own. The name is a camel-cased version of your new filter.
+Depending on how your filter works you need to specify the correct type. You can
+choose between:
+
+* ``source``: Takes no input produces output (e.g. a file reader)
+* ``sink``: Takes input produces no output (e.g. a file writer)
+* ``process``: Takes one input at a time and produces another output.
+* ``reduce``: Takes an arbitrary amount of input data and produces an arbitrary
+  amount of data as soon as an internal condition is met.
+
+You are now left with two files ``ufo-filter-awesome-foo.c`` and
 ``ufo-filter-awesome-foo.h``. If you intend to distribute that filter with the
 main UFO filter distribution, copy these files to ``filters/src``. If you are
 not depending on any third-party library you can just add the following line to
@@ -36,7 +44,7 @@ the CMakeLists.txt file::
          ufo-filter-scale.c
     +    ufo-filter-awesome-foo.c
     )
-                           
+
     set(ufofilter_KERNELS)
 
 You can compile this as usual by typing ::
@@ -45,192 +53,215 @@ You can compile this as usual by typing ::
 
 in your CMake build directory.
 
+
 Initializing filters
 --------------------
 
-The ``ufo_filter_awesome_foo_init()`` method is the *constructor* of the filter
-object and usually the correct place to specify the inputs and outputs and their
-respective number of dimensions using :c:func:`ufo_filter_register_input` and
-:c:func:`ufo_filter_register_output`.
+Regardless of filter type, the ``ufo_filter_awesome_foo_init()`` method is the
+*constructor* of the filter object and usually the correct place to specify the
+inputs and outputs and their respective number of dimensions using
+:c:func:`ufo_filter_register_inputs` and :c:func:`ufo_filter_register_outputs`.
 
 The ``ufo_filter_awesome_foo_class_init()`` method on the other hand ist the
 *class constructor* that is used to *override* virtual methods by setting
-function pointers in each classes' vtable. The most important base methods to
-override are ``ufo_filter_awesome_foo_initialize``,
-``ufo_filter_awesome_foo_process_cpu`` and
-``ufo_filter_awesome_foo_process_gpu`` (see `Single input filters`_) as well as
-``ufo_filter_awesome_foo_process`` (see `Multiple input filters`_). Moreover, you
-can override methods from the base GObject class. The getters and setters for
-properties are overridden by default but in certain cases it makes sense to
-override the ``dispose`` method to unref any GObjects and the ``finalize``
-method to clean-up any other resources (e.g. allocated memory, files).
+function pointers in each classes' vtable. Depending on the filter type you need
+to implement different methods for producing and consuming data.
 
+All consumption methods are passed an array of input buffers. The length is the
+number of input elements as specified with :c:func:`ufo_filter_register_inputs`.
+Similarly, all production methods are passed an array of output buffers having a
+length specified with :c:func:`ufo_filter_register_outputs`. Both methods also
+receive a ``cmd_queue`` parameter that is used to get the actual data from the
+buffer.
 
-Single input filters
---------------------
 
 .. highlight:: c
 
-In the case that each input is processed independently of the others, you have
-to implement ``ufo_filter_awesome_foo_process_cpu`` or
-``ufo_filter_awesome_foo_process_gpu`` and set the methods in the class
-constructor ``ufo_filter_awesome_foo_class_init``. The first two parameters of
-these methods are arrays of pointers to input and output buffers, the last one
-the command queue to retrieve the actual content. To square the inputs and add
-the neighbouring elements on the CPU, you can write something like this::
+Implementing filters
+--------------------
 
-    static void ufo_filter_awesome_foo_process_cpu(UfoFilter *filter,
-            UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
+Implementing source filters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A source filter must implement ``generate`` and can implement ``initialize``. To
+signal that no more data is produced the ``generate`` method must return
+``FALSE`` otherwise ``TRUE``::
+
+    static void
+    ufo_filter_reader_initialize (UfoFilterSource   *filter,
+                                  guint            **dims,
+                                  GError           **error)
     {
-        UfoFilterAwesomeFooPrivate *priv = UFO_FILTER_AWESOME_FOO_GET_PRIVATE(filter);
-        guint width, height;
-        ufo_buffer_get_2d_dimensions(params[0], &width, &height);
-
-        const guint N = width * height;
-        gfloat *in = ufo_buffer_get_host_array(params[0], (cl_command_queue) cmd_queue);
-        gfloat *out = ufo_buffer_get_host_array(results[0], (cl_command_queue) cmd_queue);
-
-        out[0] = out[0] * out[0] + in[1];
-        out[N-1] = out[N-1] * out[N-1] + in[N-2];
-        for (guint i = 1; i < num_elements - 1; i++)
-            out[i] = out[i] * out[i] + in[i-1] + in[i+1]; 
+        /* Setup necessary auxiliary data */
     }
 
-In the GPU case you would replace :c:func:`ufo_buffer_get_host_array` with calls
-to :c:func:`ufo_buffer_get_device_array` and place your OpenCL calls
-accordingly. For easy deployment you should drop your kernel files into the
-source directory and add them to the CMakeLists.txt file.
-
-.. note:: The difference between ``process_cpu`` and ``process_gpu`` is purely
-    syntactical. The scheduler relies on the fact that the timings correspond to
-    what they are expected to be. This means you can of course call GPU code in the
-    CPU process method and vice versa but will most likely just confuse the
-    scheduler. For the sake of optimal performance, you should do GPU
-    computations in ``process_gpu`` and CPU computations in ``process_cpu``.
-
-If you filter produces some output our you want to setup data structures that
-depend on the input size, you can use the ``ufo_filter_awesome_foo_initialize``
-method that receives the same input parameters as the process methods. Any
-resources that are allocated here must be freed in the ``dispose`` or
-``finalize`` methods::
-
-    static void ufo_filter_awesome_foo_initialize(UfoFilter *filter, UfoBuffer *params[])
+    static gboolean
+    ufo_filter_reader_generate (UfoFilterSource  *filter,
+                                UfoBuffer        *output[],
+                                gpointer          cmd_queue,
+                                GError          **error)
     {
-        UfoFilterAwesomeFooPrivate *priv = UFO_FILTER_AWESOME_FOO_GET_PRIVATE(filter); 
-        guint w1, h1, w2, h2;
-        ufo_buffer_get_2d_dimensions(params[0], &w1, &h1);
-        ufo_buffer_get_2d_dimensions(params[1], &w2, &h2);
+        gboolean more_data = TRUE;
 
-        /* We want to stack two images internally */
-        guint width = MAX(w1, w2);
-        guint height = h1 + h2;
-        priv->stacked = g_malloc0(width * height * sizeof(gfloat));
+        /* Produce data and store result in an output buffer */
 
-        /* We want to output images of the same size */
-        guint dims[2] = { width, height };
-        ufo_channel_allocate_output_buffers(ufo_filter_get_output_channel(filter),
-                2, dims);
+        return more_data;
     }
 
-    static void ufo_filter_awesome_foo_finalize(GObject *object)
+    static void
+    ufo_filter_reader_class_init (UfoFilterReaderClass *klass)
     {
-        UfoFilterAwesomeFooPrivate *priv = UFO_FILTER_AWESOME_FOO_GET_PRIVATE(object); 
-        g_free(priv->stacked);
+        UfoFilterSourceClass *filter_class = UFO_FILTER_SOURCE_CLASS (klass);
 
-        /* Now we have to call our parents finalize method */
-        G_OBJECT_CLASS(ufo_filter_awesome_foo_parent_class)->finalize(object);
+        filter_class->initialize = ufo_filter_reader_initialize;
+        filter_class->generate = ufo_filter_reader_generate_cpu;
     }
 
-    void ufo_filter_awesome_foo_class_init(UfoFilterAwesomeFooClass *klass)
+    static void
+    ufo_filter_reader_init(UfoFilterReader *self)
     {
-        GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
+        UfoOutputParameter output_params[] = {{2}};
+
+        /* We provide one two-dimensional output */
+        ufo_filter_register_outputs (UFO_FILTER (self), 1, output_params);
+    }
+
+
+Implementing sink filters
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A sink filter must implement ``consume`` and can implement ``initialize``::
+
+    static void
+    ufo_filter_writer_consume (UfoFilterSink    *filter,
+                               UfoBuffer        *input[],
+                               gpointer          cmd_queue,
+                               GError          **error)
+    {
+    }
+
+    static void
+    ufo_filter_writer_class_init(UfoFilterWriterClass *klass)
+    {
+        UfoFilterSinkClass *filter_class = UFO_FILTER_SINK_CLASS (klass);
+
+        filter_class->consume = ufo_filter_writer_consume;
+    }
+
+    static void
+    ufo_filter_writer_init(UfoFilterWriter *self)
+    {
+        UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT}};
+
+        /* We expect one two-dimensional input */
+        ufo_filter_register_inputs (UFO_FILTER (self), 1, input_params);
+    }
+
+
+Implementing processing filters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A "normal" processing filter can implement ``initialize`` and must implement
+either ``process_cpu`` or ``process_gpu`` or both::
+
+    static void
+    ufo_filter_gaussian_blur_initialize (UfoFilter  *filter,
+                                         UfoBuffer  *params[],
+                                         guint     **dims,
+                                         GError    **error)
+    {
+    }
+
+    static void
+    ufo_filter_gaussian_blur_process_gpu (UfoFilter     *filter,
+                                          UfoBuffer     *input[],
+                                          UfoBuffer     *output[],
+                                          gpointer       cmd_queue,
+                                          GError       **error)
+    {
+    }
+
+    static void
+    ufo_filter_gaussian_blur_class_init (UfoFilterGaussianBlurClass *klass)
+    {
         UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
 
-        /* ... */
-        gobject_class->finalize = ufo_filter_awesome_foo_finalize;
-        filter_class->initialize = ufo_filter_awesome_foo_initialize;
-        /* ... */
+        filter_class->initialize    = ufo_filter_gaussian_blur_initialize;
+        filter_class->process_gpu   = ufo_filter_gaussian_blur_process_gpu;
     }
 
-.. note:: The input that is passed to this method is actually the very first
-    data set, therefore you should not mess with the actual content of the
-    buffers.
-
-
-Multiple input filters
-----------------------
-
-For reduction-like filters you must override ``process`` with code in
-``ufo_filter_awesome_foo_process()`` which is then called exactly once per
-filter. Usually, you want to retrieve the input and output channels using
-:c:func:`ufo_filter_get_input_channel` and
-:c:func:`ufo_filter_get_output_channel`. From these you can gather the first
-data item and allocate output buffers if necessary. In a loop you are processing
-your data until :c:func:`ufo_channel_get_input_buffer` returns ``NULL``. In each
-loop iteration you have to finalize the input and output buffers, so that
-adjacent filter nodes can (re-)use the buffers.  When processing has finished,
-all associated output channels must be closed with :func:`ufo_channel_finish()`.
-
-A very simple example, that computes the maximum of all input data, would look
-like this::
-
-    static void ufo_filter_awesome_foo_process(UfoFilter *filter)
+    static void
+    ufo_filter_gaussian_blur_init (UfoFilterGaussianBlur *self)
     {
-        /* Get single default channels */
-        UfoChannel *input_channel = ufo_filter_get_input_channel(filter);
-        UfoChannel *output_channel = ufo_filter_get_output_channel(filter);
+        UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT}};
+        UfoOutputParameter output_params[] = {{2}};
 
-        UfoBuffer *input = ufo_channel_get_input_buffer(input_channel);
-
-        if (input == NULL)
-            goto done;
-
-        guint width, height;
-        ufo_buffer_get_2d_dimensions(input, &width, &height);
-
-        ufo_channel_allocate_output_buffers_like(output_channel, input);
-        UfoBuffer *output = ufo_channel_get_output_buffer(output_channel);
-        gfloat *out = ufo_buffer_get_host_array(output, cmd_queue);
-
-        while (input != NULL) {
-            gfloat *in = ufo_buffer_get_host_array(input, cmd_queue);
-
-            for (guint i = 0; i < width*height; i++) {
-                if (in[i] > out[i])
-                    out[i] = in[i];
-            }
-
-            ufo_channel_finalize_input_buffer(input_channel, input);
-            input = ufo_channel_get_input_buffer(input_channel);
-        }
-
-        /* Send the output and close the connection */
-        ufo_channel_finalize_output_buffer(output_channel, output);
-        ufo_channel_finish(output_channel);
+        ufo_filter_register_inputs (UFO_FILTER (self), 1, input_params);
+        ufo_filter_register_outputs (UFO_FILTER (self), 1, output_params);
     }
-    
 
-Producer filters
-----------------
 
-Filters that only produce data (e.g. file readers) must signal when they are
-done producing data. If developers use the approach shown in `Multiple input
-filters`_, a call to :c:func:`ufo_channel_finish` is enough. However, this
-should not be done if the filter is written in kernel-style. For this case, the
-developer uses the :c:func:`ufo_filter_done` method on itself to mark production
-as finished::
+Implementing reduction filters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    static void ufo_filter_awesome_foo_process_cpu(UfoFilter *filter,
-            UfoBuffer *params[], UfoBuffer *results[], gpointer cmd_queue)
+A reduction is special::
+
+    static void
+    ufo_filter_averager_initialize (UfoFilterReduce *filter,
+                                    UfoBuffer       *input[],
+                                    guint **dims,
+                                    gfloat *default_value,
+                                    GError **error)
     {
-        if (!finished) {
-            /* put something in results */ 
-        }
-        else {
-            /* nothing left */
-            ufo_filter_done(filter); 
-        }
+        *default_value = 0.0f;
     }
+
+    static void
+    ufo_filter_averager_collect (UfoFilterReduce *filter,
+                                 UfoBuffer       *input[],
+                                 UfoBuffer       *output[],
+                                 gpointer         cmd_queue,
+                                 GError         **error)
+    {
+    }
+
+    static gboolean
+    ufo_filter_averager_reduce (UfoFilterReduce *filter,
+                                UfoBuffer       *output[],
+                                gpointer         cmd_queue,
+                                GError         **error)
+    {
+        return FALSE;
+    }
+
+    static void
+    ufo_filter_averager_class_init(UfoFilterAveragerClass *klass)
+    {
+        UfoFilterReduceClass *filter_class = UFO_FILTER_REDUCE_CLASS(klass);
+
+        filter_class->initialize = ufo_filter_averager_initialize;
+        filter_class->collect = ufo_filter_averager_collect;
+        filter_class->reduce = ufo_filter_averager_reduce;
+    }
+
+    static void
+    ufo_filter_averager_init(UfoFilterAverager *self)
+    {
+        UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT}};
+        UfoOutputParameter output_params[] = {{2}};
+
+        ufo_filter_register_inputs (UFO_FILTER (self), 1, input_params);
+        ufo_filter_register_outputs (UFO_FILTER (self), 1, output_params);
+    }
+
+
+Moreover, you can override methods from the base GObject class. The getters and
+setters for properties are overridden by default but in certain cases it makes
+sense to override the ``dispose`` method to unref any GObjects and the
+``finalize`` method to clean-up any other resources (e.g. allocated memory,
+files).
+
+
 
 Additional source files
 -----------------------
@@ -254,7 +285,7 @@ Writing point-based OpenCL filters
 For point-based image operations it is much faster to use the cl-plugin that
 writing a full-fledged C filter. We create a new file ``simple.cl``, that
 contains a simple kernel that inverts our normalized input (you can silently
-ignore the ``scratch`` parameter for now):: 
+ignore the ``scratch`` parameter for now)::
 
     __kernel void invert(__global float *data, __local float *scratch)
     {
@@ -275,7 +306,7 @@ We wire this small kernel into this short Python script::
     writer = graph.get_filter('writer')
 
     # this filter applies the kernel
-    cl = graph.get_filter('cl')     
+    cl = graph.get_filter('cl')
     cl.set_properties(file='simple.cl', kernel='invert')
 
     reader.connect_to(cl)
@@ -305,7 +336,7 @@ implement this, we have to define a condition function that checks if a
 
     static gboolean is_larger_than_zero(GValue *value, gpointer user_data)
     {
-        return g_value_get_float(value) > 0.0f; 
+        return g_value_get_float(value) > 0.0f;
     }
 
 As the filter installed the properties it also knows which type it is and which
@@ -316,7 +347,7 @@ using :c:func:`ufo_filter_wait_until` ::
     ufo_filter_wait_until(self, properties[PROP_CENTER_OF_ROTATION],
             &is_larger_than_zero, NULL);
 
-.. warning:: 
+.. warning::
 
     :c:func:`ufo_filter_wait_until` might block indefinitely when the
     condition function never returns ``TRUE``.
