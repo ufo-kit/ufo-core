@@ -20,9 +20,9 @@
 struct _UfoFilter${prefix_camel}Private {
 };
 
-G_DEFINE_TYPE(UfoFilter${prefix_camel}, ufo_filter_${prefix_underscore}, UFO_TYPE_FILTER_SOURCE)
+G_DEFINE_TYPE(UfoFilter${prefix_camel}, ufo_filter_${prefix_underscore}, UFO_TYPE_FILTER_REDUCE)
 
-#define ufo_filter_${prefix_underscore}_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_READER, UfoFilter${prefix_camel}Private))
+#define UFO_FILTER_${prefix_upper}_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}Private))
 
 enum {
     PROP_0,
@@ -32,28 +32,21 @@ enum {
 static GParamSpec *${prefix_underscore}_properties[N_PROPERTIES] = { NULL, };
 
 static void
-ufo_filter_${prefix_underscore}_initialize (UfoFilterReduce *filter, guint **dims, GError **error)
+ufo_filter_${prefix_underscore}_initialize (UfoFilterReduce *filter, UfoBuffer *input[], guint **dims, gfloat *default_value, GError **error)
 {
     UfoFilter${prefix_camel}Private *priv;
 
-    priv = ufo_filter_${prefix_underscore}_GET_PRIVATE (filter);
+    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (filter);
+
+    *default_value = 0.0f;
 }
 
-static gboolean
+static void
 ufo_filter_${prefix_underscore}_collect (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
 {
     UfoFilter${prefix_camel}Private *priv;
-    gboolean more;
 
-    priv = ufo_filter_${prefix_underscore}_GET_PRIVATE (filter);
-    more = TRUE;
-
-    if (more) {
-        more = FALSE;
-        return TRUE;
-    }
-
-    return FALSE;
+    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (filter);
 }
 
 static gboolean
@@ -62,7 +55,7 @@ ufo_filter_${prefix_underscore}_reduce (UfoFilterReduce *filter, UfoBuffer *outp
     UfoFilter${prefix_camel}Private *priv;
     gboolean more;
 
-    priv = ufo_filter_${prefix_underscore}_GET_PRIVATE (filter);
+    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (filter);
     more = TRUE;
 
     if (more) {
@@ -78,7 +71,7 @@ ufo_filter_${prefix_underscore}_set_property (GObject *object, guint property_id
 {
     UfoFilter${prefix_camel}Private *priv;
 
-    priv = UFO_FILTER_${prefix_underscore}_GET_PRIVATE (object);
+    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (object);
 
     switch (property_id) {
         default:
@@ -90,7 +83,9 @@ ufo_filter_${prefix_underscore}_set_property (GObject *object, guint property_id
 static void
 ufo_filter_${prefix_underscore}_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
-    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (object);
+    UfoFilter${prefix_camel}Private *priv;
+
+    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (object);
 
     switch (property_id) {
         default:
@@ -143,5 +138,5 @@ ufo_filter_${prefix_underscore}_init (UfoFilter${prefix_camel} *self)
 G_MODULE_EXPORT UfoFilter *
 ufo_filter_plugin_new (void)
 {
-    return g_object_new (UFO_TYPE_FILTER_READER, NULL);
+    return g_object_new (UFO_TYPE_FILTER_${prefix_upper}, NULL);
 }
