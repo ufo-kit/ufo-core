@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 #include "ufo-configuration.h"
+#include "ufo-graph.h"
 #include "ufo-resource-manager.h"
 #include "ufo-filter.h"
 
@@ -45,8 +46,8 @@ struct _UfoBaseSchedulerClass {
 
 UfoBaseScheduler*   ufo_base_scheduler_new          (UfoConfiguration   *config,
                                                      UfoResourceManager *manager);
-void                ufo_base_scheduler_run          (UfoBaseScheduler*   scheduler,
-                                                     GList*              filters,
+void                ufo_base_scheduler_run          (UfoBaseScheduler   *scheduler,
+                                                     UfoGraph           *graph,
                                                      GError**            error);
 GType               ufo_base_scheduler_get_type     (void);
 

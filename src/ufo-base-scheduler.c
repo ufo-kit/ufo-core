@@ -458,18 +458,21 @@ print_row (const gchar *row, gpointer user_data)
 /**
  * ufo_base_scheduler_run:
  * @scheduler: A #UfoBaseScheduler object
- * @filters: (in) (element-type UfoFilter): A list of all filters that should be scheduled
+ * @graph: A #UfoGraph object whose filters are scheduled
  * @error: return location for a GError with error codes from
  * #UfoPluginManagerError or %NULL
  *
  * Start executing all filters from the @filters list in their own threads.
  */
 void
-ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *filters, GError **error)
+ufo_base_scheduler_run (UfoBaseScheduler    *scheduler,
+                        UfoGraph            *graph,
+                        GError             **error)
 {
     UfoBaseSchedulerPrivate *priv;
     UfoResourceManager      *manager;
     cl_command_queue        *cmd_queues;
+    GList       *filters;
     GTimer      *timer;
     GThread    **threads;
     GError      *tmp_error = NULL;
@@ -481,6 +484,7 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler, GList *filters, GError **er
     g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
 
     priv = scheduler->priv;
+    filters = ufo_graph_get_filters (graph);
     manager = priv->manager;
 
     if (manager == NULL) {

@@ -37,7 +37,7 @@ fixture_json_setup (Fixture *fixture, gconstpointer data)
     static const gchar *invalid_json = "{\"nodes:[]}"; /* missing " */
     static const gchar *empty_json = "{\"nodes\": [{}]}";
 
-    fixture->graph = ufo_graph_new (NULL, NULL);
+    fixture->graph = ufo_graph_new ();
     g_assert (UFO_IS_GRAPH (fixture->graph));
 
     fixture->manager = ufo_plugin_manager_new (NULL);
@@ -70,14 +70,21 @@ fixture_json_teardown (Fixture *fixture, gconstpointer data)
 static void
 fixture_filter_setup (Fixture *fixture, gconstpointer data)
 {
+    UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT}};
+    UfoOutputParameter output_params[] = {{2}};
+
     GError *error = NULL;
 
-    fixture->graph = ufo_graph_new (NULL, NULL);
+    fixture->graph = ufo_graph_new ();
     g_assert (UFO_IS_GRAPH (fixture->graph));
 
     fixture->source = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
     fixture->sink1 = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
     fixture->sink2 = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
+
+    ufo_filter_register_outputs (fixture->source, 1, output_params);
+    ufo_filter_register_inputs (fixture->sink1, 1, input_params);
+    ufo_filter_register_inputs (fixture->sink2, 1, input_params);
 
     ufo_graph_connect_filters (fixture->graph, fixture->source, fixture->sink1, &error);
     g_assert_no_error (error);

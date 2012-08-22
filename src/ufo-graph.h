@@ -2,9 +2,7 @@
 #define __UFO_GRAPH_H
 
 #include <glib-object.h>
-#include "ufo-configuration.h"
 #include "ufo-plugin-manager.h"
-#include "ufo-base-scheduler.h"
 #include "ufo-filter.h"
 
 G_BEGIN_DECLS
@@ -49,8 +47,7 @@ struct _UfoGraphClass {
     GObjectClass parent_class;
 };
 
-UfoGraph   *ufo_graph_new                   (UfoConfiguration   *config,
-                                             UfoBaseScheduler   *scheduler);
+UfoGraph   *ufo_graph_new                   (void);
 void        ufo_graph_read_from_json        (UfoGraph           *graph,
                                              UfoPluginManager   *manager,
                                              const gchar        *filename,
@@ -58,8 +55,6 @@ void        ufo_graph_read_from_json        (UfoGraph           *graph,
 void        ufo_graph_save_to_json          (UfoGraph           *graph,
                                              const gchar        *filename,
                                              GError            **error);
-void        ufo_graph_run                   (UfoGraph           *graph,
-                                             GError             **error);
 void        ufo_graph_connect_filters       (UfoGraph           *graph,
                                              UfoFilter          *from,
                                              UfoFilter          *to,

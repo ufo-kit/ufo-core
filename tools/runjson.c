@@ -3,6 +3,7 @@
 #include <glib-object.h>
 #include "ufo-configuration.h"
 #include "ufo-graph.h"
+#include "ufo-base-scheduler.h"
 
 static void
 handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
@@ -40,6 +41,7 @@ int main(int argc, char const* argv[])
 {
     UfoConfiguration *config;
     UfoGraph         *graph;
+    UfoBaseScheduler *scheduler;
     UfoPluginManager *manager;
     GError *error = NULL;
 
@@ -51,9 +53,9 @@ int main(int argc, char const* argv[])
     }
 
     config = ufo_configuration_new ();
+    graph = ufo_graph_new ();
 
     if (argc == 2) {
-        graph = ufo_graph_new (NULL, NULL);
         manager = ufo_plugin_manager_new (NULL);
     }
     else {
@@ -65,7 +67,6 @@ int main(int argc, char const* argv[])
                       "paths", paths,
                       NULL);
 
-        graph = ufo_graph_new (config, NULL);
         manager = ufo_plugin_manager_new (config);
         g_value_array_free (paths);
     }
@@ -73,8 +74,9 @@ int main(int argc, char const* argv[])
     ufo_graph_read_from_json(graph, manager, argv[1], &error);
     handle_error("Reading JSON", error, graph);
 
-    ufo_graph_run(graph, &error);
-    handle_error("Executing graph", error, graph);
+    scheduler = ufo_base_scheduler_new (config, NULL);
+    ufo_base_scheduler_run (scheduler, graph, &error);
+    handle_error("Executing", error, graph);
 
     g_object_unref(graph);
     return 0;

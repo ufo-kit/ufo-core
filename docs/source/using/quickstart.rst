@@ -12,19 +12,26 @@ Writing a pipeline in C
 A simple UFO program written in C can look like this::
 
     /* foo.c */
+    #include <ufo/ufo-graph.h>
+    #include <ufo/ufo-base-scheduler.h>
+
     int main (void)
     {
         UfoGraph *graph;
+        UfoBaseScheduler *scheduler;
 
         g_type_init ();  /* you _must_ call this! */
 
-        graph = ufo_graph_new (NULL, NULL);
+        graph = ufo_graph_new ();
 
         ufo_graph_read_from_json (graph, NULL, "hello-world.json", NULL);
-        ufo_graph_run (graph);
+
+        scheduler = ufo_base_scheduler (NULL);
+        ufo_scheduler_run (graph);
 
         /* Destroy the graph object */
         g_object_unref (graph);
+        g_object_unref (scheduler);
         return 0;
     }
 
@@ -34,9 +41,9 @@ You can compile this with::
 
     $ gcc `pkg-config --cflags --libs ufo` foo.c -o foo
 
-As you can see we simply construct a new UfoGraph object from a JSON encoded
-:ref:`configuration file <json-configuration>` and execute that computation
-pipeline.
+As you can see we simply construct a new ``UfoGraph`` object from a JSON encoded
+:ref:`configuration file <json-configuration>` and execute the computation
+pipeline with a ``UfoBaseScheduler`` object.
 
 .. highlight:: c
 
@@ -47,13 +54,15 @@ hand::
     {
         UfoGraph *graph;
         UfoPluginManager *manager;
+        UfoBaseScheduler *scheduler;
         UfoFilter *reader;
         UfoFilter *writer;
 
         g_type_init ();  /* you _must_ call this! */
 
-        graph = ufo_graph_new (NULL, NULL);
+        graph = ufo_graph_new ();
         manager = ufo_plugin_manager_new (NULL);
+        scheduler = ufo_base_scheduler_new (NULL);
         reader = ufo_plugin_manager_get_filter (manager, "reader", NULL);
         writer = ufo_plugin_manager_get_filter (manager, "writer", NULL);
 
@@ -63,7 +72,7 @@ hand::
                       NULL);
 
         ufo_graph_connect_filters (graph, reader, writer, NULL);
-        ufo_graph_run (graph);
+        ufo_base_scheduler_run (graph);
         return 0;
     }
 
@@ -103,9 +112,10 @@ look like this::
 
     manager = Ufo.PluginManager()
     graph = Ufo.Graph()
+    scheduler = Ufo.BaseScheduler()
 
     graph.read_from_json(manager, "some-graph.json")
-    graph.run()
+    scheduler.run(graph)
 
 Similarly, constructing the graph by hand maps one-to-one to the Python object
 and keyword system::
@@ -114,10 +124,11 @@ and keyword system::
 
     graph = Ufo.Graph()
     manager = Ufo.PluginManager()
+    scheduler = Ufo.BaseScheduler()
 
     reader = manager.get_filter('reader')
     writer = manager.get_filter('writer')
     reader.set_properties(path='/home/user/data/*.tif', count=5)
 
     graph.connect_filters(reader, writer)
-    graph.run()
+    scheduler.run(graph)

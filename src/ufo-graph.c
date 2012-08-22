@@ -15,12 +15,9 @@
 #include "config.h"
 #include "ufo-graph.h"
 #include "ufo-aux.h"
-#include "ufo-configurable.h"
 #include "ufo-plugin-manager.h"
-#include "ufo-base-scheduler.h"
 
-G_DEFINE_TYPE_WITH_CODE (UfoGraph, ufo_graph, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
+G_DEFINE_TYPE (UfoGraph, ufo_graph, G_TYPE_OBJECT)
 
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
@@ -45,9 +42,7 @@ typedef struct {
 } Connection;
 
 struct _UfoGraphPrivate {
-    UfoConfiguration    *config;
     UfoPluginManager    *plugin_manager;
-    UfoBaseScheduler    *scheduler;
     GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
     GList               *connections;
     GHashTable          *json_filters;
@@ -55,12 +50,10 @@ struct _UfoGraphPrivate {
 
 enum {
     PROP_0,
-    PROP_CONFIG,
-    PROP_SCHEDULER,
     N_PROPERTIES
 };
 
-static GParamSpec *graph_properties[N_PROPERTIES] = { NULL, };
+/* static GParamSpec *graph_properties[N_PROPERTIES] = { NULL, }; */
 
 static void
 handle_json_single_prop (JsonObject  *object,
@@ -279,22 +272,15 @@ add_edge_from_connection (gpointer data, gpointer user)
 
 /**
  * ufo_graph_new:
- * @config: (allow-none): A configuration
- * @scheduler: (allow-none): A scheduler that should be used for execution
  *
- * Create a new #UfoGraph. If @scheduler is %NULL a default scheduler will be
- * created and used.
+ * Create a new #UfoGraph.
  *
  * Return value: A #UfoGraph.
  */
 UfoGraph *
-ufo_graph_new (UfoConfiguration *config,
-               UfoBaseScheduler *scheduler)
+ufo_graph_new (void)
 {
-    return UFO_GRAPH (g_object_new (UFO_TYPE_GRAPH,
-                                    "configuration", config,
-                                    "scheduler", scheduler,
-                                    NULL));
+    return UFO_GRAPH (g_object_new (UFO_TYPE_GRAPH, NULL));
 }
 
 /**
@@ -372,62 +358,6 @@ ufo_graph_save_to_json (UfoGraph *graph, const gchar *filename, GError **error)
 }
 
 /**
- * ufo_graph_run:
- * @graph: A #UfoGraph.
- * @error: Return location for error
- *
- * Start execution of all UfoElements in the UfoGraph until no more data is
- * produced
- */
-void
-ufo_graph_run (UfoGraph *graph, GError **error)
-{
-    UfoGraphPrivate  *priv;
-    UfoBaseScheduler *scheduler;
-    GHashTable       *filters;
-    GList            *unique;
-
-    g_return_if_fail (UFO_IS_GRAPH(graph));
-    priv = UFO_GRAPH_GET_PRIVATE (graph);
-    filters = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
-        Connection *connection;
-        UfoChannel *channel;
-
-        connection = (Connection *) it->data;
-        channel = ufo_filter_get_output_channel (connection->from, connection->from_port);
-
-        if (channel == NULL) {
-            channel = ufo_filter_get_input_channel (connection->to, connection->to_port);
-
-            if (channel == NULL)
-                channel = ufo_channel_new ();
-        }
-
-        ufo_filter_set_output_channel (connection->from, connection->from_port, channel);
-        ufo_filter_set_input_channel (connection->to, connection->to_port, channel);
-        ufo_channel_ref (channel);
-
-        g_hash_table_insert (filters, connection->from, NULL);
-        g_hash_table_insert (filters, connection->to, NULL);
-    }
-
-    scheduler = priv->scheduler;
-
-    if (scheduler == NULL) {
-        scheduler = ufo_base_scheduler_new (priv->config, NULL);
-        priv->scheduler = scheduler;
-    }
-
-    unique = g_hash_table_get_keys (filters);
-    ufo_base_scheduler_run (scheduler, unique, error);
-
-    g_list_free (unique);
-    g_hash_table_destroy (filters);
-}
-
-/**
  * ufo_graph_connect_filters:
  * @graph: A #UfoGraph
  * @from: Source filter
@@ -462,6 +392,7 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
                                 GError     **error)
 {
     UfoGraphPrivate *priv;
+    UfoChannel      *channel;
     Connection      *connection;
 
     g_return_if_fail (UFO_IS_GRAPH (graph) && UFO_IS_FILTER (from) && UFO_IS_FILTER (to));
@@ -488,8 +419,20 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
     connection->from_port = from_port;
     connection->to = to;
     connection->to_port= to_port;
-
     priv->connections = g_list_append (priv->connections, connection);
+
+    channel = ufo_filter_get_output_channel (from, from_port);
+
+    if (channel == NULL) {
+        channel = ufo_filter_get_input_channel (to, to_port);
+
+        if (channel == NULL)
+            channel = ufo_channel_new ();
+    }
+
+    ufo_filter_set_output_channel (from, from_port, channel);
+    ufo_filter_set_input_channel (to, to_port, channel);
+    ufo_channel_ref (channel);
 }
 
 /**
@@ -641,8 +584,6 @@ ufo_graph_dispose(GObject *object)
     unref_list_elements (g_hash_table_get_values (priv->json_filters));
 
     ufo_unref_stored_object ((GObject **) &priv->plugin_manager);
-    ufo_unref_stored_object ((GObject **) &priv->scheduler);
-    ufo_unref_stored_object ((GObject **) &priv->config);
 
     G_OBJECT_CLASS (ufo_graph_parent_class)->dispose (object);
     g_message ("UfoGraph: disposed");
@@ -680,17 +621,7 @@ ufo_graph_set_property(GObject      *object,
                        const GValue *value,
                        GParamSpec   *pspec)
 {
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
-
     switch (property_id) {
-        case PROP_CONFIG:
-            ufo_set_property_object ((GObject **) &priv->config, g_value_get_object (value));
-            break;
-
-        case PROP_SCHEDULER:
-            ufo_set_property_object ((GObject **) &priv->scheduler, g_value_get_object (value));
-            break;
-
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -703,17 +634,7 @@ ufo_graph_get_property(GObject      *object,
                        GValue       *value,
                        GParamSpec   *pspec)
 {
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE(object);
-
     switch (property_id) {
-        case PROP_CONFIG:
-            g_value_set_object (value, priv->config);
-            break;
-
-        case PROP_SCHEDULER:
-            g_value_set_object (value, priv->scheduler);
-            break;
-
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -731,16 +652,6 @@ ufo_graph_class_init (UfoGraphClass *klass)
     gobject_class->finalize     = ufo_graph_finalize;
     gobject_class->constructed  = ufo_graph_constructed;
 
-    graph_properties[PROP_SCHEDULER] =
-        g_param_spec_object ("scheduler",
-                             "A UfoBaseScheduler",
-                             "A UfoBaseScheduler",
-                             UFO_TYPE_BASE_SCHEDULER,
-                             G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
-
-    g_object_class_install_property (gobject_class, PROP_SCHEDULER, graph_properties[PROP_SCHEDULER]);
-    g_object_class_override_property (gobject_class, PROP_CONFIG, "configuration");
-
     g_type_class_add_private(klass, sizeof(UfoGraphPrivate));
 }
 
@@ -751,8 +662,6 @@ ufo_graph_init (UfoGraph *self)
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
     priv->property_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->connections = NULL;
-    priv->scheduler = NULL;
-    priv->config = NULL;
     priv->json_filters = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
     g_thread_init (NULL);
