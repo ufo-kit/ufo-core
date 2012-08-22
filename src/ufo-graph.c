@@ -465,7 +465,7 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
     Connection      *connection;
 
     g_return_if_fail (UFO_IS_GRAPH (graph) && UFO_IS_FILTER (from) && UFO_IS_FILTER (to));
-    priv = UFO_GRAPH_GET_PRIVATE (graph);
+    priv = graph->priv;
 
     for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
         connection = (Connection *) it->data;
@@ -490,6 +490,140 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
     connection->to_port= to_port;
 
     priv->connections = g_list_append (priv->connections, connection);
+}
+
+/**
+ * ufo_graph_get_filters:
+ * @graph: A #UfoGraph
+ *
+ * Return a list of all filter nodes of @graph.
+ *
+ * Returns: (element-type UfoFilter): List of filter nodes. Use g_list_free()
+ *      when done using the list.
+ */
+GList *
+ufo_graph_get_filters (UfoGraph *graph)
+{
+    UfoGraphPrivate *priv;
+    Connection      *connection;
+    GHashTable      *filters;
+    GList           *result;
+
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
+    priv = graph->priv;
+
+    filters = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
+        connection = (Connection *) it->data;
+        g_hash_table_insert (filters, connection->from, NULL);
+        g_hash_table_insert (filters, connection->to, NULL);
+    }
+
+    result = g_hash_table_get_keys (filters);
+    g_hash_table_destroy (filters);
+    return result;
+}
+
+/**
+ * ufo_graph_get_predecessors:
+ * @graph: A #UfoGraph
+ * @filter: A #UfoFilter
+ *
+ * Return a list of nodes in @graph that connect to @filter.
+ *
+ * Returns: (element-type UfoFilter): List of filter nodes. Use g_list_free()
+ *      when done using the list.
+ */
+GList *
+ufo_graph_get_predecessors (UfoGraph   *graph,
+                            UfoFilter  *filter)
+{
+    UfoGraphPrivate *priv;
+    Connection      *connection;
+    GList           *result = NULL;
+
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
+    priv = graph->priv;
+
+    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
+        connection = (Connection *) it->data;
+
+        if (connection->to == filter)
+            result = g_list_append (result, connection->from);
+    }
+
+    return result;
+}
+
+/**
+ * ufo_graph_get_sucessors:
+ * @graph: A #UfoGraph
+ * @filter: A #UfoFilter
+ *
+ * Return a list of nodes in @graph that @filter connects to.
+ *
+ * Returns: (element-type UfoFilter): List of filter nodes. Use g_list_free()
+ *      when done using the list.
+ */
+GList *
+ufo_graph_get_sucessors (UfoGraph   *graph,
+                         UfoFilter  *filter)
+{
+    UfoGraphPrivate *priv;
+    Connection      *connection;
+    GList           *result = NULL;
+
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
+    priv = graph->priv;
+
+    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
+        connection = (Connection *) it->data;
+
+        if (connection->from == filter)
+            result = g_list_append (result, connection->to);
+    }
+
+    return result;
+}
+
+/**
+ * ufo_graph_get_siblings:
+ * @graph: A #UfoGraph
+ * @filter: A #UfoFilter
+ *
+ * Return a list of nodes in @graph that share the same parent node with
+ * @filter.
+ *
+ * Returns: (element-type UfoFilter): List of filter nodes. Use g_list_free()
+ *      when done using the list.
+ */
+GList *
+ufo_graph_get_siblings (UfoGraph    *graph,
+                        UfoFilter   *filter)
+{
+    UfoGraphPrivate *priv;
+    Connection      *connection;
+    GList           *predecessors;
+    GList           *result = NULL;
+
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
+    priv = graph->priv;
+    predecessors = ufo_graph_get_predecessors (graph, filter);
+
+    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
+        connection = (Connection *) it->data;
+
+        for (GList *jt = g_list_first (predecessors); jt != NULL; jt = g_list_next (jt)) {
+            UfoFilter *predecessor = (UfoFilter *) jt->data;
+
+            if (connection->to != filter && connection->from == predecessor)
+                result = g_list_append (result, connection->to);
+        }
+    }
+
+    g_list_free (predecessors);
+    return result;
 }
 
 static void

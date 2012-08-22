@@ -12,6 +12,9 @@ typedef struct {
     gchar            *valid_json_file;
     gchar            *invalid_json_file;
     gchar            *empty_json_file;
+    UfoFilter        *source;
+    UfoFilter        *sink1;
+    UfoFilter        *sink2;
 } Fixture;
 
 static void
@@ -24,7 +27,7 @@ write_file (const gchar *name, const gchar *content)
 }
 
 static void
-fixture_setup (Fixture *fixture, gconstpointer data)
+fixture_json_setup (Fixture *fixture, gconstpointer data)
 {
     static const gchar *valid_json =
         "{\
@@ -50,7 +53,7 @@ fixture_setup (Fixture *fixture, gconstpointer data)
 }
 
 static void
-fixture_teardown (Fixture *fixture, gconstpointer data)
+fixture_json_teardown (Fixture *fixture, gconstpointer data)
 {
     g_remove (fixture->valid_json_file);
     g_remove (fixture->invalid_json_file);
@@ -62,6 +65,34 @@ fixture_teardown (Fixture *fixture, gconstpointer data)
 
     g_object_unref (fixture->graph);
     g_object_unref (fixture->manager);
+}
+
+static void
+fixture_filter_setup (Fixture *fixture, gconstpointer data)
+{
+    GError *error = NULL;
+
+    fixture->graph = ufo_graph_new (NULL, NULL);
+    g_assert (UFO_IS_GRAPH (fixture->graph));
+
+    fixture->source = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
+    fixture->sink1 = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
+    fixture->sink2 = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
+
+    ufo_graph_connect_filters (fixture->graph, fixture->source, fixture->sink1, &error);
+    g_assert_no_error (error);
+
+    ufo_graph_connect_filters (fixture->graph, fixture->source, fixture->sink2, &error);
+    g_assert_no_error (error);
+}
+
+static void
+fixture_filter_teardown (Fixture *fixture, gconstpointer data)
+{
+    g_object_unref (fixture->graph);
+    g_object_unref (fixture->source);
+    g_object_unref (fixture->sink1);
+    g_object_unref (fixture->sink2);
 }
 
 static void
@@ -121,34 +152,114 @@ test_json_key_not_found (Fixture *fixture, gconstpointer data)
     g_error_free (error);
 }
 
+static void
+test_get_filters (Fixture *fixture, gconstpointer data)
+{
+    GList     *filters;
+
+    filters = ufo_graph_get_filters (fixture->graph);
+    g_assert (filters != NULL);
+    g_assert (g_list_length (filters) == 3);
+    g_list_free (filters);
+}
+
+static void
+test_get_predecessors (Fixture *fixture, gconstpointer data)
+{
+    GList     *predecessors;
+
+    predecessors = ufo_graph_get_predecessors (fixture->graph, fixture->source);
+    g_assert (predecessors == NULL);
+
+    predecessors = ufo_graph_get_predecessors (fixture->graph, fixture->sink1);
+    g_assert (g_list_length (predecessors) == 1);
+    g_assert (g_list_nth_data (predecessors, 0) == fixture->source);
+    g_list_free (predecessors);
+}
+
+static void
+test_get_successors (Fixture *fixture, gconstpointer data)
+{
+    GList     *successors;
+
+    successors = ufo_graph_get_sucessors (fixture->graph, fixture->sink1);
+    g_assert (successors == NULL);
+
+    successors = ufo_graph_get_sucessors (fixture->graph, fixture->source);
+    g_assert (g_list_length (successors) == 2);
+    g_list_free (successors);
+}
+
+static void
+test_get_siblings (Fixture *fixture, gconstpointer data)
+{
+    GList     *siblings;
+
+    siblings = ufo_graph_get_siblings (fixture->graph, fixture->source);
+    g_assert (siblings == NULL);
+
+    siblings = ufo_graph_get_siblings (fixture->graph, fixture->sink1);
+    g_assert (g_list_length (siblings) == 1);
+    g_assert (g_list_nth_data (siblings, 0) == fixture->sink2);
+    g_list_free (siblings);
+}
+
 void
 test_add_graph (void)
 {
     g_test_add ("/graph/json/invalid-json",
                 Fixture,
                 NULL,
-                fixture_setup,
+                fixture_json_setup,
                 test_json_invalid_json,
-                fixture_teardown);
+                fixture_json_teardown);
 
     g_test_add ("/graph/json/file-not-found",
                 Fixture,
                 NULL,
-                fixture_setup,
+                fixture_json_setup,
                 test_json_file_not_found,
-                fixture_teardown);
+                fixture_json_teardown);
 
     g_test_add ("/graph/json/unknown-filter",
                 Fixture,
                 NULL,
-                fixture_setup,
+                fixture_json_setup,
                 test_json_read_unknown_filter,
-                fixture_teardown);
+                fixture_json_teardown);
 
     g_test_add ("/graph/json/key-not-found",
                 Fixture,
                 NULL,
-                fixture_setup,
+                fixture_json_setup,
                 test_json_key_not_found,
-                fixture_teardown);
+                fixture_json_teardown);
+
+    g_test_add ("/graph/get/filters",
+                Fixture,
+                NULL,
+                fixture_filter_setup,
+                test_get_filters,
+                fixture_filter_teardown);
+
+    g_test_add ("/graph/get/predecessors",
+                Fixture,
+                NULL,
+                fixture_filter_setup,
+                test_get_predecessors,
+                fixture_filter_teardown);
+
+    g_test_add ("/graph/get/successors",
+                Fixture,
+                NULL,
+                fixture_filter_setup,
+                test_get_successors,
+                fixture_filter_teardown);
+
+    g_test_add ("/graph/get/siblings",
+                Fixture,
+                NULL,
+                fixture_filter_setup,
+                test_get_siblings,
+                fixture_filter_teardown);
 }

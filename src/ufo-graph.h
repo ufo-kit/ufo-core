@@ -70,6 +70,13 @@ void        ufo_graph_connect_filters_full  (UfoGraph           *graph,
                                              UfoFilter          *to,
                                              guint               to_port,
                                              GError            **error);
+GList      *ufo_graph_get_filters           (UfoGraph           *graph);
+GList      *ufo_graph_get_predecessors      (UfoGraph           *graph,
+                                             UfoFilter          *filter);
+GList      *ufo_graph_get_sucessors         (UfoGraph           *graph,
+                                             UfoFilter          *filter);
+GList      *ufo_graph_get_siblings          (UfoGraph           *graph,
+                                             UfoFilter          *filter);
 GType       ufo_graph_get_type              (void);
 GQuark      ufo_graph_error_quark           (void);
 
