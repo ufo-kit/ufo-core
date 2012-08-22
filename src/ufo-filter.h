@@ -5,7 +5,6 @@
 
 #include "ufo-profiler.h"
 #include "ufo-resource-manager.h"
-#include "ufo-aux.h"
 #include "ufo-buffer.h"
 #include "ufo-channel.h"
 

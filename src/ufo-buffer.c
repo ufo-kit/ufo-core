@@ -13,6 +13,7 @@
 
 #include "config.h"
 #include "ufo-buffer.h"
+#include "ufo-aux.h"
 #include "ufo-resource-manager.h"
 #include "ufo-enums.h"
 

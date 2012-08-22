@@ -3,7 +3,6 @@
 
 #include <glib-object.h>
 #include "ufo-configuration.h"
-#include "ufo-aux.h"
 #include "ufo-buffer.h"
 
 G_BEGIN_DECLS
@@ -41,7 +40,7 @@ const gchar *opencl_map_error(int error);
  * line number if an error occured.
  */
 #define CHECK_OPENCL_ERROR(error) { \
-    if ((error) != CL_SUCCESS) ufo_debug_cl("Error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
+    if ((error) != CL_SUCCESS) g_log("ocl", G_LOG_LEVEL_CRITICAL, "Error <%s:%i>: %s", __FILE__, __LINE__, opencl_map_error((error))); }
 
 /**
  * UfoResourceManager:

@@ -21,6 +21,7 @@
 #include <glob.h>
 #include "config.h"
 #include "ufo-profiler.h"
+#include "ufo-aux.h"
 
 
 G_DEFINE_TYPE(UfoProfiler, ufo_profiler, G_TYPE_OBJECT)

@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "ufo-graph.h"
+#include "ufo-aux.h"
 #include "ufo-configurable.h"
 #include "ufo-plugin-manager.h"
 #include "ufo-base-scheduler.h"
