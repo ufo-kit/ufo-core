@@ -312,7 +312,7 @@ resource_manager_add_program (UfoResourceManager *manager, const gchar *filename
         g_set_error (error,
                      UFO_RESOURCE_MANAGER_ERROR,
                      UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
-                     "Could not find %s", filename);
+                     "Could not find `%s'. Maybe you forgot to pass a configuration?", filename);
         g_static_mutex_unlock (&mutex);
         return NULL;
     }
@@ -324,7 +324,7 @@ resource_manager_add_program (UfoResourceManager *manager, const gchar *filename
         g_set_error (error,
                      UFO_RESOURCE_MANAGER_ERROR,
                      UFO_RESOURCE_MANAGER_ERROR_LOAD_PROGRAM,
-                     "Could not open %s", filename);
+                     "Could not open `%s'", filename);
         g_static_mutex_unlock (&mutex);
         return NULL;
     }
@@ -666,10 +666,12 @@ ufo_resource_manager_set_property (GObject      *object,
 
                 ufo_set_property_object ((GObject **) &priv->config, value_object);
 
-                config = UFO_CONFIGURATION (value_object);
-                paths = ufo_configuration_get_paths (config);
-                add_paths (priv, paths);
-                g_strfreev (paths);
+                if (value_object != NULL) {
+                    config = UFO_CONFIGURATION (value_object);
+                    paths = ufo_configuration_get_paths (config);
+                    add_paths (priv, paths);
+                    g_strfreev (paths);
+                }
             }
             break;
 
