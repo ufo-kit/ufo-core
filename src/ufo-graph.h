@@ -66,6 +66,7 @@ void        ufo_graph_connect_filters_full  (UfoGraph           *graph,
                                              guint               to_port,
                                              GError            **error);
 GList      *ufo_graph_get_filters           (UfoGraph           *graph);
+GList      *ufo_graph_get_roots             (UfoGraph           *graph);
 GList      *ufo_graph_get_predecessors      (UfoGraph           *graph,
                                              UfoFilter          *filter);
 GList      *ufo_graph_get_sucessors         (UfoGraph           *graph,

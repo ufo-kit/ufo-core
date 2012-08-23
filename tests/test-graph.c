@@ -5,6 +5,7 @@
 #include "test-suite.h"
 #include "ufo-graph.h"
 #include "ufo-plugin-manager.h"
+#include "ufo-filter-source.h"
 
 typedef struct {
     UfoGraph         *graph;
@@ -78,7 +79,7 @@ fixture_filter_setup (Fixture *fixture, gconstpointer data)
     fixture->graph = ufo_graph_new ();
     g_assert (UFO_IS_GRAPH (fixture->graph));
 
-    fixture->source = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
+    fixture->source = UFO_FILTER (g_object_new (UFO_TYPE_FILTER_SOURCE, NULL));
     fixture->sink1 = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
     fixture->sink2 = UFO_FILTER (g_object_new (UFO_TYPE_FILTER, NULL));
 
@@ -162,7 +163,7 @@ test_json_key_not_found (Fixture *fixture, gconstpointer data)
 static void
 test_get_filters (Fixture *fixture, gconstpointer data)
 {
-    GList     *filters;
+    GList *filters;
 
     filters = ufo_graph_get_filters (fixture->graph);
     g_assert (filters != NULL);
@@ -171,9 +172,20 @@ test_get_filters (Fixture *fixture, gconstpointer data)
 }
 
 static void
+test_get_roots (Fixture *fixture, gconstpointer data)
+{
+    GList *roots;
+
+    roots = ufo_graph_get_roots (fixture->graph);
+    g_assert (g_list_length (roots) == 1);
+    g_assert (g_list_nth_data (roots, 0) == fixture->source);
+    g_list_free (roots);
+}
+
+static void
 test_get_predecessors (Fixture *fixture, gconstpointer data)
 {
-    GList     *predecessors;
+    GList *predecessors;
 
     predecessors = ufo_graph_get_predecessors (fixture->graph, fixture->source);
     g_assert (predecessors == NULL);
@@ -187,7 +199,7 @@ test_get_predecessors (Fixture *fixture, gconstpointer data)
 static void
 test_get_successors (Fixture *fixture, gconstpointer data)
 {
-    GList     *successors;
+    GList *successors;
 
     successors = ufo_graph_get_sucessors (fixture->graph, fixture->sink1);
     g_assert (successors == NULL);
@@ -247,6 +259,13 @@ test_add_graph (void)
                 NULL,
                 fixture_filter_setup,
                 test_get_filters,
+                fixture_filter_teardown);
+
+    g_test_add ("/graph/get/roots",
+                Fixture,
+                NULL,
+                fixture_filter_setup,
+                test_get_roots,
                 fixture_filter_teardown);
 
     g_test_add ("/graph/get/predecessors",

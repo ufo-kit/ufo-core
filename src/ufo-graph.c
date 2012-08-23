@@ -15,6 +15,7 @@
 #include "config.h"
 #include "ufo-graph.h"
 #include "ufo-aux.h"
+#include "ufo-filter-source.h"
 #include "ufo-plugin-manager.h"
 
 G_DEFINE_TYPE (UfoGraph, ufo_graph, G_TYPE_OBJECT)
@@ -495,6 +496,40 @@ ufo_graph_get_filters (UfoGraph *graph)
         connection = (Connection *) it->data;
         g_hash_table_insert (filters, connection->from, NULL);
         g_hash_table_insert (filters, connection->to, NULL);
+    }
+
+    result = g_hash_table_get_keys (filters);
+    g_hash_table_destroy (filters);
+    return result;
+}
+
+/**
+ * ufo_graph_get_roots:
+ * @graph: A #UfoGraph
+ *
+ * Return a list of #UfoFilterSource nodes in @graph that do not have any
+ * predecessors.
+ *
+ * Returns: (element-type UfoFilter) (transfer none): List of filter nodes. Use
+ * g_list_free() when done using the list.
+ */
+GList *
+ufo_graph_get_roots (UfoGraph *graph)
+{
+    UfoGraphPrivate *priv;
+    Connection      *connection;
+    GHashTable      *filters;
+    GList           *result = NULL;
+
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
+    priv = graph->priv;
+    filters = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
+        connection = (Connection *) it->data;
+
+        if (UFO_IS_FILTER_SOURCE (connection->from))
+            g_hash_table_insert (filters, connection->from, NULL);
     }
 
     result = g_hash_table_get_keys (filters);
