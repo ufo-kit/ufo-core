@@ -1,4 +1,4 @@
-ufo_base_scheduler_get_type
+ufo_scheduler_get_type
 ufo_buffer_get_type
 ufo_channel_get_type
 ufo_configurable_get_type
