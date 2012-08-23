@@ -337,20 +337,20 @@ ufo_buffer_error_quark
 </SECTION>
 
 <SECTION>
-<FILE>ufo-base-scheduler</FILE>
-<TITLE>UfoBaseScheduler</TITLE>
-UfoBaseScheduler
-ufo_base_scheduler_new
-ufo_base_scheduler_run
+<FILE>ufo-scheduler</FILE>
+<TITLE>UfoScheduler</TITLE>
+UfoScheduler
+ufo_scheduler_new
+ufo_scheduler_run
 <SUBSECTION Standard>
-UFO_BASE_SCHEDULER
-UFO_BASE_SCHEDULER_CLASS
-UFO_BASE_SCHEDULER_GET_CLASS
-UFO_IS_BASE_SCHEDULER
-UFO_IS_BASE_SCHEDULER_CLASS
-UFO_TYPE_BASE_SCHEDULER
-ufo_base_scheduler_get_type
+UFO_SCHEDULER
+UFO_SCHEDULER_CLASS
+UFO_SCHEDULER_GET_CLASS
+UFO_IS_SCHEDULER
+UFO_IS_SCHEDULER_CLASS
+UFO_TYPE_SCHEDULER
+ufo_scheduler_get_type
 <SUBSECTION Private>
-UfoBaseSchedulerClass
-UfoBaseSchedulerPrivate
+UfoSchedulerClass
+UfoSchedulerPrivate
 </SECTION>

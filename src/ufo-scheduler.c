@@ -1,7 +1,7 @@
 /**
- * SECTION:ufo-base-scheduler
+ * SECTION:ufo-scheduler
  * @Short_description: Data transport between two UfoFilters
- * @Title: UfoBaseScheduler
+ * @Title: UfoScheduler
  */
 
 #ifdef __APPLE__
@@ -13,17 +13,17 @@
 
 #include "config.h"
 #include "ufo-aux.h"
-#include "ufo-base-scheduler.h"
+#include "ufo-scheduler.h"
 #include "ufo-configurable.h"
 #include "ufo-filter.h"
 #include "ufo-filter-source.h"
 #include "ufo-filter-sink.h"
 #include "ufo-filter-reduce.h"
 
-G_DEFINE_TYPE_WITH_CODE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT,
+G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
                          G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
 
-#define UFO_BASE_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BASE_SCHEDULER, UfoBaseSchedulerPrivate))
+#define UFO_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SCHEDULER, UfoSchedulerPrivate))
 
 typedef struct {
     UfoFilter          *filter;
@@ -41,7 +41,7 @@ typedef struct {
     GTimer             *cpu_timer;
 } ThreadInfo;
 
-struct _UfoBaseSchedulerPrivate {
+struct _UfoSchedulerPrivate {
     UfoConfiguration    *config;
     UfoResourceManager  *manager;
 };
@@ -53,24 +53,24 @@ enum {
     N_PROPERTIES
 };
 
-static GParamSpec *base_scheduler_properties[N_PROPERTIES] = { NULL, };
+static GParamSpec *scheduler_properties[N_PROPERTIES] = { NULL, };
 
 /**
- * ufo_base_scheduler_new:
+ * ufo_scheduler_new:
  * @config: (allow-none): A #UfoConfiguration or %NULL
  * @manager: (allow-none): A #UfoResourceManager or %NULL
  *
- * Creates a new #UfoBaseScheduler.
+ * Creates a new #UfoScheduler.
  *
- * Return value: A new #UfoBaseScheduler
+ * Return value: A new #UfoScheduler
  */
-UfoBaseScheduler *
-ufo_base_scheduler_new (UfoConfiguration    *config,
+UfoScheduler *
+ufo_scheduler_new (UfoConfiguration    *config,
                         UfoResourceManager  *manager)
 {
-    UfoBaseScheduler *scheduler;
+    UfoScheduler *scheduler;
 
-    scheduler = UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_BASE_SCHEDULER,
+    scheduler = UFO_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER,
                                                   "configuration", config,
                                                   "resource-manager", manager,
                                                   NULL));
@@ -439,7 +439,7 @@ process_thread (gpointer data)
         ufo_channel_finish (channel);
     }
 
-    g_message ("UfoBaseScheduler: %s-%p finished", ufo_filter_get_plugin_name (filter), (gpointer) filter);
+    g_message ("UfoScheduler: %s-%p finished", ufo_filter_get_plugin_name (filter), (gpointer) filter);
 
     g_free (info->output_dims);
     g_free (info->work);
@@ -456,8 +456,8 @@ print_row (const gchar *row, gpointer user_data)
 }
 
 /**
- * ufo_base_scheduler_run:
- * @scheduler: A #UfoBaseScheduler object
+ * ufo_scheduler_run:
+ * @scheduler: A #UfoScheduler object
  * @graph: A #UfoGraph object whose filters are scheduled
  * @error: return location for a GError with error codes from
  * #UfoPluginManagerError or %NULL
@@ -465,11 +465,11 @@ print_row (const gchar *row, gpointer user_data)
  * Start executing all filters from the @filters list in their own threads.
  */
 void
-ufo_base_scheduler_run (UfoBaseScheduler    *scheduler,
-                        UfoGraph            *graph,
-                        GError             **error)
+ufo_scheduler_run (UfoScheduler    *scheduler,
+                   UfoGraph            *graph,
+                   GError             **error)
 {
-    UfoBaseSchedulerPrivate *priv;
+    UfoSchedulerPrivate *priv;
     UfoResourceManager      *manager;
     cl_command_queue        *cmd_queues;
     GList       *filters;
@@ -481,7 +481,7 @@ ufo_base_scheduler_run (UfoBaseScheduler    *scheduler,
     guint        n_threads;
     guint        i = 0;
 
-    g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
+    g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
 
     priv = scheduler->priv;
     filters = ufo_graph_get_filters (graph);
@@ -557,12 +557,12 @@ ufo_base_scheduler_run (UfoBaseScheduler    *scheduler,
 }
 
 static void
-ufo_base_scheduler_set_property (GObject      *object,
-                                 guint         property_id,
-                                 const GValue *value,
-                                 GParamSpec   *pspec)
+ufo_scheduler_set_property (GObject      *object,
+                            guint         property_id,
+                            const GValue *value,
+                            GParamSpec   *pspec)
 {
-    UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE(object);
+    UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE(object);
 
     switch (property_id) {
         case PROP_CONFIG:
@@ -580,12 +580,12 @@ ufo_base_scheduler_set_property (GObject      *object,
 }
 
 static void
-ufo_base_scheduler_get_property (GObject      *object,
-                                 guint         property_id,
-                                 GValue       *value,
-                                 GParamSpec   *pspec)
+ufo_scheduler_get_property (GObject      *object,
+                            guint         property_id,
+                            GValue       *value,
+                            GParamSpec   *pspec)
 {
-    UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE(object);
+    UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE(object);
 
     switch (property_id) {
         case PROP_CONFIG:
@@ -603,49 +603,49 @@ ufo_base_scheduler_get_property (GObject      *object,
 }
 
 static void
-ufo_base_scheduler_dispose (GObject *object)
+ufo_scheduler_dispose (GObject *object)
 {
-    UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
+    UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE (object);
 
     ufo_unref_stored_object ((GObject **) &priv->config);
     ufo_unref_stored_object ((GObject **) &priv->manager);
 
-    G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->dispose (object);
-    g_message ("UfoBaseScheduler: disposed");
+    G_OBJECT_CLASS (ufo_scheduler_parent_class)->dispose (object);
+    g_message ("UfoScheduler: disposed");
 }
 
 static void
-ufo_base_scheduler_finalize (GObject *object)
+ufo_scheduler_finalize (GObject *object)
 {
-    G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->finalize (object);
-    g_message ("UfoBaseScheduler: finalized");
+    G_OBJECT_CLASS (ufo_scheduler_parent_class)->finalize (object);
+    g_message ("UfoScheduler: finalized");
 }
 
 static void
-ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
+ufo_scheduler_class_init (UfoSchedulerClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-    gobject_class->set_property = ufo_base_scheduler_set_property;
-    gobject_class->get_property = ufo_base_scheduler_get_property;
-    gobject_class->dispose      = ufo_base_scheduler_dispose;
-    gobject_class->finalize     = ufo_base_scheduler_finalize;
+    gobject_class->set_property = ufo_scheduler_set_property;
+    gobject_class->get_property = ufo_scheduler_get_property;
+    gobject_class->dispose      = ufo_scheduler_dispose;
+    gobject_class->finalize     = ufo_scheduler_finalize;
 
-    base_scheduler_properties[PROP_RESOURCE_MANAGER] =
+    scheduler_properties[PROP_RESOURCE_MANAGER] =
         g_param_spec_object ("resource-manager",
                              "A UfoResourceManager",
                              "A UfoResourceManager",
                              UFO_TYPE_RESOURCE_MANAGER,
                              G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
-    g_object_class_install_property (gobject_class, PROP_RESOURCE_MANAGER, base_scheduler_properties[PROP_RESOURCE_MANAGER]);
+    g_object_class_install_property (gobject_class, PROP_RESOURCE_MANAGER, scheduler_properties[PROP_RESOURCE_MANAGER]);
     g_object_class_override_property (gobject_class, PROP_CONFIG, "configuration");
 
-    g_type_class_add_private (klass, sizeof (UfoBaseSchedulerPrivate));
+    g_type_class_add_private (klass, sizeof (UfoSchedulerPrivate));
 }
 
 static void
-ufo_base_scheduler_init (UfoBaseScheduler *base_scheduler)
+ufo_scheduler_init (UfoScheduler *scheduler)
 {
-    UfoBaseSchedulerPrivate *priv;
-    base_scheduler->priv = priv = UFO_BASE_SCHEDULER_GET_PRIVATE (base_scheduler);
+    UfoSchedulerPrivate *priv;
+    scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
 }

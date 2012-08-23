@@ -13,7 +13,7 @@ A simple UFO program written in C can look like this::
 
     /* foo.c */
     #include <ufo/ufo-graph.h>
-    #include <ufo/ufo-base-scheduler.h>
+    #include <ufo/ufo-scheduler.h>
 
     int main (void)
     {
@@ -26,7 +26,7 @@ A simple UFO program written in C can look like this::
 
         ufo_graph_read_from_json (graph, NULL, "hello-world.json", NULL);
 
-        scheduler = ufo_base_scheduler (NULL);
+        scheduler = ufo_scheduler (NULL);
         ufo_scheduler_run (graph);
 
         /* Destroy the graph object */
@@ -43,7 +43,7 @@ You can compile this with::
 
 As you can see we simply construct a new ``UfoGraph`` object from a JSON encoded
 :ref:`configuration file <json-configuration>` and execute the computation
-pipeline with a ``UfoBaseScheduler`` object.
+pipeline with a ``UfoScheduler`` object.
 
 .. highlight:: c
 
@@ -62,7 +62,7 @@ hand::
 
         graph = ufo_graph_new ();
         manager = ufo_plugin_manager_new (NULL);
-        scheduler = ufo_base_scheduler_new (NULL);
+        scheduler = ufo_scheduler_new (NULL);
         reader = ufo_plugin_manager_get_filter (manager, "reader", NULL);
         writer = ufo_plugin_manager_get_filter (manager, "writer", NULL);
 
@@ -72,7 +72,7 @@ hand::
                       NULL);
 
         ufo_graph_connect_filters (graph, reader, writer, NULL);
-        ufo_base_scheduler_run (graph);
+        ufo_scheduler_run (graph);
         return 0;
     }
 
@@ -112,7 +112,7 @@ look like this::
 
     manager = Ufo.PluginManager()
     graph = Ufo.Graph()
-    scheduler = Ufo.BaseScheduler()
+    scheduler = Ufo.Scheduler()
 
     graph.read_from_json(manager, "some-graph.json")
     scheduler.run(graph)
@@ -124,7 +124,7 @@ and keyword system::
 
     graph = Ufo.Graph()
     manager = Ufo.PluginManager()
-    scheduler = Ufo.BaseScheduler()
+    scheduler = Ufo.Scheduler()
 
     reader = manager.get_filter('reader')
     writer = manager.get_filter('writer')

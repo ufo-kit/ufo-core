@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 # --- Set sources -------------------------------------------------------------
 set(ufocore_SRCS
-    ufo-base-scheduler.c
+    ufo-scheduler.c
     ufo-channel.c
     ufo-configurable.c
     ufo-configuration.c
@@ -18,7 +18,7 @@ set(ufocore_SRCS
     )
 
 set(ufocore_HDRS
-    ufo-base-scheduler.h
+    ufo-scheduler.h
     ufo-channel.h
     ufo-configurable.h
     ufo-configuration.h
@@ -224,7 +224,6 @@ if(GTK_DOC_FOUND)
             "${docs_out}/annotation-glossary.html"
             "${docs_out}/api-index-full.html"
             "${docs_out}/ch01.html"
-            "${docs_out}/UfoBaseScheduler.html"
             "${docs_out}/UfoBuffer.html"
             "${docs_out}/UfoChannel.html"
             "${docs_out}/UfoConfigurable.html"
@@ -237,6 +236,7 @@ if(GTK_DOC_FOUND)
             "${docs_out}/UfoPluginManager.html"
             "${docs_out}/UfoProfiler.html"
             "${docs_out}/UfoResourceManager.html"
+            "${docs_out}/UfoScheduler.html"
             "${docs_out}/style.css"
             "${docs_out}/Ufo.devhelp2"
             "${docs_out}/home.png"
