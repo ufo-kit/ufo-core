@@ -42,7 +42,7 @@ ufo_filter_${prefix_underscore}_initialize (UfoFilterReduce *filter, UfoBuffer *
 }
 
 static void
-ufo_filter_${prefix_underscore}_collect (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_${prefix_underscore}_collect (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
     UfoFilter${prefix_camel}Private *priv;
 

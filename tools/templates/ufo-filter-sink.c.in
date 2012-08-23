@@ -40,7 +40,7 @@ ufo_filter_${prefix_underscore}_initialize (UfoFilterSink *filter, UfoBuffer *in
 }
 
 static void
-ufo_filter_${prefix_underscore}_consume (UfoFilterSink *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error)
+ufo_filter_${prefix_underscore}_consume (UfoFilterSink *filter, UfoBuffer *input[], GError **error)
 {
     UfoFilter${prefix_camel}Private *priv;
 

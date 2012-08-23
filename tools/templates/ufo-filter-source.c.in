@@ -40,7 +40,7 @@ ufo_filter_${prefix_underscore}_initialize (UfoFilterSource *filter, guint **dim
 }
 
 static gboolean
-ufo_filter_${prefix_underscore}_generate (UfoFilterSource *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_${prefix_underscore}_generate (UfoFilterSource *filter, UfoBuffer *output[], GError **error)
 {
     UfoFilter${prefix_camel}Private *priv;
     gboolean more;

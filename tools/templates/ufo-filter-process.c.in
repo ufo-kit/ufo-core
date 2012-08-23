@@ -40,7 +40,7 @@ ufo_filter_${prefix_underscore}_initialize (UfoFilter *filter, UfoBuffer *input[
 }
 
 static void
-ufo_filter_${prefix_underscore}_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_${prefix_underscore}_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
     UfoFilter${prefix_camel}Private *priv;
 
@@ -48,7 +48,7 @@ ufo_filter_${prefix_underscore}_process_cpu (UfoFilter *filter, UfoBuffer *input
 }
 
 static void
-ufo_filter_${prefix_underscore}_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_${prefix_underscore}_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
     UfoFilter${prefix_camel}Private *priv;
 
