@@ -172,7 +172,6 @@ UfoProfiler *ufo_filter_get_profiler (UfoFilter *filter)
  * @filter: A #UfoFilter.
  * @input: An array of buffers for each input port
  * @output: An array of buffers for each output port
- * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
  * @error: Location for #GError.
  *
  * Process input data from a buffer array on the CPU and put the results into
@@ -181,10 +180,10 @@ UfoProfiler *ufo_filter_get_profiler (UfoFilter *filter)
  * Since: 0.2
  */
 void
-ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER (filter));
-    UFO_FILTER_GET_CLASS (filter)->process_cpu (filter, input, output, cmd_queue, error);
+    UFO_FILTER_GET_CLASS (filter)->process_cpu (filter, input, output, error);
 }
 
 /**
@@ -192,7 +191,6 @@ ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output
  * @filter: A #UfoFilter.
  * @input: An array of buffers for each input port
  * @output: An array of buffers for each output port
- * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
  * @error: Location for an error.
  *
  * Process input data from a buffer array on the GPU and put the results into
@@ -210,10 +208,10 @@ ufo_filter_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output
  * Since: 0.2
  */
 void
-ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER (filter));
-    UFO_FILTER_GET_CLASS (filter)->process_gpu (filter, input, output, cmd_queue, error);
+    UFO_FILTER_GET_CLASS (filter)->process_gpu (filter, input, output, error);
 }
 
 /**
@@ -463,6 +461,21 @@ ufo_filter_get_input_channel (UfoFilter *filter, guint port)
     return filter->priv->input_channels[port];
 }
 
+void
+ufo_filter_set_command_queue (UfoFilter *filter,
+                              gpointer   cmd_queue)
+{
+    g_return_if_fail (UFO_IS_FILTER (filter));
+    filter->priv->command_queue = cmd_queue;
+}
+
+gpointer
+ufo_filter_get_command_queue (UfoFilter *filter)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    return filter->priv->command_queue;
+}
+
 /**
  * ufo_filter_wait_until: (skip)
  * @filter: A #UfoFilter
@@ -558,7 +571,6 @@ ufo_filter_init (UfoFilter *self)
 {
     UfoFilterPrivate *priv;
     self->priv = priv = UFO_FILTER_GET_PRIVATE (self);
-    priv->command_queue = NULL;
     priv->finished = FALSE;
     priv->n_inputs = 0;
     priv->n_outputs = 0;
@@ -567,5 +579,6 @@ ufo_filter_init (UfoFilter *self)
     priv->input_channels = NULL;
     priv->output_channels = NULL;
     priv->profiler = NULL;
+    priv->command_queue = NULL;
 }
 

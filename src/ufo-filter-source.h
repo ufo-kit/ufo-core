@@ -46,7 +46,6 @@ struct _UfoFilterSourceClass {
                              GError            **error);
     gboolean (*generate)    (UfoFilterSource    *filter,
                              UfoBuffer          *output[],
-                             gpointer            cmd_queue,
                              GError            **error);
 };
 
@@ -55,7 +54,6 @@ void     ufo_filter_source_initialize (UfoFilterSource   *filter,
                                        GError           **error);
 gboolean ufo_filter_source_generate   (UfoFilterSource   *filter,
                                        UfoBuffer         *output[],
-                                       gpointer           cmd_queue,
                                        GError            **error);
 GType    ufo_filter_source_get_type   (void);
 

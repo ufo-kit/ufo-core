@@ -45,7 +45,6 @@ ufo_filter_sink_initialize (UfoFilterSink *filter, UfoBuffer *input[], GError **
  * ufo_filter_sink_consume:
  * @filter: A #UfoFilter.
  * @input: An array of buffers for each input port
- * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
  * @error: Location for #GError.
  *
  * Process input data from a buffer array.
@@ -53,10 +52,10 @@ ufo_filter_sink_initialize (UfoFilterSink *filter, UfoBuffer *input[], GError **
  * Since: 0.2
  */
 void
-ufo_filter_sink_consume (UfoFilterSink *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error)
+ufo_filter_sink_consume (UfoFilterSink *filter, UfoBuffer *input[], GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_SINK (filter));
-    UFO_FILTER_SINK_GET_CLASS (filter)->consume (filter, input, cmd_queue, error);
+    UFO_FILTER_SINK_GET_CLASS (filter)->consume (filter, input, error);
 }
 
 static void
@@ -66,7 +65,7 @@ ufo_filter_sink_initialize_real (UfoFilterSink *filter, UfoBuffer *input[], GErr
 }
 
 static void
-ufo_filter_sink_consume_real (UfoFilterSink *filter, UfoBuffer *input[], gpointer cmd_queue, GError **error)
+ufo_filter_sink_consume_real (UfoFilterSink *filter, UfoBuffer *input[], GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
                  "Virtual method `consume' of %s is not implemented",

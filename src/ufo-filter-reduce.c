@@ -72,17 +72,16 @@ ufo_filter_reduce_initialize (UfoFilterReduce *filter, UfoBuffer *input[], guint
  * Since: 0.2
  */
 void
-ufo_filter_reduce_collect (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_reduce_collect (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
     g_return_if_fail (UFO_IS_FILTER_REDUCE (filter));
-    UFO_FILTER_REDUCE_GET_CLASS (filter)->collect (filter, input, output, cmd_queue, error);
+    UFO_FILTER_REDUCE_GET_CLASS (filter)->collect (filter, input, output, error);
 }
 
 /**
  * ufo_filter_reduce_reduce:
  * @filter: A #UfoFilter.
  * @output: An array of buffers for each output port
- * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
  * @error: Location for #GError.
  *
  * This method calls the virtual reduce method and is called itself, when the
@@ -94,10 +93,10 @@ ufo_filter_reduce_collect (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffe
  * Since: 0.2
  */
 gboolean
-ufo_filter_reduce_reduce (UfoFilterReduce *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_reduce_reduce (UfoFilterReduce *filter, UfoBuffer *output[], GError **error)
 {
     g_return_val_if_fail (UFO_IS_FILTER_REDUCE (filter), FALSE);
-    return UFO_FILTER_REDUCE_GET_CLASS (filter)->reduce (filter, output, cmd_queue, error);
+    return UFO_FILTER_REDUCE_GET_CLASS (filter)->reduce (filter, output, error);
 }
 
 static void
@@ -107,7 +106,7 @@ ufo_filter_reduce_initialize_real (UfoFilterReduce *filter, UfoBuffer *input[], 
 }
 
 static void
-ufo_filter_reduce_collect_real (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_reduce_collect_real (UfoFilterReduce *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
                  "Virtual method `collect' of %s is not implemented",
@@ -115,7 +114,7 @@ ufo_filter_reduce_collect_real (UfoFilterReduce *filter, UfoBuffer *input[], Ufo
 }
 
 static gboolean
-ufo_filter_reduce_reduce_real (UfoFilterReduce *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_reduce_reduce_real (UfoFilterReduce *filter, UfoBuffer *output[], GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
                  "Virtual method `reduce' of %s is not implemented",

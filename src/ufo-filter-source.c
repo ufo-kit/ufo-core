@@ -66,10 +66,10 @@ ufo_filter_source_initialize (UfoFilterSource *filter, guint **output_dim_sizes,
  * Since: 0.2
  */
 gboolean
-ufo_filter_source_generate (UfoFilterSource *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_source_generate (UfoFilterSource *filter, UfoBuffer *output[], GError **error)
 {
     g_return_val_if_fail (UFO_IS_FILTER_SOURCE (filter), FALSE);
-    return UFO_FILTER_SOURCE_GET_CLASS (filter)->generate (filter, output, cmd_queue, error);
+    return UFO_FILTER_SOURCE_GET_CLASS (filter)->generate (filter, output, error);
 }
 
 static void
@@ -80,7 +80,7 @@ ufo_filter_source_initialize_real (UfoFilterSource *filter, guint **output_dim_s
 }
 
 static gboolean
-ufo_filter_source_generate_real (UfoFilterSource *filter, UfoBuffer *output[], gpointer cmd_queue, GError **error)
+ufo_filter_source_generate_real (UfoFilterSource *filter, UfoBuffer *output[], GError **error)
 {
     g_set_error (error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_METHOD_NOT_IMPLEMENTED,
                  "Virtual method `generate' of %s is not implemented",

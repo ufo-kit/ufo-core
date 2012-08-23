@@ -47,7 +47,6 @@ struct _UfoFilterSinkClass {
                          GError        **error);
     void (*consume)     (UfoFilterSink  *filter,
                          UfoBuffer      *input[],
-                         gpointer        cmd_queue,
                          GError        **error);
 };
 
@@ -56,7 +55,6 @@ void  ufo_filter_sink_initialize (UfoFilterSink  *filter,
                                   GError        **error);
 void  ufo_filter_sink_consume    (UfoFilterSink  *filter,
                                   UfoBuffer      *input[],
-                                  gpointer        cmd_queue,
                                   GError        **error);
 GType ufo_filter_sink_get_type   (void);
 

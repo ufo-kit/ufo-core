@@ -31,7 +31,6 @@ typedef struct {
     cl_command_queue   *cmd_queues;
     guint               num_inputs;
     guint               num_outputs;
-    UfoProfiler        *profiler;
     UfoInputParameter  *input_params;
     UfoOutputParameter *output_params;
     guint             **output_dims;
@@ -205,7 +204,7 @@ process_source_filter (ThreadInfo *info)
         fetch_result (info);
 
         g_timer_continue (info->cpu_timer);
-        cont = ufo_filter_source_generate (UFO_FILTER_SOURCE (filter), info->result, info->cmd_queues[0], &error);
+        cont = ufo_filter_source_generate (UFO_FILTER_SOURCE (filter), info->result, &error);
         g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
@@ -223,7 +222,6 @@ process_synchronous_filter (ThreadInfo *info)
 {
     UfoFilter *filter = UFO_FILTER (info->filter);
     UfoFilterClass *filter_class = UFO_FILTER_GET_CLASS (filter);
-    cl_command_queue queue;
     GError      *error = NULL;
     gboolean     cont = TRUE;
     guint        iteration = 0;
@@ -249,19 +247,18 @@ process_synchronous_filter (ThreadInfo *info)
     }
 
     fetch_result (info);
-    queue = info->cmd_queues[0];
 
     while (cont) {
         g_message ("`%s-%p' processing item %i", ufo_filter_get_plugin_name (filter), (gpointer) filter, iteration++);
 
         if (filter_class->process_gpu != NULL) {
             g_timer_continue (info->cpu_timer);
-            ufo_filter_process_gpu (filter, info->work, info->result, queue, &error);
+            ufo_filter_process_gpu (filter, info->work, info->result, &error);
             g_timer_stop (info->cpu_timer);
         }
         else {
             g_timer_continue (info->cpu_timer);
-            ufo_filter_process_cpu (filter, info->work, info->result, queue, &error);
+            ufo_filter_process_cpu (filter, info->work, info->result, &error);
             g_timer_stop (info->cpu_timer);
         }
 
@@ -304,7 +301,7 @@ process_sink_filter (ThreadInfo *info)
 
     while (cont) {
         g_timer_continue (info->cpu_timer);
-        ufo_filter_sink_consume (sink_filter, info->work, info->cmd_queues[0], &error);
+        ufo_filter_sink_consume (sink_filter, info->work, &error);
         g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
@@ -357,7 +354,7 @@ process_reduce_filter (ThreadInfo *info)
 
     while (cont) {
         g_timer_continue (info->cpu_timer);
-        ufo_filter_reduce_collect (UFO_FILTER_REDUCE (filter), info->work, info->result, info->cmd_queues[0], &error);
+        ufo_filter_reduce_collect (UFO_FILTER_REDUCE (filter), info->work, info->result, &error);
         g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
@@ -376,7 +373,6 @@ process_reduce_filter (ThreadInfo *info)
         g_timer_continue (info->cpu_timer);
         cont = ufo_filter_reduce_reduce (UFO_FILTER_REDUCE (filter),
                                          info->result,
-                                         info->cmd_queues[0],
                                          &error);
         g_timer_stop (info->cpu_timer);
 
@@ -398,6 +394,8 @@ process_thread (gpointer data)
     GError *error = NULL;
     ThreadInfo  *info = (ThreadInfo *) data;
     UfoFilter   *filter = info->filter;
+
+    g_assert (ufo_filter_get_command_queue (filter) != NULL);
 
     UfoOutputParameter *output_params = ufo_filter_get_output_parameters (filter);
 
@@ -465,9 +463,9 @@ print_row (const gchar *row, gpointer user_data)
  * Start executing all filters from the @filters list in their own threads.
  */
 void
-ufo_scheduler_run (UfoScheduler    *scheduler,
-                   UfoGraph            *graph,
-                   GError             **error)
+ufo_scheduler_run (UfoScheduler *scheduler,
+                   UfoGraph     *graph,
+                   GError      **error)
 {
     UfoSchedulerPrivate *priv;
     UfoResourceManager      *manager;
@@ -505,15 +503,15 @@ ufo_scheduler_run (UfoScheduler    *scheduler,
     for (GList *it = filters; it != NULL; it = g_list_next (it), i++) {
         UfoFilter *filter = UFO_FILTER (it->data);
 
+        ufo_filter_set_command_queue (filter, cmd_queues[0]);
         ufo_filter_set_profiler (filter, ufo_profiler_new ());
         ufo_filter_set_resource_manager (filter, manager);
 
-        thread_info[i].profiler = ufo_profiler_new ();
         thread_info[i].filter = filter;
-        thread_info[i].num_cmd_queues = n_queues;
-        thread_info[i].cmd_queues = cmd_queues;
+        /* thread_info[i].num_cmd_queues = n_queues; */
+        /* thread_info[i].cmd_queues = cmd_queues; */
 
-        ufo_filter_set_profiler (filter, thread_info[i].profiler);
+        ufo_filter_set_profiler (filter, ufo_profiler_new ());
 
         thread_info[i].cpu_timer = g_timer_new ();
         g_timer_stop (thread_info[i].cpu_timer);

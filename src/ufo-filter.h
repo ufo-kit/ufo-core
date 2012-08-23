@@ -120,12 +120,10 @@ struct _UfoFilterClass {
     void (*process_cpu)      (UfoFilter   *filter,
                               UfoBuffer   *input[],
                               UfoBuffer   *output[],
-                              gpointer     cmd_queue,
                               GError     **error);
     void (*process_gpu)      (UfoFilter   *filter,
                               UfoBuffer   *input[],
                               UfoBuffer   *output[],
-                              gpointer     cmd_queue,
                               GError     **error);
 };
 
@@ -142,12 +140,10 @@ UfoProfiler *       ufo_filter_get_profiler             (UfoFilter              
 void                ufo_filter_process_cpu              (UfoFilter              *filter,
                                                          UfoBuffer              *input[],
                                                          UfoBuffer              *output[],
-                                                         gpointer                cmd_queue,
                                                          GError                **error);
 void                ufo_filter_process_gpu              (UfoFilter              *filter,
                                                          UfoBuffer              *input[],
                                                          UfoBuffer              *output[],
-                                                         gpointer                cmd_queue,
                                                          GError                **error);
 void                ufo_filter_set_plugin_name          (UfoFilter              *filter,
                                                          const gchar            *plugin_name);
@@ -170,6 +166,9 @@ UfoChannel *        ufo_filter_get_output_channel       (UfoFilter              
 void                ufo_filter_set_input_channel        (UfoFilter              *filter,
                                                          guint                   port,
                                                          UfoChannel             *channel);
+void                ufo_filter_set_command_queue        (UfoFilter              *filter,
+                                                         gpointer                cmd_queue);
+gpointer            ufo_filter_get_command_queue        (UfoFilter              *filter);
 UfoChannel *        ufo_filter_get_input_channel        (UfoFilter              *filter,
                                                          guint                   port);
 void                ufo_filter_wait_until               (UfoFilter              *filter,
