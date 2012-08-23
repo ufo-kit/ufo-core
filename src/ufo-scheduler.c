@@ -453,6 +453,52 @@ print_row (const gchar *row, gpointer user_data)
     g_print ("%s\n", row);
 }
 
+static void
+pass_queue (UfoGraph *graph,
+            UfoFilter *filter,
+            guint queue,
+            guint n_queues,
+            cl_command_queue *queues)
+{
+    GList *successors;
+    guint i = queue;
+
+    successors = ufo_graph_get_sucessors (graph, filter);
+
+    for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it), i++) {
+        UfoFilter *successor;
+        guint new_queue;
+
+        successor = UFO_FILTER (it->data);
+        new_queue = i % n_queues;
+        ufo_filter_set_command_queue (successor, queues[new_queue]);
+        pass_queue (graph, successor, new_queue, n_queues, queues);
+    }
+}
+
+static void
+init_filter_queues (UfoGraph *graph,
+                    guint n_queues,
+                    cl_command_queue *queues)
+{
+    GList *roots;
+    guint i = 0;
+
+    roots = ufo_graph_get_roots (graph);
+
+    for (GList *it = g_list_first (roots); it != NULL; it = g_list_next (it), i++) {
+        UfoFilter *root;
+        guint queue;
+
+        root = UFO_FILTER (it->data);
+        queue = i % n_queues;
+        ufo_filter_set_command_queue (root, queues[queue]);
+        pass_queue (graph, root, queue, n_queues, queues);
+    }
+
+    g_list_free (roots);
+}
+
 /**
  * ufo_scheduler_run:
  * @scheduler: A #UfoScheduler object
@@ -494,6 +540,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                                              (gpointer *) &cmd_queues,
                                              &n_queues);
 
+    init_filter_queues (graph, n_queues, cmd_queues);
+
     n_threads   = g_list_length (filters);
     threads     = g_new0 (GThread *, n_threads);
     thread_info = g_new0 (ThreadInfo, n_threads);
@@ -503,16 +551,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     for (GList *it = filters; it != NULL; it = g_list_next (it), i++) {
         UfoFilter *filter = UFO_FILTER (it->data);
 
-        ufo_filter_set_command_queue (filter, cmd_queues[0]);
         ufo_filter_set_profiler (filter, ufo_profiler_new ());
         ufo_filter_set_resource_manager (filter, manager);
 
         thread_info[i].filter = filter;
-        /* thread_info[i].num_cmd_queues = n_queues; */
-        /* thread_info[i].cmd_queues = cmd_queues; */
-
-        ufo_filter_set_profiler (filter, ufo_profiler_new ());
-
         thread_info[i].cpu_timer = g_timer_new ();
         g_timer_stop (thread_info[i].cpu_timer);
 
