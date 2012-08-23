@@ -475,7 +475,7 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
  *
  * Return a list of all filter nodes of @graph.
  *
- * Returns: (element-type UfoFilter): List of filter nodes. Use g_list_free()
+ * Returns: (element-type UfoFilter) (transfer full): List of filter nodes. Use g_list_free()
  *      when done using the list.
  */
 GList *
@@ -509,7 +509,7 @@ ufo_graph_get_filters (UfoGraph *graph)
  *
  * Return a list of nodes in @graph that connect to @filter.
  *
- * Returns: (element-type UfoFilter): List of filter nodes. Use g_list_free()
+ * Returns: (element-type UfoFilter) (transfer none): List of filter nodes. Use g_list_free()
  *      when done using the list.
  */
 GList *
@@ -540,7 +540,7 @@ ufo_graph_get_predecessors (UfoGraph   *graph,
  *
  * Return a list of nodes in @graph that @filter connects to.
  *
- * Returns: (element-type UfoFilter): List of filter nodes. Use g_list_free()
+ * Returns: (element-type UfoFilter) (transfer none): List of filter nodes. Use g_list_free()
  *      when done using the list.
  */
 GList *
@@ -572,7 +572,7 @@ ufo_graph_get_sucessors (UfoGraph   *graph,
  * Return a list of nodes in @graph that share the same parent node with
  * @filter.
  *
- * Returns: (element-type UfoFilter): List of filter nodes. Use g_list_free()
+ * Returns: (element-type UfoFilter) (transfer none): List of filter nodes. Use g_list_free()
  *      when done using the list.
  */
 GList *
