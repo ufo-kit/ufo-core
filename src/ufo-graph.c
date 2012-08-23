@@ -43,7 +43,7 @@ typedef struct {
 
 struct _UfoGraphPrivate {
     UfoPluginManager    *plugin_manager;
-    GHashTable          *property_sets;  /**< maps from gchar* to JsonNode */
+    GHashTable          *prop_sets;  /**< maps from gchar* to JsonNode */
     GList               *connections;
     GHashTable          *json_filters;
 };
@@ -54,6 +54,21 @@ enum {
 };
 
 /* static GParamSpec *graph_properties[N_PROPERTIES] = { NULL, }; */
+
+static void
+handle_json_prop_set (JsonObject    *object,
+                      const gchar   *name,
+                      JsonNode      *node,
+                      gpointer       user)
+{
+    UfoGraphPrivate *priv;
+    JsonObject *properties;
+
+    priv = (UfoGraphPrivate *) user;
+    properties = json_object_get_object_member (object, name);
+    json_object_ref (properties);
+    g_hash_table_insert (priv->prop_sets, g_strdup (name), properties);
+}
 
 static void
 handle_json_single_prop (JsonObject  *object,
@@ -67,11 +82,10 @@ handle_json_single_prop (JsonObject  *object,
 }
 
 static gboolean
-handle_json_filter_node (JsonNode  *element,
-                         UfoGraph  *graph,
-                         GError   **error)
+handle_json_filter_node (JsonNode         *element,
+                         UfoGraphPrivate  *priv,
+                         GError          **error)
 {
-    UfoGraphPrivate *priv = graph->priv;
     UfoFilter *plugin;
     JsonObject *object;
     GError *tmp_error = NULL;
@@ -105,6 +119,26 @@ handle_json_filter_node (JsonNode  *element,
     if (json_object_has_member (object, "properties")) {
         JsonObject *prop_object = json_object_get_object_member (object, "properties");
         json_object_foreach_member (prop_object, handle_json_single_prop, plugin);
+    }
+
+    if (json_object_has_member (object, "prop-refs")) {
+        JsonArray *prop_refs;
+
+        prop_refs = json_object_get_array_member (object, "prop-refs");
+
+        for (guint i = 0; i < json_array_get_length (prop_refs); i++) {
+            const gchar *ref_name = json_array_get_string_element (prop_refs, i);
+            JsonObject *prop_set = g_hash_table_lookup (priv->prop_sets, ref_name);
+
+            if (prop_set == NULL) {
+                g_warning ("No property set `%s' found in `prop-sets'", ref_name);
+            }
+            else {
+                json_object_foreach_member (prop_set,
+                                            handle_json_single_prop,
+                                            plugin);
+            }
+        }
     }
 
     return TRUE;
@@ -180,17 +214,17 @@ graph_build (UfoGraph *graph, JsonNode *root, GError **error)
 {
     JsonObject *root_object = json_node_get_object(root);
 
-    /* if (json_object_has_member(root_object, "prop-sets")) { */
-    /*     JsonObject *sets = json_object_get_object_member(root_object, "prop-sets"); */
-    /*     json_object_foreach_member(sets, graph_handle_json_propset, self); */
-    /* } */
+    if (json_object_has_member(root_object, "prop-sets")) {
+        JsonObject *sets = json_object_get_object_member (root_object, "prop-sets");
+        json_object_foreach_member (sets, handle_json_prop_set, graph->priv);
+    }
 
     if (json_object_has_member (root_object, "nodes")) {
         JsonArray *nodes = json_object_get_array_member (root_object, "nodes");
         GList *elements = json_array_get_elements (nodes);
 
         for (GList *it = g_list_first (elements); it != NULL; it = g_list_next (it)) {
-            if (!handle_json_filter_node (it->data, graph, error)) {
+            if (!handle_json_filter_node (it->data, graph->priv, error)) {
                 g_list_free (elements);
                 return;
             }
@@ -300,7 +334,7 @@ ufo_graph_read_from_json (UfoGraph *graph, UfoPluginManager *manager, const gcha
     GError *tmp_error = NULL;
 
     if (!json_parser_load_from_file (json_parser, filename, &tmp_error)) {
-        g_propagate_prefixed_error (error, tmp_error, "Parsing JSON");
+        g_propagate_prefixed_error (error, tmp_error, "Parsing JSON: ");
         return;
     }
 
@@ -595,14 +629,14 @@ ufo_graph_finalize (GObject *object)
     UfoGraph *self = UFO_GRAPH (object);
     UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (self);
 
-    g_hash_table_destroy (priv->property_sets);
+    g_hash_table_destroy (priv->prop_sets);
     g_hash_table_destroy (priv->json_filters);
 
     g_list_foreach (priv->connections, (GFunc) g_free, NULL);
     g_list_free (priv->connections);
 
     priv->connections   = NULL;
-    priv->property_sets = NULL;
+    priv->prop_sets = NULL;
 
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
     g_message ("UfoGraph: finalized");
@@ -660,8 +694,8 @@ ufo_graph_init (UfoGraph *self)
 {
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
-    priv->property_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->connections = NULL;
+    priv->prop_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) json_object_unref);
     priv->json_filters = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
     g_thread_init (NULL);
