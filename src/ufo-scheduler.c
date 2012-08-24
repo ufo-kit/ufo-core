@@ -27,6 +27,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
 
 typedef struct {
     UfoFilter          *filter;
+    UfoProfiler        *profiler;
     guint               num_cmd_queues;
     cl_command_queue   *cmd_queues;
     guint               num_inputs;
@@ -228,11 +229,11 @@ process_source_filter (ThreadInfo *info)
 static GError *
 process_synchronous_filter (ThreadInfo *info)
 {
-    UfoFilter *filter = UFO_FILTER (info->filter);
-    UfoFilterClass *filter_class = UFO_FILTER_GET_CLASS (filter);
-    GError      *error = NULL;
-    gboolean     cont = TRUE;
-    guint        iteration = 0;
+    UfoFilter       *filter = UFO_FILTER (info->filter);
+    UfoFilterClass  *filter_class = UFO_FILTER_GET_CLASS (filter);
+    GError          *error = NULL;
+    gboolean         cont = TRUE;
+    guint            iteration = 0;
 
     /*
      * Initialize
@@ -254,11 +255,9 @@ process_synchronous_filter (ThreadInfo *info)
     fetch_result (info);
 
     while (cont) {
-        g_message ("%-25s processing % 5i in=%p out=%p",
+        g_message ("%-25s processing % 5i",
                    ufo_filter_get_unique_name (filter),
-                   iteration++,
-                   (gpointer) info->work[0],
-                   (gpointer) info->result[0]);
+                   iteration++);
 
         if (filter_class->process_gpu != NULL) {
             g_timer_continue (info->cpu_timer);
@@ -505,6 +504,31 @@ init_filter_queues (UfoGraph *graph,
     g_list_free (roots);
 }
 
+static GThread *
+start_filter_thread (UfoFilter *filter,
+                     UfoGraph *graph,
+                     UfoResourceManager *manager,
+                     ThreadInfo *info,
+                     GError **error)
+{
+    GList *children;
+
+    info->filter = filter;
+
+    info->profiler = ufo_profiler_new ();
+    ufo_filter_set_profiler (filter, info->profiler);
+    ufo_filter_set_resource_manager (filter, manager);
+
+    info->cpu_timer = g_timer_new ();
+    g_timer_stop (info->cpu_timer);
+
+    children = ufo_graph_get_children (graph, filter);
+    info->num_children = g_list_length (children);
+    g_list_free (children);
+
+    return g_thread_create (process_thread, info, TRUE, error);
+}
+
 /**
  * ufo_scheduler_run:
  * @scheduler: A #UfoScheduler object
@@ -555,26 +579,11 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     /* Start each filter in its own thread */
     for (GList *it = filters; it != NULL; it = g_list_next (it), i++) {
-        UfoFilter *filter;
-        GList *children;
+        UfoFilter *filter = (UfoFilter *) it->data;
 
-        filter = UFO_FILTER (it->data);
-        thread_info[i].filter = filter;
-
-        ufo_filter_set_profiler (filter, ufo_profiler_new ());
-        ufo_filter_set_resource_manager (filter, manager);
-
-        thread_info[i].cpu_timer = g_timer_new ();
-        g_timer_stop (thread_info[i].cpu_timer);
-
-        children = ufo_graph_get_children (graph, filter);
-        thread_info[i].num_children = g_list_length (children);
-        g_list_free (children);
-
-        threads[i] = g_thread_create (process_thread, &thread_info[i], TRUE, &tmp_error);
+        threads[i] = start_filter_thread (filter, graph, manager, &thread_info[i], &tmp_error);
 
         if (tmp_error != NULL) {
-            /* FIXME: kill already started threads */
             g_propagate_error (error, tmp_error);
             return;
         }
@@ -593,8 +602,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     /* Dump OpenCL events. */
     for (GList *it = filters; it != NULL; it = g_list_next (it)) {
         UfoProfiler *profiler;
+        UfoFilter *filter;
 
-        profiler = ufo_filter_get_profiler (UFO_FILTER (it->data));
+        filter = (UfoFilter *) it->data;
+        profiler = ufo_filter_get_profiler (filter);
         ufo_profiler_foreach (profiler, print_row, NULL);
         g_object_unref (profiler);
     }
