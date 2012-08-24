@@ -38,6 +38,7 @@ typedef struct {
     UfoBuffer         **result;
     GTimer            **timers;
     GTimer             *cpu_timer;
+    guint               num_children;
 } ThreadInfo;
 
 struct _UfoSchedulerPrivate {
@@ -83,9 +84,13 @@ alloc_output_buffers (UfoFilter     *filter,
                       gboolean       use_default_value,
                       gfloat         default_value)
 {
-    UfoOutputParameter *output_params = ufo_filter_get_output_parameters (filter);
-    UfoResourceManager *manager = ufo_filter_get_resource_manager (filter);
-    const guint num_outputs = ufo_filter_get_num_outputs (filter);
+    UfoOutputParameter *output_params;
+    UfoResourceManager *manager;
+    guint num_outputs;
+
+    output_params = ufo_filter_get_output_parameters (filter);
+    manager = ufo_filter_get_resource_manager (filter);
+    num_outputs = ufo_filter_get_num_outputs (filter);
 
     for (guint port = 0; port < num_outputs; port++) {
         UfoChannel *channel;
@@ -93,7 +98,7 @@ alloc_output_buffers (UfoFilter     *filter,
 
         channel = ufo_filter_get_output_channel (filter, port);
 
-        for (guint i = 0; i < 3*num_outputs; i++) {
+        for (guint i = 0; i < 2*num_outputs; i++) {
             UfoBuffer *buffer = ufo_resource_manager_request_buffer (manager, num_dims, output_dims[port], NULL, NULL);
 
             /*
@@ -249,7 +254,11 @@ process_synchronous_filter (ThreadInfo *info)
     fetch_result (info);
 
     while (cont) {
-        g_message ("`%s-%p' processing item %i", ufo_filter_get_plugin_name (filter), (gpointer) filter, iteration++);
+        g_message ("%-25s processing % 5i in=%p out=%p",
+                   ufo_filter_get_unique_name (filter),
+                   iteration++,
+                   (gpointer) info->work[0],
+                   (gpointer) info->result[0]);
 
         if (filter_class->process_gpu != NULL) {
             g_timer_continue (info->cpu_timer);
@@ -437,7 +446,7 @@ process_thread (gpointer data)
         ufo_channel_finish (channel);
     }
 
-    g_message ("UfoScheduler: %s-%p finished", ufo_filter_get_plugin_name (filter), (gpointer) filter);
+    g_message ("UfoScheduler: %s finished", ufo_filter_get_unique_name (filter));
 
     g_free (info->output_dims);
     g_free (info->work);
@@ -460,12 +469,12 @@ pass_queue (UfoGraph *graph,
             guint n_queues,
             cl_command_queue *queues)
 {
-    GList *successors;
+    GList *children;
     guint i = queue;
 
-    successors = ufo_graph_get_sucessors (graph, filter);
+    children = ufo_graph_get_children (graph, filter);
 
-    for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it), i++) {
+    for (GList *it = g_list_first (children); it != NULL; it = g_list_next (it), i++) {
         UfoFilter *successor;
         guint new_queue;
 

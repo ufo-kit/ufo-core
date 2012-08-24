@@ -248,11 +248,8 @@ static JsonObject *
 json_object_from_ufo_filter (UfoFilter *filter)
 {
     JsonObject *object = json_object_new ();
-    const gchar *plugin_name = ufo_filter_get_plugin_name (filter);
-    gchar *unique_name = g_strdup_printf ("%s-%p", plugin_name, (gpointer) filter);
 
-    json_object_set_string_member (object, "name", unique_name);
-    g_free (unique_name);
+    json_object_set_string_member (object, "name", ufo_filter_get_unique_name (filter));
     return object;
 }
 
@@ -268,15 +265,12 @@ graph_add_filter_to_json_array(gpointer data, gpointer user_data)
     const gchar *plugin_name = ufo_filter_get_plugin_name (filter);
     json_object_set_string_member (node_object, "plugin", plugin_name);
 
-    gchar *unique_name = g_strdup_printf ("%s-%p", plugin_name, (gpointer) filter);
-    json_object_set_string_member (node_object, "name", unique_name);
+    json_object_set_string_member (node_object, "name", ufo_filter_get_unique_name (filter));
 
     JsonNode *prop_node = json_gobject_serialize (G_OBJECT (filter));
     json_object_set_member (node_object, "properties", prop_node);
 
     json_array_add_object_element (array, node_object);
-
-    g_free (unique_name);
 }
 
 static void
@@ -441,9 +435,9 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
             connection->from_port == from_port &&
             connection->to_port == to_port) {
 
-            g_warning ("Primary connection between %s-%p and %s-%p exists already",
-                       ufo_filter_get_plugin_name (from), (gpointer) from,
-                       ufo_filter_get_plugin_name (to), (gpointer) to);
+            g_warning ("Primary connection between %s and %s exists already",
+                       ufo_filter_get_unique_name (from),
+                       ufo_filter_get_unique_name (to));
             return;
         }
     }
@@ -508,7 +502,7 @@ ufo_graph_get_filters (UfoGraph *graph)
  * @graph: A #UfoGraph
  *
  * Return a list of #UfoFilterSource nodes in @graph that do not have any
- * predecessors.
+ * parents.
  *
  * Returns: (element-type UfoFilter) (transfer none): List of filter nodes. Use
  * g_list_free() when done using the list.
@@ -538,7 +532,7 @@ ufo_graph_get_roots (UfoGraph *graph)
 }
 
 /**
- * ufo_graph_get_predecessors:
+ * ufo_graph_get_parents:
  * @graph: A #UfoGraph
  * @filter: A #UfoFilter
  *
@@ -548,8 +542,8 @@ ufo_graph_get_roots (UfoGraph *graph)
  *      when done using the list.
  */
 GList *
-ufo_graph_get_predecessors (UfoGraph   *graph,
-                            UfoFilter  *filter)
+ufo_graph_get_parents (UfoGraph   *graph,
+                       UfoFilter  *filter)
 {
     UfoGraphPrivate *priv;
     Connection      *connection;
@@ -569,7 +563,7 @@ ufo_graph_get_predecessors (UfoGraph   *graph,
 }
 
 /**
- * ufo_graph_get_sucessors:
+ * ufo_graph_get_children:
  * @graph: A #UfoGraph
  * @filter: A #UfoFilter
  *
@@ -579,8 +573,8 @@ ufo_graph_get_predecessors (UfoGraph   *graph,
  *      when done using the list.
  */
 GList *
-ufo_graph_get_sucessors (UfoGraph   *graph,
-                         UfoFilter  *filter)
+ufo_graph_get_children (UfoGraph   *graph,
+                        UfoFilter  *filter)
 {
     UfoGraphPrivate *priv;
     Connection      *connection;
@@ -616,17 +610,17 @@ ufo_graph_get_siblings (UfoGraph    *graph,
 {
     UfoGraphPrivate *priv;
     Connection      *connection;
-    GList           *predecessors;
+    GList           *parents;
     GList           *result = NULL;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
     priv = graph->priv;
-    predecessors = ufo_graph_get_predecessors (graph, filter);
+    parents = ufo_graph_get_parents (graph, filter);
 
     for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
         connection = (Connection *) it->data;
 
-        for (GList *jt = g_list_first (predecessors); jt != NULL; jt = g_list_next (jt)) {
+        for (GList *jt = g_list_first (parents); jt != NULL; jt = g_list_next (jt)) {
             UfoFilter *predecessor = (UfoFilter *) jt->data;
 
             if (connection->to != filter && connection->from == predecessor)
@@ -634,7 +628,7 @@ ufo_graph_get_siblings (UfoGraph    *graph,
         }
     }
 
-    g_list_free (predecessors);
+    g_list_free (parents);
     return result;
 }
 

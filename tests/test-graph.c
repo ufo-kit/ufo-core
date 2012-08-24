@@ -183,30 +183,30 @@ test_get_roots (Fixture *fixture, gconstpointer data)
 }
 
 static void
-test_get_predecessors (Fixture *fixture, gconstpointer data)
+test_get_parents (Fixture *fixture, gconstpointer data)
 {
-    GList *predecessors;
+    GList *parents;
 
-    predecessors = ufo_graph_get_predecessors (fixture->graph, fixture->source);
-    g_assert (predecessors == NULL);
+    parents = ufo_graph_get_parents (fixture->graph, fixture->source);
+    g_assert (parents == NULL);
 
-    predecessors = ufo_graph_get_predecessors (fixture->graph, fixture->sink1);
-    g_assert (g_list_length (predecessors) == 1);
-    g_assert (g_list_nth_data (predecessors, 0) == fixture->source);
-    g_list_free (predecessors);
+    parents = ufo_graph_get_parents (fixture->graph, fixture->sink1);
+    g_assert (g_list_length (parents) == 1);
+    g_assert (g_list_nth_data (parents, 0) == fixture->source);
+    g_list_free (parents);
 }
 
 static void
-test_get_successors (Fixture *fixture, gconstpointer data)
+test_get_children (Fixture *fixture, gconstpointer data)
 {
-    GList *successors;
+    GList *children;
 
-    successors = ufo_graph_get_sucessors (fixture->graph, fixture->sink1);
-    g_assert (successors == NULL);
+    children = ufo_graph_get_children (fixture->graph, fixture->sink1);
+    g_assert (children == NULL);
 
-    successors = ufo_graph_get_sucessors (fixture->graph, fixture->source);
-    g_assert (g_list_length (successors) == 2);
-    g_list_free (successors);
+    children = ufo_graph_get_children (fixture->graph, fixture->source);
+    g_assert (g_list_length (children) == 2);
+    g_list_free (children);
 }
 
 static void
@@ -268,18 +268,18 @@ test_add_graph (void)
                 test_get_roots,
                 fixture_filter_teardown);
 
-    g_test_add ("/graph/get/predecessors",
+    g_test_add ("/graph/get/parents",
                 Fixture,
                 NULL,
                 fixture_filter_setup,
-                test_get_predecessors,
+                test_get_parents,
                 fixture_filter_teardown);
 
-    g_test_add ("/graph/get/successors",
+    g_test_add ("/graph/get/children",
                 Fixture,
                 NULL,
                 fixture_filter_setup,
-                test_get_successors,
+                test_get_children,
                 fixture_filter_teardown);
 
     g_test_add ("/graph/get/siblings",
