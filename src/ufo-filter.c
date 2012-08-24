@@ -24,6 +24,7 @@ G_DEFINE_TYPE(UfoFilter, ufo_filter, G_TYPE_OBJECT)
 
 struct _UfoFilterPrivate {
     gchar               *plugin_name;
+    gchar               *unique_name;
 
     guint               n_inputs;
     guint               n_outputs;
@@ -224,8 +225,15 @@ ufo_filter_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output
 void
 ufo_filter_set_plugin_name (UfoFilter *filter, const gchar *plugin_name)
 {
+    UfoFilterPrivate *priv;
+
     g_return_if_fail (UFO_IS_FILTER (filter));
-    filter->priv->plugin_name = g_strdup (plugin_name);
+
+    priv = filter->priv;
+    priv->plugin_name = g_strdup (plugin_name);
+    priv->unique_name = g_strdup_printf ("%s-%p",
+                                         plugin_name,
+                                         (gpointer) filter);
 }
 
 /**
@@ -362,13 +370,32 @@ ufo_filter_get_num_outputs (UfoFilter *filter)
  * @filter: A #UfoFilter.
  *
  * Get canonical name of @filter.
- * Return value: (transfer none): NULL-terminated string owned by the filter
+ *
+ * Returns: (transfer none): %NULL-terminated string owned by the filter.
  */
 const gchar *
 ufo_filter_get_plugin_name (UfoFilter *filter)
 {
     g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
     return filter->priv->plugin_name;
+}
+
+/**
+ * ufo_filter_get_unique_name:
+ * @filter: A #UfoFilter
+ *
+ * Get unique filter name consisting of the plugin name as returned by
+ * ufo_filter_get_plugin_name(), a dash `-' and the address of the filter
+ * object. This can be useful to differentiate between several instances of the
+ * same filter.
+ *
+ * Returns: (transfer none): %NULL-terminated string owned by the filter.
+ */
+const gchar*
+ufo_filter_get_unique_name (UfoFilter *filter)
+{
+    g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
+    return filter->priv->unique_name;
 }
 
 /**
@@ -546,6 +573,7 @@ ufo_filter_finalize (GObject *object)
     g_free (priv->input_channels);
     g_free (priv->output_channels);
     g_free (priv->plugin_name);
+    g_free (priv->unique_name);
 
     G_OBJECT_CLASS (ufo_filter_parent_class)->finalize (object);
     g_message ("UfoFilter (%p): finalized", (gpointer) object);
@@ -580,5 +608,7 @@ ufo_filter_init (UfoFilter *self)
     priv->output_channels = NULL;
     priv->profiler = NULL;
     priv->command_queue = NULL;
+    priv->plugin_name = NULL;
+    priv->unique_name = NULL;
 }
 

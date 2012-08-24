@@ -148,6 +148,7 @@ void                ufo_filter_process_gpu              (UfoFilter              
 void                ufo_filter_set_plugin_name          (UfoFilter              *filter,
                                                          const gchar            *plugin_name);
 const gchar*        ufo_filter_get_plugin_name          (UfoFilter              *filter);
+const gchar*        ufo_filter_get_unique_name          (UfoFilter              *filter);
 void                ufo_filter_register_inputs          (UfoFilter              *filter,
                                                          guint                   n_inputs,
                                                          UfoInputParameter      *input_parameters);
