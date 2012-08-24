@@ -8,6 +8,7 @@ set(TEST_SRCS
     test-configuration.c
     test-filter.c
     test-graph.c
+    test-profiler.c
     )
 
 set(SUITE_BIN "test-suite")

@@ -34,7 +34,8 @@ struct EventRow {
 };
 
 struct _UfoProfilerPrivate {
-    GArray *event_array;    /**< maps from UfoFilter* to GArray* */
+    GArray  *event_array;
+    GTimer **timers;
 };
 
 enum {
@@ -98,6 +99,30 @@ ufo_profiler_call (UfoProfiler    *profiler,
     row.event = event;
     row.kernel = kernel;
     g_array_append_val (priv->event_array, row);
+}
+
+void
+ufo_profiler_start (UfoProfiler      *profiler,
+                    UfoProfilerTimer  timer)
+{
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    g_timer_continue (profiler->priv->timers[timer]);
+}
+
+void
+ufo_profiler_stop (UfoProfiler       *profiler,
+                   UfoProfilerTimer   timer)
+{
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    g_timer_stop (profiler->priv->timers[timer]);
+}
+
+gdouble
+ufo_profiler_elapsed (UfoProfiler       *profiler,
+                      UfoProfilerTimer   timer)
+{
+    g_return_val_if_fail (UFO_IS_PROFILER (profiler), 0.0);
+    return g_timer_elapsed (profiler->priv->timers[timer], NULL);
 }
 
 static gchar *
@@ -181,6 +206,11 @@ ufo_profiler_finalize (GObject *object)
 
     g_array_free (priv->event_array, TRUE);
 
+    for (guint i = 0; i < UFO_PROFILER_TIMER_LAST; i++)
+        g_timer_destroy (priv->timers[i]);
+
+    g_free (priv->timers);
+
     g_message ("UfoProfiler: finalized");
 }
 
@@ -201,4 +231,16 @@ ufo_profiler_init (UfoProfiler *manager)
 
     manager->priv = priv = UFO_PROFILER_GET_PRIVATE (manager);
     priv->event_array = g_array_sized_new (FALSE, TRUE, sizeof(struct EventRow), 2048);
+
+    /* Setup timers for all events */
+    priv->timers = g_new0 (GTimer *, UFO_PROFILER_TIMER_LAST);
+
+    for (guint i = 0; i < UFO_PROFILER_TIMER_LAST; i++) {
+        GTimer *timer;
+
+        timer = g_timer_new ();
+        g_timer_stop (timer);
+        g_timer_reset (timer);
+        priv->timers[i] = timer;
+    }
 }

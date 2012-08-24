@@ -49,16 +49,30 @@ struct _UfoProfilerClass {
     GObjectClass parent_class;
 };
 
+typedef enum {
+    UFO_PROFILER_TIMER_FETCH_INPUT = 0,
+    UFO_PROFILER_TIMER_FETCH_OUTPUT,
+    UFO_PROFILER_TIMER_RELEASE_INPUT,
+    UFO_PROFILER_TIMER_RELEASE_OUTPUT,
+    UFO_PROFILER_TIMER_LAST
+} UfoProfilerTimer;
+
 UfoProfiler *ufo_profiler_new       (void);
-void         ufo_profiler_call      (UfoProfiler    *profiler,
-                                     gpointer        command_queue,
-                                     gpointer        kernel,
-                                     guint           work_dim,
-                                     const gsize    *global_work_size,
-                                     const gsize    *local_work_size);
-void         ufo_profiler_foreach   (UfoProfiler    *profiler,
-                                     UfoProfilerFunc func,
-                                     gpointer        user_data);
+void         ufo_profiler_call      (UfoProfiler        *profiler,
+                                     gpointer            command_queue,
+                                     gpointer            kernel,
+                                     guint               work_dim,
+                                     const gsize        *global_work_size,
+                                     const gsize        *local_work_size);
+void         ufo_profiler_foreach   (UfoProfiler        *profiler,
+                                     UfoProfilerFunc     func,
+                                     gpointer            user_data);
+void         ufo_profiler_start     (UfoProfiler        *profiler,
+                                     UfoProfilerTimer    timer);
+void         ufo_profiler_stop      (UfoProfiler        *profiler,
+                                     UfoProfilerTimer    timer);
+gdouble      ufo_profiler_elapsed   (UfoProfiler        *profiler,
+                                     UfoProfilerTimer    timer);
 GType        ufo_profiler_get_type  (void);
 
 G_END_DECLS
