@@ -79,27 +79,33 @@ ufo_scheduler_new (UfoConfiguration    *config,
 }
 
 static void
-alloc_output_buffers (UfoFilter     *filter,
-                      guint        **output_dims,
+alloc_output_buffers (ThreadInfo    *info,
                       gboolean       use_default_value,
                       gfloat         default_value)
 {
-    UfoOutputParameter *output_params;
-    UfoResourceManager *manager;
+    UfoFilter           *filter;
+    UfoOutputParameter  *output_params;
+    UfoResourceManager  *manager;
     guint num_outputs;
+    guint num_buffers;
 
+    filter = info->filter;
     output_params = ufo_filter_get_output_parameters (filter);
     manager = ufo_filter_get_resource_manager (filter);
     num_outputs = ufo_filter_get_num_outputs (filter);
+    num_buffers = 2 * info->num_children * num_outputs;
 
     for (guint port = 0; port < num_outputs; port++) {
         UfoChannel *channel;
-        const guint num_dims = output_params[port].n_dims;
+        guint num_dims;
 
-        channel = ufo_filter_get_output_channel (filter, port);
+        num_dims = output_params[port].n_dims;
+        channel  = ufo_filter_get_output_channel (filter, port);
 
-        for (guint i = 0; i < 2*num_outputs; i++) {
-            UfoBuffer *buffer = ufo_resource_manager_request_buffer (manager, num_dims, output_dims[port], NULL, NULL);
+        for (guint i = 0; i < num_buffers; i++) {
+            UfoBuffer *buffer;
+
+            buffer = ufo_resource_manager_request_buffer (manager, num_dims, info->output_dims[port], NULL, NULL);
 
             /*
              * For some reason, if we don't reference the buffer again,
@@ -200,10 +206,7 @@ process_source_filter (ThreadInfo *info)
     if (error != NULL)
         return error;
 
-    alloc_output_buffers (filter,
-                          info->output_dims,
-                          FALSE,
-                          0.0);
+    alloc_output_buffers (info, FALSE, 0.0);
 
     while (cont) {
         fetch_result (info);
@@ -242,10 +245,7 @@ process_synchronous_filter (ThreadInfo *info)
             return error;
         }
 
-        alloc_output_buffers (filter,
-                              info->output_dims,
-                              FALSE,
-                              0.0);
+        alloc_output_buffers (info, FALSE, 0.0);
     }
     else {
         return NULL;
@@ -337,10 +337,7 @@ process_reduce_filter (ThreadInfo *info)
         if (error != NULL)
             return error;
 
-        alloc_output_buffers (filter,
-                              info->output_dims,
-                              TRUE,
-                              default_value);
+        alloc_output_buffers (info, TRUE, default_value);
     }
     else {
         return NULL;
@@ -558,14 +555,21 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     /* Start each filter in its own thread */
     for (GList *it = filters; it != NULL; it = g_list_next (it), i++) {
-        UfoFilter *filter = UFO_FILTER (it->data);
+        UfoFilter *filter;
+        GList *children;
+
+        filter = UFO_FILTER (it->data);
+        thread_info[i].filter = filter;
 
         ufo_filter_set_profiler (filter, ufo_profiler_new ());
         ufo_filter_set_resource_manager (filter, manager);
 
-        thread_info[i].filter = filter;
         thread_info[i].cpu_timer = g_timer_new ();
         g_timer_stop (thread_info[i].cpu_timer);
+
+        children = ufo_graph_get_children (graph, filter);
+        thread_info[i].num_children = g_list_length (children);
+        g_list_free (children);
 
         threads[i] = g_thread_create (process_thread, &thread_info[i], TRUE, &tmp_error);
 
