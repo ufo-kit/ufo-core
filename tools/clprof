@@ -5,7 +5,6 @@ import csv
 import logging
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
 
 class UncommentedFile:
     def __init__(self, f, commentchar='#'):
@@ -22,7 +21,7 @@ class UncommentedFile:
         return self
 
 
-def _show(kernel_name, data, color):
+def _show(plt, kernel_name, data, color):
     data = data.reshape((-1, 5))
     data[:,1:] = data[:,1:] * 1e-6
     row  = data[0,:]
@@ -62,18 +61,25 @@ if __name__ == '__main__':
     queues = {}
 
     parser = argparse.ArgumentParser(description='Analyse OpenCL traces')
+    with_plots = True
 
-    parser.add_argument('--plot',
-                        action='store_true',
-                        dest='enable_plot',
-                        help='Plot the traces',
-                        default=False)
+    try:
+        import matplotlib.pyplot as plt
+
+        parser.add_argument('--plot',
+                            action='store_true',
+                            dest='enable_plot',
+                            help='Plot the traces',
+                            default=False)
+    except ImportError:
+        with_plots = False
 
     parser.add_argument('input',
                         nargs=1,
                         metavar='FILE',
                         help='Input trace file',
                         type=argparse.FileType('rt'))
+
 
     try:
         args = parser.parse_args()
@@ -112,11 +118,11 @@ if __name__ == '__main__':
     for key in kernels:
         _print_stats(key, kernels[key], queues.values())
 
-    if args.enable_plot:
+    if with_plots and args.enable_plot:
         colors = ['b', 'r', 'g', 'm']
 
         for c, key in enumerate(kernels):
-            p = _show(key, kernels[key], colors[c])
+            p = _show(plt, key, kernels[key], colors[c])
             plt.legend([p], [key], loc=1)
 
         plt.show()
