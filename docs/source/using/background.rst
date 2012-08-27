@@ -38,3 +38,33 @@ uses necessary information stored within::
 
 Profiling
 =========
+
+Profiling is disabled by default but can be enabled with the ``profile-level``
+property of a configuration object. This property receives values from the
+``UfoProfilerLevel`` flags enum ::
+
+    # track only OpenCL events
+    config = Ufo.Configuration(profile_level=Ufo.ProfilerLevel.OPENCL)
+
+    scheduler = Ufo.Scheduler(configuration=config)
+
+The profiling information can be analysed with the ``clprof`` tool ::
+
+    $ clprof stats
+    Kernel               Submit Delay   Exec Delay  Kernel Exec   Total Exec   Queue Dist
+    -------------------------------------------------------------------------------------
+    filter                     0.0033       1.0551       0.0491       0.4915          1.0
+    fft_spread                 0.0079       1.0265       0.0398       0.3982          1.0
+    backproject_tex            0.0022       0.5808       4.9480      49.4805          1.0
+    fft_pack                   0.0034       0.1187       0.0311       0.3113          1.0
+
+The output is the averaged time in milli seconds for submission delay, execution
+delay and kernel execution:
+
+* *Submission delay*: time between calling the kernel and actually submission
+  into the command queue
+* *Execution delay*: time between enqueueing and execution of the kernel
+* *Execution*: time for executing the kernel
+
+Moreover, the total execution time in milli seconds and the kernel distribution
+among the command queues is shown.
