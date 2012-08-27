@@ -52,6 +52,22 @@ enum {
  * UfoProfilerLevel:
  * @UFO_PROFILER_LEVEL_NONE: Do not track any profiling information
  * @UFO_PROFILER_LEVEL_OPENCL: Track OpenCL events
+ *
+ * Profiling levels that the profiler supports. To set the global profiling
+ * level use the #UfoConfiguration:profile-level: property on a
+ * #UfoConfiguration object set to the #UfoScheduler.
+ */
+
+/**
+ * UfoProfilerTimer:
+ * @UFO_PROFILER_TIMER_FETCH_INPUT: Select fetch input timer.
+ * @UFO_PROFILER_TIMER_FETCH_OUTPUT:Select fetch output timer.
+ * @UFO_PROFILER_TIMER_RELEASE_INPUT: Select release input timer.
+ * @UFO_PROFILER_TIMER_RELEASE_OUTPUT: Select release output timer.
+ * @UFO_PROFILER_TIMER_LAST: Auxiliary value, do not use.
+ *
+ * Use these values to select a specific timer when calling
+ * ufo_profiler_start(), ufo_profiler_stop() and ufo_profiler_elapsed().
  */
 
 /**

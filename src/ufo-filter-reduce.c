@@ -63,7 +63,6 @@ ufo_filter_reduce_initialize (UfoFilterReduce *filter, UfoBuffer *input[], guint
  * @filter: A #UfoFilter.
  * @input: An array of buffers for each input port
  * @output: An array of buffers for each output port
- * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
  * @error: Location for #GError.
  *
  * Process input data. The output buffer array contains the same buffers on each

@@ -109,8 +109,11 @@ ufo_filter_get_input_parameters
 ufo_filter_get_output_parameters
 ufo_filter_set_plugin_name
 ufo_filter_get_plugin_name
+ufo_filter_get_unique_name
 ufo_filter_set_resource_manager
 ufo_filter_get_resource_manager
+ufo_filter_set_command_queue
+ufo_filter_get_command_queue
 ufo_filter_set_profiler
 ufo_filter_get_profiler
 ufo_filter_set_input_channel
@@ -135,13 +138,17 @@ ufo_filter_error_quark
 <SECTION>
 <FILE>ufo-profiler</FILE>
 <TITLE>UfoProfiler</TITLE>
-UfoProfilerLevel
 UfoProfilerFunc
+UfoProfilerLevel
+UfoProfilerTimer
 UfoProfiler
 UfoProfilerClass
 ufo_profiler_new
 ufo_profiler_call
 ufo_profiler_foreach
+ufo_profiler_start
+ufo_profiler_stop
+ufo_profiler_elapsed
 <SUBSECTION Standard>
 UFO_TYPE_PROFILER
 UFO_IS_PROFILER
@@ -270,11 +277,15 @@ UfoChannelPrivate
 UfoGraphError
 UfoGraph
 ufo_graph_new
-ufo_graph_run
 ufo_graph_connect_filters
 ufo_graph_connect_filters_full
 ufo_graph_read_from_json
 ufo_graph_save_to_json
+ufo_graph_get_filters
+ufo_graph_get_roots
+ufo_graph_get_children
+ufo_graph_get_siblings
+ufo_graph_get_parents
 <SUBSECTION Standard>
 UFO_GRAPH
 UFO_IS_GRAPH

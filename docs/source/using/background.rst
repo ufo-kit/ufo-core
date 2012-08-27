@@ -4,6 +4,18 @@
 Technical Background
 ====================
 
+Relationship between graph and scheduler
+========================================
+
+A ``Ufo.Graph`` represents a network of interconnected filter nodes. New nodes
+can be added and existing node relationships be queried. Also, the graph can be
+serialized as a JSON structure with ``ufo_graph_save_to_json`` and read back
+again with ``ufo_graph_read_from_json``.
+
+The ``Ufo.Scheduler`` on the other hand is an implementation of a strategy *how*
+to execute the filters contained in a graph. Therefore, the scheduler is passed
+a graph object on execution.
+
 Configuration
 =============
 
@@ -48,7 +60,11 @@ property of a configuration object. This property receives values from the
 
     scheduler = Ufo.Scheduler(configuration=config)
 
-The profiling information can be analysed with the ``clprof`` tool ::
+If you do not specify an output file name (``profile_output`` property), the
+profiling information is output to ``stdout``.
+
+The profiling information can be analysed with the ``clprof`` tool, as part of
+the standard distribution::
 
     $ clprof stats
     Kernel               Submit Delay   Exec Delay  Kernel Exec   Total Exec   Queue Dist

@@ -55,7 +55,6 @@ ufo_filter_source_initialize (UfoFilterSource *filter, guint **output_dim_sizes,
  * ufo_filter_source_generate:
  * @filter: A #UfoFilter.
  * @output: An array of buffers for each output port
- * @cmd_queue: A %cl_command_queue object for ufo_buffer_get_host_array()
  * @error: Location for #GError.
  *
  * This function calls the implementation for the virtual generate method. It
