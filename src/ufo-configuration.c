@@ -22,12 +22,14 @@ enum {
     PROP_0,
     PROP_PATHS,
     PROP_PROFILE_LEVEL,
+    PROP_PROFILE_OUTPUT,
     N_PROPERTIES
 };
 
 struct _UfoConfigurationPrivate {
     GValueArray         *path_array;
     UfoProfilerLevel     profile_level;
+    gchar               *profile_output;
 };
 
 static GParamSpec *config_properties[N_PROPERTIES] = { NULL, };
@@ -99,6 +101,11 @@ ufo_configuration_set_property(GObject      *object,
             priv->profile_level = g_value_get_flags (value);
             break;
 
+        case PROP_PROFILE_OUTPUT:
+            g_free (priv->profile_output);
+            priv->profile_output = g_strdup (g_value_get_string (value));
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -120,6 +127,10 @@ ufo_configuration_get_property(GObject      *object,
 
         case PROP_PROFILE_LEVEL:
             g_value_set_flags (value, priv->profile_level);
+            break;
+
+        case PROP_PROFILE_OUTPUT:
+            g_value_set_string (value, priv->profile_output);
             break;
 
         default:
@@ -187,8 +198,16 @@ ufo_configuration_class_init (UfoConfigurationClass *klass)
                             UFO_PROFILER_LEVEL_NONE,
                             G_PARAM_READWRITE);
 
+    config_properties[PROP_PROFILE_OUTPUT] =
+        g_param_spec_string ("profile-output",
+                             "Filename for profiling output",
+                             "Filename for profiling output. If NULL, information is output to stdout.",
+                             NULL,
+                             G_PARAM_READWRITE);
+
     g_object_class_install_property (gobject_class, PROP_PATHS, config_properties[PROP_PATHS]);
     g_object_class_install_property (gobject_class, PROP_PROFILE_LEVEL, config_properties[PROP_PROFILE_LEVEL]);
+    g_object_class_install_property (gobject_class, PROP_PROFILE_OUTPUT, config_properties[PROP_PROFILE_OUTPUT]);
 
     g_type_class_add_private(klass, sizeof (UfoConfigurationPrivate));
 }
@@ -199,4 +218,5 @@ ufo_configuration_init (UfoConfiguration *config)
     config->priv = UFO_CONFIGURATION_GET_PRIVATE (config);
     config->priv->path_array = NULL;
     config->priv->profile_level = UFO_PROFILER_LEVEL_NONE;
+    config->priv->profile_output = NULL;
 }

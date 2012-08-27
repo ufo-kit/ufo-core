@@ -9,6 +9,7 @@
 #else
 #include <CL/cl.h>
 #endif
+#include <stdio.h>
 #include <string.h>
 
 #include "config.h"
@@ -453,9 +454,13 @@ process_thread (gpointer data)
 }
 
 static void
-print_row (const gchar *row, gpointer user_data)
+print_row (const gchar *row, gpointer user)
 {
-    g_print ("%s\n", row);
+    FILE *fp = (FILE *) user;
+    if (fp != NULL)
+        fprintf (fp, "%s\n", row);
+    else
+        g_print ("%s\n", row);
 }
 
 static void
@@ -551,6 +556,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     UfoSchedulerPrivate *priv;
     cl_command_queue    *cmd_queues;
 
+    FILE        *profile_fp;
+    gchar       *profile_filename;
     GList       *filters;
     GTimer      *timer;
     GThread    **threads;
@@ -609,6 +616,17 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         }
     }
 
+
+    profile_fp = NULL;
+    g_object_get (G_OBJECT (priv->config),
+                  "profile-output", &profile_filename,
+                  NULL);
+
+    if (profile_filename != NULL) {
+        profile_fp = fopen (profile_filename, "w");
+        g_free (profile_filename);
+    }
+
     /* Dump OpenCL events. */
     for (GList *it = filters; it != NULL; it = g_list_next (it)) {
         UfoProfiler *profiler;
@@ -616,7 +634,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
         filter = (UfoFilter *) it->data;
         profiler = ufo_filter_get_profiler (filter);
-        ufo_profiler_foreach (profiler, print_row, NULL);
+        ufo_profiler_foreach (profiler, print_row, profile_fp);
         g_object_unref (profiler);
     }
 
