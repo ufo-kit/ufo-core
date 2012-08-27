@@ -4,7 +4,9 @@
  * @Title: UfoProfiler
  *
  * The #UfoProfiler provides a drop-in replacement for a manual
- * clEnqueueNDRangeKernel() call.
+ * clEnqueueNDRangeKernel() call and tracks any associated events. The amount of
+ * profiling can be controlled with an #UfoProfilerLevel when constructing the
+ * profiler.
  *
  * Each #UfoFilter is assigned a profiler with ufo_profiler_set_profiler() by
  * the managing #UfoBaseScheduler. Filter implementations should call
@@ -34,6 +36,8 @@ struct EventRow {
 };
 
 struct _UfoProfilerPrivate {
+    UfoProfilerLevel level;
+
     GArray  *event_array;
     GTimer **timers;
 };
@@ -45,16 +49,27 @@ enum {
 
 
 /**
+ * UfoProfilerLevel:
+ * @UFO_PROFILER_LEVEL_NONE: Do not track any profiling information
+ * @UFO_PROFILER_LEVEL_OPENCL: Track OpenCL events
+ */
+
+/**
  * ufo_profiler_new:
+ * @level: Amount of information that should be tracked by the profiler.
  *
  * Create a profiler object.
  *
  * Return value: A new profiler object.
  */
 UfoProfiler *
-ufo_profiler_new (void)
+ufo_profiler_new (UfoProfilerLevel level)
 {
-    return UFO_PROFILER (g_object_new (UFO_TYPE_PROFILER, NULL));
+    UfoProfiler *profiler;
+
+    profiler = UFO_PROFILER (g_object_new (UFO_TYPE_PROFILER, NULL));
+    profiler->priv->level = level;
+    return profiler;
 }
 
 /**
@@ -82,10 +97,12 @@ ufo_profiler_call (UfoProfiler    *profiler,
 {
     UfoProfilerPrivate *priv;
     cl_event            event;
+    cl_event           *event_loc;
     cl_int              cl_err;
     struct EventRow     row;
 
     priv = profiler->priv;
+    event_loc = priv->level == UFO_PROFILER_LEVEL_NONE ? NULL : &event;
 
     cl_err = clEnqueueNDRangeKernel (command_queue,
                                      kernel,
@@ -93,12 +110,14 @@ ufo_profiler_call (UfoProfiler    *profiler,
                                      NULL,
                                      global_work_size,
                                      local_work_size,
-                                     0, NULL, &event);
+                                     0, NULL, event_loc);
     CHECK_OPENCL_ERROR (cl_err);
 
-    row.event = event;
-    row.kernel = kernel;
-    g_array_append_val (priv->event_array, row);
+    if (priv->level != UFO_PROFILER_LEVEL_NONE) {
+        row.event = event;
+        row.kernel = kernel;
+        g_array_append_val (priv->event_array, row);
+    }
 }
 
 void
@@ -165,6 +184,9 @@ ufo_profiler_foreach (UfoProfiler    *profiler,
     g_return_if_fail (UFO_IS_PROFILER (profiler));
 
     priv = profiler->priv;
+
+    if (priv->level == UFO_PROFILER_LEVEL_NONE)
+        return;
 
     for (guint i = 0; i < priv->event_array->len; i++) {
         cl_command_queue queue;
@@ -243,4 +265,6 @@ ufo_profiler_init (UfoProfiler *manager)
         g_timer_reset (timer);
         priv->timers[i] = timer;
     }
+
+    priv->level = UFO_PROFILER_LEVEL_NONE;
 }

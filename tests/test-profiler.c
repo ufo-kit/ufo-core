@@ -13,7 +13,7 @@ typedef struct {
 static void
 fixture_setup (Fixture *fixture, gconstpointer data)
 {
-    fixture->profiler = ufo_profiler_new ();
+    fixture->profiler = ufo_profiler_new (UFO_PROFILER_LEVEL_OPENCL);
     g_assert (UFO_IS_PROFILER (fixture->profiler));
 }
 

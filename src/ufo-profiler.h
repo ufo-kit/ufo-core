@@ -57,7 +57,12 @@ typedef enum {
     UFO_PROFILER_TIMER_LAST
 } UfoProfilerTimer;
 
-UfoProfiler *ufo_profiler_new       (void);
+typedef enum {
+    UFO_PROFILER_LEVEL_NONE     = 0,
+    UFO_PROFILER_LEVEL_OPENCL   = 1 << 0
+} UfoProfilerLevel;
+
+UfoProfiler *ufo_profiler_new       (UfoProfilerLevel    level);
 void         ufo_profiler_call      (UfoProfiler        *profiler,
                                      gpointer            command_queue,
                                      gpointer            kernel,

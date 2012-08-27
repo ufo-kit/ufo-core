@@ -67,14 +67,14 @@ static GParamSpec *scheduler_properties[N_PROPERTIES] = { NULL, };
  */
 UfoScheduler *
 ufo_scheduler_new (UfoConfiguration    *config,
-                        UfoResourceManager  *manager)
+                   UfoResourceManager  *manager)
 {
     UfoScheduler *scheduler;
 
     scheduler = UFO_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER,
-                                                  "configuration", config,
-                                                  "resource-manager", manager,
-                                                  NULL));
+                                             "configuration", config,
+                                             "resource-manager", manager,
+                                             NULL));
 
     return scheduler;
 }
@@ -505,19 +505,26 @@ init_filter_queues (UfoGraph *graph,
 }
 
 static GThread *
-start_filter_thread (UfoFilter *filter,
+start_filter_thread (UfoSchedulerPrivate *priv,
+                     UfoFilter *filter,
                      UfoGraph *graph,
-                     UfoResourceManager *manager,
                      ThreadInfo *info,
                      GError **error)
 {
+    UfoProfilerLevel profile_level;
     GList *children;
+
+    g_object_get (G_OBJECT (priv->config),
+                  "profile-level", &profile_level,
+                  NULL);
+
+    g_print ("level=%i\n", profile_level);
 
     info->filter = filter;
 
-    info->profiler = ufo_profiler_new ();
+    info->profiler = ufo_profiler_new (profile_level);
     ufo_filter_set_profiler (filter, info->profiler);
-    ufo_filter_set_resource_manager (filter, manager);
+    ufo_filter_set_resource_manager (filter, priv->manager);
 
     info->cpu_timer = g_timer_new ();
     g_timer_stop (info->cpu_timer);
@@ -544,8 +551,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                    GError      **error)
 {
     UfoSchedulerPrivate *priv;
-    UfoResourceManager      *manager;
-    cl_command_queue        *cmd_queues;
+    cl_command_queue    *cmd_queues;
+
     GList       *filters;
     GTimer      *timer;
     GThread    **threads;
@@ -558,20 +565,21 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
 
     priv = scheduler->priv;
-    filters = ufo_graph_get_filters (graph);
-    manager = priv->manager;
 
-    if (manager == NULL) {
-        manager = ufo_resource_manager_new (priv->config);
-        priv->manager = manager;
+    if (priv->config == NULL)
+        priv->config = ufo_configuration_new ();
+
+    if (priv->manager == NULL) {
+        priv->manager = ufo_resource_manager_new (priv->config);
     }
 
-    ufo_resource_manager_get_command_queues (manager,
+    ufo_resource_manager_get_command_queues (priv->manager,
                                              (gpointer *) &cmd_queues,
                                              &n_queues);
 
     init_filter_queues (graph, n_queues, cmd_queues);
 
+    filters     = ufo_graph_get_filters (graph);
     n_threads   = g_list_length (filters);
     threads     = g_new0 (GThread *, n_threads);
     thread_info = g_new0 (ThreadInfo, n_threads);
@@ -581,7 +589,11 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     for (GList *it = filters; it != NULL; it = g_list_next (it), i++) {
         UfoFilter *filter = (UfoFilter *) it->data;
 
-        threads[i] = start_filter_thread (filter, graph, manager, &thread_info[i], &tmp_error);
+        threads[i] = start_filter_thread (priv,
+                                          filter,
+                                          graph,
+                                          &thread_info[i],
+                                          &tmp_error);
 
         if (tmp_error != NULL) {
             g_propagate_error (error, tmp_error);

@@ -135,6 +135,7 @@ ufo_filter_error_quark
 <SECTION>
 <FILE>ufo-profiler</FILE>
 <TITLE>UfoProfiler</TITLE>
+UfoProfilerLevel
 UfoProfilerFunc
 UfoProfiler
 UfoProfilerClass

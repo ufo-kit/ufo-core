@@ -10,6 +10,8 @@
  */
 
 #include "ufo-configuration.h"
+#include "ufo-profiler.h"
+#include "ufo-enums.h"
 
 
 G_DEFINE_TYPE(UfoConfiguration, ufo_configuration, G_TYPE_OBJECT)
@@ -19,11 +21,13 @@ G_DEFINE_TYPE(UfoConfiguration, ufo_configuration, G_TYPE_OBJECT)
 enum {
     PROP_0,
     PROP_PATHS,
+    PROP_PROFILE_LEVEL,
     N_PROPERTIES
 };
 
 struct _UfoConfigurationPrivate {
-    GValueArray *path_array;
+    GValueArray         *path_array;
+    UfoProfilerLevel     profile_level;
 };
 
 static GParamSpec *config_properties[N_PROPERTIES] = { NULL, };
@@ -91,6 +95,10 @@ ufo_configuration_set_property(GObject      *object,
             }
             break;
 
+        case PROP_PROFILE_LEVEL:
+            priv->profile_level = g_value_get_flags (value);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -108,6 +116,10 @@ ufo_configuration_get_property(GObject      *object,
     switch (property_id) {
         case PROP_PATHS:
             g_value_set_boxed (value, priv->path_array);
+            break;
+
+        case PROP_PROFILE_LEVEL:
+            g_value_set_flags (value, priv->profile_level);
             break;
 
         default:
@@ -146,8 +158,8 @@ ufo_configuration_class_init (UfoConfigurationClass *klass)
     /**
      * UfoConfiguration:paths:
      *
-     * List of colon-separated paths pointing to possible filter and kernel file
-     * locations.
+     * An array of strings with paths pointing to possible filter and kernel
+     * file locations.
      */
     config_properties[PROP_PATHS] =
         g_param_spec_value_array ("paths",
@@ -157,10 +169,26 @@ ufo_configuration_class_init (UfoConfigurationClass *klass)
                                                        "A path",
                                                        "A path pointing to a filter or kernel",
                                                        ".",
-                                                       G_PARAM_CONSTRUCT | G_PARAM_READWRITE),
-                                  G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+                                                       G_PARAM_READWRITE),
+                                  G_PARAM_READWRITE);
+
+    /**
+     * UfoConfiguration:profile-level:
+     *
+     * Controls the amount of profiling.
+     *
+     * See: #UfoProfilerLevel for different levels of profiling.
+     */
+    config_properties[PROP_PROFILE_LEVEL] =
+        g_param_spec_flags ("profile-level",
+                            "Profiling level",
+                            "Profiling level",
+                            UFO_TYPE_PROFILER_LEVEL,
+                            UFO_PROFILER_LEVEL_NONE,
+                            G_PARAM_READWRITE);
 
     g_object_class_install_property (gobject_class, PROP_PATHS, config_properties[PROP_PATHS]);
+    g_object_class_install_property (gobject_class, PROP_PROFILE_LEVEL, config_properties[PROP_PROFILE_LEVEL]);
 
     g_type_class_add_private(klass, sizeof (UfoConfigurationPrivate));
 }
@@ -170,4 +198,5 @@ ufo_configuration_init (UfoConfiguration *config)
 {
     config->priv = UFO_CONFIGURATION_GET_PRIVATE (config);
     config->priv->path_array = NULL;
+    config->priv->profile_level = UFO_PROFILER_LEVEL_NONE;
 }
