@@ -518,8 +518,6 @@ start_filter_thread (UfoSchedulerPrivate *priv,
                   "profile-level", &profile_level,
                   NULL);
 
-    g_print ("level=%i\n", profile_level);
-
     info->filter = filter;
 
     info->profiler = ufo_profiler_new (profile_level);
