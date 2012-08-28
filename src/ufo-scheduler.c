@@ -127,13 +127,20 @@ alloc_output_buffers (ThreadInfo    *info,
     }
 }
 
+static gboolean
+expected_number_of_items_fetched (UfoInputParameter *param)
+{
+    return param->n_expected_items != UFO_FILTER_INFINITE_INPUT &&
+           param->n_fetched_items >= param->n_expected_items;
+}
+
 static void
 cleanup_fetched (ThreadInfo *info)
 {
-    for (guint i = 0; i < info->num_inputs; i++) {
-        if ((info->input_params[i].n_fetched_items == info->input_params[i].n_expected_items)) {
-            UfoChannel *channel = ufo_filter_get_input_channel (info->filter, i);
-            ufo_channel_release_input (channel, info->work[i]);
+    for (guint port = 0; port < info->num_inputs; port++) {
+        if (expected_number_of_items_fetched (&info->input_params[port])) {
+            UfoChannel *channel = ufo_filter_get_input_channel (info->filter, port);
+            ufo_channel_release_input (channel, info->work[port]);
         }
     }
 }
@@ -147,9 +154,7 @@ fetch_work (ThreadInfo *info)
     for (guint port = 0; port < info->num_inputs; port++) {
         UfoChannel *channel = ufo_filter_get_input_channel (info->filter, port);
 
-        if ((info->input_params[port].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
-            (info->input_params[port].n_fetched_items < info->input_params[port].n_expected_items))
-        {
+        if (!expected_number_of_items_fetched (&info->input_params[port])) {
             info->work[port] = ufo_channel_fetch_input (channel);
             info->input_params[port].n_fetched_items++;
         }
@@ -167,9 +172,7 @@ static void
 push_work (ThreadInfo *info)
 {
     for (guint port = 0; port < info->num_inputs; port++) {
-        if ((info->input_params[port].n_expected_items == UFO_FILTER_INFINITE_INPUT) ||
-            (info->input_params[port].n_fetched_items < info->input_params[port].n_expected_items))
-        {
+        if (!expected_number_of_items_fetched (&info->input_params[port])) {
             UfoChannel *channel = ufo_filter_get_input_channel (info->filter, port);
             ufo_channel_release_input (channel, info->work[port]);
         }
@@ -181,7 +184,6 @@ fetch_result (ThreadInfo *info)
 {
     for (guint port = 0; port < info->num_outputs; port++) {
         UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
-
         info->result[port] = ufo_channel_fetch_output (channel);
     }
 }
@@ -191,7 +193,6 @@ push_result (ThreadInfo *info)
 {
     for (guint port = 0; port < info->num_outputs; port++) {
         UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
-
         ufo_channel_release_output (channel, info->result[port]);
     }
 }
