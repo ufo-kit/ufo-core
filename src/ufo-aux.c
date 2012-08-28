@@ -5,6 +5,15 @@
 #endif
 #include "ufo-aux.h"
 
+/**
+ * ufo_set_property_object:
+ * @storage: A place to store @object
+ * @object: An object that should be stored and referenced or %NULL
+ *
+ * Tries to store @object in @storage and references if @object is not %NULL. In
+ * case @storage contains already an object, the existing object is unreffed
+ * with g_object_unref().
+ */
 void
 ufo_set_property_object (GObject **storage, GObject *object)
 {
@@ -17,12 +26,19 @@ ufo_set_property_object (GObject **storage, GObject *object)
         g_object_ref (object);
 }
 
+/**
+ * ufo_unref_stored_object:
+ * @storage: A place that could contain an object.
+ *
+ * If @storage contains an object it is unreffed with %NULL and the storage set
+ * to %NULL.
+ */
 void
-ufo_unref_stored_object (GObject **object)
+ufo_unref_stored_object (GObject **storage)
 {
-    if (*object != NULL) {
-        g_object_unref (*object);
-        *object = NULL;
+    if (*storage != NULL) {
+        g_object_unref (*storage);
+        *storage = NULL;
     }
 }
 
