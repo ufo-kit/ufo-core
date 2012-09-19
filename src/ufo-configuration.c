@@ -216,7 +216,7 @@ static void
 ufo_configuration_init (UfoConfiguration *config)
 {
     config->priv = UFO_CONFIGURATION_GET_PRIVATE (config);
-    config->priv->path_array = NULL;
+    config->priv->path_array = g_value_array_new (0);
     config->priv->profile_level = UFO_PROFILER_LEVEL_NONE;
     config->priv->profile_output = NULL;
 }

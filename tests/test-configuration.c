@@ -56,9 +56,26 @@ test_path (void)
     g_object_unref (object);
 }
 
+static void
+test_path_not_set (void)
+{
+    UfoConfiguration *config;
+    gchar **paths;
+
+    config = ufo_configuration_new ();
+    paths = ufo_configuration_get_paths (config);
+    g_assert (paths == NULL);
+
+    g_object_unref (config);
+}
+
 void
 test_add_configuration (void)
 {
     g_test_add_func("/configuration/path",
                     test_path);
+
+    /* Check trac ticket #127 */
+    g_test_add_func("/configuration/path-not-set",
+                    test_path_not_set);
 }
