@@ -3,7 +3,7 @@
 import sys
 import csv
 import logging
-import argparse
+import optparse
 import numpy as np
 
 class UncommentedFile:
@@ -55,43 +55,9 @@ def _print_stats(kernel, data, queues):
             np.sum(execution),
             sdist)
 
-
-if __name__ == '__main__':
+def parse_rows(reader):
     kernels = {}
     queues = {}
-
-    parser = argparse.ArgumentParser(description='Analyse OpenCL traces')
-    with_plots = True
-
-    try:
-        import matplotlib.pyplot as plt
-
-        parser.add_argument('--plot',
-                            action='store_true',
-                            dest='enable_plot',
-                            help='Plot the traces',
-                            default=False)
-    except ImportError:
-        with_plots = False
-
-    parser.add_argument('input',
-                        nargs=1,
-                        metavar='FILE',
-                        help='Input trace file',
-                        type=argparse.FileType('rt'))
-
-
-    try:
-        args = parser.parse_args()
-    except IOError:
-        logging.error('Could not read file')
-        sys.exit(1)
-
-    if not args.input:
-        parser.print_usage()
-        sys.exit(0)
-
-    reader = csv.reader(UncommentedFile(args.input[0]), delimiter=' ')
 
     for row in reader:
         name = row[0]
@@ -110,6 +76,11 @@ if __name__ == '__main__':
         except KeyError:
             kernels[name] = a
 
+    return (kernels, queues)
+
+def process_file(reader, options):
+    kernels, queues = parse_rows(reader)
+
     header = '%-20s %12s %12s %12s %12s %12s' % ('Kernel', 'Submit Delay',
             'Exec Delay', 'Kernel Exec', 'Total Exec', 'Queue Dist')
     print header
@@ -118,7 +89,7 @@ if __name__ == '__main__':
     for key in kernels:
         _print_stats(key, kernels[key], queues.values())
 
-    if with_plots and args.enable_plot:
+    if hasattr(options, 'enable_plot') and options.enable_plot:
         colors = ['b', 'r', 'g', 'm']
 
         for c, key in enumerate(kernels):
@@ -126,3 +97,30 @@ if __name__ == '__main__':
             plt.legend([p], [key], loc=1)
 
         plt.show()
+
+if __name__ == '__main__':
+    parser = optparse.OptionParser(usage="Usage: %prog [options] FILE")
+
+    try:
+        import matplotlib.pyplot as plt
+
+        parser.add_option('-p', '--plot',
+                            action='store_true',
+                            dest='enable_plot',
+                            help='Plot the traces',
+                            default=False)
+    except ImportError:
+        pass
+
+    options, args = parser.parse_args()
+
+    if not args:
+        parser.print_help()
+        sys.exit(0)
+
+    try:
+        with open(args[0]) as f:
+            reader = csv.reader(UncommentedFile(f), delimiter=' ')
+            process_file(reader, options)
+    except IOError:
+        print "Error: Could not read `%s'" % args[0]
