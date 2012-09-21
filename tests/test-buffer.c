@@ -18,6 +18,21 @@ static void test_buffer_new(void)
     g_object_unref(buffer);
 }
 
+static void
+test_buffer_copy (void)
+{
+    const guint dimensions[] = { 16, 16 };
+    UfoBuffer *buffer1 = ufo_buffer_new(2, dimensions);
+    UfoBuffer *buffer2 = ufo_buffer_new(2, dimensions);
+
+    ufo_buffer_fill_with_value (buffer1, 1.234f);
+    ufo_buffer_alloc_host_mem (buffer2);
+    ufo_buffer_copy (buffer1, buffer2);
+
+    g_object_unref(buffer1);
+    g_object_unref(buffer2);
+}
+
 /**
  * Check that data is correctly added to a UfoBuffer.
  */
@@ -145,6 +160,7 @@ static void test_buffer_swap(void)
 void test_add_buffer (void)
 {
     g_test_add_func("/buffer/new", test_buffer_new);
+    g_test_add_func("/buffer/copy", test_buffer_copy);
     g_test_add_func("/buffer/dimensions", test_buffer_dimensions);
     g_test_add_func("/buffer/set-too-much-data", test_buffer_set_too_much_data);
     g_test_add_func("/buffer/set-data", test_buffer_set_data);

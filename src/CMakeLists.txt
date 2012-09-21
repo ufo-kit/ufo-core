@@ -10,7 +10,9 @@ set(ufocore_SRCS
     ufo-buffer.c
     ufo-filter.c
     ufo-filter-source.c
+    ufo-filter-source-direct.c
     ufo-filter-sink.c
+    ufo-filter-sink-direct.c
     ufo-filter-reduce.c
     ufo-plugin-manager.c
     ufo-profiler.c
@@ -26,7 +28,9 @@ set(ufocore_HDRS
     ufo-buffer.h
     ufo-filter.h
     ufo-filter-source.h
+    ufo-filter-source-direct.h
     ufo-filter-sink.h
+    ufo-filter-sink-direct.h
     ufo-filter-reduce.h
     ufo-plugin-manager.h
     ufo-profiler.h

@@ -72,9 +72,12 @@ struct _UfoBufferParamSpec {
 
 UfoBuffer*  ufo_buffer_new                  (guint          num_dims,
                                              const guint   *dim_size);
+void        ufo_buffer_alloc_host_mem       (UfoBuffer     *buffer);
 void        ufo_buffer_resize               (UfoBuffer     *buffer,
                                              guint          num_dims,
                                              const guint   *dim_size);
+void        ufo_buffer_copy                 (UfoBuffer     *src,
+                                             UfoBuffer     *dst);
 void        ufo_buffer_transfer_id          (UfoBuffer     *from,
                                              UfoBuffer     *to);
 gsize       ufo_buffer_get_size             (UfoBuffer     *buffer);

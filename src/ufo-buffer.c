@@ -110,6 +110,38 @@ ufo_buffer_new(guint num_dims, const guint *dim_size)
     return buffer;
 }
 
+void
+ufo_buffer_alloc_host_mem (UfoBuffer *buffer)
+{
+    UfoBufferPrivate *priv;
+
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+    priv = UFO_BUFFER_GET_PRIVATE (buffer);
+
+    if (priv->host_array.data != NULL)
+        g_free (priv->host_array.data);
+
+    priv->host_array.data = g_malloc0(priv->size);
+}
+
+void
+ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
+{
+    g_return_if_fail (UFO_IS_BUFFER (src) && UFO_IS_BUFFER (dst));
+    g_return_if_fail (src->priv->size == dst->priv->size);
+
+    if (src->priv->location != HOST_ARRAY_VALID) {
+        g_warning ("Copying source buffers with invalid or device memory not yet supported");
+        return;
+    }
+
+    if (dst->priv->host_array.data == NULL)
+        ufo_buffer_alloc_host_mem (dst);
+
+    g_memmove (dst->priv->host_array.data, src->priv->host_array.data, src->priv->size);
+    dst->priv->location = HOST_ARRAY_VALID;
+}
+
 /**
  * ufo_buffer_resize:
  * @buffer: A #UfoBuffer
@@ -263,14 +295,14 @@ ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, 
      * the 32-bit target buffer. The processor cache should not be a problem. */
     if (source_depth == 8) {
         guint8 *src = (guint8 *) buffer->priv->host_array.data;
-        const float scale = normalize ? 255.0f : 1.0f;        
+        const float scale = normalize ? 255.0f : 1.0f;
 
         for (gint index = (((gint) num_pixels) - 1); index >= 0; index--)
             dst[index] = ((gfloat) src[index]) / scale;
     }
     else if (source_depth == 16) {
         guint16 *src = (guint16 *) buffer->priv->host_array.data;
-        const float scale = normalize ? 65535.0f : 1.0f;        
+        const float scale = normalize ? 65535.0f : 1.0f;
 
         for (gint index = (((gint) num_pixels) - 1); index >= 0; index--)
             dst[index] = ((gfloat) src[index]) / scale;
@@ -389,7 +421,7 @@ ufo_buffer_clear_events(UfoBuffer *buffer)
  * @buffer: A #UfoBuffer.
  *
  * Each buffer has a timer object that measures time spent for transfering data
- * between host and device. 
+ * between host and device.
  *
  * Returns: A #GTimer associated with this buffer
  */
@@ -429,7 +461,7 @@ ufo_buffer_set_host_array(UfoBuffer *buffer, gfloat *data, gsize num_bytes, GErr
     }
 
     if (priv->host_array.data == NULL)
-        priv->host_array.data = g_malloc0(priv->size);
+        ufo_buffer_alloc_host_mem (buffer);
 
     g_memmove(priv->host_array.data, data, num_bytes);
     priv->location = HOST_ARRAY_VALID;
@@ -452,18 +484,16 @@ ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
 
     switch (priv->location) {
         case HOST_ARRAY_VALID:
-
             /* This can be the case, when a buffer's device memory was invalidated
              * but no host memory has been allocated before. */
             if (priv->host_array.data == NULL)
-                priv->host_array.data = g_malloc0(priv->size);
+                ufo_buffer_alloc_host_mem (buffer);
 
             break;
 
         case DEVICE_ARRAY_VALID:
-
             if (priv->host_array.data == NULL)
-                priv->host_array.data = g_malloc0(priv->size);
+                ufo_buffer_alloc_host_mem (buffer);
 
             g_timer_start(priv->timer);
             CHECK_OPENCL_ERROR(clEnqueueReadBuffer(command_queue,
@@ -479,7 +509,7 @@ ufo_buffer_get_host_array(UfoBuffer *buffer, gpointer command_queue)
             break;
 
         case NO_DATA:
-            priv->host_array.data = g_malloc0(priv->size);
+            ufo_buffer_alloc_host_mem (buffer);
             priv->location = HOST_ARRAY_VALID;
             break;
     }
@@ -558,10 +588,10 @@ ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b)
     g_return_if_fail((pa->host_array.data != NULL) || (pb->host_array.data != NULL));
 
     if (pa->host_array.data == NULL)
-        pa->host_array.data = g_malloc0(pa->size);
+        ufo_buffer_alloc_host_mem (a);
 
     if (pb->host_array.data == NULL)
-        pb->host_array.data = g_malloc0(pb->size);
+        ufo_buffer_alloc_host_mem (b);
 
     gfloat *tmp = pa->host_array.data;
     pa->host_array.data = pb->host_array.data;
@@ -583,7 +613,7 @@ ufo_buffer_swap_host_arrays(UfoBuffer *a, UfoBuffer *b)
  * property.
  *
  * Returns: (transfer none): a newly created parameter specification
- * 
+ *
  * @see g_param_spec_internal() for details on property names.
  */
 GParamSpec *
@@ -628,7 +658,7 @@ ufo_filter_get_property(GObject *object, guint property_id, GValue *value, GPara
     }
 }
 
-static void 
+static void
 ufo_buffer_finalize(GObject *gobject)
 {
     UfoBuffer *buffer = UFO_BUFFER (gobject);
@@ -649,7 +679,7 @@ ufo_buffer_finalize(GObject *gobject)
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
-static void 
+static void
 ufo_buffer_class_init(UfoBufferClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);

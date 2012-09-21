@@ -7,6 +7,7 @@ set(TEST_SRCS
     test-channel.c
     test-configuration.c
     test-filter.c
+    test-filter-direct.c
     test-graph.c
     test-profiler.c
     )

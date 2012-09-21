@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
     test_add_channel ();
     test_add_configuration ();
     test_add_filter ();
+    test_add_filter_direct ();
     test_add_graph ();
     test_add_profiler ();
 
