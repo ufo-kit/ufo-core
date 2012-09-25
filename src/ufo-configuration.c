@@ -62,15 +62,18 @@ ufo_configuration_get_paths (UfoConfiguration *config)
 {
     GValueArray *path_array;
     gchar **paths;
+    guint n_paths;
 
     g_return_val_if_fail (UFO_IS_CONFIGURATION (config), NULL);
 
     path_array = config->priv->path_array;
-    paths = g_new0 (gchar*, path_array->n_values);
+    n_paths = path_array->n_values;
+    paths = g_new0 (gchar*, n_paths + 1);
 
-    for (guint i = 0; i < path_array->n_values; i++)
+    for (guint i = 0; i < n_paths; i++)
         paths[i] = g_strdup (g_value_get_string (g_value_array_get_nth (path_array, i)));
 
+    paths[n_paths] = NULL;
     return paths;
 }
 

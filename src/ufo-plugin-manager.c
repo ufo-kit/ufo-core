@@ -82,8 +82,11 @@ add_paths (UfoPluginManagerPrivate *priv, gchar *paths[])
     if (paths == NULL)
         return;
 
-    for (guint i = 0; paths[i] != NULL; i++)
+    for (guint i = 0; paths[i] != NULL; i++) {
+        g_print ("adding path %s\n", paths[i]);
         priv->search_paths = g_slist_prepend (priv->search_paths, g_strdup (paths[i]));
+        g_print ("added\n");
+    }
 }
 
 /**
