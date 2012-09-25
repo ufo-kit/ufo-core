@@ -47,10 +47,20 @@ enum {
     N_PROPERTIES
 };
 
+/**
+ * timer_level:
+ *
+ * Maps UfoProfilerTimer to a UfoProfilerLevel
+ */
+static UfoProfilerLevel timer_level[] = {
+    UFO_PROFILER_LEVEL_IO,      /* TIMER_IO */
+    UFO_PROFILER_LEVEL_NONE     /* TIMER_CPU */
+};
 
 /**
  * UfoProfilerLevel:
  * @UFO_PROFILER_LEVEL_NONE: Do not track any profiling information
+ * @UFO_PROFILER_LEVEL_IO: Track I/O events
  * @UFO_PROFILER_LEVEL_OPENCL: Track OpenCL events
  *
  * Profiling levels that the profiler supports. To set the global profiling
@@ -60,10 +70,8 @@ enum {
 
 /**
  * UfoProfilerTimer:
- * @UFO_PROFILER_TIMER_FETCH_INPUT: Select fetch input timer.
- * @UFO_PROFILER_TIMER_FETCH_OUTPUT:Select fetch output timer.
- * @UFO_PROFILER_TIMER_RELEASE_INPUT: Select release input timer.
- * @UFO_PROFILER_TIMER_RELEASE_OUTPUT: Select release output timer.
+ * @UFO_PROFILER_TIMER_IO: Select I/O timer
+ * @UFO_PROFILER_TIMER_CPU: Select CPU timer
  * @UFO_PROFILER_TIMER_LAST: Auxiliary value, do not use.
  *
  * Use these values to select a specific timer when calling
@@ -118,7 +126,7 @@ ufo_profiler_call (UfoProfiler    *profiler,
     struct EventRow     row;
 
     priv = profiler->priv;
-    event_loc = priv->level == UFO_PROFILER_LEVEL_NONE ? NULL : &event;
+    event_loc = priv->level & UFO_PROFILER_LEVEL_OPENCL ? &event : NULL;
 
     cl_err = clEnqueueNDRangeKernel (command_queue,
                                      kernel,
@@ -129,7 +137,7 @@ ufo_profiler_call (UfoProfiler    *profiler,
                                      0, NULL, event_loc);
     CHECK_OPENCL_ERROR (cl_err);
 
-    if (priv->level != UFO_PROFILER_LEVEL_NONE) {
+    if (priv->level & UFO_PROFILER_LEVEL_OPENCL) {
         row.event = event;
         row.kernel = kernel;
         g_array_append_val (priv->event_array, row);
@@ -141,7 +149,9 @@ ufo_profiler_start (UfoProfiler      *profiler,
                     UfoProfilerTimer  timer)
 {
     g_return_if_fail (UFO_IS_PROFILER (profiler));
-    g_timer_continue (profiler->priv->timers[timer]);
+
+    if (profiler->priv->level & timer_level[timer])
+        g_timer_continue (profiler->priv->timers[timer]);
 }
 
 void
@@ -149,7 +159,9 @@ ufo_profiler_stop (UfoProfiler       *profiler,
                    UfoProfilerTimer   timer)
 {
     g_return_if_fail (UFO_IS_PROFILER (profiler));
-    g_timer_stop (profiler->priv->timers[timer]);
+
+    if (profiler->priv->level & timer_level[timer])
+        g_timer_stop (profiler->priv->timers[timer]);
 }
 
 gdouble

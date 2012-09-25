@@ -455,13 +455,9 @@ process_thread (gpointer data)
 }
 
 static void
-print_row (const gchar *row, gpointer user)
+print_row (const gchar *row, FILE *fp)
 {
-    FILE *fp = (FILE *) user;
-    if (fp != NULL)
-        fprintf (fp, "%s\n", row);
-    else
-        g_print ("%s\n", row);
+    fprintf (fp, "%s\n", row);
 }
 
 static void
@@ -557,16 +553,17 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     UfoSchedulerPrivate *priv;
     cl_command_queue    *cmd_queues;
 
-    FILE        *profile_fp;
-    gchar       *profile_filename;
+    gchar       *profile_prefix;
     GList       *filters;
     GTimer      *timer;
     GThread    **threads;
-    GError      *tmp_error = NULL;
     ThreadInfo  *thread_info;
     guint        n_queues;
     guint        n_threads;
     guint        i = 0;
+    FILE        *opencl_fp = NULL;
+    FILE        *io_fp = NULL;
+    GError      *tmp_error = NULL;
 
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
 
@@ -617,29 +614,39 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         }
     }
 
-
-    profile_fp = NULL;
     g_object_get (G_OBJECT (priv->config),
-                  "profile-output", &profile_filename,
+                  "profile-output-prefix", &profile_prefix,
                   NULL);
 
-    if (profile_filename != NULL) {
-        profile_fp = fopen (profile_filename, "w");
-        g_free (profile_filename);
+    if (profile_prefix != NULL) {
+        gchar *filename;
+
+        filename = g_strdup_printf ("%s.cl.stat", profile_prefix);
+        opencl_fp = fopen (filename, "w");
+        g_free (filename);
+
+        filename = g_strdup_printf ("%s.io.stat", profile_prefix);
+        io_fp = fopen (filename, "w");
+        g_free (filename);
+    }
+    else {
+        opencl_fp = stdout;
+        io_fp = stdout;
     }
 
-    /* Dump OpenCL events. */
     for (GList *it = filters; it != NULL; it = g_list_next (it)) {
         UfoProfiler *profiler;
         UfoFilter *filter;
 
         filter = (UfoFilter *) it->data;
         profiler = ufo_filter_get_profiler (filter);
-        ufo_profiler_foreach (profiler, print_row, profile_fp);
+        ufo_profiler_foreach (profiler, (UfoProfilerFunc) print_row, opencl_fp);
         g_object_unref (profiler);
-    }
 
-    /* TODO: free the cpu timers */
+        fprintf (io_fp, "%-16s %f\n",
+                 ufo_filter_get_plugin_name (filter),
+                 ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
+    }
 
     g_free (thread_info);
     g_free (threads);

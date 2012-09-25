@@ -50,16 +50,15 @@ struct _UfoProfilerClass {
 };
 
 typedef enum {
-    UFO_PROFILER_TIMER_FETCH_INPUT = 0,
-    UFO_PROFILER_TIMER_FETCH_OUTPUT,
-    UFO_PROFILER_TIMER_RELEASE_INPUT,
-    UFO_PROFILER_TIMER_RELEASE_OUTPUT,
+    UFO_PROFILER_TIMER_IO = 0,
+    UFO_PROFILER_TIMER_CPU,
     UFO_PROFILER_TIMER_LAST
 } UfoProfilerTimer;
 
 typedef enum {
     UFO_PROFILER_LEVEL_NONE     = 0,
-    UFO_PROFILER_LEVEL_OPENCL   = 1 << 0
+    UFO_PROFILER_LEVEL_OPENCL   = 1 << 0,
+    UFO_PROFILER_LEVEL_IO       = 1 << 1
 } UfoProfilerLevel;
 
 UfoProfiler *ufo_profiler_new       (UfoProfilerLevel    level);

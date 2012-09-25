@@ -22,14 +22,14 @@ enum {
     PROP_0,
     PROP_PATHS,
     PROP_PROFILE_LEVEL,
-    PROP_PROFILE_OUTPUT,
+    PROP_PROFILE_OUTPUT_PREFIX,
     N_PROPERTIES
 };
 
 struct _UfoConfigurationPrivate {
     GValueArray         *path_array;
     UfoProfilerLevel     profile_level;
-    gchar               *profile_output;
+    gchar               *profile_output_prefix;
 };
 
 static GParamSpec *config_properties[N_PROPERTIES] = { NULL, };
@@ -104,9 +104,9 @@ ufo_configuration_set_property(GObject      *object,
             priv->profile_level = g_value_get_flags (value);
             break;
 
-        case PROP_PROFILE_OUTPUT:
-            g_free (priv->profile_output);
-            priv->profile_output = g_strdup (g_value_get_string (value));
+        case PROP_PROFILE_OUTPUT_PREFIX:
+            g_free (priv->profile_output_prefix);
+            priv->profile_output_prefix = g_strdup (g_value_get_string (value));
             break;
 
         default:
@@ -132,8 +132,8 @@ ufo_configuration_get_property(GObject      *object,
             g_value_set_flags (value, priv->profile_level);
             break;
 
-        case PROP_PROFILE_OUTPUT:
-            g_value_set_string (value, priv->profile_output);
+        case PROP_PROFILE_OUTPUT_PREFIX:
+            g_value_set_string (value, priv->profile_output_prefix);
             break;
 
         default:
@@ -201,16 +201,16 @@ ufo_configuration_class_init (UfoConfigurationClass *klass)
                             UFO_PROFILER_LEVEL_NONE,
                             G_PARAM_READWRITE);
 
-    config_properties[PROP_PROFILE_OUTPUT] =
-        g_param_spec_string ("profile-output",
-                             "Filename for profiling output",
-                             "Filename for profiling output. If NULL, information is output to stdout.",
+    config_properties[PROP_PROFILE_OUTPUT_PREFIX] =
+        g_param_spec_string ("profile-output-prefix",
+                             "Filename prefix for profiling output",
+                             "Filename prefix for profiling output. If NULL, information is output to stdout.",
                              NULL,
                              G_PARAM_READWRITE);
 
     g_object_class_install_property (gobject_class, PROP_PATHS, config_properties[PROP_PATHS]);
     g_object_class_install_property (gobject_class, PROP_PROFILE_LEVEL, config_properties[PROP_PROFILE_LEVEL]);
-    g_object_class_install_property (gobject_class, PROP_PROFILE_OUTPUT, config_properties[PROP_PROFILE_OUTPUT]);
+    g_object_class_install_property (gobject_class, PROP_PROFILE_OUTPUT_PREFIX, config_properties[PROP_PROFILE_OUTPUT_PREFIX]);
 
     g_type_class_add_private(klass, sizeof (UfoConfigurationPrivate));
 }
@@ -221,5 +221,5 @@ ufo_configuration_init (UfoConfiguration *config)
     config->priv = UFO_CONFIGURATION_GET_PRIVATE (config);
     config->priv->path_array = g_value_array_new (0);
     config->priv->profile_level = UFO_PROFILER_LEVEL_NONE;
-    config->priv->profile_output = NULL;
+    config->priv->profile_output_prefix = NULL;
 }

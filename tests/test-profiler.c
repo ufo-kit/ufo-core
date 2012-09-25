@@ -13,7 +13,8 @@ typedef struct {
 static void
 fixture_setup (Fixture *fixture, gconstpointer data)
 {
-    fixture->profiler = ufo_profiler_new (UFO_PROFILER_LEVEL_OPENCL);
+    fixture->profiler = ufo_profiler_new (UFO_PROFILER_LEVEL_OPENCL |
+                                          UFO_PROFILER_LEVEL_IO);
     g_assert (UFO_IS_PROFILER (fixture->profiler));
 }
 
@@ -29,22 +30,18 @@ test_timer_elapsed (Fixture *fixture, gconstpointer data)
     gulong one_millisecond = G_USEC_PER_SEC / 1000;
 
     ufo_profiler_start (fixture->profiler,
-                        UFO_PROFILER_TIMER_RELEASE_INPUT);
+                        UFO_PROFILER_TIMER_IO);
 
     g_usleep (one_millisecond);
 
     ufo_profiler_stop (fixture->profiler,
-                       UFO_PROFILER_TIMER_RELEASE_INPUT);
+                       UFO_PROFILER_TIMER_IO);
 
     g_assert (ufo_profiler_elapsed (fixture->profiler,
-                                    UFO_PROFILER_TIMER_FETCH_INPUT) <= 0.0);
-    g_assert (ufo_profiler_elapsed (fixture->profiler,
-                                    UFO_PROFILER_TIMER_FETCH_OUTPUT) <= 0.0);
-    g_assert (ufo_profiler_elapsed (fixture->profiler,
-                                    UFO_PROFILER_TIMER_RELEASE_OUTPUT) <= 0.0);
+                                    UFO_PROFILER_TIMER_CPU) <= 0.0);
 
     g_assert (ufo_profiler_elapsed (fixture->profiler,
-                                    UFO_PROFILER_TIMER_RELEASE_INPUT) >= 0.001);
+                                    UFO_PROFILER_TIMER_IO) >= 0.001);
 }
 
 
