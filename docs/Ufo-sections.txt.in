@@ -181,6 +181,25 @@ UfoFilterSinkPrivate
 </SECTION>
 
 <SECTION>
+<FILE>ufo-filter-sink-direct</FILE>
+<TITLE>UfoFilterSinkDirect</TITLE>
+UfoFilterSinkDirect
+ufo_filter_sink_direct_pop
+ufo_filter_sink_direct_release
+<SUBSECTION Standard>
+UfoFilterSinkDirectClass
+UFO_TYPE_FILTER_SINK_DIRECT
+UFO_FILTER_SINK_DIRECT
+UFO_FILTER_SINK_DIRECT_CLASS
+UFO_FILTER_SINK_DIRECT_GET_CLASS
+UFO_IS_FILTER_SINK_DIRECT
+UFO_IS_FILTER_SINK_DIRECT_CLASS
+ufo_filter_sink_direct_get_type
+<SUBSECTION Private>
+UfoFilterSinkDirectPrivate
+</SECTION>
+
+<SECTION>
 <FILE>ufo-filter-source</FILE>
 <TITLE>UfoFilterSource</TITLE>
 UfoFilterSource
@@ -197,6 +216,25 @@ UFO_IS_FILTER_SOURCE_CLASS
 ufo_filter_source_get_type
 <SUBSECTION Private>
 UfoFilterSourcePrivate
+</SECTION>
+
+<SECTION>
+<FILE>ufo-filter-source-direct</FILE>
+<TITLE>UfoFilterSourceDirect</TITLE>
+UfoFilterSourceDirect
+ufo_filter_source_direct_push
+ufo_filter_source_direct_stop
+<SUBSECTION Standard>
+UfoFilterSourceDirectClass
+UFO_FILTER_SOURCE_DIRECT
+UFO_FILTER_SOURCE_DIRECT_CLASS
+UFO_FILTER_SOURCE_DIRECT_GET_CLASS
+UFO_IS_FILTER_SOURCE_DIRECT
+UFO_IS_FILTER_SOURCE_DIRECT_CLASS
+UFO_TYPE_FILTER_SOURCE_DIRECT
+ufo_filter_source_direct_get_type
+<SUBSECTION Private>
+UfoFilterSourceDirectPrivate
 </SECTION>
 
 <SECTION>
@@ -308,6 +346,8 @@ UfoBufferError
 UfoBuffer
 UFO_BUFFER_MAX_NDIMS
 ufo_buffer_new
+ufo_buffer_copy
+ufo_buffer_alloc_host_mem
 ufo_buffer_transfer_id
 ufo_buffer_get_size
 ufo_buffer_get_id

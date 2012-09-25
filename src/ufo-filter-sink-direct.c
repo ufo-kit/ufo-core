@@ -1,10 +1,7 @@
 /**
  * SECTION:ufo-filter-sink-direct
- * @Short_description: A sink filter provides data but does not consume any
+ * @Short_description: A direct sink filter outputs data coming from a processing pipeline
  * @Title: UfoFilterSinkDirect
- *
- * A sink filter produces data but does not accept any inputs. This can be
- * used to implement file readers or acquisition devices.
  */
 
 #include <glib.h>
@@ -46,6 +43,13 @@ ufo_filter_sink_direct_consume (UfoFilterSink *filter, UfoBuffer *input[], GErro
     g_async_queue_pop (priv->incoming_queue);
 }
 
+/**
+ * ufo_filter_sink_direct_pop:
+ * @filter: A #UfoFilterSinkDirect object
+ *
+ * Get the buffer from this node. After processing the data, the buffer needs to
+ * be released with ufo_filter_sink_direct_release().
+ */
 UfoBuffer *
 ufo_filter_sink_direct_pop (UfoFilterSinkDirect *filter)
 {
@@ -53,6 +57,15 @@ ufo_filter_sink_direct_pop (UfoFilterSinkDirect *filter)
     return g_async_queue_pop (filter->priv->outgoing_queue);
 }
 
+/**
+ * ufo_filter_sink_direct_release:
+ * @filter: A #UfoFilterSinkDirect object
+ * @buffer: A #UfoBuffer acquired with ufo_filter_sink_direct_pop().
+ *
+ * Release a buffer acquired with ufo_filter_sink_direct_pop().
+ *
+ * @Note: If the buffer is not released, the processing pipeline will dead-lock.
+ */
 void
 ufo_filter_sink_direct_release (UfoFilterSinkDirect *filter, UfoBuffer *buffer)
 {

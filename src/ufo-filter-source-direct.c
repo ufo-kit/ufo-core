@@ -1,10 +1,10 @@
 /**
  * SECTION:ufo-filter-source-direct
- * @Short_description: A source filter provides data but does not consume any
+ * @Short_description: A source filter provides in-process data but does not consume any
  * @Title: UfoFilterSourceDirect
  *
- * A source filter produces data but does not accept any inputs. This can be
- * used to implement file readers or acquisition devices.
+ * A direct source filter pushes in-process data into the processing pipeline to
+ * interface with modules that are not part of the pipeline.
  */
 
 #include <glib.h>
@@ -52,6 +52,14 @@ ufo_filter_source_direct_generate (UfoFilterSource *filter, UfoBuffer *output[],
     return buffer == END_OF_STREAM;
 }
 
+/**
+ * ufo_filter_source_direct_push:
+ * @filter: A #UfoFilterSourceDirect object
+ * @buffer: A #UfoBuffer to be pushed into this node
+ *
+ * Pushes a #UfoBuffer into this node to be processed by subsequent, connected
+ * filters. To stop iterating, call ufo_filter_source_direct_stop().
+ */
 void
 ufo_filter_source_direct_push (UfoFilterSourceDirect *filter,
                                UfoBuffer *buffer)
@@ -67,6 +75,13 @@ ufo_filter_source_direct_push (UfoFilterSourceDirect *filter,
     g_async_queue_push (priv->incoming_queue, output);
 }
 
+/**
+ * ufo_filter_source_direct_stop:
+ * @filter: A #UfoFilterSourceDirect object
+ *
+ * Stop execution. This node cannot accept anymore and subsequent nodes will be
+ * notified, that data generation has stopped.
+ */
 void
 ufo_filter_source_direct_stop (UfoFilterSourceDirect *filter)
 {
