@@ -39,7 +39,6 @@ typedef struct {
     UfoBuffer         **work;
     UfoBuffer         **result;
     GTimer            **timers;
-    GTimer             *cpu_timer;
     guint               num_children;
 } ThreadInfo;
 
@@ -151,6 +150,8 @@ fetch_work (ThreadInfo *info)
     const gpointer POISON_PILL = GINT_TO_POINTER (1);
     gboolean success = TRUE;
 
+    ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_FETCH);
+
     for (guint port = 0; port < info->num_inputs; port++) {
         UfoChannel *channel = ufo_filter_get_input_channel (info->filter, port);
 
@@ -165,36 +166,49 @@ fetch_work (ThreadInfo *info)
         }
     }
 
+    ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_FETCH);
     return success;
 }
 
 static void
 push_work (ThreadInfo *info)
 {
+    ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_RELEASE);
+
     for (guint port = 0; port < info->num_inputs; port++) {
         if (!expected_number_of_items_fetched (&info->input_params[port])) {
             UfoChannel *channel = ufo_filter_get_input_channel (info->filter, port);
             ufo_channel_release_input (channel, info->work[port]);
         }
     }
+
+    ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_RELEASE);
 }
 
 static void
 fetch_result (ThreadInfo *info)
 {
+    ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_FETCH);
+
     for (guint port = 0; port < info->num_outputs; port++) {
         UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
         info->result[port] = ufo_channel_fetch_output (channel);
     }
+
+    ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_FETCH);
 }
 
 static void
 push_result (ThreadInfo *info)
 {
+    ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_RELEASE);
+
     for (guint port = 0; port < info->num_outputs; port++) {
         UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
         ufo_channel_release_output (channel, info->result[port]);
     }
+
+    ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_RELEASE);
 }
 
 static GError *
@@ -214,9 +228,7 @@ process_source_filter (ThreadInfo *info)
     while (cont) {
         fetch_result (info);
 
-        g_timer_continue (info->cpu_timer);
         cont = ufo_filter_source_generate (UFO_FILTER_SOURCE (filter), info->result, &error);
-        g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
             return error;
@@ -261,16 +273,10 @@ process_synchronous_filter (ThreadInfo *info)
                    ufo_filter_get_unique_name (filter),
                    iteration++);
 
-        if (filter_class->process_gpu != NULL) {
-            g_timer_continue (info->cpu_timer);
+        if (filter_class->process_gpu != NULL)
             ufo_filter_process_gpu (filter, info->work, info->result, &error);
-            g_timer_stop (info->cpu_timer);
-        }
-        else {
-            g_timer_continue (info->cpu_timer);
+        else
             ufo_filter_process_cpu (filter, info->work, info->result, &error);
-            g_timer_stop (info->cpu_timer);
-        }
 
         if (error != NULL)
             return error;
@@ -310,9 +316,7 @@ process_sink_filter (ThreadInfo *info)
         return NULL;
 
     while (cont) {
-        g_timer_continue (info->cpu_timer);
         ufo_filter_sink_consume (sink_filter, info->work, &error);
-        g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
             return error;
@@ -360,9 +364,7 @@ process_reduce_filter (ThreadInfo *info)
     cont = TRUE;
 
     while (cont) {
-        g_timer_continue (info->cpu_timer);
         ufo_filter_reduce_collect (UFO_FILTER_REDUCE (filter), info->work, info->result, &error);
-        g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
             return error;
@@ -377,11 +379,9 @@ process_reduce_filter (ThreadInfo *info)
     cont = TRUE;
 
     while (cont) {
-        g_timer_continue (info->cpu_timer);
         cont = ufo_filter_reduce_reduce (UFO_FILTER_REDUCE (filter),
                                          info->result,
                                          &error);
-        g_timer_stop (info->cpu_timer);
 
         if (error != NULL)
             return error;
@@ -526,14 +526,23 @@ start_filter_thread (UfoSchedulerPrivate *priv,
     ufo_filter_set_profiler (filter, info->profiler);
     ufo_filter_set_resource_manager (filter, priv->manager);
 
-    info->cpu_timer = g_timer_new ();
-    g_timer_stop (info->cpu_timer);
-
     children = ufo_graph_get_children (graph, filter);
     info->num_children = g_list_length (children);
     g_list_free (children);
 
     return g_thread_create (process_thread, info, TRUE, error);
+}
+
+static FILE *
+open_prefixed_file (const gchar *prefix, const gchar *suffix)
+{
+    gchar *filename;
+    FILE *fp;
+
+    filename = g_strdup_printf ("%s.%s", prefix, suffix);
+    fp = fopen (filename, "w");
+    g_free (filename);
+    return fp;
 }
 
 /**
@@ -563,6 +572,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     guint        i = 0;
     FILE        *opencl_fp = NULL;
     FILE        *io_fp = NULL;
+    FILE        *sync_fp = NULL;
     GError      *tmp_error = NULL;
 
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
@@ -619,19 +629,12 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                   NULL);
 
     if (profile_prefix != NULL) {
-        gchar *filename;
-
-        filename = g_strdup_printf ("%s.cl.stat", profile_prefix);
-        opencl_fp = fopen (filename, "w");
-        g_free (filename);
-
-        filename = g_strdup_printf ("%s.io.stat", profile_prefix);
-        io_fp = fopen (filename, "w");
-        g_free (filename);
+        opencl_fp = open_prefixed_file (profile_prefix, "cl.stat");
+        io_fp = open_prefixed_file (profile_prefix, "io.stat");
+        sync_fp = open_prefixed_file (profile_prefix, "sync.stat");
     }
     else {
-        opencl_fp = stdout;
-        io_fp = stdout;
+        opencl_fp = io_fp = sync_fp = stdout;
     }
 
     for (GList *it = filters; it != NULL; it = g_list_next (it)) {
@@ -646,6 +649,11 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         fprintf (io_fp, "%-16s %f\n",
                  ufo_filter_get_plugin_name (filter),
                  ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
+
+        fprintf (sync_fp, "%-16s %f %f\n",
+                 ufo_filter_get_plugin_name (filter),
+                 ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_FETCH),
+                 ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_RELEASE));
     }
 
     g_free (thread_info);

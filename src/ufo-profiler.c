@@ -54,7 +54,9 @@ enum {
  */
 static UfoProfilerLevel timer_level[] = {
     UFO_PROFILER_LEVEL_IO,      /* TIMER_IO */
-    UFO_PROFILER_LEVEL_NONE     /* TIMER_CPU */
+    UFO_PROFILER_LEVEL_NONE,    /* TIMER_CPU */
+    UFO_PROFILER_LEVEL_SYNC,    /* TIMER_FETCH */
+    UFO_PROFILER_LEVEL_SYNC     /* TIMER_RELEASE */
 };
 
 /**
@@ -62,6 +64,7 @@ static UfoProfilerLevel timer_level[] = {
  * @UFO_PROFILER_LEVEL_NONE: Do not track any profiling information
  * @UFO_PROFILER_LEVEL_IO: Track I/O events
  * @UFO_PROFILER_LEVEL_OPENCL: Track OpenCL events
+ * @UFO_PROFILER_LEVEL_SYNC: Track synchronization wait time
  *
  * Profiling levels that the profiler supports. To set the global profiling
  * level use the #UfoConfiguration:profile-level: property on a
