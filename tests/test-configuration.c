@@ -64,7 +64,8 @@ test_path_not_set (void)
 
     config = ufo_configuration_new ();
     paths = ufo_configuration_get_paths (config);
-    g_assert (paths == NULL);
+    g_assert (paths != NULL);
+    g_assert (paths[0] == NULL);
 
     g_object_unref (config);
 }
