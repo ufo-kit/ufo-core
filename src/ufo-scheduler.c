@@ -467,11 +467,7 @@ print_row (const gchar *row, FILE *fp)
 }
 
 static void
-pass_queue (UfoGraph *graph,
-            UfoFilter *filter,
-            guint queue,
-            guint n_queues,
-            cl_command_queue *queues)
+pass_queue (UfoGraph *graph, UfoFilter *filter, guint queue, guint n_queues, cl_command_queue *queues)
 {
     GList *children;
     guint i = queue;
@@ -613,12 +609,10 @@ static GError *
 spawn_threads (UfoSchedulerPrivate *priv, UfoGraph *graph)
 {
     GList *filters;
-    guint n_threads;
     GList *threads = NULL;
     GError *error = NULL;
 
     filters = ufo_graph_get_filters (graph);
-    n_threads = g_list_length (filters);
 
     /* Start each filter in its own thread */
     for (GList *it = filters; it != NULL; it = g_list_next (it)) {
