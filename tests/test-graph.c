@@ -167,8 +167,13 @@ test_get_filters (Fixture *fixture, gconstpointer data)
 
     filters = ufo_graph_get_filters (fixture->graph);
     g_assert (filters != NULL);
-    g_assert (g_list_length (filters) == 3);
     g_list_free (filters);
+}
+
+static void
+test_get_number (Fixture *fixture, gconstpointer data)
+{
+    g_assert (ufo_graph_get_num_filters (fixture->graph) == 3);
 }
 
 static void
@@ -253,6 +258,13 @@ test_add_graph (void)
                 fixture_json_setup,
                 test_json_key_not_found,
                 fixture_json_teardown);
+
+    g_test_add ("/graph/get/number",
+                Fixture,
+                NULL,
+                fixture_filter_setup,
+                test_get_number,
+                fixture_filter_teardown);
 
     g_test_add ("/graph/get/filters",
                 Fixture,

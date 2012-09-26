@@ -498,6 +498,26 @@ ufo_graph_get_filters (UfoGraph *graph)
 }
 
 /**
+ * ufo_graph_get_num_filters:
+ * @graph: A #UfoGraph
+ *
+ * Return the number of filters connected in the graph.
+ *
+ * Returns: Number of filters.
+ */
+guint
+ufo_graph_get_num_filters (UfoGraph *graph)
+{
+    GList *filters;
+    guint n_filters;
+
+    filters = ufo_graph_get_filters (graph);
+    n_filters = g_list_length (filters);
+    g_list_free (filters);
+    return n_filters;
+}
+
+/**
  * ufo_graph_get_roots:
  * @graph: A #UfoGraph
  *

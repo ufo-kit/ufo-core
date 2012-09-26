@@ -29,8 +29,6 @@ G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
 typedef struct {
     UfoFilter          *filter;
     UfoProfiler        *profiler;
-    guint               num_cmd_queues;
-    cl_command_queue   *cmd_queues;
     guint               num_inputs;
     guint               num_outputs;
     UfoInputParameter  *input_params;
@@ -46,6 +44,7 @@ typedef struct {
 struct _UfoSchedulerPrivate {
     UfoConfiguration    *config;
     UfoResourceManager  *manager;
+    GAsyncQueue         *return_queue;
 };
 
 enum {
@@ -56,6 +55,8 @@ enum {
 };
 
 static GParamSpec *scheduler_properties[N_PROPERTIES] = { NULL, };
+
+static gpointer NO_ERROR = GINT_TO_POINTER (1);
 
 /**
  * ufo_scheduler_new:
@@ -399,8 +400,9 @@ process_reduce_filter (ThreadInfo *info)
 static gpointer
 process_thread (gpointer data)
 {
-    ThreadInfo  *info = (ThreadInfo *) data;
-    UfoFilter   *filter = info->filter;
+    ThreadInfo *info = (ThreadInfo *) data;
+    UfoFilter *filter = info->filter;
+    GError *error = NULL;
 
     g_assert (ufo_filter_get_command_queue (filter) != NULL);
 
@@ -414,8 +416,6 @@ process_thread (gpointer data)
     info->result        = g_malloc (info->num_outputs * sizeof (UfoBuffer *));
     info->output_dims   = g_malloc0(info->num_outputs * sizeof (guint *));
 
-    g_async_queue_ref (info->return_queue);
-
     for (guint i = 0; i < info->num_inputs; i++)
         info->input_params[i].n_fetched_items = 0;
 
@@ -423,13 +423,26 @@ process_thread (gpointer data)
         info->output_dims[i] = g_malloc0 (output_params[i].n_dims * sizeof(guint));
 
     if (UFO_IS_FILTER_SOURCE (filter))
-        info->error = process_source_filter (info);
+        error = process_source_filter (info);
     else if (UFO_IS_FILTER_SINK (filter))
-        info->error = process_sink_filter (info);
+        error = process_sink_filter (info);
     else if (UFO_IS_FILTER_REDUCE (filter))
-        info->error = process_reduce_filter (info);
+        error = process_reduce_filter (info);
     else
-        info->error = process_synchronous_filter (info);
+        error = process_synchronous_filter (info);
+
+    g_async_queue_ref (info->return_queue);
+
+    if (error != NULL) {
+        GError *prefixed;
+
+        g_propagate_prefixed_error (&prefixed, error, "%s: ", ufo_filter_get_plugin_name (info->filter));
+        g_async_queue_push (info->return_queue, prefixed);
+    }
+    else
+        g_async_queue_push (info->return_queue, NO_ERROR);
+
+    g_async_queue_unref (info->return_queue);
 
     for (guint port = 0; port < info->num_outputs; port++) {
         UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
@@ -442,8 +455,7 @@ process_thread (gpointer data)
     g_free (info->output_dims);
     g_free (info->work);
     g_free (info->result);
-    g_async_queue_push (info->return_queue, info);
-    g_async_queue_unref (info->return_queue);
+    g_free (info);
 
     return NULL;
 }
@@ -478,12 +490,15 @@ pass_queue (UfoGraph *graph,
 }
 
 static void
-init_filter_queues (UfoGraph *graph,
-                    guint n_queues,
-                    cl_command_queue *queues)
+init_filter_queues (UfoSchedulerPrivate *priv,
+                    UfoGraph *graph)
 {
+    cl_command_queue *queues;
     GList *roots;
+    guint n_queues;
     guint i = 0;
+
+    ufo_resource_manager_get_command_queues (priv->manager, (gpointer *) &queues, &n_queues);
 
     roots = ufo_graph_get_roots (graph);
 
@@ -504,18 +519,20 @@ static GThread *
 start_filter_thread (UfoSchedulerPrivate *priv,
                      UfoFilter *filter,
                      UfoGraph *graph,
-                     ThreadInfo *info,
                      GError **error)
 {
     UfoProfilerLevel profile_level;
     GList *children;
+    ThreadInfo *info;
 
     g_object_get (G_OBJECT (priv->config),
                   "profile-level", &profile_level,
                   NULL);
 
+    info = g_new0 (ThreadInfo, 1);
     info->filter = filter;
 
+    info->return_queue = priv->return_queue;
     info->profiler = ufo_profiler_new (profile_level);
     ufo_filter_set_profiler (filter, info->profiler);
     ufo_filter_set_resource_manager (filter, priv->manager);
@@ -539,19 +556,106 @@ open_prefixed_file (const gchar *prefix, const gchar *suffix)
     return fp;
 }
 
-static gboolean
-wait_on_threads (GAsyncQueue *queue, guint n_threads, GError **error)
+static void
+print_profile_information (UfoSchedulerPrivate *priv, UfoGraph *graph)
 {
-    for (guint n_finished = 0; n_finished < n_threads; n_finished++) {
-        ThreadInfo *info = (ThreadInfo *) g_async_queue_pop (queue);
+    GList *filters;
+    UfoProfilerLevel profile_level;
+    gchar *profile_prefix;
+    FILE *opencl_fp = stdout;
+    FILE *io_fp = stdout;
+    FILE *sync_fp = stdout;
 
-        if (info->error != NULL) {
-            g_propagate_prefixed_error (error, info->error, "%s: ", ufo_filter_get_plugin_name (info->filter));
-            return FALSE;
-        }
+    g_object_get (G_OBJECT (priv->config),
+                  "profile-level", &profile_level,
+                  "profile-output-prefix", &profile_prefix,
+                  NULL);
+
+    if (profile_prefix != NULL) {
+        if (profile_level & UFO_PROFILER_LEVEL_OPENCL)
+            opencl_fp = open_prefixed_file (profile_prefix, "cl.stat");
+
+        if (profile_level & UFO_PROFILER_LEVEL_IO)
+            io_fp = open_prefixed_file (profile_prefix, "io.stat");
+
+        if (profile_level & UFO_PROFILER_LEVEL_SYNC)
+            sync_fp = open_prefixed_file (profile_prefix, "sync.stat");
     }
 
-    return TRUE;
+    filters = ufo_graph_get_filters (graph);
+
+    for (GList *it = filters; it != NULL; it = g_list_next (it)) {
+        UfoProfiler *profiler;
+        UfoFilter *filter;
+
+        filter = (UfoFilter *) it->data;
+        profiler = ufo_filter_get_profiler (filter);
+
+        if (profile_level & UFO_PROFILER_LEVEL_OPENCL)
+            ufo_profiler_foreach (profiler, (UfoProfilerFunc) print_row, opencl_fp);
+
+        if (profile_level & UFO_PROFILER_LEVEL_IO)
+            fprintf (io_fp, "%-16s %f\n",
+                     ufo_filter_get_plugin_name (filter),
+                     ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
+
+        if (profile_level & UFO_PROFILER_LEVEL_SYNC)
+            fprintf (sync_fp, "%-16s %f %f\n",
+                     ufo_filter_get_plugin_name (filter),
+                     ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_FETCH),
+                     ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_RELEASE));
+
+        g_object_unref (profiler);
+    }
+}
+
+static GError *
+spawn_threads (UfoSchedulerPrivate *priv, UfoGraph *graph)
+{
+    GList *filters;
+    guint n_threads;
+    GList *threads = NULL;
+    GError *error = NULL;
+
+    filters = ufo_graph_get_filters (graph);
+    n_threads = g_list_length (filters);
+
+    /* Start each filter in its own thread */
+    for (GList *it = filters; it != NULL; it = g_list_next (it)) {
+        UfoFilter *filter;
+        GThread *thread;
+
+        filter = (UfoFilter *) it->data;
+        thread = start_filter_thread (priv, filter, graph, &error);
+
+        if (error != NULL)
+            return error;
+
+        threads = g_list_append (threads, thread);
+    }
+
+    g_list_free (filters);
+    g_list_free (threads);
+
+    return NULL;
+}
+
+static GError *
+join_threads (UfoSchedulerPrivate *priv, UfoGraph *graph)
+{
+    guint n_threads;
+    guint n_finished;
+
+    n_threads = ufo_graph_get_num_filters (graph);
+
+    for (n_finished = 0; n_finished < n_threads; n_finished++) {
+        gpointer val = g_async_queue_pop (priv->return_queue);
+
+        if (val != NO_ERROR)
+            return val;
+    }
+
+    return NULL;
 }
 
 /**
@@ -569,21 +673,9 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                    GError      **error)
 {
     UfoSchedulerPrivate *priv;
-    cl_command_queue    *cmd_queues;
 
-    gchar       *profile_prefix;
-    GList       *filters;
     GTimer      *timer;
-    GThread    **threads;
-    ThreadInfo  *thread_info;
-    guint        n_queues;
-    guint        n_threads;
-    guint        i = 0;
-    FILE        *opencl_fp = NULL;
-    FILE        *io_fp = NULL;
-    FILE        *sync_fp = NULL;
     GError      *tmp_error = NULL;
-    GAsyncQueue *return_queue;
 
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
 
@@ -596,79 +688,28 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         priv->manager = ufo_resource_manager_new (priv->config);
     }
 
-    ufo_resource_manager_get_command_queues (priv->manager,
-                                             (gpointer *) &cmd_queues,
-                                             &n_queues);
+    init_filter_queues (priv, graph);
 
-    init_filter_queues (graph, n_queues, cmd_queues);
-
-    filters = ufo_graph_get_filters (graph);
-    n_threads = g_list_length (filters);
-    threads = g_new0 (GThread *, n_threads);
-    thread_info = g_new0 (ThreadInfo, n_threads);
     timer = g_timer_new ();
-    return_queue = g_async_queue_new ();
+    tmp_error = spawn_threads (priv, graph);
 
-    /* Start each filter in its own thread */
-    for (GList *it = filters; it != NULL; it = g_list_next (it), i++) {
-        UfoFilter *filter = (UfoFilter *) it->data;
-
-        thread_info[i].return_queue = return_queue;
-
-        threads[i] = start_filter_thread (priv,
-                                          filter,
-                                          graph,
-                                          &thread_info[i],
-                                          &tmp_error);
-
-        if (tmp_error != NULL) {
-            g_propagate_error (error, tmp_error);
-            return;
-        }
-    }
-
-    if (!wait_on_threads (return_queue, n_threads, error))
+    if (tmp_error != NULL) {
+        g_propagate_error (error, tmp_error);
         return;
-
-    g_object_get (G_OBJECT (priv->config),
-                  "profile-output-prefix", &profile_prefix,
-                  NULL);
-
-    if (profile_prefix != NULL) {
-        opencl_fp = open_prefixed_file (profile_prefix, "cl.stat");
-        io_fp = open_prefixed_file (profile_prefix, "io.stat");
-        sync_fp = open_prefixed_file (profile_prefix, "sync.stat");
-    }
-    else {
-        opencl_fp = io_fp = sync_fp = stdout;
     }
 
-    for (GList *it = filters; it != NULL; it = g_list_next (it)) {
-        UfoProfiler *profiler;
-        UfoFilter *filter;
+    tmp_error = join_threads (priv, graph);
 
-        filter = (UfoFilter *) it->data;
-        profiler = ufo_filter_get_profiler (filter);
-        ufo_profiler_foreach (profiler, (UfoProfilerFunc) print_row, opencl_fp);
-        g_object_unref (profiler);
-
-        fprintf (io_fp, "%-16s %f\n",
-                 ufo_filter_get_plugin_name (filter),
-                 ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
-
-        fprintf (sync_fp, "%-16s %f %f\n",
-                 ufo_filter_get_plugin_name (filter),
-                 ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_FETCH),
-                 ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_RELEASE));
+    if (tmp_error != NULL) {
+        g_propagate_error (error, tmp_error);
+        return;
     }
-
-    g_free (thread_info);
-    g_free (threads);
-    g_async_queue_unref (return_queue);
 
     g_timer_stop (timer);
     g_message ("Processing finished after %3.5f seconds", g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
+
+    print_profile_information (priv, graph);
 }
 
 static void
@@ -725,6 +766,8 @@ ufo_scheduler_dispose (GObject *object)
     ufo_unref_stored_object ((GObject **) &priv->config);
     ufo_unref_stored_object ((GObject **) &priv->manager);
 
+    g_async_queue_unref (priv->return_queue);
+
     G_OBJECT_CLASS (ufo_scheduler_parent_class)->dispose (object);
     g_message ("UfoScheduler: disposed");
 }
@@ -763,4 +806,5 @@ ufo_scheduler_init (UfoScheduler *scheduler)
 {
     UfoSchedulerPrivate *priv;
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
+    priv->return_queue = g_async_queue_new ();
 }
