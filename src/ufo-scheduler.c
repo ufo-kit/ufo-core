@@ -38,8 +38,9 @@ typedef struct {
     guint             **output_dims;
     UfoBuffer         **work;
     UfoBuffer         **result;
-    GTimer            **timers;
     guint               num_children;
+    GError             *error;
+    GAsyncQueue        *return_queue;
 } ThreadInfo;
 
 struct _UfoSchedulerPrivate {
@@ -398,7 +399,6 @@ process_reduce_filter (ThreadInfo *info)
 static gpointer
 process_thread (gpointer data)
 {
-    GError *error = NULL;
     ThreadInfo  *info = (ThreadInfo *) data;
     UfoFilter   *filter = info->filter;
 
@@ -412,8 +412,9 @@ process_thread (gpointer data)
     info->output_params = ufo_filter_get_output_parameters (filter);
     info->work          = g_malloc (info->num_inputs * sizeof (UfoBuffer *));
     info->result        = g_malloc (info->num_outputs * sizeof (UfoBuffer *));
-    info->timers        = g_malloc (info->num_inputs * sizeof (GTimer *));
     info->output_dims   = g_malloc0(info->num_outputs * sizeof (guint *));
+
+    g_async_queue_ref (info->return_queue);
 
     for (guint i = 0; i < info->num_inputs; i++)
         info->input_params[i].n_fetched_items = 0;
@@ -422,21 +423,13 @@ process_thread (gpointer data)
         info->output_dims[i] = g_malloc0 (output_params[i].n_dims * sizeof(guint));
 
     if (UFO_IS_FILTER_SOURCE (filter))
-        error = process_source_filter (info);
+        info->error = process_source_filter (info);
     else if (UFO_IS_FILTER_SINK (filter))
-        error = process_sink_filter (info);
+        info->error = process_sink_filter (info);
     else if (UFO_IS_FILTER_REDUCE (filter))
-        error = process_reduce_filter (info);
+        info->error = process_reduce_filter (info);
     else
-        error = process_synchronous_filter (info);
-
-    /*
-     * In case of an error something really bad happened and data is corrupted
-     * anyway, so don't bother with freeing resources. We need to show the error
-     * ASAP...
-     */
-    if (error != NULL)
-        return error;
+        info->error = process_synchronous_filter (info);
 
     for (guint port = 0; port < info->num_outputs; port++) {
         UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
@@ -449,9 +442,10 @@ process_thread (gpointer data)
     g_free (info->output_dims);
     g_free (info->work);
     g_free (info->result);
-    g_free (info->timers);
+    g_async_queue_push (info->return_queue, info);
+    g_async_queue_unref (info->return_queue);
 
-    return error;
+    return NULL;
 }
 
 static void
@@ -545,6 +539,21 @@ open_prefixed_file (const gchar *prefix, const gchar *suffix)
     return fp;
 }
 
+static gboolean
+wait_on_threads (GAsyncQueue *queue, guint n_threads, GError **error)
+{
+    for (guint n_finished = 0; n_finished < n_threads; n_finished++) {
+        ThreadInfo *info = (ThreadInfo *) g_async_queue_pop (queue);
+
+        if (info->error != NULL) {
+            g_propagate_prefixed_error (error, info->error, "%s: ", ufo_filter_get_plugin_name (info->filter));
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 /**
  * ufo_scheduler_run:
  * @scheduler: A #UfoScheduler object
@@ -574,6 +583,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     FILE        *io_fp = NULL;
     FILE        *sync_fp = NULL;
     GError      *tmp_error = NULL;
+    GAsyncQueue *return_queue;
 
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
 
@@ -592,15 +602,18 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     init_filter_queues (graph, n_queues, cmd_queues);
 
-    filters     = ufo_graph_get_filters (graph);
-    n_threads   = g_list_length (filters);
-    threads     = g_new0 (GThread *, n_threads);
+    filters = ufo_graph_get_filters (graph);
+    n_threads = g_list_length (filters);
+    threads = g_new0 (GThread *, n_threads);
     thread_info = g_new0 (ThreadInfo, n_threads);
-    timer       = g_timer_new ();
+    timer = g_timer_new ();
+    return_queue = g_async_queue_new ();
 
     /* Start each filter in its own thread */
     for (GList *it = filters; it != NULL; it = g_list_next (it), i++) {
         UfoFilter *filter = (UfoFilter *) it->data;
+
+        thread_info[i].return_queue = return_queue;
 
         threads[i] = start_filter_thread (priv,
                                           filter,
@@ -614,15 +627,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         }
     }
 
-    /* Wait for them to finish */
-    for (i = 0; i < n_threads; i++) {
-        tmp_error = (GError *) g_thread_join (threads[i]);
-
-        if (tmp_error != NULL) {
-            g_propagate_error (error, tmp_error);
-            return;
-        }
-    }
+    if (!wait_on_threads (return_queue, n_threads, error))
+        return;
 
     g_object_get (G_OBJECT (priv->config),
                   "profile-output-prefix", &profile_prefix,
@@ -658,6 +664,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     g_free (thread_info);
     g_free (threads);
+    g_async_queue_unref (return_queue);
 
     g_timer_stop (timer);
     g_message ("Processing finished after %3.5f seconds", g_timer_elapsed (timer, NULL));
