@@ -59,9 +59,10 @@ typedef enum {
 
 typedef enum {
     UFO_PROFILER_LEVEL_NONE     = 0,
-    UFO_PROFILER_LEVEL_OPENCL   = 1 << 0,
-    UFO_PROFILER_LEVEL_IO       = 1 << 1,
-    UFO_PROFILER_LEVEL_SYNC     = 1 << 2
+    UFO_PROFILER_LEVEL_CPU      = 1 << 0,
+    UFO_PROFILER_LEVEL_OPENCL   = 1 << 1,
+    UFO_PROFILER_LEVEL_IO       = 1 << 2,
+    UFO_PROFILER_LEVEL_SYNC     = 1 << 3
 } UfoProfilerLevel;
 
 UfoProfiler *ufo_profiler_new       (UfoProfilerLevel    level);

@@ -220,7 +220,9 @@ process_source_filter (ThreadInfo *info)
     GError      *error = NULL;
     gboolean     cont = TRUE;
 
+    ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
     ufo_filter_source_initialize (UFO_FILTER_SOURCE (filter), info->output_dims, &error);
+    ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
     if (error != NULL)
         return error;
@@ -230,7 +232,9 @@ process_source_filter (ThreadInfo *info)
     while (cont) {
         fetch_result (info);
 
+        ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
         cont = ufo_filter_source_generate (UFO_FILTER_SOURCE (filter), info->result, &error);
+        ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
         if (error != NULL)
             return error;
@@ -255,7 +259,9 @@ process_synchronous_filter (ThreadInfo *info)
      * Initialize
      */
     if (fetch_work (info)) {
+        ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
         ufo_filter_initialize (filter, info->work, info->output_dims, &error);
+        ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
         if (error != NULL) {
             g_error ("%s", error->message);
@@ -275,10 +281,14 @@ process_synchronous_filter (ThreadInfo *info)
                    ufo_filter_get_unique_name (filter),
                    iteration++);
 
+        ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
+
         if (filter_class->process_gpu != NULL)
             ufo_filter_process_gpu (filter, info->work, info->result, &error);
         else
             ufo_filter_process_cpu (filter, info->work, info->result, &error);
+
+        ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
         if (error != NULL)
             return error;
@@ -309,7 +319,9 @@ process_sink_filter (ThreadInfo *info)
     gboolean cont = TRUE;
 
     if (fetch_work (info)) {
+        ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
         ufo_filter_sink_initialize (sink_filter, info->work, &error);
+        ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
         if (error != NULL)
             return error;
@@ -318,7 +330,9 @@ process_sink_filter (ThreadInfo *info)
         return NULL;
 
     while (cont) {
+        ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
         ufo_filter_sink_consume (sink_filter, info->work, &error);
+        ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
         if (error != NULL)
             return error;
@@ -339,7 +353,9 @@ process_reduce_filter (ThreadInfo *info)
     gfloat default_value = 0.0f;
 
     if (fetch_work (info)) {
+        ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
         ufo_filter_reduce_initialize (UFO_FILTER_REDUCE (filter), info->work, info->output_dims, &default_value, &error);
+        ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
         if (error != NULL)
             return error;
@@ -366,7 +382,9 @@ process_reduce_filter (ThreadInfo *info)
     cont = TRUE;
 
     while (cont) {
+        ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
         ufo_filter_reduce_collect (UFO_FILTER_REDUCE (filter), info->work, info->result, &error);
+        ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
         if (error != NULL)
             return error;
@@ -381,9 +399,9 @@ process_reduce_filter (ThreadInfo *info)
     cont = TRUE;
 
     while (cont) {
-        cont = ufo_filter_reduce_reduce (UFO_FILTER_REDUCE (filter),
-                                         info->result,
-                                         &error);
+        ufo_profiler_start (info->profiler, UFO_PROFILER_TIMER_CPU);
+        cont = ufo_filter_reduce_reduce (UFO_FILTER_REDUCE (filter), info->result, &error);
+        ufo_profiler_stop (info->profiler, UFO_PROFILER_TIMER_CPU);
 
         if (error != NULL)
             return error;
@@ -561,6 +579,7 @@ print_profile_information (UfoSchedulerPrivate *priv, UfoGraph *graph)
     FILE *opencl_fp = stdout;
     FILE *io_fp = stdout;
     FILE *sync_fp = stdout;
+    FILE *cpu_fp = stdout;
 
     g_object_get (G_OBJECT (priv->config),
                   "profile-level", &profile_level,
@@ -576,6 +595,9 @@ print_profile_information (UfoSchedulerPrivate *priv, UfoGraph *graph)
 
         if (profile_level & UFO_PROFILER_LEVEL_SYNC)
             sync_fp = open_prefixed_file (profile_prefix, "sync.stat");
+
+        if (profile_level & UFO_PROFILER_LEVEL_CPU)
+            cpu_fp = open_prefixed_file (profile_prefix, "cpu.stat");
     }
 
     filters = ufo_graph_get_filters (graph);
@@ -600,6 +622,11 @@ print_profile_information (UfoSchedulerPrivate *priv, UfoGraph *graph)
                      ufo_filter_get_plugin_name (filter),
                      ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_FETCH),
                      ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_RELEASE));
+
+        if (profile_level & UFO_PROFILER_LEVEL_CPU)
+            fprintf (cpu_fp, "%-16s %f\n",
+                     ufo_filter_get_plugin_name (filter),
+                     ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_CPU));
 
         g_object_unref (profiler);
     }

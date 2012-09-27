@@ -54,7 +54,7 @@ enum {
  */
 static UfoProfilerLevel timer_level[] = {
     UFO_PROFILER_LEVEL_IO,      /* TIMER_IO */
-    UFO_PROFILER_LEVEL_NONE,    /* TIMER_CPU */
+    UFO_PROFILER_LEVEL_CPU,     /* TIMER_CPU */
     UFO_PROFILER_LEVEL_SYNC,    /* TIMER_FETCH */
     UFO_PROFILER_LEVEL_SYNC     /* TIMER_RELEASE */
 };
