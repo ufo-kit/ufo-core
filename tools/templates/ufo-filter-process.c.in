@@ -7,60 +7,86 @@
 
 #include <ufo/ufo-filter.h>
 #include <ufo/ufo-buffer.h>
-#include "ufo-filter-${prefix_hyphen}.h"
+#include "ufo-filter-{{hyphenated}}.h"
 
 /**
- * SECTION:ufo-filter-${prefix_hyphen}
+ * SECTION:ufo-filter-{{hyphenated}}
  * @Short_description: A short description
  * @Title: A short title
  *
  * Some in-depth information
  */
 
-struct _UfoFilter${prefix_camel}Private {
+struct _UfoFilter{{camelcased}}Private {
 };
 
-G_DEFINE_TYPE(UfoFilter${prefix_camel}, ufo_filter_${prefix_underscore}, UFO_TYPE_FILTER)
+G_DEFINE_TYPE(UfoFilter{{camelcased}}, ufo_filter_{{underscored}}, UFO_TYPE_FILTER)
 
-#define UFO_FILTER_${prefix_upper}_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_${prefix_upper}, UfoFilter${prefix_camel}Private))
+#define UFO_FILTER_{{uppercased}}_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_{{uppercased}}, UfoFilter{{camelcased}}Private))
 
 enum {
     PROP_0,
     N_PROPERTIES
 };
 
-static GParamSpec *${prefix_underscore}_properties[N_PROPERTIES] = { NULL, };
+static GParamSpec *{{underscored}}_properties[N_PROPERTIES] = { NULL, };
 
 static void
-ufo_filter_${prefix_underscore}_initialize (UfoFilter *filter, UfoBuffer *input[], guint **dims, GError **error)
+ufo_filter_{{underscored}}_initialize (UfoFilter *filter, UfoBuffer *input[], guint **dims, GError **error)
 {
-    UfoFilter${prefix_camel}Private *priv;
+    UfoFilter{{camelcased}}Private *priv;
 
-    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (filter);
+    priv = UFO_FILTER_{{uppercased}}_GET_PRIVATE (filter);
+
+    {% if args.disable_comments -%}
+    /*
+     * This is the place to initialize data structures that depend on the
+     * _first_ input of the pipeline. Moreover, you have to fill out the dims
+     * array with the dimensions that is supplied by this filter.
+     */
+    {%- endif %}
 }
 
 static void
-ufo_filter_${prefix_underscore}_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
+ufo_filter_{{underscored}}_process_cpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
-    UfoFilter${prefix_camel}Private *priv;
+    UfoFilter{{camelcased}}Private *priv;
 
-    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (filter);
+    priv = UFO_FILTER_{{uppercased}}_GET_PRIVATE (filter);
+
+    {% if args.disable_comments -%}
+    /*
+     * Process the input data and use the output array of buffers for the
+     * results. This function is used to represent executed CPU code. If you
+     * don't intend to have CPU code, remove the assignment in the
+     * ufo_filter_{{underscored}}_class_init() function.
+     */
+    {%- endif %}
 }
 
 static void
-ufo_filter_${prefix_underscore}_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
+ufo_filter_{{underscored}}_process_gpu (UfoFilter *filter, UfoBuffer *input[], UfoBuffer *output[], GError **error)
 {
-    UfoFilter${prefix_camel}Private *priv;
+    UfoFilter{{camelcased}}Private *priv;
 
-    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (filter);
+    priv = UFO_FILTER_{{uppercased}}_GET_PRIVATE (filter);
+
+    {% if args.disable_comments -%}
+    /*
+     * Process the input data and use the output array of buffers for the
+     * results. This function is used to represent executed GPU code. If you
+     * don't intend to have GPU code, remove the assignment in the
+     * ufo_filter_{{underscored}}_class_init() function.
+     */
+    {%- endif %}
 }
 
 static void
-ufo_filter_${prefix_underscore}_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
+ufo_filter_{{underscored}}_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
-    UfoFilter${prefix_camel}Private *priv;
+    UfoFilter{{camelcased}}Private *priv;
 
-    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (object);
+    priv = UFO_FILTER_{{uppercased}}_GET_PRIVATE (object);
 
     switch (property_id) {
         default:
@@ -70,11 +96,11 @@ ufo_filter_${prefix_underscore}_set_property (GObject *object, guint property_id
 }
 
 static void
-ufo_filter_${prefix_underscore}_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
+ufo_filter_{{underscored}}_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
-    UfoFilter${prefix_camel}Private *priv;
+    UfoFilter{{camelcased}}Private *priv;
 
-    priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (object);
+    priv = UFO_FILTER_{{uppercased}}_GET_PRIVATE (object);
 
     switch (property_id) {
         default:
@@ -84,48 +110,54 @@ ufo_filter_${prefix_underscore}_get_property (GObject *object, guint property_id
 }
 
 static void
-ufo_filter_${prefix_underscore}_finalize (GObject *object)
+ufo_filter_{{underscored}}_finalize (GObject *object)
 {
-    UfoFilter${prefix_camel}Private *priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (object);
+    UfoFilter{{camelcased}}Private *priv = UFO_FILTER_{{uppercased}}_GET_PRIVATE (object);
 
+    {%- if args.disable_comments %}
     /* Use this place to free any memory/resources allocated before */
+    {%- endif %}
 
-    G_OBJECT_CLASS (ufo_filter_${prefix_underscore}_parent_class)->finalize (object);
+    G_OBJECT_CLASS (ufo_filter_{{underscored}}_parent_class)->finalize (object);
 }
 
 static void
-ufo_filter_${prefix_underscore}_class_init (UfoFilter${prefix_camel}Class *klass)
+ufo_filter_{{underscored}}_class_init (UfoFilter{{camelcased}}Class *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     UfoFilterClass *filter_class = UFO_FILTER_CLASS (klass);
 
-    gobject_class->set_property = ufo_filter_${prefix_underscore}_set_property;
-    gobject_class->get_property = ufo_filter_${prefix_underscore}_get_property;
-    gobject_class->finalize = ufo_filter_${prefix_underscore}_finalize;
-    filter_class->initialize = ufo_filter_${prefix_underscore}_initialize;
-    filter_class->process_cpu = ufo_filter_${prefix_underscore}_process_cpu;
-    filter_class->process_gpu = ufo_filter_${prefix_underscore}_process_gpu;
+    gobject_class->set_property = ufo_filter_{{underscored}}_set_property;
+    gobject_class->get_property = ufo_filter_{{underscored}}_get_property;
+    gobject_class->finalize = ufo_filter_{{underscored}}_finalize;
+    filter_class->initialize = ufo_filter_{{underscored}}_initialize;
+    filter_class->process_cpu = ufo_filter_{{underscored}}_process_cpu;
+    filter_class->process_gpu = ufo_filter_{{underscored}}_process_gpu;
 
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
-        g_object_class_install_property (gobject_class, i, ${prefix_underscore}_properties[i]);
+        g_object_class_install_property (gobject_class, i, {{underscored}}_properties[i]);
 
-    g_type_class_add_private (gobject_class, sizeof (UfoFilter${prefix_camel}Private));
+    g_type_class_add_private (gobject_class, sizeof (UfoFilter{{camelcased}}Private));
 }
 
 static void
-ufo_filter_${prefix_underscore}_init (UfoFilter${prefix_camel} *self)
+ufo_filter_{{underscored}}_init (UfoFilter{{camelcased}} *self)
 {
+    {%- if args.disable_comments %}
     /* Define number and dimensions of the outputs */
+    {%- endif %}
     UfoOutputParameter output_params[] = {{2}};
 
-    self->priv = UFO_FILTER_${prefix_upper}_GET_PRIVATE (self);
+    self->priv = UFO_FILTER_{{uppercased}}_GET_PRIVATE (self);
 
+    {%- if args.disable_comments %}
     /* Register the outputs */
+    {%- endif %}
     ufo_filter_register_outputs (UFO_FILTER (self), 1, output_params);
 }
 
 G_MODULE_EXPORT UfoFilter *
 ufo_filter_plugin_new (void)
 {
-    return g_object_new (UFO_TYPE_FILTER_${prefix_upper}, NULL);
+    return g_object_new (UFO_TYPE_FILTER_{{uppercased}}, NULL);
 }

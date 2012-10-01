@@ -10,6 +10,7 @@ import re
 import string
 import textwrap
 import argparse
+import jinja2
 
 FILTER_TYPES = ['source', 'sink', 'process', 'reduce']
 
@@ -30,29 +31,28 @@ class TypeAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
-def generate_file(name, ftype, suffix='h'):
-    filter_camel = name
-    filter_hyphen = name[0].lower() + name[1:]
+def generate_file(args, env, suffix='h'):
+    camelcased = args.name
+    hyphenated = args.name[0].lower() + args.name[1:]
 
     for letter in string.ascii_uppercase:
-        filter_hyphen = filter_hyphen.replace(letter, "-" + letter.lower())
+        hyphenated = hyphenated.replace(letter, "-" + letter.lower())
 
-    filter_underscore = filter_hyphen.replace('-', '_')
+    underscored = hyphenated.replace('-', '_')
+    uppercased = underscored.upper()
 
-    d = {'prefix_underscore': filter_underscore,
-         'prefix_camel': name,
-         'prefix_hyphen': filter_hyphen,
-         'prefix_upper': filter_underscore.upper()}
+    template = env.get_template('ufo-filter-%s.%s.in' % (args.type, suffix))
+    res = template.render(camelcased=camelcased,
+                          uppercased=uppercased,
+                          hyphenated=hyphenated,
+                          underscored=underscored,
+                          args=args)
 
-    filename = "ufo-filter-%s.%s" % (filter_hyphen, suffix)
+    filename = "ufo-filter-%s.%s" % (hyphenated, suffix)
 
-    with open('templates/ufo-filter-%s.%s.in' % (ftype, suffix)) as f:
-        template = string.Template(f.read())
-        source = template.substitute(d)
-
-        file = open(filename, "w")
-        file.writelines(source)
-        file.close()
+    with open(filename, 'w') as f:
+        f.writelines(res)
+        f.close()
         print "Wrote %s" % filename
 
 
@@ -62,6 +62,8 @@ if __name__ == '__main__':
             action=FilternameAction, help='Name of the new filter in CamelCase')
     parser.add_argument('--type', required=True, type=str, action=TypeAction,
             help='Type of the new filter [one of %s]' % type_list())
+    parser.add_argument('-d', '--disable-comments', action='store_false',
+            help='Do not insert comments into source files')
 
     try:
         args = parser.parse_args()
@@ -69,8 +71,10 @@ if __name__ == '__main__':
         print err
         sys.exit(1)
 
-    generate_file(args.name, args.type, 'h')
-    generate_file(args.name, args.type, 'c')
+    env = jinja2.Environment(loader=jinja2.PackageLoader('mkfilter', 'templates'))
+
+    generate_file(args, env, 'h')
+    generate_file(args, env, 'c')
 
     message = "If you are about to write a UFO internal filter, you should copy \
 the generated files into core/filters and adapt the CMakeLists.txt file. You \
