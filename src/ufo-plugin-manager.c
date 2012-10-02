@@ -77,7 +77,7 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 }
 
 static void
-add_paths (UfoPluginManagerPrivate *priv, gchar *paths[])
+add_paths (UfoPluginManagerPrivate *priv, const gchar **paths)
 {
     if (paths == NULL)
         return;
@@ -253,7 +253,7 @@ ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValu
 
                     config = UFO_CONFIGURATION (value_object);
                     paths = ufo_configuration_get_paths (config);
-                    add_paths (UFO_PLUGIN_MANAGER_GET_PRIVATE (object), paths);
+                    add_paths (UFO_PLUGIN_MANAGER_GET_PRIVATE (object), (const gchar **) paths);
 
                     g_strfreev (paths);
                 }
@@ -314,9 +314,20 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
 {
     UfoPluginManagerPrivate *priv;
 
+    const gchar *default_paths[] = {
+        LIB_FILTER_DIR,
+        "/usr/lib/ufo",
+        "/usr/lib64/ufo",
+        "/usr/local/lib/ufo",
+        "/usr/local/lib64/ufo",
+        NULL
+    };
+
     manager->priv = priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     priv->modules       = NULL;
-    priv->search_paths  = g_slist_prepend (NULL, g_strdup (LIB_FILTER_DIR));
+    priv->search_paths  = NULL;
     priv->filter_funcs  = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                  g_free, g_free);
+
+    add_paths (priv, default_paths);
 }
