@@ -2,6 +2,8 @@
  * SECTION:ufo-filter
  * @Short_description: Single unit of computation
  * @Title: UfoFilter
+ *
+ * The base class for processing nodes.
  */
 
 #include <glib.h>
@@ -488,6 +490,14 @@ ufo_filter_get_input_channel (UfoFilter *filter, guint port)
     return filter->priv->input_channels[port];
 }
 
+/**
+ * ufo_filter_set_command_queue:
+ * @filter: A #UfoFilter.
+ * @cmd_queue: A %cl_command_queue to be used for computation and data transfer
+ *
+ * Set the associated command queue.
+ * Since: 0.2
+ */
 void
 ufo_filter_set_command_queue (UfoFilter *filter,
                               gpointer   cmd_queue)
@@ -496,6 +506,14 @@ ufo_filter_set_command_queue (UfoFilter *filter,
     filter->priv->command_queue = cmd_queue;
 }
 
+/**
+ * ufo_filter_get_command_queue:
+ * @filter: A #UfoFilter.
+ *
+ * Get the associated command queue.
+ * Returns: A %cl_command_queue or %NULL
+ * Since: 0.2
+ */
 gpointer
 ufo_filter_get_command_queue (UfoFilter *filter)
 {

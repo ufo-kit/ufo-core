@@ -1,6 +1,6 @@
 /**
  * SECTION:ufo-profiler
- * @Short_description: Profile OpenCL kernel calls
+ * @Short_description: Profile different measures
  * @Title: UfoProfiler
  *
  * The #UfoProfiler provides a drop-in replacement for a manual
@@ -12,6 +12,9 @@
  * the managing #UfoBaseScheduler. Filter implementations should call
  * ufo_filter_get_profiler() to receive their profiler and make profiled kernel
  * calls with ufo_profiler_call().
+ *
+ * Moreover, a profiler object is used to measure wall clock time for I/O,
+ * synchronization and general CPU computation.
  */
 
 #ifdef __APPLE__
@@ -64,6 +67,7 @@ static UfoProfilerLevel timer_level[] = {
  * @UFO_PROFILER_LEVEL_NONE: Do not track any profiling information
  * @UFO_PROFILER_LEVEL_IO: Track I/O events
  * @UFO_PROFILER_LEVEL_OPENCL: Track OpenCL events
+ * @UFO_PROFILER_LEVEL_CPU: Track general CPU time
  * @UFO_PROFILER_LEVEL_SYNC: Track synchronization wait time
  *
  * Profiling levels that the profiler supports. To set the global profiling
@@ -74,6 +78,11 @@ static UfoProfilerLevel timer_level[] = {
 /**
  * UfoProfilerTimer:
  * @UFO_PROFILER_TIMER_IO: Select I/O timer
+ * @UFO_PROFILER_TIMER_CPU: Select CPU timer
+ * @UFO_PROFILER_TIMER_FETCH: Select timer that measures the synchronization
+ *  time to fetch data from the queues.
+ * @UFO_PROFILER_TIMER_RELEASE: Select timer that measures the synchronization
+ *  time to push data to the queues.
  * @UFO_PROFILER_TIMER_CPU: Select CPU timer
  * @UFO_PROFILER_TIMER_LAST: Auxiliary value, do not use.
  *
@@ -102,8 +111,8 @@ ufo_profiler_new (UfoProfilerLevel level)
 /**
  * ufo_profiler_call:
  * @profiler: A #UfoProfiler object.
- * @command_queue: An OpenCL command queue.
- * @kernel: An OpenCL kernel.
+ * @command_queue: A %cl_command_queue
+ * @kernel: A %cl_kernel
  * @work_dim: Number of working dimensions.
  * @global_work_size: Sizes of global dimensions. The array must have at least
  *      @work_dim entries.
@@ -147,6 +156,14 @@ ufo_profiler_call (UfoProfiler    *profiler,
     }
 }
 
+/**
+ * ufo_profiler_start:
+ * @profiler: A #UfoProfiler object.
+ * @timer: Which timer to start
+ *
+ * Start @timer. The timer is not reset but accumulates the time elapsed between
+ * ufo_profiler_start() and ufo_profiler_stop() calls.
+ */
 void
 ufo_profiler_start (UfoProfiler      *profiler,
                     UfoProfilerTimer  timer)
@@ -157,6 +174,14 @@ ufo_profiler_start (UfoProfiler      *profiler,
         g_timer_continue (profiler->priv->timers[timer]);
 }
 
+/**
+ * ufo_profiler_stop:
+ * @profiler: A #UfoProfiler object.
+ * @timer: Which timer to stop
+ *
+ * Stop @timer. The timer is not reset but accumulates the time elapsed between
+ * ufo_profiler_start() and ufo_profiler_stop() calls.
+ */
 void
 ufo_profiler_stop (UfoProfiler       *profiler,
                    UfoProfilerTimer   timer)
@@ -167,6 +192,15 @@ ufo_profiler_stop (UfoProfiler       *profiler,
         g_timer_stop (profiler->priv->timers[timer]);
 }
 
+/**
+ * ufo_profiler_elapsed:
+ * @profiler: A #UfoProfiler object.
+ * @timer: Which timer to start
+ *
+ * Get the elapsed time in seconds for @timer.
+ *
+ * Returns: Elapsed time in seconds.
+ */
 gdouble
 ufo_profiler_elapsed (UfoProfiler       *profiler,
                       UfoProfilerTimer   timer)

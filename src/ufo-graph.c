@@ -2,6 +2,14 @@
  * SECTION:ufo-graph
  * @Short_description: Organize filters
  * @Title: UfoGraph
+ *
+ * A graph object represents the logical relationship between different filter
+ * nodes, i.e. how they are connected. Graphs can be constructed from
+ * free-standing #UfoFilter objects with ufo_graph_connect_filters() and
+ * ufo_graph_connect_filters_full() or load from a JSON description via
+ * ufo_graph_read_from_json().
+ *
+ * A #UfoScheduler object is then used to "execute" the graph.
  */
 
 #include <glib.h>

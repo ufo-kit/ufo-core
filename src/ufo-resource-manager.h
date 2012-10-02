@@ -76,10 +76,10 @@ gpointer            ufo_resource_manager_get_kernel_from_source (UfoResourceMana
                                                                  GError            **error);
 gpointer            ufo_resource_manager_get_context            (UfoResourceManager *manager);
 void                ufo_resource_manager_get_command_queues     (UfoResourceManager *manager,
-                                                                 gpointer           *command_queues,
+                                                                 gpointer           *cmd_queues,
                                                                  guint              *num_queues);
 gint                ufo_resource_manager_get_queue_number       (UfoResourceManager *manager,
-                                                                 gpointer            command_queue);
+                                                                 gpointer            cmd_queue);
 gpointer            ufo_resource_manager_get_command_queue      (UfoResourceManager *manager,
                                                                  guint              queue);
 guint               ufo_resource_manager_get_number_of_devices  (UfoResourceManager *manager);
@@ -91,8 +91,7 @@ UfoBuffer          *ufo_resource_manager_request_buffer         (UfoResourceMana
                                                                  guint               num_dims,
                                                                  const guint        *dim_size,
                                                                  gfloat             *data,
-                                                                 gpointer            command_queue);
-guint               ufo_resource_manager_get_new_id             (UfoResourceManager *manager);
+                                                                 gpointer            cmd_queue);
 GType               ufo_resource_manager_get_type               (void);
 GQuark              ufo_resource_manager_error_quark            (void);
 

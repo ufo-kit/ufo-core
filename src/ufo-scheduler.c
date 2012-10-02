@@ -1,7 +1,10 @@
 /**
  * SECTION:ufo-scheduler
- * @Short_description: Data transport between two UfoFilters
+ * @Short_description: Schedule the execution of a graph of nodes
  * @Title: UfoScheduler
+ *
+ * A scheduler object uses a graphs information to schedule the contained nodes
+ * on CPU and GPU hardware.
  */
 
 #ifdef __APPLE__

@@ -2,6 +2,9 @@
  * SECTION:ufo-resource-manager
  * @Short_description: Manage OpenCL resources
  * @Title: UfoResourceManager
+ *
+ * The #UfoResourceManager creates the OpenCL environment and loads OpenCL
+ * kernels from text files.
  */
 
 #include <glib.h>
@@ -479,8 +482,8 @@ ufo_resource_manager_get_context (UfoResourceManager *manager)
  * @num_dims: (in): Number of dimensions
  * @dim_size: (in) (array): Size of each dimension
  * @data: (in) (allow-none): Data used to initialize the buffer with, or NULL
- * @command_queue: (in) (allow-none): If data should be copied onto the device,
- * a cl_command_queue must be provide, or NULL
+ * @cmd_queue: (in) (allow-none): If data should be copied onto the device,
+ * a cl_command_queue must be provide, or %NULL
  *
  * Creates a new #UfoBuffer and initializes it with data on demand. If
  * non-floating point data have to be uploaded, use ufo_buffer_set_host_array()
@@ -493,7 +496,7 @@ ufo_resource_manager_request_buffer (UfoResourceManager *manager,
                                      guint               num_dims,
                                      const guint        *dim_size,
                                      gfloat             *data,
-                                     gpointer            command_queue)
+                                     gpointer            cmd_queue)
 {
     g_return_val_if_fail (UFO_IS_RESOURCE_MANAGER (manager), NULL);
     g_return_val_if_fail ((num_dims > UFO_BUFFER_MAX_NDIMS) || (dim_size != NULL), NULL);
@@ -503,7 +506,7 @@ ufo_resource_manager_request_buffer (UfoResourceManager *manager,
     const gsize num_bytes = ufo_buffer_get_size (buffer);
     cl_mem_flags mem_flags = CL_MEM_READ_WRITE;
 
-    if ((data != NULL) && (command_queue != NULL))
+    if ((data != NULL) && (cmd_queue != NULL))
         mem_flags |= CL_MEM_COPY_HOST_PTR;
 
     cl_int errcode;
@@ -514,7 +517,7 @@ ufo_resource_manager_request_buffer (UfoResourceManager *manager,
     CHECK_OPENCL_ERROR (errcode);
     ufo_buffer_set_cl_mem (buffer, buffer_mem);
 
-    if ((data) && (command_queue == NULL))
+    if ((data) && (cmd_queue == NULL))
         ufo_buffer_set_host_array (buffer, data, num_bytes, NULL);
 
     return buffer;
@@ -573,31 +576,20 @@ ufo_resource_manager_memdup (UfoResourceManager *manager, gpointer memobj)
     return dup;
 }
 
-guint ufo_resource_manager_get_new_id (UfoResourceManager *manager)
-{
-    g_return_val_if_fail (UFO_IS_RESOURCE_MANAGER (manager), 0);
-    guint id;
-    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
-    g_static_mutex_lock (&mutex);
-    id = manager->priv->current_id++;
-    g_static_mutex_unlock (&mutex);
-    return id;
-}
-
 /**
  * ufo_resource_manager_get_command_queues:
  * @manager: A #UfoResourceManager
- * @command_queues: (out): Sets pointer to command_queues array
+ * @cmd_queues: (out): Sets pointer to command_queues array
  * @num_queues: (out): Number of queues
  *
  * Return the number and actual command queues.
  */
-void ufo_resource_manager_get_command_queues (UfoResourceManager *manager, gpointer *command_queues, guint *num_queues)
+void ufo_resource_manager_get_command_queues (UfoResourceManager *manager, gpointer *cmd_queues, guint *num_queues)
 {
-    g_return_if_fail (UFO_IS_RESOURCE_MANAGER (manager) || (command_queues != NULL) || (num_queues != NULL));
+    g_return_if_fail (UFO_IS_RESOURCE_MANAGER (manager) || (cmd_queues != NULL) || (num_queues != NULL));
     /* FIXME: Use only first platform */
     *num_queues = manager->priv->num_devices[0];
-    *command_queues = manager->priv->command_queues;
+    *cmd_queues= manager->priv->command_queues;
 }
 
 /**
@@ -619,9 +611,19 @@ ufo_resource_manager_get_command_queue (UfoResourceManager *manager, guint queue
     return manager->priv->command_queues[queue];
 }
 
+/**
+ * ufo_resource_manager_get_queue_number:
+ * @manager: A #UfoResourceManager
+ * @cmd_queue: A %cl_command_queue
+ *
+ * Translate a %cl_command_queue pointer into a numerical representation.
+ *
+ * Returns: The numeral position of %cmd_queue or -1 if it is not found.
+ * Since: 0.2
+ */
 gint
 ufo_resource_manager_get_queue_number (UfoResourceManager *manager,
-                                       gpointer            command_queue)
+                                       gpointer            cmd_queue)
 {
     UfoResourceManagerPrivate *priv;
 
@@ -629,7 +631,7 @@ ufo_resource_manager_get_queue_number (UfoResourceManager *manager,
     priv = UFO_RESOURCE_MANAGER_GET_PRIVATE (manager);
 
     for (guint i = 0; i < priv->num_devices[0]; i++)
-        if (priv->command_queues[i] == command_queue)
+        if (priv->command_queues[i] == cmd_queue)
             return (gint) i;
 
     return -1;

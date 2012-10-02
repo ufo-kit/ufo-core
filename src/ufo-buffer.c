@@ -102,7 +102,7 @@ ufo_buffer_set_dimensions(UfoBuffer *buffer, guint num_dims, const guint *dim_si
  * Return value: A new #UfoBuffer with the given dimensions.
  */
 UfoBuffer *
-ufo_buffer_new(guint num_dims, const guint *dim_size)
+ufo_buffer_new (guint num_dims, const guint *dim_size)
 {
     g_return_val_if_fail ((num_dims <= UFO_BUFFER_MAX_NDIMS) && (dim_size != NULL), NULL);
     UfoBuffer *buffer = UFO_BUFFER (g_object_new (UFO_TYPE_BUFFER, NULL));
@@ -110,6 +110,14 @@ ufo_buffer_new(guint num_dims, const guint *dim_size)
     return buffer;
 }
 
+/**
+ * ufo_buffer_alloc_host_mem:
+ * @buffer: A #UfoBuffer object
+ *
+ * Allocate host memory for dimensions specified in ufo_buffer_new().
+ *
+ * Since: 0.2
+ */
 void
 ufo_buffer_alloc_host_mem (UfoBuffer *buffer)
 {
@@ -124,6 +132,15 @@ ufo_buffer_alloc_host_mem (UfoBuffer *buffer)
     priv->host_array.data = g_malloc0(priv->size);
 }
 
+/**
+ * ufo_buffer_copy:
+ * @src: Source #UfoBuffer
+ * @dst: Destination #UfoBuffer
+ *
+ * Copy the contents of %src into %dst.
+ *
+ * Since: 0.2
+ */
 void
 ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
 {

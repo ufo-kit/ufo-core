@@ -2,6 +2,9 @@
  * SECTION:ufo-configurable
  * @Short_description: An interface for configurable objects
  * @Title: UfoConfigurable
+ *
+ * An object that implements the #UfoConfigurable interface provides the common
+ * #UfoConfigurable:configuration property.
  */
 
 #include "ufo-configurable.h"

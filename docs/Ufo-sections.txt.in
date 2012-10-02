@@ -70,7 +70,6 @@ ufo_resource_manager_get_number_of_devices
 ufo_resource_manager_memdup
 ufo_resource_manager_memalloc
 ufo_resource_manager_request_buffer
-ufo_resource_manager_get_new_id
 ufo_resource_manager_get_queue_number
 <SUBSECTION Standard>
 UFO_RESOURCE_MANAGER
@@ -324,6 +323,7 @@ ufo_graph_get_roots
 ufo_graph_get_children
 ufo_graph_get_siblings
 ufo_graph_get_parents
+ufo_graph_get_num_filters
 <SUBSECTION Standard>
 UFO_GRAPH
 UFO_IS_GRAPH
