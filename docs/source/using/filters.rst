@@ -301,16 +301,20 @@ We wire this small kernel into this short Python script::
 
     from gi.repository import Ufo
 
-    g = Ufo.Graph()
-    reader = graph.get_filter('reader')
-    writer = graph.get_filter('writer')
+    pm = Ufo.PluginManager()
+    reader = pm.get_filter('reader')
+    writer = pm.get_filter('writer')
 
     # this filter applies the kernel
-    cl = graph.get_filter('cl')
+    cl = pm.get_filter('cl')
     cl.set_properties(file='simple.cl', kernel='invert')
 
-    reader.connect_to(cl)
-    cl.connect_to(writer)
+    g = Ufo.Graph()
+    g.connect_filters(reader, cl)
+    g.connect_filters(cl, writer)
+
+    s = Ufo.Scheduler()
+    s.run(g)
 
 For more information on how to write OpenCL kernels, consult the official
 `OpenCL reference pages`__.

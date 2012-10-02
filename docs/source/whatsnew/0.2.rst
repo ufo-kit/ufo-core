@@ -24,11 +24,6 @@ Major breakage
   the current API. Thus, JSON files that worked under Ufo 0.1 cannot be read
   with Ufo 0.2.
 
-- :c:func:`ufo_graph_new` takes the paths parameter.
-
-- The process methods must return a ``GError`` or ``NULL`` to inform the
-  scheduler about abnormal behaviour.
-
 - Removed the otherwise unused :c:func:`ufo_buffer_get_transfer_time` and
   replaced this with the more flexible :c:func:`ufo_buffer_get_transfer_timer`.
 
@@ -46,13 +41,13 @@ depending on the input size. For this reason, the virtual method
 :c:func:`initialize` takes a second parameter that is again a list of pointers
 to buffer objects.
 
-Moreover, the :c:type:`UfoBaseScheduler` class has been added that is combining
+Moreover, the :c:type:`UfoScheduler` class has been added that is combining
 the work previously accomplished by :c:func:`ufo_filter_process` and
-:c:func:`ufo_graph_run`. The base scheduler tries to orchestrate the filters and
-assign resources in a meaningful way.
+:c:func:`ufo_graph_run`. The scheduler orchestrates the filters and
+assigns resources in a meaningful way.
 
-If written in the new kernel style, producer filters must call
-:c:func:`ufo_filter_done` when no more data is produced.
+If written in the new kernel style, producer filters must return a boolean flag
+denoting if data was produced or not.
 
 
 General improvements
