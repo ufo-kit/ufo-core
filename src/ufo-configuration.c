@@ -12,6 +12,7 @@
 #include "ufo-configuration.h"
 #include "ufo-profiler.h"
 #include "ufo-enums.h"
+#include "config.h"
 
 
 G_DEFINE_TYPE(UfoConfiguration, ufo_configuration, G_TYPE_OBJECT)
@@ -75,6 +76,28 @@ ufo_configuration_get_paths (UfoConfiguration *config)
 
     paths[n_paths] = NULL;
     return paths;
+}
+
+/**
+ * ufo_configuration_add_path:
+ * @config: A #UfoConfiguration object
+ * @path: A %NULL-terminated string denoting a path
+ *
+ * Add a path to the list of paths that are searched by #UfoPluginManager and
+ * #UfoResourceManager.
+ */
+static void
+ufo_configuration_add_path (UfoConfiguration *config,
+                            const gchar *path)
+{
+    GValue path_value = {0};
+
+    g_return_if_fail (UFO_IS_CONFIGURATION (config));
+
+    g_value_init (&path_value, G_TYPE_STRING);
+    g_value_set_string (&path_value, path);
+    g_value_array_append (config->priv->path_array, &path_value);
+    g_value_unset (&path_value);
 }
 
 static void
@@ -222,4 +245,10 @@ ufo_configuration_init (UfoConfiguration *config)
     config->priv->path_array = g_value_array_new (0);
     config->priv->profile_level = UFO_PROFILER_LEVEL_NONE;
     config->priv->profile_output_prefix = NULL;
+
+    ufo_configuration_add_path (config, LIB_FILTER_DIR);
+    ufo_configuration_add_path (config, "/usr/lib/ufo");
+    ufo_configuration_add_path (config, "/usr/lib64/ufo");
+    ufo_configuration_add_path (config, "/usr/local/lib/ufo");
+    ufo_configuration_add_path (config, "/usr/local/lib64/ufo");
 }
