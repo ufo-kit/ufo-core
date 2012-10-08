@@ -77,13 +77,16 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 }
 
 static void
-add_paths (UfoPluginManagerPrivate *priv, const gchar **paths)
+copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfiguration *config)
 {
-    if (paths == NULL)
-        return;
+    gchar **paths;
+
+    paths = ufo_configuration_get_paths (config);
 
     for (guint i = 0; paths[i] != NULL; i++)
         priv->search_paths = g_slist_prepend (priv->search_paths, g_strdup (paths[i]));
+
+    g_strfreev (paths);
 }
 
 /**
@@ -198,10 +201,12 @@ ufo_plugin_manager_get_all_filter_names (UfoPluginManager *manager)
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     GList *result = NULL;
-    GSList *path = g_slist_nth (priv->search_paths, 0);
+    GSList *path;
 
-    GRegex *regex = g_regex_new ("libufofilter ([A-Za-z]+).so", 0, 0, NULL);
+    GRegex *regex = g_regex_new ("libufofilter([A-Za-z]+).so", 0, 0, NULL);
     GMatchInfo *match_info = NULL;
+
+    path = g_slist_nth (priv->search_paths, 0);
 
     while (path != NULL) {
         glob_t glob_vector;
@@ -212,10 +217,12 @@ ufo_plugin_manager_get_all_filter_names (UfoPluginManager *manager)
 
         while (i < glob_vector.gl_pathc) {
             g_regex_match (regex, glob_vector.gl_pathv[i], 0, &match_info);
+
             if (g_match_info_matches (match_info)) {
                 gchar *word = g_match_info_fetch (match_info, 1);
                 result = g_list_append (result, word);
             }
+
             i++;
         }
 
@@ -249,13 +256,9 @@ ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValu
 
                 if (value_object != NULL) {
                     UfoConfiguration *config;
-                    gchar **paths;
 
                     config = UFO_CONFIGURATION (value_object);
-                    paths = ufo_configuration_get_paths (config);
-                    add_paths (UFO_PLUGIN_MANAGER_GET_PRIVATE (object), (const gchar **) paths);
-
-                    g_strfreev (paths);
+                    copy_config_paths (UFO_PLUGIN_MANAGER_GET_PRIVATE (object), config);
                 }
             }
             break;
@@ -263,6 +266,18 @@ ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValu
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
+    }
+}
+
+static void
+ufo_plugin_manager_constructed (GObject *object)
+{
+    UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (object);
+
+    if (priv->search_paths == NULL) {
+        UfoConfiguration *config = ufo_configuration_new ();
+        copy_config_paths (priv, config);
+        g_object_unref (config);
     }
 }
 
@@ -301,6 +316,7 @@ ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->get_property = ufo_plugin_manager_get_property;
     gobject_class->set_property = ufo_plugin_manager_set_property;
+    gobject_class->constructed  = ufo_plugin_manager_constructed;
     gobject_class->dispose      = ufo_plugin_manager_dispose;
     gobject_class->finalize     = ufo_plugin_manager_finalize;
 
