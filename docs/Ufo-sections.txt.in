@@ -39,7 +39,7 @@ UfoPluginManagerError
 UfoPluginManager
 ufo_plugin_manager_new
 ufo_plugin_manager_get_filter
-ufo_plugin_manager_available_filters
+ufo_plugin_manager_get_all_filter_names
 <SUBSECTION Standard>
 UFO_PLUGIN_MANAGER
 UFO_IS_PLUGIN_MANAGER

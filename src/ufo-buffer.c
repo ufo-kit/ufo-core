@@ -298,8 +298,8 @@ ufo_buffer_invalidate_gpu_data(UfoBuffer *buffer)
  *
  * The fundamental data type of a UfoBuffer is one single-precision floating
  * point per pixel. To increase performance it is possible to load arbitrary
- * integer data with ufo_buffer_set_cpu_data() and convert that data with this
- * method.
+ * integer into the host array returned by ufo_buffer_get_host_array() and
+ * convert that data with this method.
  */
 void
 ufo_buffer_reinterpret(UfoBuffer *buffer, gsize source_depth, gsize num_pixels, gboolean normalize)
