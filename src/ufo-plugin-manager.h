@@ -55,7 +55,7 @@ UfoPluginManager   *ufo_plugin_manager_new                  (UfoConfiguration   
 UfoFilter          *ufo_plugin_manager_get_filter           (UfoPluginManager   *manager, 
                                                              const gchar        *name, 
                                                              GError            **error);
-GList              *ufo_plugin_manager_available_filters    (UfoPluginManager   *manager);
+GList              *ufo_plugin_manager_get_all_filter_names (UfoPluginManager   *manager);
 GType               ufo_plugin_manager_get_type             (void);
 
 G_END_DECLS

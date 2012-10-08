@@ -184,7 +184,7 @@ handle_error:
 }
 
 /**
- * ufo_plugin_manager_available_filters:
+ * ufo_plugin_manager_get_all_filter_names:
  * @manager: A #UfoPluginManager
  *
  * Return a list with potential filter names that match shared objects in all
@@ -193,7 +193,7 @@ handle_error:
  * Return value: (element-type utf8) (transfer full): List of strings with filter names
  */
 GList *
-ufo_plugin_manager_available_filters (UfoPluginManager *manager)
+ufo_plugin_manager_get_all_filter_names (UfoPluginManager *manager)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
