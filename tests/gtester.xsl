@@ -29,19 +29,21 @@
     <xsl:template match="/">
         <xsl:for-each select="gtester">
             <testsuite>
+                <!-- currently we do not support different test binaries and only take the path
+                     of the first as the testsuite name -->
                 <xsl:attribute name="name">
                     <xsl:value-of select="testbinary[1]/@path"/>
                 </xsl:attribute>
                 <xsl:attribute name="tests">
-                    <xsl:value-of select="count(testbinary[1]/testcase)"/>
+                    <xsl:value-of select="count(testbinary/testcase[not(@skipped='1')])"/>
                 </xsl:attribute>
                 <xsl:attribute name="time">
-                    <xsl:value-of select="sum(testbinary[1]/testcase/duration)"/>
+                    <xsl:value-of select="sum(testbinary/duration)"/>
                 </xsl:attribute>
                 <xsl:attribute name="failures">
-                    <xsl:value-of select="count(testbinary[1]/testcase/status[@result='failed'])"/>
+                    <xsl:value-of select="count(testbinary/testcase/status[@result='failed'])"/>
                 </xsl:attribute>
-                <xsl:for-each select="testbinary[1]/testcase">
+                <xsl:for-each select="testbinary/testcase[not(@skipped='1')]">
                     <testcase>
                         <xsl:variable name="classname">
                             <xsl:call-template name="strreplace">
