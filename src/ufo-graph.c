@@ -44,16 +44,16 @@ ufo_graph_error_quark(void)
 }
 
 typedef struct {
-    UfoFilter   *from;
-    guint        from_port;
-    UfoFilter   *to;
-    guint        to_port;
+    UfoFilter *to;
+    guint to_port;
+    guint from_port;
 } Connection;
 
 struct _UfoGraphPrivate {
     UfoPluginManager    *plugin_manager;
     GHashTable          *prop_sets;  /**< maps from gchar* to JsonNode */
-    GList               *connections;
+    GHashTable          *connections;
+    GHashTable          *filters;
     GHashTable          *json_filters;
 };
 
@@ -212,6 +212,7 @@ handle_json_filter_edge (JsonArray *array,
     ufo_graph_connect_filters_full (graph,
                                     from_filter, from_port,
                                     to_filter, to_port,
+                                    UFO_TRANSFER_MODE_DISTRIBUTE,
                                     &error);
 
     if (error != NULL)
@@ -281,32 +282,6 @@ graph_add_filter_to_json_array(gpointer data, gpointer user_data)
     json_array_add_object_element (array, node_object);
 }
 
-static void
-add_nodes_from_connection (gpointer data, gpointer user)
-{
-    Connection *connection = (Connection *) data;
-    GHashTable *filter_set = (GHashTable *) user;
-
-    g_hash_table_insert (filter_set, connection->from, NULL);
-    g_hash_table_insert (filter_set, connection->to, NULL);
-}
-
-static void
-add_edge_from_connection (gpointer data, gpointer user)
-{
-    Connection  *connection = (Connection *) data;
-    JsonArray   *edges      = (JsonArray *) user;
-    JsonObject  *to_object  = json_object_from_ufo_filter (connection->to);
-    JsonObject  *from_object = json_object_from_ufo_filter (connection->from);
-    JsonObject  *edge_object = json_object_new ();
-
-    json_object_set_int_member (to_object, "input", connection->to_port);
-    json_object_set_int_member (from_object, "output", connection->from_port);
-    json_object_set_object_member (edge_object, "to", to_object);
-    json_object_set_object_member (edge_object, "from", from_object);
-    json_array_add_object_element (edges, edge_object);
-}
-
 /**
  * ufo_graph_new:
  *
@@ -359,10 +334,14 @@ ufo_graph_read_from_json (UfoGraph *graph, UfoPluginManager *manager, const gcha
 void
 ufo_graph_save_to_json (UfoGraph *graph, const gchar *filename, GError **error)
 {
+    UfoGraphPrivate *priv;
+    GList *filters;
+    GList *sources;
+    GError *tmp_error = NULL;
+
     g_return_if_fail (UFO_IS_GRAPH (graph) && (filename != NULL));
 
-    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
-    GError *tmp_error = NULL;
+    priv = UFO_GRAPH_GET_PRIVATE (graph);
 
     JsonGenerator *json_generator = json_generator_new ();
     JsonNode *root_node = json_node_new (JSON_NODE_OBJECT);
@@ -370,16 +349,37 @@ ufo_graph_save_to_json (UfoGraph *graph, const gchar *filename, GError **error)
     JsonArray *nodes = json_array_new ();
     JsonArray *edges = json_array_new ();
 
-    GHashTable *filter_set = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-    g_list_foreach (priv->connections, add_nodes_from_connection, filter_set);
-
-    GList *filters = g_hash_table_get_keys (filter_set);
+    filters = g_hash_table_get_keys (priv->filters);
     g_list_foreach (filters, graph_add_filter_to_json_array, nodes);
     g_list_free (filters);
-    g_hash_table_destroy (filter_set);
 
-    g_list_foreach (priv->connections, add_edge_from_connection, edges);
+    sources = g_hash_table_get_keys (priv->connections);
+
+    for (GList *it = g_list_first (sources); it != NULL; it = g_list_next (it)) {
+        UfoFilter *from;
+        GList *connections;
+
+        from = UFO_FILTER (it->data);
+        connections = g_hash_table_lookup (priv->connections, from);
+
+        for (GList *jt = g_list_first (connections); jt != NULL; jt = g_list_next (jt)) {
+            Connection *c = (Connection *) jt->data;
+
+            JsonObject *to_object  = json_object_from_ufo_filter (c->to);
+            JsonObject *from_object = json_object_from_ufo_filter (from);
+            JsonObject *edge_object = json_object_new ();
+
+            json_object_set_int_member (to_object, "input", c->to_port);
+            json_object_set_int_member (from_object, "output", c->from_port);
+            json_object_set_object_member (edge_object, "to", to_object);
+            json_object_set_object_member (edge_object, "from", from_object);
+            json_array_add_object_element (edges, edge_object);
+        }
+
+        g_list_free (connections);
+    }
+
+    g_list_free (sources);
 
     json_object_set_array_member(root_object, "nodes", nodes);
     json_object_set_array_member(root_object, "edges", edges);
@@ -406,7 +406,49 @@ ufo_graph_save_to_json (UfoGraph *graph, const gchar *filename, GError **error)
 void
 ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GError **error)
 {
-    ufo_graph_connect_filters_full (graph, from, 0, to, 0, error);
+    ufo_graph_connect_filters_full (graph, from, 0, to, 0, UFO_TRANSFER_MODE_DISTRIBUTE, error);
+}
+
+static void
+add_connection (UfoGraphPrivate *priv,
+                UfoFilter *from,
+                guint from_port,
+                UfoFilter *to,
+                guint to_port)
+{
+    GList *connections;
+    Connection *c;
+
+    c = g_new0 (Connection, 1);
+    c->from_port = from_port;
+    c->to = to;
+    c->to_port = to_port;
+
+    connections = g_hash_table_lookup (priv->connections, from);
+    connections = g_list_append (connections, c);
+    g_hash_table_insert (priv->connections, from, connections);
+    g_hash_table_insert (priv->filters, from, NULL);
+    g_hash_table_insert (priv->filters, to, NULL);
+}
+
+static GList *
+get_connected_set (UfoGraphPrivate *priv,
+                   UfoFilter *from,
+                   guint from_port)
+{
+    GList *connections;
+    GList *set = NULL;
+
+    connections = g_hash_table_lookup (priv->connections, from);
+
+    for (GList *it = g_list_first (connections); it != NULL; it = g_list_next (it)) {
+        Connection *c = (Connection *) it->data;
+
+        if (c->from_port == from_port)
+            set = g_list_append (set, c);
+    }
+
+    return set;
 }
 
 /**
@@ -421,55 +463,67 @@ ufo_graph_connect_filters (UfoGraph *graph, UfoFilter *from, UfoFilter *to, GErr
  * Connect two filters with the specified input and output ports.
  */
 void
-ufo_graph_connect_filters_full (UfoGraph    *graph,
-                                UfoFilter   *from,
-                                guint        from_port,
-                                UfoFilter   *to,
-                                guint        to_port,
-                                GError     **error)
+ufo_graph_connect_filters_full (UfoGraph *graph,
+                                UfoFilter *from,
+                                guint from_port,
+                                UfoFilter *to,
+                                guint to_port,
+                                UfoTransferMode mode,
+                                GError **error)
 {
     UfoGraphPrivate *priv;
-    UfoChannel      *channel;
-    Connection      *connection;
+    UfoChannel *channel;
 
     g_return_if_fail (UFO_IS_GRAPH (graph) && UFO_IS_FILTER (from) && UFO_IS_FILTER (to));
     priv = graph->priv;
 
-    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
-        connection = (Connection *) it->data;
+    channel = ufo_filter_get_output_channel (from, from_port);
 
-        if (connection->from == from &&
-            connection->to == to &&
-            connection->from_port == from_port &&
-            connection->to_port == to_port) {
+    if (mode == UFO_TRANSFER_MODE_DISTRIBUTE) {
+        if (channel == NULL) {
+            channel = ufo_filter_get_input_channel (to, to_port);
 
-            g_warning ("Primary connection between %s and %s exists already",
-                       ufo_filter_get_unique_name (from),
-                       ufo_filter_get_unique_name (to));
-            return;
+            if (channel == NULL)
+                channel = ufo_channel_new ();
+        }
+
+        ufo_filter_set_output_channel (from, from_port, channel);
+        ufo_filter_set_input_channel (to, to_port, channel);
+        ufo_channel_ref (channel);
+    }
+    else if (mode == UFO_TRANSFER_MODE_COPY) {
+        if (channel == NULL) {
+            channel = ufo_filter_get_input_channel (to, to_port);
+
+            if (channel == NULL)
+                channel = ufo_channel_new ();
+
+            ufo_filter_set_output_channel (from, from_port, channel);
+            ufo_filter_set_input_channel (to, to_port, channel);
+            ufo_channel_ref (channel);
+        }
+        else {
+            GList *set;
+            GList *last;
+            Connection *connection;
+            UfoChannel *new_channel;
+
+            set = get_connected_set (priv, from, from_port);
+            last = g_list_last (set);
+            g_assert (last != NULL);
+
+            connection = (Connection *) last->data;
+            channel = ufo_filter_get_input_channel (connection->to, connection->to_port);
+            g_assert (channel != NULL);
+
+            new_channel = ufo_channel_new ();
+            ufo_channel_ref (new_channel);
+            ufo_channel_daisy_chain (channel, new_channel);
+            ufo_filter_set_input_channel (to, to_port, new_channel);
         }
     }
 
-    connection = g_new0 (Connection, 1);
-
-    connection->from = from;
-    connection->from_port = from_port;
-    connection->to = to;
-    connection->to_port= to_port;
-    priv->connections = g_list_append (priv->connections, connection);
-
-    channel = ufo_filter_get_output_channel (from, from_port);
-
-    if (channel == NULL) {
-        channel = ufo_filter_get_input_channel (to, to_port);
-
-        if (channel == NULL)
-            channel = ufo_channel_new ();
-    }
-
-    ufo_filter_set_output_channel (from, from_port, channel);
-    ufo_filter_set_input_channel (to, to_port, channel);
-    ufo_channel_ref (channel);
+    add_connection (priv, from, from_port, to, to_port);
 }
 
 /**
@@ -478,31 +532,14 @@ ufo_graph_connect_filters_full (UfoGraph    *graph,
  *
  * Return a list of all filter nodes of @graph.
  *
- * Returns: (element-type UfoFilter) (transfer full): List of filter nodes. Use g_list_free()
- *      when done using the list.
+ * Returns: (element-type UfoFilter) (transfer full): List of filter nodes. Use
+ * g_list_free() when done using the list.
  */
 GList *
 ufo_graph_get_filters (UfoGraph *graph)
 {
-    UfoGraphPrivate *priv;
-    Connection      *connection;
-    GHashTable      *filters;
-    GList           *result;
-
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
-    priv = graph->priv;
-
-    filters = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
-        connection = (Connection *) it->data;
-        g_hash_table_insert (filters, connection->from, NULL);
-        g_hash_table_insert (filters, connection->to, NULL);
-    }
-
-    result = g_hash_table_get_keys (filters);
-    g_hash_table_destroy (filters);
-    return result;
+    return g_hash_table_get_keys (graph->priv->filters);
 }
 
 /**
@@ -538,56 +575,19 @@ ufo_graph_get_num_filters (UfoGraph *graph)
 GList *
 ufo_graph_get_roots (UfoGraph *graph)
 {
-    UfoGraphPrivate *priv;
-    Connection      *connection;
-    GHashTable      *filters;
-    GList           *result = NULL;
+    GList *filters;
+    GList *roots = NULL;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
-    priv = graph->priv;
-    filters = g_hash_table_new (g_direct_hash, g_direct_equal);
+    filters = ufo_graph_get_filters (graph);
 
-    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
-        connection = (Connection *) it->data;
-
-        if (UFO_IS_FILTER_SOURCE (connection->from))
-            g_hash_table_insert (filters, connection->from, NULL);
+    for (GList *it = g_list_first (filters); it != NULL; it = g_list_next (it)) {
+        if (UFO_IS_FILTER_SOURCE (it->data))
+            roots = g_list_append (roots, it->data);
     }
 
-    result = g_hash_table_get_keys (filters);
-    g_hash_table_destroy (filters);
-    return result;
-}
-
-/**
- * ufo_graph_get_parents:
- * @graph: A #UfoGraph
- * @filter: A #UfoFilter
- *
- * Return a list of nodes in @graph that connect to @filter.
- *
- * Returns: (element-type UfoFilter) (transfer none): List of filter nodes. Use g_list_free()
- *      when done using the list.
- */
-GList *
-ufo_graph_get_parents (UfoGraph   *graph,
-                       UfoFilter  *filter)
-{
-    UfoGraphPrivate *priv;
-    Connection      *connection;
-    GList           *result = NULL;
-
-    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
-    priv = graph->priv;
-
-    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
-        connection = (Connection *) it->data;
-
-        if (connection->to == filter)
-            result = g_list_append (result, connection->from);
-    }
-
-    return result;
+    g_list_free (filters);
+    return roots;
 }
 
 /**
@@ -605,58 +605,18 @@ ufo_graph_get_children (UfoGraph   *graph,
                         UfoFilter  *filter)
 {
     UfoGraphPrivate *priv;
-    Connection      *connection;
-    GList           *result = NULL;
+    GList *connections;
+    GList *result = NULL;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
     priv = graph->priv;
+    connections = g_hash_table_lookup (priv->connections, filter);
 
-    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
-        connection = (Connection *) it->data;
-
-        if (connection->from == filter)
-            result = g_list_append (result, connection->to);
+    for (GList *it = g_list_first (connections); it != NULL; it = g_list_next (it)) {
+        Connection *c = (Connection *) it->data;
+        result = g_list_append (result, c->to);
     }
 
-    return result;
-}
-
-/**
- * ufo_graph_get_siblings:
- * @graph: A #UfoGraph
- * @filter: A #UfoFilter
- *
- * Return a list of nodes in @graph that share the same parent node with
- * @filter.
- *
- * Returns: (element-type UfoFilter) (transfer none): List of filter nodes. Use g_list_free()
- *      when done using the list.
- */
-GList *
-ufo_graph_get_siblings (UfoGraph    *graph,
-                        UfoFilter   *filter)
-{
-    UfoGraphPrivate *priv;
-    Connection      *connection;
-    GList           *parents;
-    GList           *result = NULL;
-
-    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
-    priv = graph->priv;
-    parents = ufo_graph_get_parents (graph, filter);
-
-    for (GList *it = g_list_first (priv->connections); it != NULL; it = g_list_next (it)) {
-        connection = (Connection *) it->data;
-
-        for (GList *jt = g_list_first (parents); jt != NULL; jt = g_list_next (jt)) {
-            UfoFilter *predecessor = (UfoFilter *) jt->data;
-
-            if (connection->to != filter && connection->from == predecessor)
-                result = g_list_append (result, connection->to);
-        }
-    }
-
-    g_list_free (parents);
     return result;
 }
 
@@ -688,11 +648,10 @@ ufo_graph_finalize (GObject *object)
 
     g_hash_table_destroy (priv->prop_sets);
     g_hash_table_destroy (priv->json_filters);
+    g_hash_table_destroy (priv->filters);
+    g_hash_table_destroy (priv->connections);
 
-    g_list_foreach (priv->connections, (GFunc) g_free, NULL);
-    g_list_free (priv->connections);
-
-    priv->connections   = NULL;
+    priv->connections = NULL;
     priv->prop_sets = NULL;
 
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
@@ -751,9 +710,15 @@ ufo_graph_init (UfoGraph *self)
 {
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
-    priv->connections = NULL;
-    priv->prop_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) json_object_unref);
-    priv->json_filters = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+    priv->connections   = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                                                 NULL, NULL);
+    priv->filters       = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                                                 NULL, NULL);
+    priv->prop_sets     = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, (GDestroyNotify) json_object_unref);
+    priv->json_filters  = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
 
     g_thread_init (NULL);
 }

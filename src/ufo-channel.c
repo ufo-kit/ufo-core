@@ -23,6 +23,7 @@ struct _UfoChannelPrivate {
     gint         ref_count;
     GAsyncQueue *input_queue;
     GAsyncQueue *output_queue;
+    UfoChannel  *next;
 };
 
 /**
@@ -69,6 +70,9 @@ ufo_channel_finish (UfoChannel *channel)
 
     for (gint i = 0; i < priv->ref_count; i++)
         g_async_queue_push (priv->input_queue, GINT_TO_POINTER (1));
+
+    if (priv->next != NULL)
+        ufo_channel_finish (priv->next);
 }
 
 /**
@@ -84,7 +88,17 @@ ufo_channel_insert (UfoChannel *channel,
                     UfoBuffer  *buffer)
 {
     g_return_if_fail (UFO_IS_CHANNEL (channel));
-    g_async_queue_push (channel->priv->output_queue, buffer);
+
+    if (channel->priv->next != NULL) {
+        UfoChannel *next = channel->priv->next;
+
+        while (next->priv->next != NULL)
+            next = next->priv->next;
+
+        g_async_queue_push (next->priv->output_queue, buffer);
+    }
+    else
+        g_async_queue_push (channel->priv->output_queue, buffer);
 }
 
 /**
@@ -116,7 +130,11 @@ void
 ufo_channel_release_input (UfoChannel *channel, UfoBuffer *buffer)
 {
     g_return_if_fail (UFO_IS_CHANNEL (channel));
-    g_async_queue_push (channel->priv->output_queue, buffer);
+
+    if (channel->priv->next != NULL)
+        g_async_queue_push (channel->priv->next->priv->input_queue, buffer);
+    else
+        g_async_queue_push (channel->priv->output_queue, buffer);
 }
 
 /**
@@ -133,8 +151,21 @@ ufo_channel_release_input (UfoChannel *channel, UfoBuffer *buffer)
 UfoBuffer *
 ufo_channel_fetch_output (UfoChannel *channel)
 {
+    UfoChannel *next;
+
     g_return_val_if_fail (UFO_IS_CHANNEL (channel), NULL);
-    return g_async_queue_pop (channel->priv->output_queue);
+
+    next = channel->priv->next;
+
+    if (next == NULL) {
+        return g_async_queue_pop (channel->priv->output_queue);
+    }
+    else {
+        while (next->priv->next != NULL)
+            next = next->priv->next;
+
+        return g_async_queue_pop (next->priv->output_queue);
+    }
 }
 
 /**
@@ -147,8 +178,15 @@ ufo_channel_fetch_output (UfoChannel *channel)
 void
 ufo_channel_release_output (UfoChannel *channel, UfoBuffer *buffer)
 {
-    g_return_if_fail (UFO_IS_CHANNEL (channel) || UFO_IS_BUFFER (buffer));
+    g_return_if_fail (UFO_IS_CHANNEL (channel) && UFO_IS_BUFFER (buffer));
     g_async_queue_push (channel->priv->input_queue, buffer);
+}
+
+void ufo_channel_daisy_chain (UfoChannel *channel,
+                              UfoChannel *next)
+{
+    g_return_if_fail (UFO_IS_CHANNEL (channel) && UFO_IS_CHANNEL (next));
+    channel->priv->next = next;
 }
 
 static void
@@ -186,4 +224,5 @@ ufo_channel_init (UfoChannel *channel)
     priv->ref_count = 0;
     priv->input_queue = g_async_queue_new ();
     priv->output_queue = g_async_queue_new ();
+    priv->next = NULL;
 }

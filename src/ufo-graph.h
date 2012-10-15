@@ -20,6 +20,11 @@ typedef enum {
     UFO_GRAPH_ERROR_JSON_KEY
 } UfoGraphError;
 
+typedef enum {
+    UFO_TRANSFER_MODE_DISTRIBUTE,
+    UFO_TRANSFER_MODE_COPY
+} UfoTransferMode;
+
 typedef struct _UfoGraph           UfoGraph;
 typedef struct _UfoGraphClass      UfoGraphClass;
 typedef struct _UfoGraphPrivate    UfoGraphPrivate;
@@ -64,15 +69,12 @@ void        ufo_graph_connect_filters_full  (UfoGraph           *graph,
                                              guint               from_port,
                                              UfoFilter          *to,
                                              guint               to_port,
+                                             UfoTransferMode     mode,
                                              GError            **error);
 GList      *ufo_graph_get_filters           (UfoGraph           *graph);
 guint       ufo_graph_get_num_filters       (UfoGraph           *graph);
 GList      *ufo_graph_get_roots             (UfoGraph           *graph);
-GList      *ufo_graph_get_parents           (UfoGraph           *graph,
-                                             UfoFilter          *filter);
 GList      *ufo_graph_get_children          (UfoGraph           *graph,
-                                             UfoFilter          *filter);
-GList      *ufo_graph_get_siblings          (UfoGraph           *graph,
                                              UfoFilter          *filter);
 GType       ufo_graph_get_type              (void);
 GQuark      ufo_graph_error_quark           (void);

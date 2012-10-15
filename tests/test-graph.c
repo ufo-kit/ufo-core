@@ -188,20 +188,6 @@ test_get_roots (Fixture *fixture, gconstpointer data)
 }
 
 static void
-test_get_parents (Fixture *fixture, gconstpointer data)
-{
-    GList *parents;
-
-    parents = ufo_graph_get_parents (fixture->graph, fixture->source);
-    g_assert (parents == NULL);
-
-    parents = ufo_graph_get_parents (fixture->graph, fixture->sink1);
-    g_assert (g_list_length (parents) == 1);
-    g_assert (g_list_nth_data (parents, 0) == fixture->source);
-    g_list_free (parents);
-}
-
-static void
 test_get_children (Fixture *fixture, gconstpointer data)
 {
     GList *children;
@@ -212,20 +198,6 @@ test_get_children (Fixture *fixture, gconstpointer data)
     children = ufo_graph_get_children (fixture->graph, fixture->source);
     g_assert (g_list_length (children) == 2);
     g_list_free (children);
-}
-
-static void
-test_get_siblings (Fixture *fixture, gconstpointer data)
-{
-    GList     *siblings;
-
-    siblings = ufo_graph_get_siblings (fixture->graph, fixture->source);
-    g_assert (siblings == NULL);
-
-    siblings = ufo_graph_get_siblings (fixture->graph, fixture->sink1);
-    g_assert (g_list_length (siblings) == 1);
-    g_assert (g_list_nth_data (siblings, 0) == fixture->sink2);
-    g_list_free (siblings);
 }
 
 void
@@ -280,24 +252,10 @@ test_add_graph (void)
                 test_get_roots,
                 fixture_filter_teardown);
 
-    g_test_add ("/graph/get/parents",
-                Fixture,
-                NULL,
-                fixture_filter_setup,
-                test_get_parents,
-                fixture_filter_teardown);
-
     g_test_add ("/graph/get/children",
                 Fixture,
                 NULL,
                 fixture_filter_setup,
                 test_get_children,
-                fixture_filter_teardown);
-
-    g_test_add ("/graph/get/siblings",
-                Fixture,
-                NULL,
-                fixture_filter_setup,
-                test_get_siblings,
                 fixture_filter_teardown);
 }

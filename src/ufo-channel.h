@@ -52,6 +52,8 @@ void        ufo_channel_release_input   (UfoChannel *channel,
 UfoBuffer * ufo_channel_fetch_output    (UfoChannel *channel);
 void        ufo_channel_release_output  (UfoChannel *channel,
                                          UfoBuffer  *buffer);
+void        ufo_channel_daisy_chain     (UfoChannel *channel,
+                                         UfoChannel *next);
 GType       ufo_channel_get_type        (void);
 
 G_END_DECLS
