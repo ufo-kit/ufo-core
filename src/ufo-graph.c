@@ -31,6 +31,16 @@ G_DEFINE_TYPE (UfoGraph, ufo_graph, G_TYPE_OBJECT)
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
 /**
+ * UfoTransferMode:
+ * @UFO_TRANSFER_MODE_DISTRIBUTE: Distribute data among connected filters.
+ * @UFO_TRANSFER_MODE_COPY: Re-use the same input data for all connected
+ * filters.
+ *
+ * The transfer mode specifies how the data is moved from one source filter to
+ * multiple sink filters when using ufo_graph_connect_filters_full().
+ */
+
+/**
  * UfoGraphError:
  * @UFO_GRAPH_ERROR_ALREADY_LOAD: Graph is already loaded
  * @UFO_GRAPH_ERROR_JSON_KEY: Specified key not found in JSON file
@@ -458,6 +468,7 @@ get_connected_set (UfoGraphPrivate *priv,
  * @from_port: Source output port
  * @to: Destination filter
  * @to_port: Destination input port
+ * @mode: Transfer mode for multiple sinks
  * @error: return location for error
  *
  * Connect two filters with the specified input and output ports.
