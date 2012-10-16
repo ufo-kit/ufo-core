@@ -166,7 +166,7 @@ fetch_work (ThreadInfo *info)
         }
 
         if (info->work[port] == POISON_PILL) {
-            ufo_channel_finish (channel);
+            ufo_channel_finish_next (channel);
             success = FALSE;
         }
     }
@@ -465,11 +465,8 @@ process_thread (gpointer data)
 
     g_async_queue_unref (info->return_queue);
 
-    for (guint port = 0; port < info->num_outputs; port++) {
-        UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
-
-        ufo_channel_finish (channel);
-    }
+    for (guint port = 0; port < info->num_outputs; port++)
+        ufo_channel_finish (ufo_filter_get_output_channel (info->filter, port));
 
     g_message ("UfoScheduler: %s finished", ufo_filter_get_unique_name (filter));
 

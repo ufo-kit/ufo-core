@@ -70,6 +70,24 @@ ufo_channel_finish (UfoChannel *channel)
 
     for (gint i = 0; i < priv->ref_count; i++)
         g_async_queue_push (priv->input_queue, GINT_TO_POINTER (1));
+}
+
+/**
+ * ufo_channel_finish_next:
+ * @channel: A #UfoChannel
+ *
+ * Finish using this channel. If @channel has a daisy-chained channel, it will
+ * also be finished.
+ */
+void
+ufo_channel_finish_next (UfoChannel *channel)
+{
+    UfoChannelPrivate *priv;
+
+    g_return_if_fail (UFO_IS_CHANNEL (channel));
+    priv = UFO_CHANNEL_GET_PRIVATE (channel);
+
+    ufo_channel_finish (channel);
 
     if (priv->next != NULL)
         ufo_channel_finish (priv->next);

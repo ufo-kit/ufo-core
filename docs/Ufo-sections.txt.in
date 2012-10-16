@@ -294,8 +294,9 @@ ufo_channel_fetch_input
 ufo_channel_release_input
 ufo_channel_fetch_output
 ufo_channel_release_output
-ufo_channel_finish
 ufo_channel_daisy_chain
+ufo_channel_finish
+ufo_channel_finish_next
 <SUBSECTION Standard>
 UFO_CHANNEL
 UFO_IS_CHANNEL

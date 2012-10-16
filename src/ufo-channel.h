@@ -44,6 +44,7 @@ struct _UfoChannelClass {
 UfoChannel *ufo_channel_new             (void);
 void        ufo_channel_ref             (UfoChannel *channel);
 void        ufo_channel_finish          (UfoChannel *channel);
+void        ufo_channel_finish_next     (UfoChannel *channel);
 void        ufo_channel_insert          (UfoChannel *channel,
                                          UfoBuffer  *buffer);
 UfoBuffer * ufo_channel_fetch_input     (UfoChannel *channel);
