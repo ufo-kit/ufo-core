@@ -23,6 +23,7 @@
 #include "ufo-filter-source.h"
 #include "ufo-filter-sink.h"
 #include "ufo-filter-reduce.h"
+#include "ufo-filter-splitter.h"
 
 G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
                          G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
@@ -418,6 +419,32 @@ process_reduce_filter (ThreadInfo *info)
     return error;
 }
 
+static GError *
+process_splitter_filter (ThreadInfo *info)
+{
+    UfoBuffer *buffer;
+    gboolean cont;
+
+    cont = fetch_work (info);
+    buffer = info->work[0];
+
+    while (cont) {
+        for (guint port = 0; port < info->num_outputs; port++) {
+            UfoChannel *channel;
+
+            channel = ufo_filter_get_output_channel (info->filter, port);
+            ufo_channel_release_output (channel, info->work[0]);
+            ufo_channel_fetch_output (channel);
+        }
+
+        push_work (info);
+
+        cont = fetch_work (info);
+    }
+
+    return NULL;
+}
+
 static gpointer
 process_thread (gpointer data)
 {
@@ -449,6 +476,8 @@ process_thread (gpointer data)
         error = process_sink_filter (info);
     else if (UFO_IS_FILTER_REDUCE (filter))
         error = process_reduce_filter (info);
+    else if (UFO_IS_FILTER_SPLITTER (filter))
+        error = process_splitter_filter (info);
     else
         error = process_synchronous_filter (info);
 

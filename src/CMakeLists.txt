@@ -14,6 +14,7 @@ set(ufocore_SRCS
     ufo-filter-sink.c
     ufo-filter-sink-direct.c
     ufo-filter-reduce.c
+    ufo-filter-splitter.c
     ufo-plugin-manager.c
     ufo-profiler.c
     ufo-resource-manager.c
@@ -32,6 +33,7 @@ set(ufocore_HDRS
     ufo-filter-sink.h
     ufo-filter-sink-direct.h
     ufo-filter-reduce.h
+    ufo-filter-splitter.h
     ufo-plugin-manager.h
     ufo-profiler.h
     ufo-resource-manager.h
