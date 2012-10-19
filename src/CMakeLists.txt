@@ -134,9 +134,10 @@ set(UFO_PKG_TYPELIBDIR "${UFO_PKG_PREFIX}/${LIB_INSTALL_DIR}/girepository-1.0")
 # FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
 # hard coded values
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
+               "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc DESTINATION lib/pkgconfig)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc
+        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
 
 
 # --- Introspection files -----------------------------------------------------
