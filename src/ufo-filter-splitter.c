@@ -20,13 +20,14 @@ G_DEFINE_TYPE (UfoFilterSplitter, ufo_filter_splitter, UFO_TYPE_FILTER)
 #define UFO_FILTER_SPLITTER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FILTER_SPLITTER, UfoFilterSplitterPrivate))
 
 struct _UfoFilterSplitterPrivate {
-    guint  n_splits;
-    guint *splits;
+    guint        n_splits;
+    guint       *splits;
+    GValueArray *counts;
 };
 
 enum {
     PROP_0,
-    PROP_NUM_SPLITS,
+    PROP_COUNTS,
     N_PROPERTIES
 };
 
@@ -41,8 +42,20 @@ ufo_filter_splitter_set_property (GObject *object,
     UfoFilterSplitterPrivate *priv = UFO_FILTER_SPLITTER_GET_PRIVATE (object);
 
     switch (property_id) {
-        case PROP_NUM_SPLITS:
-            priv->n_splits = g_value_get_uint (value);
+        case PROP_COUNTS:
+            {
+                GValueArray *array;
+
+                if (priv->counts != NULL)
+                    g_value_array_free (priv->counts);
+
+                array = g_value_get_boxed (value);
+
+                if (array != NULL) {
+                    priv->counts = g_value_array_copy (array);
+                    priv->n_splits = priv->counts->n_values;
+                }
+            }
             break;
 
         default:
@@ -60,8 +73,8 @@ ufo_filter_splitter_get_property (GObject *object,
     UfoFilterSplitterPrivate *priv = UFO_FILTER_SPLITTER_GET_PRIVATE (object);
 
     switch (property_id) {
-        case PROP_NUM_SPLITS:
-            g_value_set_uint (value, priv->n_splits);
+        case PROP_COUNTS:
+            g_value_set_boxed (value, priv->counts);
             break;
 
         default:
@@ -109,14 +122,18 @@ ufo_filter_splitter_class_init (UfoFilterSplitterClass *klass)
     oclass->get_property = ufo_filter_splitter_get_property;
     oclass->constructed  = ufo_filter_splitter_constructed;
 
-    splitter_properties[PROP_NUM_SPLITS] =
-        g_param_spec_uint ("num-splits",
-                           "Number of splits",
-                           "Number of splits",
-                           0, 256, 0,
-                           G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+    splitter_properties[PROP_COUNTS] =
+        g_param_spec_value_array ("counts",
+                                  "Array of counts for splitting the stream",
+                                  "Array of counts for splitting the stream",
+                                  g_param_spec_int ("count",
+                                                    "Number of items to push",
+                                                    "Number of items to push",
+                                                    -G_MAXINT, G_MAXINT, -1,
+                                                    G_PARAM_READWRITE),
+                                  G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
-    g_object_class_install_property (oclass, PROP_NUM_SPLITS, splitter_properties[PROP_NUM_SPLITS]);
+    g_object_class_install_property (oclass, PROP_COUNTS, splitter_properties[PROP_COUNTS]);
 
     g_type_class_add_private (klass, sizeof (UfoFilterSplitterPrivate));
 }
@@ -127,4 +144,7 @@ ufo_filter_splitter_init (UfoFilterSplitter *self)
     self->priv = UFO_FILTER_SPLITTER_GET_PRIVATE (self);
 
     self->priv->n_splits = 0;
+    self->priv->counts = NULL;
+
+    ufo_filter_set_plugin_name (UFO_FILTER (self), "splitter");
 }

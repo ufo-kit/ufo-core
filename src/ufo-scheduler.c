@@ -422,23 +422,41 @@ process_reduce_filter (ThreadInfo *info)
 static GError *
 process_splitter_filter (ThreadInfo *info)
 {
-    UfoBuffer *buffer;
-    gboolean cont;
+    GValueArray *counts;
+    UfoChannel  *channel;
+    gint         max_count;
+    gint         count;
+    guint        output;
+    gboolean     cont;
+
+    g_object_get (info->filter, "counts", &counts, NULL);
+
+    if (counts == NULL) {
+        GError *error;
+
+        g_set_error (&error, UFO_FILTER_ERROR, UFO_FILTER_ERROR_INSUFFICIENTINPUTS,
+                     "`splitter's \"counts\" property must be set");
+        return error;
+    }
 
     cont = fetch_work (info);
-    buffer = info->work[0];
+    count = 0;
+    output = 0;
+    max_count = g_value_get_int (g_value_array_get_nth (counts, output));
 
     while (cont) {
-        for (guint port = 0; port < info->num_outputs; port++) {
-            UfoChannel *channel;
-
-            channel = ufo_filter_get_output_channel (info->filter, port);
-            ufo_channel_release_output (channel, info->work[0]);
-            ufo_channel_fetch_output (channel);
+        if ((max_count >= 0) && (count == max_count) && (output < counts->n_values - 1)) {
+            output++;
+            count = 0;
+            max_count = g_value_get_int (g_value_array_get_nth (counts, output));
         }
 
+        channel = ufo_filter_get_output_channel (info->filter, output);
+        ufo_channel_release_output (channel, info->work[0]);
+        ufo_channel_fetch_output (channel);
         push_work (info);
 
+        count++;
         cont = fetch_work (info);
     }
 
@@ -494,8 +512,12 @@ process_thread (gpointer data)
 
     g_async_queue_unref (info->return_queue);
 
-    for (guint port = 0; port < info->num_outputs; port++)
-        ufo_channel_finish (ufo_filter_get_output_channel (info->filter, port));
+    for (guint port = 0; port < info->num_outputs; port++) {
+        UfoChannel *channel = ufo_filter_get_output_channel (info->filter, port);
+
+        if (channel != NULL)
+            ufo_channel_finish (channel);
+    }
 
     g_message ("UfoScheduler: %s finished", ufo_filter_get_unique_name (filter));
 
