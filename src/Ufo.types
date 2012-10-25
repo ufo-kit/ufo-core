@@ -9,6 +9,7 @@ ufo_filter_source_direct_get_type
 ufo_filter_sink_get_type
 ufo_filter_sink_direct_get_type
 ufo_filter_reduce_get_type
+ufo_filter_splitter_get_type
 ufo_graph_get_type
 ufo_plugin_manager_get_type
 ufo_profiler_get_type

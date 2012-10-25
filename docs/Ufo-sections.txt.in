@@ -257,6 +257,23 @@ UfoFilterReducePrivate
 </SECTION>
 
 <SECTION>
+<FILE>ufo-filter-splitter</FILE>
+<TITLE>UfoFilterSplitter</TITLE>
+UfoFilterSplitter
+UfoFilterSplitterClass
+<SUBSECTION Standard>
+UFO_TYPE_FILTER_SPLITTER
+UFO_FILTER_SPLITTER
+UFO_FILTER_SPLITTER_CLASS
+UFO_FILTER_SPLITTER_GET_CLASS
+UFO_IS_FILTER_SPLITTER
+UFO_IS_FILTER_SPLITTER_CLASS
+ufo_filter_splitter_get_type
+<SUBSECTION Private>
+UfoFilterSplitterPrivate
+</SECTION>
+
+<SECTION>
 <FILE>ufo-relation</FILE>
 <TITLE>UfoRelation</TITLE>
 UfoRelation
