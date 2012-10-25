@@ -50,7 +50,7 @@ ufo_filter_sink_direct_consume (UfoFilterSink *filter, UfoBuffer *input[], GErro
  * Get the buffer from this node. After processing the data, the buffer needs to
  * be released with ufo_filter_sink_direct_release().
  *
- * Returns: A #UfoBuffer to be processed directly.
+ * Returns: (transfer none): A #UfoBuffer to be processed directly.
  */
 UfoBuffer *
 ufo_filter_sink_direct_pop (UfoFilterSinkDirect *filter)
