@@ -511,7 +511,8 @@ ufo_filter_set_command_queue (UfoFilter *filter,
  * @filter: A #UfoFilter.
  *
  * Get the associated command queue.
- * Returns: A %cl_command_queue or %NULL
+ *
+ * Returns: (transfer none): A %cl_command_queue or %NULL
  * Since: 0.2
  */
 gpointer
