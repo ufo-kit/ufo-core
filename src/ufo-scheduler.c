@@ -23,6 +23,7 @@
 #include "ufo-filter-source.h"
 #include "ufo-filter-sink.h"
 #include "ufo-filter-reduce.h"
+#include "ufo-filter-repeater.h"
 #include "ufo-filter-splitter.h"
 
 G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
@@ -463,6 +464,36 @@ process_splitter_filter (ThreadInfo *info)
     return NULL;
 }
 
+static GError *
+process_repeater_filter (ThreadInfo *info)
+{
+    UfoChannel  *channel;
+    gboolean cont;
+    guint count;
+
+    g_object_get (G_OBJECT (info->filter), "count", &count, NULL);
+
+    channel = ufo_filter_get_output_channel (info->filter, 0);
+    cont = fetch_work (info);
+
+    g_print ("`%s': use channel %p\n", ufo_filter_get_unique_name (info->filter), channel);
+
+    if (!cont) {
+        g_print ("`%s': didn't receive work\n", ufo_filter_get_unique_name (info->filter));
+        return NULL;
+    }
+
+    for (guint i = 0; i < count; i++) {
+        /* g_print ("`%s': repeat iteration %i\n", ufo_filter_get_unique_name (info->filter), i); */
+        ufo_channel_release_output (channel, info->work[0]);
+        ufo_channel_fetch_output (channel);
+    }
+
+    push_work (info);
+
+    return NULL;
+}
+
 static gpointer
 process_thread (gpointer data)
 {
@@ -496,6 +527,8 @@ process_thread (gpointer data)
         error = process_reduce_filter (info);
     else if (UFO_IS_FILTER_SPLITTER (filter))
         error = process_splitter_filter (info);
+    else if (UFO_IS_FILTER_REPEATER (filter))
+        error = process_repeater_filter (info);
     else
         error = process_synchronous_filter (info);
 

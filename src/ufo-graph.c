@@ -535,6 +535,9 @@ ufo_graph_connect_filters_full (UfoGraph *graph,
     }
 
     add_connection (priv, from, from_port, to, to_port);
+    g_debug ("Connected %s:%i and %s:%i",
+             ufo_filter_get_unique_name (from), from_port,
+             ufo_filter_get_unique_name (to), to_port);
 }
 
 /**
