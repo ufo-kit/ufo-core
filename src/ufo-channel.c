@@ -2,6 +2,10 @@
  * SECTION:ufo-channel
  * @Short_description: Data transport between two UfoFilters
  * @Title: UfoChannel
+ *
+ * A channel encapsulates the data transfer from one filter that outputs data to
+ * one that receives that as an input. Channels can be daisy-chained so that the
+ * second channel receives the same data as the first one.
  */
 
 #include <string.h>
@@ -200,6 +204,15 @@ ufo_channel_release_output (UfoChannel *channel, UfoBuffer *buffer)
     g_async_queue_push (channel->priv->input_queue, buffer);
 }
 
+/**
+ * ufo_channel_daisy_chain:
+ * @channel: A #UfoChannel
+ * @next: A #UfoChannel that is appended to @channel
+ *
+ * Appends @next to @channel, so that both become siblings and share the same
+ * input. You should not use this function directly as it makes most sense for
+ * the scheduler when connecting to filters.
+ */
 void ufo_channel_daisy_chain (UfoChannel *channel,
                               UfoChannel *next)
 {

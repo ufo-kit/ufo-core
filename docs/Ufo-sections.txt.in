@@ -257,6 +257,23 @@ UfoFilterReducePrivate
 </SECTION>
 
 <SECTION>
+<FILE>ufo-filter-repeater</FILE>
+<TITLE>UfoFilterRepeater</TITLE>
+UfoFilterRepeater
+UfoFilterRepeaterClass
+<SUBSECTION Standard>
+UFO_FILTER_REPEATER
+UFO_FILTER_REPEATER_CLASS
+UFO_FILTER_REPEATER_GET_CLASS
+UFO_IS_FILTER_REPEATER
+UFO_IS_FILTER_REPEATER_CLASS
+UFO_TYPE_FILTER_REPEATER
+ufo_filter_repeater_get_type
+<SUBSECTION Private>
+UfoFilterRepeaterPrivate
+</SECTION>
+
+<SECTION>
 <FILE>ufo-filter-splitter</FILE>
 <TITLE>UfoFilterSplitter</TITLE>
 UfoFilterSplitter

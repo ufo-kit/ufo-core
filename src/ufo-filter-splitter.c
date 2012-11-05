@@ -2,6 +2,11 @@
  * SECTION:ufo-filter-splitter
  * @Short_description: Splitter filters control diverging data flows
  * @Title: UfoFilterSplitter
+ *
+ * The splitter filter is used to split the incoming data stream into
+ * consecutive, linear sub-streams. For example, this allows you to to route
+ * the first ten items to the first node, the next to items to the second and
+ * the remaining to the last node.
  */
 
 #include <glib.h>

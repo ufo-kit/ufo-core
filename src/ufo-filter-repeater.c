@@ -1,7 +1,11 @@
 /**
  * SECTION:ufo-filter-repeater
- * @Short_description: Repeater filters control diverging data flows
+ * @Short_description: The repeater filter repeats its input on the output
  * @Title: UfoFilterRepeater
+ *
+ * In case you want to subtract a constant image from a series of input images,
+ * you would need to repeat the constant image as often as you have other
+ * images.
  */
 
 #include <glib.h>
