@@ -488,6 +488,14 @@ ufo_graph_connect_filters_full (UfoGraph *graph,
     g_return_if_fail (UFO_IS_GRAPH (graph) && UFO_IS_FILTER (from) && UFO_IS_FILTER (to));
     priv = graph->priv;
 
+    channel = ufo_filter_get_input_channel (to, to_port);
+
+    if (channel != NULL) {
+        g_warning ("Input %s:%i is already in use.",
+                   ufo_filter_get_unique_name (to),
+                   to_port);
+    }
+
     channel = ufo_filter_get_output_channel (from, from_port);
 
     if (mode == UFO_TRANSFER_MODE_DISTRIBUTE) {
