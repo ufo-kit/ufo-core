@@ -84,8 +84,8 @@ UfoBuffer
 
     The fundamental data type of a UfoBuffer is one single-precision
     floating point per pixel. To increase performance it is possible
-    to load arbitrary integer data with
-    :c:func:`ufo_buffer_set_cpu_data()` and convert that data with
+    to load arbitrary integer into the host array returned by
+    :c:func:`ufo_buffer_get_host_array()` and convert that data with
     this method.
 
     :param source_depth: The number of bits that make up the original integer data type.
@@ -215,6 +215,12 @@ UfoChannel
     more data can be expected.
 
 
+.. c:function:: void ufo_channel_finish_next(UfoChannel* self)
+
+    Finish using this channel. If ``channel`` has a daisy-chained
+    channel, it will also be finished.
+
+
 .. c:function:: void ufo_channel_insert(UfoChannel* self, UfoBuffer* buffer)
 
     Inserts an initial ``buffer`` that can be consumed with
@@ -259,6 +265,15 @@ UfoChannel
     :c:func:`ufo_channel_fetch_output()`.
 
     :param buffer: A :c:type:`UfoBuffer` acquired with :c:func:`ufo_channel_fetch_output()`
+
+
+.. c:function:: void ufo_channel_daisy_chain(UfoChannel* self, UfoChannel* next)
+
+    Appends ``next`` to ``channel``, so that both become siblings and
+    share the same input. You should not use this function directly as
+    it makes most sense for the scheduler when connecting to filters.
+
+    :param next: A :c:type:`UfoChannel` that is appended to ``channel``
 
 
 UfoConfiguration
@@ -355,10 +370,10 @@ UfoFilter
     enqueue command, a %cl_event object should be created and put into
     a :c:type:`UfoEventList` that is returned at the end::
 
-        UfoEventList *event_list = ufo_event_list_new (2);
-        cl_event *events = ufo_event_list_get_event_array (event_list);
-        clEnqueueNDRangeKernel(..., 0, NULL, &events[0]);
-        return event_list; </programlisting>
+        UfoEventList *event_list = ufo_event_list_new
+        (2); cl_event *events = ufo_event_list_get_event_array
+        (event_list); clEnqueueNDRangeKernel(..., 0, NULL, &events[0]);
+        return event_list;
 
     :param input: An array of buffers for each input port
     :param output: An array of buffers for each output port
@@ -381,7 +396,7 @@ UfoFilter
 .. c:function:: gchar* ufo_filter_get_unique_name(UfoFilter* self)
 
     Get unique filter name consisting of the plugin name as returned
-    by :c:func:`ufo_filter_get_plugin_name()`, a dash `-' and the
+    by :c:func:`ufo_filter_get_plugin_name()`, a dash "-" and the
     address of the filter object. This can be useful to differentiate
     between several instances of the same filter.
 
@@ -539,6 +554,14 @@ UfoFilterReduce
     :returns: TRUE if data is produced or FALSE if reduction has stopped
 
 
+UfoFilterRepeater
+=================
+
+.. c:type:: UfoFilterRepeater
+
+    The contents of this object is opaque to the user.
+
+
 UfoFilterSink
 =============
 
@@ -577,7 +600,7 @@ UfoFilterSinkDirect
     buffer needs to be released with
     :c:func:`ufo_filter_sink_direct_release()`.
 
-    :returns: None
+    :returns: A :c:type:`UfoBuffer` to be processed directly.
 
 
 .. c:function:: void ufo_filter_sink_direct_release(UfoFilterSinkDirect* self, UfoBuffer* buffer)
@@ -644,6 +667,14 @@ UfoFilterSourceDirect
     nodes will be notified, that data generation has stopped.
 
 
+UfoFilterSplitter
+=================
+
+.. c:type:: UfoFilterSplitter
+
+    The contents of this object is opaque to the user.
+
+
 UfoGraph
 ========
 
@@ -686,7 +717,7 @@ UfoGraph
     :param to: Destination filter
 
 
-.. c:function:: void ufo_graph_connect_filters_full(UfoGraph* self, UfoFilter* from, guint from_port, UfoFilter* to, guint to_port)
+.. c:function:: void ufo_graph_connect_filters_full(UfoGraph* self, UfoFilter* from, guint from_port, UfoFilter* to, guint to_port, UfoTransferMode mode)
 
     Connect two filters with the specified input and output ports.
 
@@ -694,14 +725,15 @@ UfoGraph
     :param from_port: Source output port
     :param to: Destination filter
     :param to_port: Destination input port
+    :param mode: Transfer mode for multiple sinks
 
 
 .. c:function:: GList* ufo_graph_get_filters(UfoGraph* self)
 
-    Return a list of all filter nodes of ``graph``. when done using
-    the list.
+    Return a list of all filter nodes of ``graph``.
+    :c:func:`g_list_free()` when done using the list.
 
-    :returns: List of filter nodes. Use :c:func:`g_list_free()`
+    :returns: List of filter nodes. Use
 
 
 .. c:function:: guint ufo_graph_get_num_filters(UfoGraph* self)
@@ -720,30 +752,10 @@ UfoGraph
     :returns: List of filter nodes. Use
 
 
-.. c:function:: GList* ufo_graph_get_parents(UfoGraph* self, UfoFilter* filter)
-
-    Return a list of nodes in ``graph`` that connect to ``filter``.
-    when done using the list.
-
-    :param filter: A :c:type:`UfoFilter`
-
-    :returns: List of filter nodes. Use :c:func:`g_list_free()`
-
-
 .. c:function:: GList* ufo_graph_get_children(UfoGraph* self, UfoFilter* filter)
 
     Return a list of nodes in ``graph`` that ``filter`` connects to.
     when done using the list.
-
-    :param filter: A :c:type:`UfoFilter`
-
-    :returns: List of filter nodes. Use :c:func:`g_list_free()`
-
-
-.. c:function:: GList* ufo_graph_get_siblings(UfoGraph* self, UfoFilter* filter)
-
-    Return a list of nodes in ``graph`` that share the same parent
-    node with when done using the list.
 
     :param filter: A :c:type:`UfoFilter`
 
@@ -782,7 +794,7 @@ UfoPluginManager
     :returns: #UfoFilter or ``NULL`` if module cannot be found
 
 
-.. c:function:: GList* ufo_plugin_manager_available_filters(UfoPluginManager* self)
+.. c:function:: GList* ufo_plugin_manager_get_all_filter_names(UfoPluginManager* self)
 
     Return a list with potential filter names that match shared
     objects in all search paths.
