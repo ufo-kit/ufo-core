@@ -476,15 +476,12 @@ process_repeater_filter (ThreadInfo *info)
     channel = ufo_filter_get_output_channel (info->filter, 0);
     cont = fetch_work (info);
 
-    g_print ("`%s': use channel %p\n", ufo_filter_get_unique_name (info->filter), channel);
-
     if (!cont) {
-        g_print ("`%s': didn't receive work\n", ufo_filter_get_unique_name (info->filter));
+        g_warning ("`%s': didn't receive work\n", ufo_filter_get_unique_name (info->filter));
         return NULL;
     }
 
     for (guint i = 0; i < count; i++) {
-        /* g_print ("`%s': repeat iteration %i\n", ufo_filter_get_unique_name (info->filter), i); */
         ufo_channel_release_output (channel, info->work[0]);
         ufo_channel_fetch_output (channel);
     }

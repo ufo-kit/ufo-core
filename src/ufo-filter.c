@@ -488,9 +488,9 @@ ufo_filter_get_input_channel (UfoFilter *filter, guint port)
     g_return_val_if_fail (UFO_IS_FILTER (filter), NULL);
 
     if (port >= filter->priv->n_inputs) {
-        g_print ("Requested port %i of `%s' but has only %i\n",
-                 port, ufo_filter_get_plugin_name (filter),
-                 filter->priv->n_inputs);
+        g_warning ("Requested port %i of `%s' but has only %i inputs\n",
+                   port, ufo_filter_get_plugin_name (filter),
+                   filter->priv->n_inputs);
         return NULL;
     }
 
