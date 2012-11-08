@@ -53,10 +53,6 @@ denoting if data was produced or not.
 General improvements
 ====================
 
-- Instead of the ``json/`` directory a new ``scripts/`` directory has been added
-  to give an idea how to use the UFO framework for computing a tomographic
-  reconstruction.
-
 - The manual was restructured considerably.
 
 - Saving graphs as JSON files has been added via
