@@ -1,0 +1,13 @@
+from distutils.core import setup, Extension
+
+if __name__ == '__main__':
+    setup(name='ufotools',
+          version='${PACKAGE_VERSION}',
+          author='Matthias Vogelgesang',
+          author_email='matthias.vogelgesang@kit.edu',
+          url='http://ufo.kit.edu',
+          license='GPL v3',
+          description='ufo extension module',
+          long_description='ufo extension module',
+          package_dir={ '': '${CMAKE_CURRENT_SOURCE_DIR}' },
+          packages=['ufotools'])
