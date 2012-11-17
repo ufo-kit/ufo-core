@@ -120,11 +120,11 @@ If everything went well, you can install the library with ::
 
 You can also build ``RPM`` and ``DEB`` packages with ::
 
-  $ make packages
+  $ make package
 
 and source tarballs with ::
 
-  $ make packages_source
+  $ make package_source
 
 .. seealso:: :ref:`faq-linker-cant-find-libufo`
 
