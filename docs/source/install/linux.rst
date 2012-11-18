@@ -66,11 +66,13 @@ unstable version of the source::
 
     $ git clone http://ufo.kit.edu/git/ufo-core
     $ git clone http://ufo.kit.edu/git/ufo-filters
+    $ git clone http://ufo.kit.edu/git/oclfft
 
     OR
 
     $ git clone git@ufo.kit.edu:ufo-core
     $ git clone git@ufo.kit.edu:ufo-filters
+    $ git clone git@ufo.kit.edu:oclfft
 
 The latter is used for developers who have write-access to the corresponding
 repositories. All stable versions are tagged. To see a list of all releases
