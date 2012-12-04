@@ -23,6 +23,14 @@ ufo_gpu_node_new (gpointer cmd_queue)
     return UFO_NODE (node);
 }
 
+/**
+ * ufo_gpu_node_get_cmd_queue:
+ * @node: A #UfoGpuNode
+ *
+ * Get command queue associated with @node.
+ *
+ * Returns: (transfer none): A cl_command_queue object for @node.
+ */
 gpointer
 ufo_gpu_node_get_cmd_queue (UfoGpuNode *node)
 {

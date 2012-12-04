@@ -1,9 +1,15 @@
-#include "ufo-task-graph.h"
-#include "ufo-task-node.h"
-#include "ufo-cpu-task-iface.h"
-#include "ufo-gpu-task-iface.h"
-#include "ufo-remote-task.h"
-#include "ufo-input-task.h"
+/**
+ * SECTION:ufo-task-graph
+ * @Short_description: Hold and manage #UfoTaskNode elements.
+ * @Title: UfoTaskGraph
+ */
+
+#include <ufo-task-graph.h>
+#include <ufo-task-node.h>
+#include <ufo-cpu-task-iface.h>
+#include <ufo-gpu-task-iface.h>
+#include <ufo-remote-task.h>
+#include <ufo-input-task.h>
 
 G_DEFINE_TYPE (UfoTaskGraph, ufo_task_graph, UFO_TYPE_GRAPH)
 
@@ -13,6 +19,13 @@ struct _UfoTaskGraphPrivate {
     gint foo;
 };
 
+/**
+ * ufo_task_graph_new:
+ *
+ * Create a new task graph without any nodes.
+ *
+ * Returns: A #UfoGraph that can be upcast to a #UfoTaskGraph.
+ */
 UfoGraph *
 ufo_task_graph_new (void)
 {
@@ -27,6 +40,15 @@ is_gpu_task (UfoNode *node)
     return UFO_IS_GPU_TASK (node);
 }
 
+/**
+ * ufo_task_graph_split:
+ * @task_graph: A #UfoTaskGraph
+ * @arch_graph: A #UfoArchGraph
+ *
+ * Splits @task_graph in a way that most of the resources in @arch_graph can be
+ * occupied. In the simple pipeline case, the longest possible GPU paths are
+ * duplicated as much as there are GPUs in @arch_graph.
+ */
 void
 ufo_task_graph_split (UfoTaskGraph *task_graph,
                       UfoArchGraph *arch_graph)
@@ -49,6 +71,14 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
     g_list_free (paths);
 }
 
+/**
+ * ufo_task_graph_fuse:
+ * @task_graph: A #UfoTaskGraph
+ *
+ * Fuses task nodes to increase data locality.
+ *
+ * Note: This is not implemented and a no-op right now.
+ */
 void
 ufo_task_graph_fuse (UfoTaskGraph *task_graph)
 {
@@ -95,9 +125,11 @@ map_proc_node (UfoGraph *graph,
 
 /**
  * ufo_task_graph_map:
+ * @task_graph: A #UfoTaskGraph
+ * @arch_graph: A #UfoArchGraph to which @task_graph's nodes are mapped onto
  *
- * Map task nodes of a task graph to the processing nodes of an architecture
- * graph.
+ * Map task nodes of @task_graph to the processing nodes of @arch_graph. Not
+ * doing this could break execution of @task_graph.
  */
 void
 ufo_task_graph_map (UfoTaskGraph *task_graph,

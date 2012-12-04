@@ -1,3 +1,9 @@
+/**
+ * SECTION:ufo-graph
+ * @Short_description: Generic graph structure
+ * @Title: UfoGraph
+ */
+
 #include <stdio.h>
 #include <ufo-node.h>
 #include <ufo-graph.h>
@@ -166,7 +172,7 @@ ufo_graph_get_nodes (UfoGraph *graph)
 /**
  * ufo_graph_get_nodes_filtered:
  * @graph: A #UfoGraph
- * @func: Predicate function to filter out nodes
+ * @func: (scope call): Predicate function to filter out nodes
  *
  * Returns: (element-type UfoNode) (transfer container): A list of all nodes
  * that are marked as true by the predicate function @func.
@@ -300,9 +306,12 @@ ufo_graph_get_roots (UfoGraph *graph)
 /**
  * ufo_graph_get_successors:
  * @graph: A #UfoGraph
+ * @node: A #UfoNode whose successors are returned.
  *
- * Returns: (element-type UfoNode) (transfer container): All succeeding nodes of
- * @node.
+ * Get the successors of @node.
+ *
+ * Returns: (element-type UfoNode) (transfer container): A list with succeeding
+ * nodes of @node. Free the list with g_list_free() but not its elements.
  */
 GList *
 ufo_graph_get_successors (UfoGraph *graph,
@@ -410,7 +419,7 @@ pickup_paths (UfoGraph *graph,
 /**
  * ufo_graph_get_paths:
  * @graph: A #UfoGraph
- * @pred: A predicate function
+ * @pred: (scope call): A predicate function
  *
  * Compute a list of lists that contain complete paths with nodes that match a
  * predicate function.

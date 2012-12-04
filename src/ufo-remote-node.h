@@ -43,6 +43,9 @@ struct _UfoRemoteNodeClass {
     UfoNodeClass parent_class;
 };
 
+/**
+ * UfoMessageType: (skip)
+ */
 typedef enum {
     UFO_MESSAGE_SETUP = 0,
     UFO_MESSAGE_GET_STRUCTURE,
@@ -55,6 +58,9 @@ typedef enum {
     UFO_MESSAGE_ACK
 } UfoMessageType;
 
+/**
+ * UfoMessage: (skip)
+ */
 struct _UfoMessage {
     UfoMessageType  type;
 

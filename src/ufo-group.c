@@ -43,6 +43,8 @@ static guint         ufo_queue_get_capacity (UfoQueue *queue);
  * @targets: (element-type UfoNode): A list of #UfoNode targets
  * @context: A cl_context on which the targets should operate on.
  *
+ * Create a new #UfoGroup.
+ *
  * Returns: A new #UfoGroup.
  */
 UfoGroup *

@@ -1,7 +1,7 @@
 /**
  * SECTION:ufo-remote-task
- * @Short_description: Encapsulate remote task
- * @Title: Remote task
+ * @Short_description: Encapsulate remote tasks
+ * @Title: UfoRemoteTask
  */
 
 #include <gmodule.h>

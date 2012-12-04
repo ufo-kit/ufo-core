@@ -111,7 +111,7 @@ ufo_arch_graph_new (gpointer zmq_context,
  * ufo_arch_graph_get_context:
  * @graph: A #UfoArchGraph object
  *
- * Returns: OpenCL context associated with @graph.
+ * Returns: (transfer none): OpenCL context associated with @graph.
  */
 gpointer
 ufo_arch_graph_get_context (UfoArchGraph *graph)

@@ -117,6 +117,14 @@ const gchar *opencl_error_msgs[] = {
     "CL_INVALID_GLOBAL_WORK_SIZE"
 };
 
+/**
+ * ufo_resources_clerr:
+ * @error: An OpenCL error code
+ *
+ * Get a human-readable string representation of @error.
+ *
+ * Returns: (transfer none): A static string of @error.
+ */
 const gchar *
 ufo_resources_clerr (int error)
 {
@@ -369,7 +377,7 @@ resources_get_kernel (UfoResourcesPrivate *priv,
  * working directory and all paths added through
  * ufo_resources_add_paths ().
  *
- * Returns: a cl_kernel object that is load from @filename or %NULL on error
+ * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
  */
 gpointer
 ufo_resources_get_kernel (UfoResources *resources,
@@ -397,15 +405,15 @@ ufo_resources_get_kernel (UfoResources *resources,
 }
 
 /**
- * ufo_resources_get_kernel_from_source: (skip)
+ * ufo_resources_get_kernel_from_source:
  * @resources: A #UfoResources
  * @source: OpenCL source string
- * @kernel_name: Name of a kernel
+ * @kernel: Name of a kernel
  * @error: Return location for a GError from #UfoResourcesError, or NULL
  *
  * Loads and builds a kernel from a string.
  *
- * Returns: a cl_kernel object that is load from @filename
+ * Returns: (transfer none): a cl_kernel object that is load from @filename
  */
 gpointer
 ufo_resources_get_kernel_from_source (UfoResources *resources,
@@ -456,8 +464,10 @@ ufo_resources_get_context (UfoResources *resources)
  * ufo_resources_get_cmd_queues:
  * @resources: A #UfoResources
  *
+ * Get all command queues managed by @resources.
+ *
  * Returns: (element-type gpointer) (transfer container): List with
- * cl_command_queue objects.
+ * cl_command_queue objects. Free with g_list_free() but not its elements.
  */
 GList *
 ufo_resources_get_cmd_queues (UfoResources *resources)

@@ -16,12 +16,14 @@ G_BEGIN_DECLS
 #define UFO_IS_PARAM_SPEC_BUFFER(pspec)  (G_TYPE_CHECK_INSTANCE_TYPE((pspec), UFO_TYPE_PARAM_BUFFER))
 #define UFO_BUFFER_PARAM_SPEC(pspec)     (G_TYPE_CHECK_INSTANCE_CAST((pspec), UFO_TYPE_PARAM_BUFFER, UfoBufferParamSpec))
 
-#define UFO_BUFFER_ERROR ufo_buffer_error_quark()
-
-typedef enum {
-    UFO_BUFFER_ERROR_WRONG_SIZE
-} UfoBufferError;
-
+/**
+ * UfoMemLocation:
+ * @UFO_LOCATION_INVALID: Memory is neither valid on host nor on device.
+ * @UFO_LOCATION_HOST: Memory is valid on host memory.
+ * @UFO_LOCATION_DEVICE: Memory is valid on device memory.
+ *
+ * Memory locations of a #UfoBuffer.
+ */
 typedef enum {
     UFO_LOCATION_INVALID,
     UFO_LOCATION_HOST,
@@ -112,7 +114,6 @@ gpointer    ufo_buffer_get_device_array     (UfoBuffer      *buffer,
 void        ufo_buffer_discard_location     (UfoBuffer      *buffer,
                                              UfoMemLocation  location);
 GType       ufo_buffer_get_type             (void);
-GQuark      ufo_buffer_error_quark          (void);
 
 GParamSpec* ufo_buffer_param_spec           (const gchar*   name,
                                              const gchar*   nick,

@@ -77,6 +77,8 @@ alloc_mem (UfoBufferPrivate *priv,
  * @requisition: (in): size requisition
  * @context: (in): cl_context to use for creating the device array
  *
+ * Create a new #UfoBuffer.
+ *
  * Return value: A new #UfoBuffer with the given dimensions.
  */
 UfoBuffer *
@@ -93,6 +95,14 @@ ufo_buffer_new (UfoRequisition *requisition,
     return buffer;
 }
 
+/**
+ * ufo_buffer_get_size:
+ * @buffer: A #UfoBuffer
+ *
+ * Get the number of bytes of raw data that is managed by the @buffer.
+ *
+ * Returns: The size of @buffer's data.
+ */
 gsize
 ufo_buffer_get_size (UfoBuffer *buffer)
 {
@@ -226,7 +236,7 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
  * Create a new buffer with the same requisition as @buffer. Note, that this is
  * not a copy of @buffer!
  *
- * Returns: A #UfoBuffer with the same size as @buffer.
+ * Returns: (transfer full): A #UfoBuffer with the same size as @buffer.
  */
 UfoBuffer *
 ufo_buffer_dup (UfoBuffer *buffer)
@@ -364,7 +374,7 @@ ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
  * memory, it is transfered via @cmd_queue to the object. If @cmd_queue is %NULL
  * @cmd_queue, the last used command queue is used.
  *
- * Returns: A cl_mem object associated with @buffer.
+ * Returns: (transfer none): A cl_mem object associated with @buffer.
  */
 gpointer
 ufo_buffer_get_device_array (UfoBuffer *buffer, gpointer cmd_queue)

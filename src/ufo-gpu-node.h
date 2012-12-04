@@ -41,7 +41,7 @@ struct _UfoGpuNodeClass {
 };
 
 UfoNode  *ufo_gpu_node_new              (gpointer    cmd_queue);
-gpointer  ufo_gpu_node_get_cmd_queue    (UfoGpuNode *gpu_node);
+gpointer  ufo_gpu_node_get_cmd_queue    (UfoGpuNode *node);
 GType     ufo_gpu_node_get_type         (void);
 
 G_END_DECLS

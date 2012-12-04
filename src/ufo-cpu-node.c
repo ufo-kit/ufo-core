@@ -22,11 +22,20 @@ ufo_cpu_node_new (gpointer mask)
     return UFO_NODE (node);
 }
 
+/**
+ * ufo_cpu_node_get_affinity:
+ * @node: A #UfoCpuNode
+ *
+ * Get affinity mask of @node.
+ *
+ * Returns: (transfer none): A pointer to the cpu_set_t mask associated with
+ * @node.
+ */
 gpointer
-ufo_cpu_node_get_affinity (UfoCpuNode *cpu_node)
+ufo_cpu_node_get_affinity (UfoCpuNode *node)
 {
-    g_return_val_if_fail (UFO_IS_CPU_NODE (cpu_node), NULL);
-    return cpu_node->priv->mask;
+    g_return_val_if_fail (UFO_IS_CPU_NODE (node), NULL);
+    return node->priv->mask;
 }
 
 static void

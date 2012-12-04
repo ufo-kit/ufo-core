@@ -1,7 +1,7 @@
 /**
  * SECTION:ufo-output-task
  * @Short_description: Output task
- * @Title: Output task
+ * @Title: UfoOutputTask
  */
 
 #include <gmodule.h>

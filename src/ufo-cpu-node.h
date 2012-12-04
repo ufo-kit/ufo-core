@@ -41,7 +41,7 @@ struct _UfoCpuNodeClass {
 };
 
 UfoNode     *ufo_cpu_node_new           (gpointer mask);
-gpointer     ufo_cpu_node_get_affinity  (UfoCpuNode *cpu_node);
+gpointer     ufo_cpu_node_get_affinity  (UfoCpuNode *node);
 GType        ufo_cpu_node_get_type      (void);
 
 G_END_DECLS

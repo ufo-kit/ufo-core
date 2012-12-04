@@ -1,4 +1,10 @@
-#include "ufo-node.h"
+/**
+ * SECTION:ufo-node
+ * @Short_description: Generic node that can be connected in a #UfoGraph
+ * @Title: UfoNode
+ */
+
+#include <ufo-node.h>
 
 G_DEFINE_TYPE (UfoNode, ufo_node, G_TYPE_OBJECT)
 
@@ -24,6 +30,14 @@ ufo_node_new (gpointer label)
     return node;
 }
 
+/**
+ * ufo_node_get_label:
+ * @node: A #UfoNode
+ *
+ * Get arbitrary label data of @node.
+ *
+ * Returns: (transfer none): The label of @node.
+ */
 gpointer
 ufo_node_get_label (UfoNode *node)
 {
@@ -50,6 +64,16 @@ ufo_node_equal_real (UfoNode *n1,
            n2->priv->copied_from == n1;
 }
 
+/**
+ * ufo_node_copy:
+ * @node: A #UfoNode
+ * @error: Location for an error
+ *
+ * Get a copy of @node. How "deep" the copy is, depends on the inherited
+ * implementation of @node.
+ *
+ * Returns: (transfer full): Copy of @node.
+ */
 UfoNode *
 ufo_node_copy (UfoNode *node,
                GError **error)

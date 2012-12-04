@@ -1,11 +1,7 @@
 /**
  * SECTION:ufo-input-task
- * @Short_description: Write TIFF files
- * @Title: Input task
- *
- * The writer node writes each incoming image as a TIFF using libtiff to disk.
- * Each file is prefixed with #UfoInputTask:prefix and written into
- * #UfoInputTask:path.
+ * @Short_description: An input task
+ * @Title: UfoInputTask
  */
 
 #ifdef __APPLE__
