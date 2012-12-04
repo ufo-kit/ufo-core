@@ -2,52 +2,55 @@ cmake_minimum_required(VERSION 2.6)
 
 # --- Set sources -------------------------------------------------------------
 set(ufocore_SRCS
-    ufo-scheduler.c
-    ufo-channel.c
-    ufo-configurable.c
-    ufo-configuration.c
-    ufo-graph.c
+    ufo-arch-graph.c
     ufo-buffer.c
-    ufo-filter.c
-    ufo-filter-source.c
-    ufo-filter-source-direct.c
-    ufo-filter-sink.c
-    ufo-filter-sink-direct.c
-    ufo-filter-reduce.c
-    ufo-filter-repeater.c
-    ufo-filter-splitter.c
+    ufo-configurable.c
+    ufo-config.c
+    ufo-cpu-node.c
+    ufo-cpu-task-iface.c
+    ufo-gpu-node.c
+    ufo-gpu-task-iface.c
+    ufo-graph.c
+    ufo-group.c
+    ufo-input-task.c
+    ufo-node.c
+    ufo-output-task.c
     ufo-plugin-manager.c
     ufo-profiler.c
-    ufo-resource-manager.c
+    ufo-remote-node.c
+    ufo-remote-task.c
+    ufo-resources.c
+    ufo-scheduler.c
+    ufo-task-iface.c
+    ufo-task-graph.c
+    ufo-task-node.c
     )
 
 set(ufocore_HDRS
-    ufo-scheduler.h
-    ufo-channel.h
-    ufo-configurable.h
-    ufo-configuration.h
-    ufo-graph.h
+    ufo-arch-graph.h
     ufo-buffer.h
-    ufo-filter.h
-    ufo-filter-source.h
-    ufo-filter-source-direct.h
-    ufo-filter-sink.h
-    ufo-filter-sink-direct.h
-    ufo-filter-reduce.h
-    ufo-filter-repeater.h
-    ufo-filter-splitter.h
+    ufo-configurable.h
+    ufo-config.h
+    ufo-cpu-node.h
+    ufo-cpu-task-iface.h
+    ufo-gpu-node.h
+    ufo-gpu-task-iface.h
+    ufo-graph.h
+    ufo-group.h
+    ufo-input-task.h
+    ufo-node.h
+    ufo-output-task.h
     ufo-plugin-manager.h
     ufo-profiler.h
-    ufo-resource-manager.h
+    ufo-remote-node.h
+    ufo-remote-task.h
+    ufo-resources.h
+    ufo-scheduler.h
+    ufo-task-iface.h
+    ufo-task-graph.h
+    ufo-task-node.h
     )
 
-set(ufocore_NODOC_SRCS
-    ufo-aux.c
-    )
-
-set(ufocore_NODOC_HDRS
-    ufo-aux.h
-    )
 
 # --- Find packages and libraries ---------------------------------------------
 find_program(INTROSPECTION_SCANNER "g-ir-scanner")
@@ -57,6 +60,7 @@ find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
 pkg_check_modules(GMODULE2 gmodule-2.0>=2.22 REQUIRED)
 pkg_check_modules(GTHREAD2 gthread-2.0>=2.22 REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
+pkg_check_modules(ZMQ libzmq>=3.2 REQUIRED)
 
 set(ufocore_LIBS
     ${OPENCL_LIBRARIES}
@@ -65,6 +69,7 @@ set(ufocore_LIBS
     ${GMODULE2_LIBRARIES}
     ${GTHREAD2_LIBRARIES}
     ${JSON_GLIB_LIBRARIES}
+    ${ZMQ_LIBRARIES}
     )
 
 # --- Add enum generation targets ---------------------------------------------
@@ -98,7 +103,7 @@ set(LIB_INSTALL_DIR "lib${LIB_SUFFIX}")
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
     ${JSON_GLIB_INCLUDE_DIRS}
-    )
+    ${ZMQ_INCLUDE_DIRS})
 
 if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_definitions(-DG_DISABLE_ASSERT)
@@ -164,7 +169,9 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
                     --no-libtool
                     --include=GObject-2.0
                     --include=GModule-2.0
+                    --include=GLib-2.0
                     -I${OPENCL_INCLUDE_DIRS}
+                    -I${CMAKE_CURRENT_SOURCE_DIR}
                     --output ${GIR_XML}
                     --warn-all
                     ${_gir_input}
@@ -225,28 +232,10 @@ if(GTK_DOC_FOUND)
         endforeach()
 
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in" "${docs_out}/Ufo-docs.xml")
-        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-sections.txt.in" "${docs_out}/Ufo-sections.txt")
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/scangobj.sh.in" "${docs_out}/scangobj.sh")
 
         set(reference_files
             "${docs_out}/index.html"
-            "${docs_out}/annotation-glossary.html"
-            "${docs_out}/api-index-full.html"
-            "${docs_out}/ch01.html"
-            "${docs_out}/UfoBuffer.html"
-            "${docs_out}/UfoChannel.html"
-            "${docs_out}/UfoConfigurable.html"
-            "${docs_out}/UfoConfiguration.html"
-            "${docs_out}/UfoFilter.html"
-            "${docs_out}/UfoFilterReduce.html"
-            "${docs_out}/UfoFilterSink.html"
-            "${docs_out}/UfoFilterSinkDirect.html"
-            "${docs_out}/UfoFilterSource.html"
-            "${docs_out}/UfoFilterSourceDirect.html"
-            "${docs_out}/UfoGraph.html"
-            "${docs_out}/UfoPluginManager.html"
-            "${docs_out}/UfoProfiler.html"
-            "${docs_out}/UfoResourceManager.html"
             "${docs_out}/UfoScheduler.html"
             "${docs_out}/style.css"
             "${docs_out}/Ufo.devhelp2"
@@ -264,13 +253,12 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}/../src
-                    --ignore-headers="${ufocore_NODOC_HDRS}"
                     DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_out}/Ufo.args
             COMMAND sh scangobj.sh
-            DEPENDS ${ufocore_SRCS} ${docs_out}/Ufo-decl.txt ${CMAKE_CURRENT_SOURCE_DIR}/Ufo.types
+            DEPENDS ${ufocore_SRCS} ${docs_out}/Ufo-decl.txt
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_out}/sgml.stamp

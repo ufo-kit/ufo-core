@@ -11,21 +11,21 @@
  */
 #include <gmodule.h>
 #include <glob.h>
+#include <ufo-plugin-manager.h>
+#include <ufo-configurable.h>
 #include "config.h"
-#include "ufo-plugin-manager.h"
-#include "ufo-configurable.h"
 
 G_DEFINE_TYPE_WITH_CODE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT,
                          G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
 
 #define UFO_PLUGIN_MANAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_PLUGIN_MANAGER, UfoPluginManagerPrivate))
 
-typedef UfoFilter* (* GetFilterFunc) (void);
+typedef UfoNode* (* NewFunc) (void);
 
 struct _UfoPluginManagerPrivate {
     GSList      *search_paths;
     GSList      *modules;
-    GHashTable  *filter_funcs;  /**< maps from gchar* to GetFilterFunc* */
+    GHashTable  *new_funcs;  /**< maps from gchar* to NewFunc* */
 };
 
 enum {
@@ -64,7 +64,7 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
     GSList *p = g_slist_nth (priv->search_paths, 0);
 
     while (p != NULL) {
-        gchar *path = g_strdup_printf ("%s%c%s", (gchar *) p->data, G_DIR_SEPARATOR, name);
+        gchar *path = g_build_filename ((gchar *) p->data, name, NULL);
 
         if (g_file_test (path, G_FILE_TEST_EXISTS))
             return path;
@@ -77,11 +77,11 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 }
 
 static void
-copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfiguration *config)
+copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfig *config)
 {
     gchar **paths;
 
-    paths = ufo_configuration_get_paths (config);
+    paths = ufo_config_get_paths (config);
 
     for (guint i = 0; paths[i] != NULL; i++)
         priv->search_paths = g_slist_prepend (priv->search_paths, g_strdup (paths[i]));
@@ -91,7 +91,7 @@ copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfiguration *config)
 
 /**
  * ufo_plugin_manager_new:
- * @config: (allow-none): A #UfoConfiguration object or %NULL.
+ * @config: (allow-none): A #UfoConfig object or %NULL.
  *
  * Create a plugin manager object to instantiate filter objects. When a config
  * object is passed to the constructor, its search-path property is added to the
@@ -100,7 +100,7 @@ copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfiguration *config)
  * Return value: A new plugin manager object.
  */
 UfoPluginManager *
-ufo_plugin_manager_new (UfoConfiguration *config)
+ufo_plugin_manager_new (UfoConfig *config)
 {
     UfoPluginManager *manager;
 
@@ -124,27 +124,28 @@ ufo_plugin_manager_new (UfoConfiguration *config)
  *
  * Since: 0.2, the error parameter is available
  */
-UfoFilter *
-ufo_plugin_manager_get_filter (UfoPluginManager *manager, const gchar *name, GError **error)
+UfoNode *
+ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GError **error)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && (name != NULL), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
-    UfoFilter *filter;
-    GetFilterFunc *func = NULL;
-    GModule *module = NULL;
+    UfoNode *node;
+    NewFunc *func;
+    GModule *module;
     gchar *module_name = NULL;
+
     const gchar *entry_symbol_name = "ufo_filter_plugin_new";
 
-    func = g_hash_table_lookup (priv->filter_funcs, name);
+    func = g_hash_table_lookup (priv->new_funcs, name);
 
     if (func == NULL) {
         /* No suitable function found, let's find the module */
-        module_name = g_strdup_printf ("libufofilter%s.so", name);
+        module_name = g_strdup_printf ("libufotask%s.so", name);
         gchar *path = plugin_manager_get_path (priv, module_name);
 
         if (path == NULL) {
             g_set_error (error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_NOT_FOUND,
-                    "Module %s not found", module_name);
+                         "Module %s not found", module_name);
             goto handle_error;
         }
 
@@ -153,15 +154,15 @@ ufo_plugin_manager_get_filter (UfoPluginManager *manager, const gchar *name, GEr
 
         if (!module) {
             g_set_error (error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_OPEN,
-                    "Module %s could not be opened: %s", module_name, g_module_error ());
+                         "Module %s could not be opened: %s", module_name, g_module_error ());
             goto handle_error;
         }
 
-        func = g_malloc0 (sizeof (GetFilterFunc));
+        func = g_malloc0 (sizeof (NewFunc));
 
         if (!g_module_symbol (module, entry_symbol_name, (gpointer *) func)) {
             g_set_error (error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND,
-                    "%s is not exported by module %s: %s", entry_symbol_name, module_name, g_module_error ());
+                         "%s is not exported by module %s: %s", entry_symbol_name, module_name, g_module_error ());
             g_free (func);
 
             if (!g_module_close (module))
@@ -171,15 +172,15 @@ ufo_plugin_manager_get_filter (UfoPluginManager *manager, const gchar *name, GEr
         }
 
         priv->modules = g_slist_append (priv->modules, module);
-        g_hash_table_insert (priv->filter_funcs, g_strdup (name), func);
+        g_hash_table_insert (priv->new_funcs, g_strdup (name), func);
         g_free (module_name);
     }
 
-    filter = (*func) ();
-    ufo_filter_set_plugin_name (filter, name);
-    g_message ("UfoPluginManager: Created %s-%p", name, (gpointer) filter);
+    node = (*func) ();
+    /* ufo_filter_set_plugin_name (filter, name); */
+    g_message ("UfoPluginManager: Created %s-%p", name, (gpointer) node);
 
-    return filter;
+    return node;
 
 handle_error:
     g_free (module_name);
@@ -187,7 +188,7 @@ handle_error:
 }
 
 /**
- * ufo_plugin_manager_get_all_filter_names:
+ * ufo_plugin_manager_get_all_task_names:
  * @manager: A #UfoPluginManager
  *
  * Return a list with potential filter names that match shared objects in all
@@ -196,21 +197,23 @@ handle_error:
  * Return value: (element-type utf8) (transfer full): List of strings with filter names
  */
 GList *
-ufo_plugin_manager_get_all_filter_names (UfoPluginManager *manager)
+ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     GList *result = NULL;
     GSList *path;
 
-    GRegex *regex = g_regex_new ("libufofilter([A-Za-z]+).so", 0, 0, NULL);
+    GRegex *regex = g_regex_new ("libufotask([A-Za-z]+).so", 0, 0, NULL);
     GMatchInfo *match_info = NULL;
 
     path = g_slist_nth (priv->search_paths, 0);
 
     while (path != NULL) {
         glob_t glob_vector;
-        gchar *pattern = g_strdup_printf ("%s%clibufofilter*.so", (gchar *) path->data, G_DIR_SEPARATOR);
+        gchar *pattern;
+
+        pattern = g_build_filename ((gchar *) path->data, "libufotask*.so", NULL);
         glob (pattern, GLOB_MARK | GLOB_TILDE, NULL, &glob_vector);
         g_free (pattern);
         gsize i = 0;
@@ -255,9 +258,9 @@ ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValu
                 value_object = g_value_get_object (value);
 
                 if (value_object != NULL) {
-                    UfoConfiguration *config;
+                    UfoConfig *config;
 
-                    config = UFO_CONFIGURATION (value_object);
+                    config = UFO_CONFIG (value_object);
                     copy_config_paths (UFO_PLUGIN_MANAGER_GET_PRIVATE (object), config);
                 }
             }
@@ -275,7 +278,7 @@ ufo_plugin_manager_constructed (GObject *object)
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (object);
 
     if (priv->search_paths == NULL) {
-        UfoConfiguration *config = ufo_configuration_new ();
+        UfoConfig *config = ufo_config_new ();
         copy_config_paths (priv, config);
         g_object_unref (config);
     }
@@ -305,7 +308,7 @@ ufo_plugin_manager_finalize (GObject *gobject)
     g_slist_foreach (priv->search_paths, (GFunc) g_free, NULL);
     g_slist_free (priv->search_paths);
 
-    g_hash_table_destroy (priv->filter_funcs);
+    g_hash_table_destroy (priv->new_funcs);
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);
     g_message ("UfoPluginManager: finalized");
 }
@@ -320,7 +323,7 @@ ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
     gobject_class->dispose      = ufo_plugin_manager_dispose;
     gobject_class->finalize     = ufo_plugin_manager_finalize;
 
-    g_object_class_override_property (gobject_class, PROP_CONFIG, "configuration");
+    g_object_class_override_property (gobject_class, PROP_CONFIG, "config");
 
     g_type_class_add_private (klass, sizeof (UfoPluginManagerPrivate));
 }
@@ -331,8 +334,8 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
     UfoPluginManagerPrivate *priv;
 
     manager->priv = priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
-    priv->modules       = NULL;
-    priv->search_paths  = NULL;
-    priv->filter_funcs  = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                 g_free, g_free);
+    priv->modules = NULL;
+    priv->search_paths = NULL;
+    priv->new_funcs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                             g_free, g_free);
 }

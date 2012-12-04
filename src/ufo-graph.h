@@ -2,8 +2,7 @@
 #define __UFO_GRAPH_H
 
 #include <glib-object.h>
-#include "ufo-plugin-manager.h"
-#include "ufo-filter.h"
+#include "ufo-node.h"
 
 G_BEGIN_DECLS
 
@@ -14,20 +13,11 @@ G_BEGIN_DECLS
 #define UFO_IS_GRAPH_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_GRAPH))
 #define UFO_GRAPH_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_GRAPH, UfoGraphClass))
 
-#define UFO_GRAPH_ERROR ufo_graph_error_quark()
-typedef enum {
-    UFO_GRAPH_ERROR_ALREADY_LOAD,
-    UFO_GRAPH_ERROR_JSON_KEY
-} UfoGraphError;
-
-typedef enum {
-    UFO_TRANSFER_MODE_DISTRIBUTE,
-    UFO_TRANSFER_MODE_COPY
-} UfoTransferMode;
-
 typedef struct _UfoGraph           UfoGraph;
 typedef struct _UfoGraphClass      UfoGraphClass;
 typedef struct _UfoGraphPrivate    UfoGraphPrivate;
+
+typedef gboolean (*UfoFilterPredicate) (UfoNode *node);
 
 /**
  * UfoGraph:
@@ -53,31 +43,38 @@ struct _UfoGraphClass {
 };
 
 UfoGraph   *ufo_graph_new                   (void);
-void        ufo_graph_read_from_json        (UfoGraph           *graph,
-                                             UfoPluginManager   *manager,
-                                             const gchar        *filename,
-                                             GError            **error);
-void        ufo_graph_save_to_json          (UfoGraph           *graph,
-                                             const gchar        *filename,
-                                             GError            **error);
-void        ufo_graph_connect_filters       (UfoGraph           *graph,
-                                             UfoFilter          *from,
-                                             UfoFilter          *to,
-                                             GError            **error);
-void        ufo_graph_connect_filters_full  (UfoGraph           *graph,
-                                             UfoFilter          *from,
-                                             guint               from_port,
-                                             UfoFilter          *to,
-                                             guint               to_port,
-                                             UfoTransferMode     mode,
-                                             GError            **error);
-GList      *ufo_graph_get_filters           (UfoGraph           *graph);
-guint       ufo_graph_get_num_filters       (UfoGraph           *graph);
-GList      *ufo_graph_get_roots             (UfoGraph           *graph);
-GList      *ufo_graph_get_children          (UfoGraph           *graph,
-                                             UfoFilter          *filter);
+void        ufo_graph_register_node_type    (UfoGraph       *graph,
+                                             GType           type);
+GList      *ufo_graph_get_registered_node_types
+                                            (UfoGraph       *graph);
+void        ufo_graph_connect_nodes         (UfoGraph       *graph,
+                                             UfoNode        *source,
+                                             UfoNode        *target,
+                                             gpointer        edge_label);
+gboolean    ufo_graph_is_connected          (UfoGraph       *graph,
+                                             UfoNode        *from,
+                                             UfoNode        *to);
+void        ufo_graph_remove_edge           (UfoGraph       *graph,
+                                             UfoNode        *source,
+                                             UfoNode        *target);
+gpointer    ufo_graph_get_edge_label        (UfoGraph       *graph,
+                                             UfoNode        *source,
+                                             UfoNode        *target);
+guint       ufo_graph_get_num_nodes         (UfoGraph       *graph);
+guint       ufo_graph_get_num_edges         (UfoGraph       *graph);
+GList      *ufo_graph_get_nodes             (UfoGraph       *graph);
+GList      *ufo_graph_get_nodes_filtered    (UfoGraph       *graph,
+                                             UfoFilterPredicate func);
+GList      *ufo_graph_get_roots             (UfoGraph       *graph);
+GList      *ufo_graph_get_successors        (UfoGraph       *graph,
+                                             UfoNode        *node);
+GList      *ufo_graph_get_paths             (UfoGraph       *graph,
+                                             UfoFilterPredicate pred);
+void        ufo_graph_split                 (UfoGraph       *graph,
+                                             GList          *path);
+void        ufo_graph_dump_dot              (UfoGraph       *graph,
+                                             const gchar    *filename);
 GType       ufo_graph_get_type              (void);
-GQuark      ufo_graph_error_quark           (void);
 
 G_END_DECLS
 

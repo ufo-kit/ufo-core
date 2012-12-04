@@ -2,10 +2,8 @@
 #define __UFO_SCHEDULER_H
 
 #include <glib-object.h>
-#include "ufo-configuration.h"
-#include "ufo-graph.h"
-#include "ufo-resource-manager.h"
-#include "ufo-filter.h"
+#include "ufo-arch-graph.h"
+#include "ufo-task-graph.h"
 
 G_BEGIN_DECLS
 
@@ -44,10 +42,10 @@ struct _UfoSchedulerClass {
     GObjectClass parent_class;
 };
 
-UfoScheduler* ufo_scheduler_new          (UfoConfiguration   *config,
-                                          UfoResourceManager *manager);
+UfoScheduler* ufo_scheduler_new          (void);
 void          ufo_scheduler_run          (UfoScheduler       *scheduler,
-                                          UfoGraph           *graph,
+                                          UfoArchGraph       *arch_graph,
+                                          UfoTaskGraph       *task_graph,
                                           GError**            error);
 GType         ufo_scheduler_get_type     (void);
 

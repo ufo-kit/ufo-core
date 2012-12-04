@@ -24,9 +24,9 @@
 #endif
 #include <gmodule.h>
 #include <glob.h>
-#include "config.h"
-#include "ufo-profiler.h"
-#include "ufo-aux.h"
+
+#include <ufo-profiler.h>
+#include <ufo-resources.h>
 
 
 G_DEFINE_TYPE(UfoProfiler, ufo_profiler, G_TYPE_OBJECT)
@@ -147,7 +147,7 @@ ufo_profiler_call (UfoProfiler    *profiler,
                                      global_work_size,
                                      local_work_size,
                                      0, NULL, event_loc);
-    CHECK_OPENCL_ERROR (cl_err);
+    UFO_RESOURCES_CHECK_CLERR (cl_err);
 
     if (priv->level & UFO_PROFILER_LEVEL_OPENCL) {
         row.event = event;

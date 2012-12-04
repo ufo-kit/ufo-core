@@ -8,7 +8,7 @@
  */
 
 #include "ufo-configurable.h"
-#include "ufo-configuration.h"
+#include "ufo-config.h"
 
 
 typedef UfoConfigurableIface UfoConfigurableInterface;
@@ -25,10 +25,10 @@ ufo_configurable_default_init (UfoConfigurableInterface *iface)
      * The #UfoConfiguration object that can be passed to all objects that
      * implement the #UfoConfigurable interface.
      */
-    config_spec = g_param_spec_object ("configuration",
-                                       "A UfoConfiguration object",
-                                       "A UfoConfiguration object",
-                                       UFO_TYPE_CONFIGURATION,
+    config_spec = g_param_spec_object ("config",
+                                       "A UfoConfig object",
+                                       "A UfoConfig object",
+                                       UFO_TYPE_CONFIG,
                                        G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
     g_object_interface_install_property (iface, config_spec);

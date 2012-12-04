@@ -8,7 +8,7 @@ set(UFO_VERSION_PATCH "0")
 set(UFO_GIR_VERSION "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}")
 
 # increase UFO_SO_VERSION on each version that breaks ABI compatibility
-set(UFO_SO_VERSION "2")
+set(UFO_SO_VERSION "3")
 
 set(UFO_DESCRIPTION "UFO high-speed image processing core library")
 set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
@@ -55,6 +55,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}
     )
 
 add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
+
 if (CMAKE_COMPILER_IS_GNUCC)
     add_definitions("-Wmissing-prototypes -Wmissing-declarations -Wshadow
     -Wpointer-arith -Wcast-align -Wwrite-strings -Wredundant-decls -Wcast-qual
@@ -66,10 +67,10 @@ endif()
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 
 add_subdirectory(src)
-add_subdirectory(docs)
-add_subdirectory(python)
-add_subdirectory(tests)
-add_subdirectory(tools)
+#add_subdirectory(docs)
+#add_subdirectory(python)
+#add_subdirectory(tests)
+#add_subdirectory(tools)
 
 
 # --- Package generation ------------------------------------------------------

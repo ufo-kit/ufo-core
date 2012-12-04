@@ -2,8 +2,8 @@
 #define __UFO_PLUGIN_MANAGER_H
 
 #include <glib-object.h>
-#include "ufo-configuration.h"
-#include "ufo-filter.h"
+#include <ufo-config.h>
+#include <ufo-node.h>
 
 G_BEGIN_DECLS
 
@@ -51,11 +51,11 @@ struct _UfoPluginManagerClass {
     GObjectClass parent_class;
 };
 
-UfoPluginManager   *ufo_plugin_manager_new                  (UfoConfiguration   *config);
-UfoFilter          *ufo_plugin_manager_get_filter           (UfoPluginManager   *manager, 
-                                                             const gchar        *name, 
+UfoPluginManager  * ufo_plugin_manager_new                  (UfoConfig          *config);
+UfoNode           * ufo_plugin_manager_get_task             (UfoPluginManager   *manager,
+                                                             const gchar        *name,
                                                              GError            **error);
-GList              *ufo_plugin_manager_get_all_filter_names (UfoPluginManager   *manager);
+GList             * ufo_plugin_manager_get_all_task_names   (UfoPluginManager   *manager);
 GType               ufo_plugin_manager_get_type             (void);
 
 G_END_DECLS

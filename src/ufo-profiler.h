@@ -2,7 +2,6 @@
 #define __UFO_PROFILER_H
 
 #include <glib-object.h>
-#include "ufo-resource-manager.h"
 
 G_BEGIN_DECLS
 
