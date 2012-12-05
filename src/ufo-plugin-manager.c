@@ -132,15 +132,14 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     UfoNode *node;
     NewFunc *func;
     GModule *module;
+    gchar *func_name = NULL;
     gchar *module_name = NULL;
-
-    const gchar *entry_symbol_name = "ufo_filter_plugin_new";
 
     func = g_hash_table_lookup (priv->new_funcs, name);
 
     if (func == NULL) {
         /* No suitable function found, let's find the module */
-        module_name = g_strdup_printf ("libufotask%s.so", name);
+        module_name = g_strdup_printf ("libufofilter%s.so", name);
         gchar *path = plugin_manager_get_path (priv, module_name);
 
         if (path == NULL) {
@@ -158,11 +157,12 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
             goto handle_error;
         }
 
+        func_name = g_strdup_printf ("ufo_%s_task_new", name);
         func = g_malloc0 (sizeof (NewFunc));
 
-        if (!g_module_symbol (module, entry_symbol_name, (gpointer *) func)) {
+        if (!g_module_symbol (module, func_name, (gpointer *) func)) {
             g_set_error (error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND,
-                         "%s is not exported by module %s: %s", entry_symbol_name, module_name, g_module_error ());
+                         "%s is not exported by module %s: %s", func_name, module_name, g_module_error ());
             g_free (func);
 
             if (!g_module_close (module))
@@ -173,6 +173,8 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
 
         priv->modules = g_slist_append (priv->modules, module);
         g_hash_table_insert (priv->new_funcs, g_strdup (name), func);
+
+        g_free (func_name);
         g_free (module_name);
     }
 
@@ -184,6 +186,7 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
 
 handle_error:
     g_free (module_name);
+    g_free (func_name);
     return NULL;
 }
 
@@ -204,7 +207,7 @@ ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
     GList *result = NULL;
     GSList *path;
 
-    GRegex *regex = g_regex_new ("libufotask([A-Za-z]+).so", 0, 0, NULL);
+    GRegex *regex = g_regex_new ("libufofilter([A-Za-z]+).so", 0, 0, NULL);
     GMatchInfo *match_info = NULL;
 
     path = g_slist_nth (priv->search_paths, 0);
@@ -213,7 +216,7 @@ ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
         glob_t glob_vector;
         gchar *pattern;
 
-        pattern = g_build_filename ((gchar *) path->data, "libufotask*.so", NULL);
+        pattern = g_build_filename ((gchar *) path->data, "libufofilter*.so", NULL);
         glob (pattern, GLOB_MARK | GLOB_TILDE, NULL, &glob_vector);
         g_free (pattern);
         gsize i = 0;
