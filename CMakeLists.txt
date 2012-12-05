@@ -70,7 +70,7 @@ add_subdirectory(src)
 #add_subdirectory(docs)
 #add_subdirectory(python)
 add_subdirectory(tests)
-#add_subdirectory(tools)
+add_subdirectory(tools)
 
 
 # --- Package generation ------------------------------------------------------

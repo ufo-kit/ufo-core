@@ -222,7 +222,7 @@ UfoResources *
 ufo_resources_new (UfoConfig *config)
 {
     return UFO_RESOURCES (g_object_new (UFO_TYPE_RESOURCES,
-                                        "configuration", config,
+                                        "config", config,
                                         NULL));
 }
 
