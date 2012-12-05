@@ -14,7 +14,7 @@ G_BEGIN_DECLS
 #define UFO_IS_TASK_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_TASK))
 #define UFO_TASK_GET_IFACE(inst)  (G_TYPE_INSTANCE_GET_INTERFACE((inst), UFO_TYPE_TASK, UfoTaskIface))
 
-#define UFO_TASK_ERROR            ufo_camera_error_quark()
+#define UFO_TASK_ERROR            ufo_task_error_quark()
 
 typedef struct _UfoTask             UfoTask;
 typedef struct _UfoTaskIface        UfoTaskIface;
