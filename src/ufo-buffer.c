@@ -146,11 +146,11 @@ ufo_buffer_to_host (UfoBuffer *buffer, gpointer cmd_queue)
     g_return_if_fail (UFO_IS_BUFFER (buffer));
     priv = buffer->priv;
 
-    if (priv->location == UFO_LOCATION_HOST)
-        return;
-
     queue = cmd_queue == NULL ? priv->last_queue : cmd_queue;
     priv->last_queue = cmd_queue;
+
+    if (priv->location == UFO_LOCATION_HOST)
+        return;
 
     cl_err = clEnqueueReadBuffer (queue,
                                   priv->device_array,
@@ -173,11 +173,11 @@ ufo_buffer_to_device (UfoBuffer *buffer, gpointer cmd_queue)
     g_return_if_fail (UFO_IS_BUFFER (buffer));
     priv = buffer->priv;
 
-    if (priv->location == UFO_LOCATION_DEVICE)
-        return;
-
     queue = cmd_queue == NULL ? priv->last_queue : cmd_queue;
     priv->last_queue = cmd_queue;
+
+    if (priv->location == UFO_LOCATION_DEVICE)
+        return;
 
     cl_err = clEnqueueWriteBuffer ((cl_command_queue) queue,
                                    priv->device_array,
