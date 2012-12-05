@@ -90,7 +90,7 @@ ufo_group_pop_output_buffer (UfoGroup *group,
     output = ufo_queue_pop (priv->queues[priv->current],
                             UFO_QUEUE_PRODUCER);
 
-    if (!ufo_buffer_cmp_dimensions (output, requisition))
+    if (ufo_buffer_cmp_dimensions (output, requisition))
         ufo_buffer_resize (output, requisition);
 
     return output;
