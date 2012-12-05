@@ -149,6 +149,40 @@ ufo_task_graph_map (UfoTaskGraph *task_graph,
     g_list_free (roots);
 }
 
+/**
+ * ufo_task_graph_connect_nodes:
+ * @graph: A #UfoTaskGraph
+ * @n1: A source node
+ * @n2: A destination node
+ *
+ * Connect @n1 with @n2 using @n2's default input port. To specify any other
+ * port, use ufo_task_graph_connect_nodes_full().
+ */
+void
+ufo_task_graph_connect_nodes (UfoTaskGraph *graph,
+                              UfoTaskNode *n1,
+                              UfoTaskNode *n2)
+{
+    ufo_task_graph_connect_nodes_full (graph, n1, n2, 0);
+}
+
+/**
+ * ufo_task_graph_connect_nodes_full:
+ * @graph: A #UfoTaskGraph
+ * @n1: A source node
+ * @n2: A destination node
+ *
+ * Connect @n1 with @n2 using @n2's @input port.
+ */
+void
+ufo_task_graph_connect_nodes_full (UfoTaskGraph *graph,
+                                   UfoTaskNode *n1,
+                                   UfoTaskNode *n2,
+                                   guint input)
+{
+    ufo_graph_connect_nodes (UFO_GRAPH (graph), UFO_NODE (n1), UFO_NODE (n2), GINT_TO_POINTER (input));
+}
+
 static void
 ufo_task_graph_class_init (UfoTaskGraphClass *klass)
 {

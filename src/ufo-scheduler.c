@@ -203,13 +203,13 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
         for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
             UfoNode *target;
-            UfoTaskGraphConnection *conn;
+            gpointer label;
+            guint input;
 
             target = UFO_NODE (it->data);
-            conn = ufo_graph_get_edge_label (UFO_GRAPH (task_graph), node, target);
-            ufo_task_node_add_in_group (UFO_TASK_NODE (target),
-                                        conn->target_input,
-                                        group);
+            label = ufo_graph_get_edge_label (UFO_GRAPH (task_graph), node, target);
+            input = (guint) GPOINTER_TO_INT (label);
+            ufo_task_node_add_in_group (UFO_TASK_NODE (target), input, group);
         }
 
         g_list_free (successors);

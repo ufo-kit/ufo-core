@@ -166,7 +166,6 @@ main (int argc, char const* argv[])
     gpointer context;
     ServerPrivate priv;
     UfoResources *resources;
-    UfoTaskGraphConnection connection;
 
     g_type_init ();
     g_thread_init (NULL);
@@ -181,14 +180,11 @@ main (int argc, char const* argv[])
     priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL, resources));
     priv.task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
 
-    connection.source_output = 0;
-    connection.target_input = 0;
-
     priv.n_inputs = 1;
     priv.input_task = ufo_input_task_new (NULL);
     priv.output_task = ufo_output_task_new (2);
 
-    ufo_graph_connect_nodes (UFO_GRAPH (priv.task_graph), priv.input_task, priv.output_task, &connection);
+    ufo_task_graph_connect_nodes (priv.task_graph, UFO_TASK_NODE (priv.input_task), UFO_TASK_NODE (priv.output_task));
     g_thread_create ((GThreadFunc) run_scheduler, &priv, FALSE, NULL);
 
     while (1) {

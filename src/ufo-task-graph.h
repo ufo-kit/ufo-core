@@ -2,8 +2,9 @@
 #define __UFO_TASK_GRAPH_H
 
 #include <glib-object.h>
-#include "ufo-graph.h"
-#include "ufo-arch-graph.h"
+#include <ufo-graph.h>
+#include <ufo-arch-graph.h>
+#include <ufo-task-node.h>
 
 G_BEGIN_DECLS
 
@@ -17,12 +18,6 @@ G_BEGIN_DECLS
 typedef struct _UfoTaskGraph           UfoTaskGraph;
 typedef struct _UfoTaskGraphClass      UfoTaskGraphClass;
 typedef struct _UfoTaskGraphPrivate    UfoTaskGraphPrivate;
-typedef struct _UfoTaskGraphConnection UfoTaskGraphConnection;
-
-struct _UfoTaskGraphConnection {
-    guint source_output;
-    guint target_input;
-};
 
 /**
  * UfoTaskGraph:
@@ -47,13 +42,20 @@ struct _UfoTaskGraphClass {
     UfoGraphClass parent_class;
 };
 
-UfoGraph    *ufo_task_graph_new             (void);
-void         ufo_task_graph_map             (UfoTaskGraph *task_graph,
-                                             UfoArchGraph *arch_graph);
-void         ufo_task_graph_split           (UfoTaskGraph *task_graph,
-                                             UfoArchGraph *arch_graph);
-void         ufo_task_graph_fuse            (UfoTaskGraph *task_graph);
-GType        ufo_task_graph_get_type        (void);
+UfoGraph    *ufo_task_graph_new                 (void);
+void         ufo_task_graph_map                 (UfoTaskGraph *task_graph,
+                                                 UfoArchGraph *arch_graph);
+void         ufo_task_graph_split               (UfoTaskGraph *task_graph,
+                                                 UfoArchGraph *arch_graph);
+void         ufo_task_graph_connect_nodes       (UfoTaskGraph *graph,
+                                                 UfoTaskNode  *n1,
+                                                 UfoTaskNode  *n2);
+void         ufo_task_graph_connect_nodes_full  (UfoTaskGraph *graph,
+                                                 UfoTaskNode  *n1,
+                                                 UfoTaskNode  *n2,
+                                                 guint         input);
+void         ufo_task_graph_fuse                (UfoTaskGraph *task_graph);
+GType        ufo_task_graph_get_type            (void);
 
 G_END_DECLS
 
