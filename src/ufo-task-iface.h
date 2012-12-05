@@ -2,7 +2,8 @@
 #define UFO_TASK_IFACE_H
 
 #include <glib-object.h>
-#include "ufo-buffer.h"
+#include <ufo/ufo-buffer.h>
+#include <ufo/ufo-resources.h>
 
 G_BEGIN_DECLS
 
@@ -13,10 +14,15 @@ G_BEGIN_DECLS
 #define UFO_IS_TASK_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_TASK))
 #define UFO_TASK_GET_IFACE(inst)  (G_TYPE_INSTANCE_GET_INTERFACE((inst), UFO_TYPE_TASK, UfoTaskIface))
 
-typedef struct _UfoTask         UfoTask;
-typedef struct _UfoTaskIface    UfoTaskIface;
+#define UFO_TASK_ERROR            ufo_camera_error_quark()
+
+typedef struct _UfoTask             UfoTask;
+typedef struct _UfoTaskIface        UfoTaskIface;
 typedef struct _UfoInputParameter   UfoInputParameter;
-typedef struct _UfoOutputParameter  UfoOutputParameter;
+
+typedef enum {
+    UFO_TASK_ERROR_SETUP
+} UfoTaskError;
 
 /**
  * UfoInputParameter:
@@ -35,27 +41,30 @@ struct _UfoInputParameter {
 struct _UfoTaskIface {
     GTypeInterface parent_iface;
 
-    void (*setup)           (UfoTask *task,
-                             GError **error);
-    void (*get_structure)   (UfoTask *task,
-                             guint *n_inputs,
+    void (*setup)           (UfoTask        *task,
+                             UfoResources   *resources,
+                             GError        **error);
+    void (*get_structure)   (UfoTask        *task,
+                             guint          *n_inputs,
                              UfoInputParameter **in_params);
-    void (*get_requisition) (UfoTask *task,
-                             UfoBuffer **inputs,
+    void (*get_requisition) (UfoTask        *task,
+                             UfoBuffer     **inputs,
                              UfoRequisition *requisition);
 };
 
-void  ufo_task_setup              (UfoTask          *task,
-                                   GError          **error);
-void  ufo_task_get_requisition    (UfoTask          *task,
-                                   UfoBuffer       **inputs,
-                                   UfoRequisition   *requisition);
-void  ufo_task_get_structure      (UfoTask          *task,
-                                   guint            *n_inputs,
-                                   UfoInputParameter
-                                                   **in_params);
+void   ufo_task_setup           (UfoTask          *task,
+                                 UfoResources     *resources,
+                                 GError          **error);
+void   ufo_task_get_requisition (UfoTask          *task,
+                                 UfoBuffer       **inputs,
+                                 UfoRequisition   *requisition);
+void   ufo_task_get_structure   (UfoTask          *task,
+                                 guint            *n_inputs,
+                                 UfoInputParameter
+                                                 **in_params);
 
-GType ufo_task_get_type (void);
+GQuark ufo_task_error_quark     (void);
+GType  ufo_task_get_type        (void);
 
 G_END_DECLS
 

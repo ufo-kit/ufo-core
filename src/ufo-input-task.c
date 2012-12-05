@@ -105,7 +105,9 @@ push_all_inputs (UfoInputTaskPrivate *priv)
 }
 
 static void
-ufo_input_task_setup (UfoTask *task, GError **error)
+ufo_input_task_setup (UfoTask *task,
+                      UfoResources *resources,
+                      GError **error)
 {
 }
 

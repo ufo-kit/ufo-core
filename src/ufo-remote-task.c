@@ -43,7 +43,9 @@ ufo_remote_task_new (void)
 }
 
 static void
-ufo_remote_task_setup (UfoTask *task, GError **error)
+ufo_remote_task_setup (UfoTask *task,
+                       UfoResources *resources,
+                       GError **error)
 {
     UfoRemoteTaskPrivate *priv;
 

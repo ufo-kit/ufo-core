@@ -77,7 +77,9 @@ ufo_output_task_release_output_buffer (UfoOutputTask *task,
 }
 
 static void
-ufo_output_task_setup (UfoTask *task, GError **error)
+ufo_output_task_setup (UfoTask *task,
+                       UfoResources *resources,
+                       GError **error)
 {
 }
 

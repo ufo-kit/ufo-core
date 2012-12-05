@@ -1,14 +1,25 @@
-#include "ufo-task-iface.h"
+#include <ufo-task-iface.h>
 
 typedef UfoTaskIface UfoTaskInterface;
 
 G_DEFINE_INTERFACE (UfoTask, ufo_task, G_TYPE_OBJECT)
 
+/**
+ * UfoTaskError:
+ * @UFO_TASK_ERROR_SETUP: Error during setup of a task.
+ */
+GQuark
+ufo_task_error_quark ()
+{
+    return g_quark_from_static_string ("ufo-task-error-quark");
+}
+
 void
 ufo_task_setup (UfoTask *task,
+                UfoResources *resources,
                 GError **error)
 {
-    UFO_TASK_GET_IFACE (task)->setup (task, error);
+    UFO_TASK_GET_IFACE (task)->setup (task, resources, error);
 }
 
 void
@@ -29,6 +40,7 @@ ufo_task_get_structure (UfoTask *task,
 
 static void
 ufo_task_setup_real (UfoTask *task,
+                     UfoResources *resources,
                      GError **error)
 {
     g_warning ("`setup' not implemented");

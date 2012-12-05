@@ -140,6 +140,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                    UfoTaskGraph *task_graph,
                    GError **error)
 {
+    UfoResources *resources;
     GList *nodes;
     guint n_nodes;
     GThread **threads;
@@ -153,7 +154,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     ufo_task_graph_map (task_graph, arch_graph);
 
     timer = g_timer_new ();
+
     context = ufo_arch_graph_get_context (arch_graph);
+    resources = ufo_arch_graph_get_resources (arch_graph);
+
     n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (task_graph));
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
     threads = g_new0 (GThread *, n_nodes);
@@ -174,7 +178,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         tld->task = UFO_TASK (node);
         tlds[i] = tld;
 
-        ufo_task_setup (UFO_TASK (node), error);
+        ufo_task_setup (UFO_TASK (node), resources, error);
         ufo_task_get_structure (UFO_TASK (node),
                                 &tld->n_inputs,
                                 &tld->in_params);
