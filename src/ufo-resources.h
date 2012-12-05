@@ -14,22 +14,19 @@ G_BEGIN_DECLS
 #define UFO_IS_RESOURCES_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_RESOURCES))
 #define UFO_RESOURCES_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_RESOURCES, UfoResourcesClass))
 
+#define UFO_RESOURCES_ERROR             ufo_resources_error_quark()
+
 typedef struct _UfoResources           UfoResources;
 typedef struct _UfoResourcesClass      UfoResourcesClass;
 typedef struct _UfoResourcesPrivate    UfoResourcesPrivate;
 
-#define UFO_RESOURCES_ERROR ufo_resources_error_quark()
+
 typedef enum {
     UFO_RESOURCES_ERROR_LOAD_PROGRAM,
     UFO_RESOURCES_ERROR_CREATE_PROGRAM,
     UFO_RESOURCES_ERROR_BUILD_PROGRAM,
     UFO_RESOURCES_ERROR_CREATE_KERNEL
 } UfoResourcesError;
-
-
-/**
- * opencl_map_error: (skip)
- */
 
 /**
  * UFO_RESOURCES_CHECK_CLERR:

@@ -18,6 +18,7 @@ G_DEFINE_TYPE (UfoArchGraph, ufo_arch_graph, UFO_TYPE_GRAPH)
 #define UFO_ARCH_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_ARCH_GRAPH, UfoArchGraphPrivate))
 
 struct _UfoArchGraphPrivate {
+    UfoResources *resources;
     gpointer zmq_context;
     gpointer ocl_context;
     guint n_cpus;
@@ -48,6 +49,9 @@ ufo_arch_graph_new (gpointer zmq_context,
 
     graph = UFO_ARCH_GRAPH (g_object_new (UFO_TYPE_ARCH_GRAPH, NULL));
     priv = graph->priv;
+
+    g_object_ref (resources);
+    priv->resources = resources;
     priv->ocl_context = ufo_resources_get_context (resources);
     priv->zmq_context = zmq_context;
 
@@ -105,6 +109,21 @@ ufo_arch_graph_new (gpointer zmq_context,
     g_free (remote_nodes);
     g_list_free (cmd_queues);
     return UFO_GRAPH (graph);
+}
+
+/**
+ * ufo_arch_graph_get_resources:
+ * @graph: A #UfoArchGraph object
+ *
+ * Get associated resources object.
+ *
+ * Returns: (transfer full): #UfoResources object associated with @graph.
+ */
+UfoResources *
+ufo_arch_graph_get_resources (UfoArchGraph *graph)
+{
+    g_return_val_if_fail (UFO_IS_ARCH_GRAPH (graph), NULL);
+    return graph->priv->resources;
 }
 
 /**
@@ -187,8 +206,27 @@ ufo_arch_graph_get_remote_nodes (UfoArchGraph *graph)
 }
 
 static void
+ufo_arch_graph_dispose (GObject *object)
+{
+    UfoArchGraphPrivate *priv;
+
+    priv = UFO_ARCH_GRAPH_GET_PRIVATE (object);
+
+    if (priv->resources != NULL) {
+        g_object_unref (priv->resources);
+        priv->resources = NULL;
+    }
+
+    G_OBJECT_CLASS (ufo_arch_graph_parent_class)->dispose (object);
+}
+
+static void
 ufo_arch_graph_class_init (UfoArchGraphClass *klass)
 {
+    GObjectClass *oclass = G_OBJECT_CLASS (klass);
+
+    oclass->dispose = ufo_arch_graph_dispose;
+
     g_type_class_add_private(klass, sizeof(UfoArchGraphPrivate));
 }
 
