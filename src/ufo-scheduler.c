@@ -15,12 +15,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ufo-scheduler.h"
-#include "ufo-buffer.h"
-#include "ufo-task-node.h"
-#include "ufo-task-iface.h"
-#include "ufo-cpu-task-iface.h"
-#include "ufo-gpu-task-iface.h"
+#include <ufo-scheduler.h>
+#include <ufo-buffer.h>
+#include <ufo-task-node.h>
+#include <ufo-task-iface.h>
+#include <ufo-cpu-task-iface.h>
+#include <ufo-gpu-task-iface.h>
 
 G_DEFINE_TYPE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT)
 

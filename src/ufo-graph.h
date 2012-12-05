@@ -2,7 +2,7 @@
 #define __UFO_GRAPH_H
 
 #include <glib-object.h>
-#include "ufo-node.h"
+#include <ufo-node.h>
 
 G_BEGIN_DECLS
 

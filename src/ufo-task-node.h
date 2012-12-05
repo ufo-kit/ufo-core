@@ -1,10 +1,8 @@
 #ifndef __UFO_TASK_NODE_H
 #define __UFO_TASK_NODE_H
 
-#include <glib-object.h>
-#include <sched.h>
-#include "ufo-node.h"
-#include "ufo-group.h"
+#include <ufo-node.h>
+#include <ufo-group.h>
 
 G_BEGIN_DECLS
 

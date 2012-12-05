@@ -1,4 +1,4 @@
-#include "ufo-gpu-task-iface.h"
+#include <ufo-gpu-task-iface.h>
 
 typedef UfoGpuTaskIface UfoGpuTaskInterface;
 

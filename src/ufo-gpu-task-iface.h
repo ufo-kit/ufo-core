@@ -1,10 +1,9 @@
 #ifndef UFO_GPU_TASK_IFACE_H
 #define UFO_GPU_TASK_IFACE_H
 
-#include <glib-object.h>
-#include "ufo-gpu-node.h"
-#include "ufo-task-iface.h"
-#include "ufo-buffer.h"
+#include <ufo-gpu-node.h>
+#include <ufo-task-iface.h>
+#include <ufo-buffer.h>
 
 G_BEGIN_DECLS
 

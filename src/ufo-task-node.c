@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 #include <sched.h>
-#include "ufo-task-node.h"
+#include <ufo-task-node.h>
 
 G_DEFINE_TYPE (UfoTaskNode, ufo_task_node, UFO_TYPE_NODE)
 

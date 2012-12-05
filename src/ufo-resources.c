@@ -15,8 +15,8 @@
 #include <CL/cl.h>
 #endif
 
-#include "ufo-resources.h"
-#include "ufo-configurable.h"
+#include <ufo-resources.h>
+#include <ufo-configurable.h>
 
 G_DEFINE_TYPE_WITH_CODE (UfoResources, ufo_resources, G_TYPE_OBJECT,
                          G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))

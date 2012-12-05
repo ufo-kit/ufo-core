@@ -1,6 +1,6 @@
 #include <CL/cl.h>
-#include "ufo-group.h"
-#include "ufo-task-node.h"
+#include <ufo-group.h>
+#include <ufo-task-node.h>
 
 G_DEFINE_TYPE (UfoGroup, ufo_group, G_TYPE_OBJECT)
 

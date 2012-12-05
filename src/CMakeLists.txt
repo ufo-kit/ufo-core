@@ -98,7 +98,8 @@ add_custom_command(
 # --- Target ------------------------------------------------------------------
 get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
 
-set(LIB_INSTALL_DIR "lib${LIB_SUFFIX}")
+set(LIBDIR      "lib${LIB_SUFFIX}")
+set(INCLUDEDIR  "include/ufo")
 
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -121,22 +122,20 @@ set_target_properties(ufo PROPERTIES
 target_link_libraries(ufo ${ufocore_LIBS})
 
 install(TARGETS ufo
-    ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
-    LIBRARY DESTINATION ${LIB_INSTALL_DIR})
+        ARCHIVE DESTINATION ${LIBDIR}
+        LIBRARY DESTINATION ${LIBDIR})
 
-install(FILES
-    ${ufocore_HDRS}
-    ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
-    DESTINATION include/ufo)
+install(FILES ${ufocore_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+        DESTINATION ${INCLUDEDIR})
 
 
 # --- pkg-config --------------------------------------------------------------
-set(UFO_PKG_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(UFO_PKG_PREFIX      "${CMAKE_INSTALL_PREFIX}")
 set(UFO_PKG_EXEC_PREFIX "${UFO_PKG_PREFIX}/bin")
-set(UFO_PKG_LIBDIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
-set(UFO_PKG_INCLUDEDIR "${UFO_PKG_PREFIX}/include")
-set(UFO_PKG_GIRDIR "${UFO_PKG_PREFIX}/share/gir-1.0")
-set(UFO_PKG_TYPELIBDIR "${UFO_PKG_PREFIX}/${LIB_INSTALL_DIR}/girepository-1.0")
+set(UFO_PKG_LIBDIR      "${UFO_PKG_PREFIX}/${LIBDIR}")
+set(UFO_PKG_INCLUDEDIR  "${UFO_PKG_PREFIX}/${INCLUDEDIR}")
+set(UFO_PKG_GIRDIR      "${UFO_PKG_PREFIX}/share/gir-1.0")
+set(UFO_PKG_TYPELIBDIR  "${UFO_PKG_PREFIX}/${LIBDIR}/girepository-1.0")
 
 # FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
 # hard coded values
@@ -144,7 +143,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
                "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc
-        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
+        DESTINATION ${LIBDIR}/pkgconfig)
 
 
 # --- Introspection files -----------------------------------------------------
@@ -192,7 +191,7 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
             DESTINATION share/gir-1.0)
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
-            DESTINATION ${LIB_INSTALL_DIR}/girepository-1.0)
+            DESTINATION ${LIBDIR}/girepository-1.0)
     endif()
 endif()
 

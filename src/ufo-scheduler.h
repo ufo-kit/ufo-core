@@ -2,8 +2,8 @@
 #define __UFO_SCHEDULER_H
 
 #include <glib-object.h>
-#include "ufo-arch-graph.h"
-#include "ufo-task-graph.h"
+#include <ufo-arch-graph.h>
+#include <ufo-task-graph.h>
 
 G_BEGIN_DECLS
 

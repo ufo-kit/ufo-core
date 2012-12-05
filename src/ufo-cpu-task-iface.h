@@ -1,9 +1,8 @@
 #ifndef UFO_CPU_TASK_IFACE_H
 #define UFO_CPU_TASK_IFACE_H
 
-#include <glib-object.h>
-#include "ufo-task-iface.h"
-#include "ufo-buffer.h"
+#include <ufo-task-iface.h>
+#include <ufo-buffer.h>
 
 G_BEGIN_DECLS
 

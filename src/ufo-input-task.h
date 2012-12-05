@@ -1,8 +1,7 @@
 #ifndef __UFO_INPUT_TASK_H
 #define __UFO_INPUT_TASK_H
 
-#include <glib-object.h>
-#include "ufo-task-node.h"
+#include <ufo-task-node.h>
 
 G_BEGIN_DECLS
 

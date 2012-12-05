@@ -2,8 +2,8 @@
 #define UFO_TASK_IFACE_H
 
 #include <glib-object.h>
-#include <ufo/ufo-buffer.h>
-#include <ufo/ufo-resources.h>
+#include <ufo-buffer.h>
+#include <ufo-resources.h>
 
 G_BEGIN_DECLS
 

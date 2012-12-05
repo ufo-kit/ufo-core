@@ -1,7 +1,6 @@
 #ifndef __UFO_CPU_NODE_H
 #define __UFO_CPU_NODE_H
 
-#include <glib-object.h>
 #include <ufo-node.h>
 
 G_BEGIN_DECLS

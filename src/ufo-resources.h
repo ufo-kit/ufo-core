@@ -2,8 +2,8 @@
 #define __UFO_RESOURCES_H
 
 #include <glib-object.h>
-#include "ufo-config.h"
-#include "ufo-buffer.h"
+#include <ufo-config.h>
+#include <ufo-buffer.h>
 
 G_BEGIN_DECLS
 

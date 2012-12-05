@@ -7,8 +7,8 @@
  * #UfoConfigurable:configuration property.
  */
 
-#include "ufo-configurable.h"
-#include "ufo-config.h"
+#include <ufo-configurable.h>
+#include <ufo-config.h>
 
 
 typedef UfoConfigurableIface UfoConfigurableInterface;

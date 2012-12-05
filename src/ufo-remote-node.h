@@ -1,10 +1,9 @@
 #ifndef __UFO_REMOTE_NODE_H
 #define __UFO_REMOTE_NODE_H
 
-#include <glib-object.h>
-#include "ufo-node.h"
-#include "ufo-buffer.h"
-#include "ufo-task-iface.h"
+#include <ufo-node.h>
+#include <ufo-buffer.h>
+#include <ufo-task-iface.h>
 
 G_BEGIN_DECLS
 
