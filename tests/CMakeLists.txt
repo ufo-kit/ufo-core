@@ -3,11 +3,11 @@ cmake_minimum_required(VERSION 2.8)
 # configure unit tests
 set(TEST_SRCS
     test-suite.c
-    test-buffer.c
-    test-channel.c
-    test-configuration.c
-    test-filter.c
-    test-filter-direct.c
+    #test-buffer.c
+    #test-channel.c
+    test-config.c
+    #test-filter.c
+    #test-filter-direct.c
     test-graph.c
     test-profiler.c
     )

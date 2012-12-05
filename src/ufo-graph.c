@@ -108,8 +108,10 @@ static void
 add_node_if_not_found (UfoGraphPrivate *priv,
                        UfoNode *node)
 {
-    if (!g_list_find (priv->nodes, node))
+    if (!g_list_find (priv->nodes, node)) {
         priv->nodes = g_list_append (priv->nodes, node);
+        g_object_ref (node);
+    }
 }
 
 void
@@ -493,7 +495,11 @@ ufo_graph_dispose (GObject *object)
         priv->adjacency = NULL;
     }
 
-    g_list_foreach (priv->nodes, (GFunc) g_object_unref, NULL);
+    if (priv->nodes != NULL) {
+        g_list_foreach (priv->nodes, (GFunc) g_object_unref, NULL);
+        g_list_free (priv->nodes);
+        priv->nodes = NULL;
+    }
 
     G_OBJECT_CLASS (ufo_graph_parent_class)->dispose (object);
 }
@@ -501,15 +507,6 @@ ufo_graph_dispose (GObject *object)
 static void
 ufo_graph_finalize (GObject *object)
 {
-    UfoGraphPrivate *priv;
-
-    priv = UFO_GRAPH_GET_PRIVATE (object);
-
-    if (priv->nodes) {
-        g_list_free (priv->nodes);
-        priv->nodes = NULL;
-    }
-
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
 }
 

@@ -1,11 +1,11 @@
 #include <glib-object.h>
 #include "test-suite.h"
-#include "ufo-configuration.h"
+#include "ufo-config.h"
 
 static void
 test_path (void)
 {
-    UfoConfiguration *config;
+    UfoConfig *config;
     GObject     *object;
     GValueArray *array;
     GValue       value = {0};
@@ -24,9 +24,7 @@ test_path (void)
     g_value_array_append (array, &value);
 
     /* Create a new object object and see what happens */
-    object = g_object_new (UFO_TYPE_CONFIGURATION,
-                           "paths", array,
-                           NULL);
+    object = g_object_new (UFO_TYPE_CONFIG, "paths", array, NULL);
 
     g_value_array_free (array);
 
@@ -43,8 +41,8 @@ test_path (void)
     g_value_array_free (array);
 
     /* Now check the C API */
-    config = UFO_CONFIGURATION (object);
-    paths = ufo_configuration_get_paths (config);
+    config = UFO_CONFIG (object);
+    paths = ufo_config_get_paths (config);
 
     g_assert (paths != NULL && paths[0] != NULL);
     g_assert (g_strcmp0 (p1, paths[0]) == 0);
@@ -59,23 +57,23 @@ test_path (void)
 static void
 test_path_not_set (void)
 {
-    UfoConfiguration *config;
+    UfoConfig *config;
     gchar **paths;
 
-    config = ufo_configuration_new ();
-    paths = ufo_configuration_get_paths (config);
+    config = ufo_config_new ();
+    paths = ufo_config_get_paths (config);
     g_assert (paths != NULL);
 
     g_object_unref (config);
 }
 
 void
-test_add_configuration (void)
+test_add_config (void)
 {
-    g_test_add_func("/configuration/path",
+    g_test_add_func("/config/path",
                     test_path);
 
     /* Check trac ticket #127 */
-    g_test_add_func("/configuration/path-not-set",
+    g_test_add_func("/config/path-not-set",
                     test_path_not_set);
 }
