@@ -53,7 +53,8 @@ ufo_remote_node_request_setup (UfoRemoteNode *node)
 void
 ufo_remote_node_get_structure (UfoRemoteNode *node,
                                guint *n_inputs,
-                               UfoInputParameter **in_params)
+                               guint **n_dims,
+                               UfoTaskMode *mode)
 {
     UfoRemoteNodePrivate *priv;
     UfoMessage request;
@@ -66,6 +67,7 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
+    *mode = UFO_TASK_MODE_SINGLE;
     request.type = UFO_MESSAGE_GET_STRUCTURE;
     ufo_msg_send (&request, priv->socket, 0);
 
@@ -77,14 +79,14 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     /* Receive payload */
     zmq_msg_init (&payload_msg);
     zmq_msg_recv (&payload_msg, priv->socket, 0);
-    payload_size = header->n_inputs * sizeof (UfoInputParameter);
+    payload_size = header->n_inputs * sizeof (guint);
     g_assert (zmq_msg_size (&payload_msg) >= payload_size);
     payload = zmq_msg_data (&payload_msg);
 
     priv->n_inputs = header->n_inputs;
     *n_inputs = header->n_inputs;
-    *in_params = g_new0 (UfoInputParameter, header->n_inputs);
-    memcpy (*in_params, payload, payload_size);
+    *n_dims = g_new0 (guint, header->n_inputs);
+    memcpy (*n_dims, payload, payload_size);
 
     zmq_msg_close (&header_msg);
     zmq_msg_close (&payload_msg);

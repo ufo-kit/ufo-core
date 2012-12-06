@@ -28,9 +28,9 @@ G_DEFINE_TYPE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT)
 
 typedef struct {
     UfoTask         *task;
+    UfoTaskMode      mode;
     guint            n_inputs;
-    UfoInputParameter
-                    *in_params;
+    guint           *n_dims;
 } ThreadLocalData;
 
 struct _UfoSchedulerPrivate {
@@ -55,6 +55,37 @@ ufo_scheduler_new (void)
     return UFO_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER, NULL));
 }
 
+static gboolean
+get_inputs (ThreadLocalData *tld,
+            UfoBuffer **inputs)
+{
+    UfoTaskNode *node = UFO_TASK_NODE (tld->task);
+
+    for (guint i = 0; i < tld->n_inputs; i++) {
+        UfoGroup *group = ufo_task_node_get_current_in_group (node, i);
+
+        inputs[i] = ufo_group_pop_input_buffer (group, tld->task);
+
+        if (inputs[i] == UFO_END_OF_STREAM)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+static void
+release_inputs (ThreadLocalData *tld,
+                UfoBuffer **inputs)
+{
+    UfoTaskNode *node = UFO_TASK_NODE (tld->task);
+
+    for (guint i = 0; i < tld->n_inputs; i++) {
+        UfoGroup *group = ufo_task_node_get_current_in_group (node, i);
+        ufo_group_push_input_buffer (group, tld->task, inputs[i]);
+        ufo_task_node_switch_in_group (node, i);
+    }
+}
+
 static gpointer
 run_task (ThreadLocalData *tld)
 {
@@ -70,16 +101,7 @@ run_task (ThreadLocalData *tld)
 
     while (active) {
         /* Get input buffers */
-        for (guint i = 0; i < tld->n_inputs; i++) {
-            UfoGroup *group = ufo_task_node_get_current_in_group (node, i);
-
-            inputs[i] = ufo_group_pop_input_buffer (group, tld->task);
-
-            if (inputs[i] == UFO_END_OF_STREAM) {
-                active = FALSE;
-                break;
-            }
-        }
+        active = get_inputs (tld, inputs);
 
         if (!active) {
             ufo_group_finish (ufo_task_node_get_out_group (node));
@@ -98,13 +120,7 @@ run_task (ThreadLocalData *tld)
         }
 
         /* Process */
-        if (UFO_IS_CPU_TASK (tld->task)) {
-            if (output != NULL)
-                ufo_buffer_discard_location (output, UFO_LOCATION_DEVICE);
-
-            active = ufo_cpu_task_process (UFO_CPU_TASK (tld->task), inputs, output, &requisition);
-        }
-        else if (UFO_IS_GPU_TASK (tld->task)) {
+        if (UFO_IS_GPU_TASK (tld->task)) {
             if (output != NULL)
                 ufo_buffer_discard_location (output, UFO_LOCATION_HOST);
 
@@ -113,21 +129,50 @@ run_task (ThreadLocalData *tld)
                                            &requisition,
                                            UFO_GPU_NODE (ufo_task_node_get_proc_node (node)));
         }
+        else if (UFO_IS_CPU_TASK (tld->task)) {
+            if (output != NULL)
+                ufo_buffer_discard_location (output, UFO_LOCATION_DEVICE);
+
+            switch (tld->mode) {
+                case UFO_TASK_MODE_SINGLE:
+                    active = ufo_cpu_task_process (UFO_CPU_TASK (tld->task), inputs, output, &requisition);
+                    break;
+
+                case UFO_TASK_MODE_REDUCE:
+                    {
+                        do {
+                            ufo_cpu_task_process (UFO_CPU_TASK (tld->task),
+                                                  inputs,
+                                                  output,
+                                                  &requisition);
+                            release_inputs (tld, inputs);
+                            active = get_inputs (tld, inputs);
+                        } while (active);
+
+                        ufo_cpu_task_reduce (UFO_CPU_TASK (tld->task),
+                                             output,
+                                             &requisition);
+                    }
+                    break;
+            }
+        }
 
         /* Release buffers for further consumption */
-        for (guint i = 0; i < tld->n_inputs; i++) {
-            UfoGroup *group = ufo_task_node_get_current_in_group (node, i);
-            ufo_group_push_input_buffer (group, tld->task, inputs[i]);
-            ufo_task_node_switch_in_group (node, i);
-        }
+        release_inputs (tld, inputs);
 
         if (requisition.n_dims > 0) {
             UfoGroup *group = ufo_task_node_get_out_group (node);
 
-            if (active)
+            if (tld->mode == UFO_TASK_MODE_REDUCE) {
                 ufo_group_push_output_buffer (group, output);
-            else
                 ufo_group_finish (group);
+            }
+            else {
+                if (active)
+                    ufo_group_push_output_buffer (group, output);
+                else
+                    ufo_group_finish (group);
+            }
         }
     }
 
@@ -181,7 +226,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         ufo_task_setup (UFO_TASK (node), resources, error);
         ufo_task_get_structure (UFO_TASK (node),
                                 &tld->n_inputs,
-                                &tld->in_params);
+                                &tld->n_dims,
+                                &tld->mode);
 
         group = ufo_group_new (ufo_graph_get_successors (UFO_GRAPH (task_graph), node),
                                context);

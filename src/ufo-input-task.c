@@ -20,9 +20,10 @@ struct _UfoInputTaskPrivate {
     GAsyncQueue **in_queues;
     GAsyncQueue **out_queues;
     UfoTask *wrapped;
-    UfoInputParameter *in_params;
+    UfoTaskMode mode;
     gboolean active;
     guint n_inputs;
+    guint *n_dims;
     UfoBuffer **inputs;
 };
 
@@ -53,7 +54,7 @@ ufo_input_task_new (UfoTask *wrapped)
     priv->wrapped = wrapped;
 
     /* TODO: free in_params and queues */
-    ufo_task_get_structure (wrapped, &priv->n_inputs, &priv->in_params);
+    ufo_task_get_structure (wrapped, &priv->n_inputs, &priv->n_dims, &priv->mode);
     priv->in_queues = g_new0 (GAsyncQueue *, priv->n_inputs);
     priv->out_queues = g_new0 (GAsyncQueue *, priv->n_inputs);
     priv->inputs = g_new0 (UfoBuffer *, priv->n_inputs);
@@ -126,9 +127,11 @@ ufo_input_task_get_requisition (UfoTask *task,
 static void
 ufo_input_task_get_structure (UfoTask *task,
                               guint *n_inputs,
-                              UfoInputParameter **in_params)
+                              guint **n_dims,
+                              UfoTaskMode *mode)
 {
     *n_inputs = 0;
+    *mode = UFO_TASK_MODE_SINGLE;
 }
 
 static gboolean

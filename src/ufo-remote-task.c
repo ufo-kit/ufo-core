@@ -77,12 +77,13 @@ ufo_remote_task_get_requisition (UfoTask *task,
 static void
 ufo_remote_task_get_structure (UfoTask *task,
                                guint *n_inputs,
-                               UfoInputParameter **in_params)
+                               guint **n_dims,
+                               UfoTaskMode *mode)
 {
     UfoRemoteTaskPrivate *priv;
 
     priv = UFO_REMOTE_TASK_GET_PRIVATE (UFO_REMOTE_TASK (task));
-    ufo_remote_node_get_structure (priv->remote, n_inputs, in_params);
+    ufo_remote_node_get_structure (priv->remote, n_inputs, n_dims, mode);
 }
 
 static gboolean

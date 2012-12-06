@@ -33,9 +33,10 @@ ufo_task_get_requisition (UfoTask *task,
 void
 ufo_task_get_structure (UfoTask *task,
                         guint *n_inputs,
-                        UfoInputParameter **in_params)
+                        guint **n_dims,
+                        UfoTaskMode *mode)
 {
-    UFO_TASK_GET_IFACE (task)->get_structure (task, n_inputs, in_params);
+    UFO_TASK_GET_IFACE (task)->get_structure (task, n_inputs, n_dims, mode);
 }
 
 static void
@@ -57,7 +58,8 @@ ufo_task_get_requisition_real (UfoTask *task,
 static void
 ufo_task_get_structure_real (UfoTask *task,
                              guint *n_inputs,
-                             UfoInputParameter **in_params)
+                             guint **n_dims,
+                             UfoTaskMode *mode)
 {
     g_warning ("`get_structure' not implemented");
 }

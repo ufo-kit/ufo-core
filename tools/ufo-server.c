@@ -50,28 +50,24 @@ handle_setup (ServerPrivate *priv)
 static void
 handle_get_structure (ServerPrivate *priv)
 {
-    UfoInputParameter *in_params;
     UfoMessage header;
     zmq_msg_t data_msg;
+    guint n_dims;
 
     g_print ("handle get_structure\n");
-    in_params = g_new0 (UfoInputParameter, 1);
 
     header.type = UFO_MESSAGE_STRUCTURE;
-    header.n_inputs = priv->n_inputs;
-    in_params->n_dims = 2;
-    in_params->n_expected_items = -1;
+    header.n_inputs = 1;
+    n_dims = 2;
 
     priv->inputs = g_new0 (UfoBuffer *, priv->n_inputs);
 
-    zmq_msg_init_size (&data_msg, sizeof (UfoInputParameter));
-    memcpy (zmq_msg_data (&data_msg), in_params, sizeof (UfoInputParameter));
+    zmq_msg_init_size (&data_msg, sizeof (guint));
+    memcpy (zmq_msg_data (&data_msg), &n_dims, sizeof (guint));
 
     ufo_msg_send (&header, priv->socket, ZMQ_SNDMORE);
     zmq_msg_send (&data_msg, priv->socket, 0);
     zmq_msg_close (&data_msg);
-
-    g_free (in_params);
 }
 
 static void

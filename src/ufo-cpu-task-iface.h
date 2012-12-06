@@ -19,11 +19,20 @@ typedef struct _UfoCpuTaskIface    UfoCpuTaskIface;
 struct _UfoCpuTaskIface {
     UfoTaskIface parent_iface;
 
-    gboolean (*process) (UfoCpuTask *task, UfoBuffer **inputs, UfoBuffer *output, UfoRequisition *requisition);
+    gboolean (*process) (UfoCpuTask *task,
+                         UfoBuffer **inputs,
+                         UfoBuffer *output,
+                         UfoRequisition *requisition);
+    void     (*reduce)  (UfoCpuTask *task,
+                         UfoBuffer *buffer,
+                         UfoRequisition *requisition);
 };
 
 gboolean    ufo_cpu_task_process (UfoCpuTask     *task,
                                   UfoBuffer     **inputs,
+                                  UfoBuffer      *output,
+                                  UfoRequisition *requisition);
+void        ufo_cpu_task_reduce  (UfoCpuTask     *task,
                                   UfoBuffer      *output,
                                   UfoRequisition *requisition);
 

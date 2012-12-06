@@ -24,19 +24,10 @@ typedef enum {
     UFO_TASK_ERROR_SETUP
 } UfoTaskError;
 
-/**
- * UfoInputParameter:
- * @n_dims: Number of dimension the input accept
- * @n_expected_items: Number of expected items. Use UFO_FILTER_INFINITE_INPUT to
- *      accept a data stream.
- *
- * Data structure for describing the parameters of an input as used by
- * ufo_filter_register_inputs().
- */
-struct _UfoInputParameter {
-    guint   n_dims;
-    gint    n_expected_items;
-};
+typedef enum {
+    UFO_TASK_MODE_SINGLE,
+    UFO_TASK_MODE_REDUCE
+} UfoTaskMode;
 
 struct _UfoTaskIface {
     GTypeInterface parent_iface;
@@ -46,7 +37,8 @@ struct _UfoTaskIface {
                              GError        **error);
     void (*get_structure)   (UfoTask        *task,
                              guint          *n_inputs,
-                             UfoInputParameter **in_params);
+                             guint         **n_dims,
+                             UfoTaskMode    *mode);
     void (*get_requisition) (UfoTask        *task,
                              UfoBuffer     **inputs,
                              UfoRequisition *requisition);
@@ -60,8 +52,8 @@ void   ufo_task_get_requisition (UfoTask          *task,
                                  UfoRequisition   *requisition);
 void   ufo_task_get_structure   (UfoTask          *task,
                                  guint            *n_inputs,
-                                 UfoInputParameter
-                                                 **in_params);
+                                 guint           **n_dims,
+                                 UfoTaskMode      *mode);
 
 GQuark ufo_task_error_quark     (void);
 GType  ufo_task_get_type        (void);
