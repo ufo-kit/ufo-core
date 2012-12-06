@@ -77,7 +77,7 @@ struct _UfoBufferClass {
  */
 struct _UfoRequisition {
     guint n_dims;
-    guint dims[UFO_BUFFER_MAX_NDIMS];
+    gsize dims[UFO_BUFFER_MAX_NDIMS];
 };
 
 /**
@@ -101,9 +101,6 @@ gint        ufo_buffer_cmp_dimensions       (UfoBuffer      *buffer,
 void        ufo_buffer_get_requisition      (UfoBuffer      *buffer,
                                              UfoRequisition *requisition);
 gsize       ufo_buffer_get_size             (UfoBuffer      *buffer);
-void        ufo_buffer_get_2d_dimensions    (UfoBuffer      *buffer,
-                                             guint          *width,
-                                             guint          *height);
 void        ufo_buffer_copy                 (UfoBuffer      *src,
                                              UfoBuffer      *dst);
 UfoBuffer  *ufo_buffer_dup                  (UfoBuffer      *buffer);

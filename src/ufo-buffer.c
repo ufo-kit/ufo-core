@@ -28,8 +28,7 @@ enum {
 typedef struct {
     guint num_dims;
     gfloat *data;
-    guint dim_size[UFO_BUFFER_MAX_NDIMS];
-    guint dim_stride[UFO_BUFFER_MAX_NDIMS];
+    gsize dim_size[UFO_BUFFER_MAX_NDIMS];
 } nd_array;
 
 struct _UfoBufferPrivate {
@@ -328,24 +327,6 @@ ufo_buffer_get_requisition (UfoBuffer *buffer,
 
     for (guint i = 0; i < priv->host_array.num_dims; i++)
         requisition->dims[i] = priv->host_array.dim_size[i];
-}
-
-/**
- * ufo_buffer_get_2d_dimensions:
- * @buffer: A #UfoBuffer.
- * @width: (out): Location to store the width of the buffer
- * @height: (out): Location to store the height of the buffer
- *
- * Convenience function to retrieve dimension of buffer.
- */
-void
-ufo_buffer_get_2d_dimensions (UfoBuffer *buffer,
-                              guint *width,
-                              guint *height)
-{
-    g_return_if_fail (UFO_IS_BUFFER(buffer) || (width != NULL) || (height != NULL));
-    *width = buffer->priv->host_array.dim_size[0];
-    *height = buffer->priv->host_array.dim_size[1];
 }
 
 /**
