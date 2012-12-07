@@ -42,12 +42,14 @@ struct _UfoSchedulerClass {
     GObjectClass parent_class;
 };
 
-UfoScheduler* ufo_scheduler_new          (void);
-void          ufo_scheduler_run          (UfoScheduler       *scheduler,
-                                          UfoArchGraph       *arch_graph,
-                                          UfoTaskGraph       *task_graph,
-                                          GError**            error);
-GType         ufo_scheduler_get_type     (void);
+UfoScheduler* ufo_scheduler_new             (void);
+void          ufo_scheduler_run             (UfoScheduler  *scheduler,
+                                             UfoArchGraph  *arch_graph,
+                                             UfoTaskGraph  *task_graph,
+                                             GError**       error);
+void          ufo_scheduler_set_task_split  (UfoScheduler  *scheduler,
+                                             gboolean       split);
+GType         ufo_scheduler_get_type        (void);
 
 G_END_DECLS
 

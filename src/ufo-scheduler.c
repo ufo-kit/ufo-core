@@ -34,13 +34,16 @@ typedef struct {
 } ThreadLocalData;
 
 struct _UfoSchedulerPrivate {
-    guint foo;
+    gboolean split;
 };
 
 enum {
     PROP_0,
+    PROP_SPLIT,
     N_PROPERTIES
 };
+
+static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 /**
  * ufo_scheduler_new:
@@ -53,6 +56,22 @@ UfoScheduler *
 ufo_scheduler_new (void)
 {
     return UFO_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER, NULL));
+}
+
+/**
+ * ufo_scheduler_set_task_split:
+ * @scheduler: A #UfoScheduler
+ * @split: %TRUE if task graph should be split
+ *
+ * Sets whether the task graph should be split before execution to increase
+ * multi GPU performance.
+ */
+void
+ufo_scheduler_set_task_split (UfoScheduler *scheduler,
+                              gboolean split)
+{
+    g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
+    g_object_set (G_OBJECT (scheduler), "split", split, NULL);
 }
 
 static gboolean
@@ -185,6 +204,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                    UfoTaskGraph *task_graph,
                    GError **error)
 {
+    UfoSchedulerPrivate *priv;
     UfoResources *resources;
     GList *nodes;
     guint n_nodes;
@@ -194,11 +214,12 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     gpointer context;
 
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
+    priv = scheduler->priv;
 
-    ufo_task_graph_split (task_graph, arch_graph);
+    if (priv->split)
+        ufo_task_graph_split (task_graph, arch_graph);
+
     ufo_task_graph_map (task_graph, arch_graph);
-
-    timer = g_timer_new ();
 
     context = ufo_arch_graph_get_context (arch_graph);
     resources = ufo_arch_graph_get_resources (arch_graph);
@@ -265,10 +286,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         g_list_free (successors);
     }
 
-    g_timer_stop (timer);
-    g_print ("Preparation took %fs\n", g_timer_elapsed (timer, NULL));
-
-    g_timer_start (timer);
+    timer = g_timer_new ();
 
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
@@ -311,7 +329,12 @@ ufo_scheduler_set_property (GObject      *object,
                             const GValue *value,
                             GParamSpec   *pspec)
 {
+    UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE (object);
+
     switch (property_id) {
+        case PROP_SPLIT:
+            priv->split = g_value_get_boolean (value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -324,7 +347,12 @@ ufo_scheduler_get_property (GObject      *object,
                             GValue       *value,
                             GParamSpec   *pspec)
 {
+    UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE (object);
+
     switch (property_id) {
+        case PROP_SPLIT:
+            g_value_set_boolean (value, priv->split);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -352,6 +380,16 @@ ufo_scheduler_class_init (UfoSchedulerClass *klass)
     gobject_class->dispose      = ufo_scheduler_dispose;
     gobject_class->finalize     = ufo_scheduler_finalize;
 
+    properties[PROP_SPLIT] =
+        g_param_spec_boolean ("split",
+                              "Split the task graph for better multi GPU support",
+                              "Split the task graph for better multi GPU support",
+                              TRUE,
+                              G_PARAM_READWRITE);
+
+    for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
+        g_object_class_install_property (gobject_class, i, properties[i]);
+
     g_type_class_add_private (klass, sizeof (UfoSchedulerPrivate));
 }
 
@@ -361,4 +399,5 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     UfoSchedulerPrivate *priv;
 
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
+    priv->split = TRUE;
 }
