@@ -92,6 +92,11 @@ struct _UfoBufferParamSpec {
     UfoBuffer   *default_value;
 };
 
+typedef enum {
+    UFO_BUFFER_DEPTH_8U,
+    UFO_BUFFER_DEPTH_16U
+} UfoBufferDepth;
+
 UfoBuffer*  ufo_buffer_new                  (UfoRequisition *requisition,
                                              gpointer        context);
 void        ufo_buffer_resize               (UfoBuffer      *buffer,
@@ -110,6 +115,8 @@ gpointer    ufo_buffer_get_device_array     (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
 void        ufo_buffer_discard_location     (UfoBuffer      *buffer,
                                              UfoMemLocation  location);
+void        ufo_buffer_convert              (UfoBuffer      *buffer,
+                                             UfoBufferDepth  depth);
 GType       ufo_buffer_get_type             (void);
 
 GParamSpec* ufo_buffer_param_spec           (const gchar*   name,

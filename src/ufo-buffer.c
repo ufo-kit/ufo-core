@@ -381,6 +381,45 @@ ufo_buffer_discard_location (UfoBuffer *buffer,
 }
 
 /**
+ * ufo_buffer_convert:
+ * @buffer: A #UfoBuffer
+ * @depth: Source bit depth of host data
+ *
+ * Convert host data according to its @depth to the internal 32-bit floating
+ * point representation.
+ */
+void
+ufo_buffer_convert (UfoBuffer *buffer,
+                    UfoBufferDepth depth)
+{
+    UfoBufferPrivate *priv;
+    gint n_pixels;
+    gfloat *dst;
+
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+    priv = buffer->priv;
+    n_pixels = (gint) (priv->size / 4);
+    dst = priv->host_array.data;
+
+    /* To save a memory allocation and several copies, we process data from back
+     * to front. This is possible if src bit depth is at most half as wide as
+     * the 32-bit target buffer. The processor cache should not be a
+     * problem. */
+    if (depth == UFO_BUFFER_DEPTH_8U) {
+        guint8 *src = (guint8 *) priv->host_array.data;
+
+        for (gint i = (n_pixels - 1); i >= 0; i--)
+            dst[i] = ((gfloat) src[i]);
+    }
+    else if (depth == UFO_BUFFER_DEPTH_16U) {
+        guint16 *src = (guint16 *) priv->host_array.data;
+
+        for (gint i = (n_pixels - 1); i >= 0; i--)
+            dst[i] = ((gfloat) src[i]);
+    }
+}
+
+/**
  * ufo_buffer_param_spec:
  * @name: canonical name of the property specified
  * @nick: nick name for the property specified
