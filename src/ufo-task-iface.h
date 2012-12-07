@@ -26,7 +26,8 @@ typedef enum {
 
 typedef enum {
     UFO_TASK_MODE_SINGLE,
-    UFO_TASK_MODE_REDUCE
+    UFO_TASK_MODE_REDUCE,
+    UFO_TASK_MODE_GENERATE
 } UfoTaskMode;
 
 struct _UfoTaskIface {

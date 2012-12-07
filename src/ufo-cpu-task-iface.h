@@ -26,6 +26,9 @@ struct _UfoCpuTaskIface {
     void     (*reduce)  (UfoCpuTask *task,
                          UfoBuffer *buffer,
                          UfoRequisition *requisition);
+    gboolean (*generate)(UfoCpuTask *task,
+                         UfoBuffer *buffer,
+                         UfoRequisition *requisition);
 };
 
 gboolean    ufo_cpu_task_process (UfoCpuTask     *task,
@@ -33,6 +36,9 @@ gboolean    ufo_cpu_task_process (UfoCpuTask     *task,
                                   UfoBuffer      *output,
                                   UfoRequisition *requisition);
 void        ufo_cpu_task_reduce  (UfoCpuTask     *task,
+                                  UfoBuffer      *output,
+                                  UfoRequisition *requisition);
+gboolean    ufo_cpu_task_generate(UfoCpuTask     *task,
                                   UfoBuffer      *output,
                                   UfoRequisition *requisition);
 

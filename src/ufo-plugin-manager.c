@@ -111,6 +111,24 @@ ufo_plugin_manager_new (UfoConfig *config)
     return manager;
 }
 
+static gchar *
+transform_string (const gchar *pattern,
+                  const gchar *s,
+                  const gchar *separator)
+{
+    gchar **sv;
+    gchar *transformed;
+    gchar *result;
+
+    sv = g_strsplit_set (s, "-_ ", -1);
+    transformed = g_strjoinv (separator, sv);
+    result = g_strdup_printf (pattern, transformed);
+
+    g_strfreev (sv);
+    g_free (transformed);
+    return result;
+}
+
 /**
  * ufo_plugin_manager_get_filter:
  * @manager: A #UfoPluginManager
@@ -138,8 +156,9 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     func = g_hash_table_lookup (priv->new_funcs, name);
 
     if (func == NULL) {
-        /* No suitable function found, let's find the module */
-        module_name = g_strdup_printf ("libufofilter%s.so", name);
+        module_name = transform_string ("libufofilter%s.so", name, NULL);
+        func_name = transform_string ("ufo_%s_task_new", name, "_");
+
         gchar *path = plugin_manager_get_path (priv, module_name);
 
         if (path == NULL) {
@@ -157,7 +176,6 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
             goto handle_error;
         }
 
-        func_name = g_strdup_printf ("ufo_%s_task_new", name);
         func = g_malloc0 (sizeof (NewFunc));
 
         if (!g_module_symbol (module, func_name, (gpointer *) func)) {

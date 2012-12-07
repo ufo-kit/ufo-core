@@ -157,6 +157,18 @@ run_task (ThreadLocalData *tld)
                     active = ufo_cpu_task_process (UFO_CPU_TASK (tld->task), inputs, output, &requisition);
                     break;
 
+                case UFO_TASK_MODE_GENERATE:
+                    {
+                        do {
+                            ufo_cpu_task_process (UFO_CPU_TASK (tld->task),
+                                                  inputs,
+                                                  output,
+                                                  &requisition);
+                            release_inputs (tld, inputs);
+                            active = get_inputs (tld, inputs);
+                        } while (active);
+                    }
+                    break;
                 case UFO_TASK_MODE_REDUCE:
                     {
                         do {
@@ -182,15 +194,32 @@ run_task (ThreadLocalData *tld)
         if (requisition.n_dims > 0) {
             UfoGroup *group = ufo_task_node_get_out_group (node);
 
-            if (tld->mode == UFO_TASK_MODE_REDUCE) {
-                ufo_group_push_output_buffer (group, output);
-                ufo_group_finish (group);
-            }
-            else {
-                if (active)
+            switch (tld->mode) {
+                case UFO_TASK_MODE_SINGLE:
+                    if (active)
+                        ufo_group_push_output_buffer (group, output);
+                    else
+                        ufo_group_finish (group);
+                    break;
+
+                case UFO_TASK_MODE_REDUCE:
                     ufo_group_push_output_buffer (group, output);
-                else
                     ufo_group_finish (group);
+                    break;
+
+                case UFO_TASK_MODE_GENERATE:
+                    {
+                        do {
+                            active = ufo_cpu_task_generate (UFO_CPU_TASK (tld->task),
+                                                            output,
+                                                            &requisition);
+                            ufo_group_push_output_buffer (group, output);
+                            output = ufo_group_pop_output_buffer (group, &requisition);
+                        } while (active);
+
+                        ufo_group_finish (group);
+                    }
+                    break;
             }
         }
     }
