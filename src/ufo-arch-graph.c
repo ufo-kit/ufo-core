@@ -27,8 +27,9 @@ struct _UfoArchGraphPrivate {
 
 /**
  * ufo_arch_graph_new:
- * @zmq_context: Context created with zmq_context_new().
- * @remote_addresses: (element-type utf8): A #GList containing address strings.
+ * @zmq_context: (allow-none): Context created with zmq_context_new() or %NULL.
+ * @remote_addresses: (element-type utf8): (allow-none): A #GList containing
+ * address strings.
  * @resources: An initialized #UfoResources object
  *
  * Returns: A new #UfoArchGraph.
