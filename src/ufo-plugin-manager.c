@@ -130,7 +130,7 @@ transform_string (const gchar *pattern,
 }
 
 /**
- * ufo_plugin_manager_get_filter:
+ * ufo_plugin_manager_get_task:
  * @manager: A #UfoPluginManager
  * @name: Name of the plugin.
  * @error: return location for a GError or %NULL
@@ -138,9 +138,9 @@ transform_string (const gchar *pattern,
  * Load a #UfoFilter module and return an instance. The shared object name must
  * be * constructed as "libfilter@name.so".
  *
- * Returns: (transfer none) (allow-none): #UfoFilter or %NULL if module cannot be found
- *
  * Since: 0.2, the error parameter is available
+ *
+ * Returns: (transfer full): (allow-none): #UfoFilter or %NULL if module cannot be found
  */
 UfoNode *
 ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GError **error)
