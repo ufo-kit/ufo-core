@@ -140,7 +140,7 @@ transform_string (const gchar *pattern,
  *
  * Since: 0.2, the error parameter is available
  *
- * Returns: (transfer full): (allow-none): #UfoFilter or %NULL if module cannot be found
+ * Returns: (transfer none): (allow-none): #UfoFilter or %NULL if module cannot be found
  */
 UfoNode *
 ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GError **error)
