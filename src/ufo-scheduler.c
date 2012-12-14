@@ -141,13 +141,55 @@ run_task (ThreadLocalData *tld)
 
         /* Process */
         if (UFO_IS_GPU_TASK (tld->task)) {
+            UfoGpuNode *gpu_node;
+
             if (output != NULL)
                 ufo_buffer_discard_location (output, UFO_LOCATION_HOST);
 
-            active = ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
-                                           inputs, output,
-                                           &requisition,
-                                           UFO_GPU_NODE (ufo_task_node_get_proc_node (node)));
+            gpu_node = UFO_GPU_NODE (ufo_task_node_get_proc_node (node));
+
+            switch (tld->mode) {
+                case UFO_TASK_MODE_SINGLE:
+                    active = ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
+                                                   inputs,
+                                                   output,
+                                                   &requisition,
+                                                   gpu_node);
+                    break;
+
+                case UFO_TASK_MODE_GENERATE:
+                    {
+                        do {
+                            ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
+                                                  inputs,
+                                                  output,
+                                                  &requisition,
+                                                  gpu_node);
+                            release_inputs (tld, inputs);
+                            active = get_inputs (tld, inputs);
+                        } while (active);
+                    }
+                    break;
+
+                case UFO_TASK_MODE_REDUCE:
+                    {
+                        do {
+                            ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
+                                                  inputs,
+                                                  output,
+                                                  &requisition,
+                                                  gpu_node);
+                            release_inputs (tld, inputs);
+                            active = get_inputs (tld, inputs);
+                        } while (active);
+
+                        ufo_gpu_task_reduce (UFO_GPU_TASK (tld->task),
+                                             output,
+                                             &requisition,
+                                             gpu_node);
+                    }
+                    break;
+            }
         }
         else if (UFO_IS_CPU_TASK (tld->task)) {
             if (output != NULL)
