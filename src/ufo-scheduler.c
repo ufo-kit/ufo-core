@@ -119,11 +119,15 @@ run_task (ThreadLocalData *tld)
     output = NULL;
 
     while (active) {
+        UfoGroup *group;
+
+        group = ufo_task_node_get_out_group (node);
+
         /* Get input buffers */
         active = get_inputs (tld, inputs);
 
         if (!active) {
-            ufo_group_finish (ufo_task_node_get_out_group (node));
+            ufo_group_finish (group);
             break;
         }
 
@@ -131,9 +135,6 @@ run_task (ThreadLocalData *tld)
         ufo_task_get_requisition (tld->task, inputs, &requisition);
 
         if (requisition.n_dims > 0) {
-            UfoGroup *group;
-
-            group = ufo_task_node_get_out_group (node);
             output = ufo_group_pop_output_buffer (group, &requisition);
             g_assert (output != NULL);
         }
@@ -169,6 +170,7 @@ run_task (ThreadLocalData *tld)
                         } while (active);
                     }
                     break;
+
                 case UFO_TASK_MODE_REDUCE:
                     {
                         do {
@@ -192,8 +194,6 @@ run_task (ThreadLocalData *tld)
         release_inputs (tld, inputs);
 
         if (requisition.n_dims > 0) {
-            UfoGroup *group = ufo_task_node_get_out_group (node);
-
             switch (tld->mode) {
                 case UFO_TASK_MODE_SINGLE:
                     if (active)
