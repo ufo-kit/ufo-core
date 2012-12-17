@@ -171,6 +171,7 @@ ufo_task_graph_connect_nodes (UfoTaskGraph *graph,
  * @graph: A #UfoTaskGraph
  * @n1: A source node
  * @n2: A destination node
+ * @input: Input port of @n2
  *
  * Connect @n1 with @n2 using @n2's @input port.
  */

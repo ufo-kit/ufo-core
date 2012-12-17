@@ -24,10 +24,10 @@ struct _UfoCpuTaskIface {
                          UfoBuffer *output,
                          UfoRequisition *requisition);
     void     (*reduce)  (UfoCpuTask *task,
-                         UfoBuffer *buffer,
+                         UfoBuffer *output,
                          UfoRequisition *requisition);
     gboolean (*generate)(UfoCpuTask *task,
-                         UfoBuffer *buffer,
+                         UfoBuffer *output,
                          UfoRequisition *requisition);
 };
 

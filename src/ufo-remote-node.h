@@ -44,6 +44,15 @@ struct _UfoRemoteNodeClass {
 
 /**
  * UfoMessageType: (skip)
+   @UFO_MESSAGE_SETUP:
+   @UFO_MESSAGE_GET_STRUCTURE:
+   @UFO_MESSAGE_STRUCTURE:
+   @UFO_MESSAGE_GET_REQUISITION:
+   @UFO_MESSAGE_REQUISITION:
+   @UFO_MESSAGE_SEND_INPUTS:
+   @UFO_MESSAGE_GET_RESULT:
+   @UFO_MESSAGE_RESULT:
+   @UFO_MESSAGE_ACK:,
  */
 typedef enum {
     UFO_MESSAGE_SETUP = 0,
@@ -59,6 +68,8 @@ typedef enum {
 
 /**
  * UfoMessage: (skip)
+ * @type: Type of the wire message
+ * @n_inputs: Number of inputs
  */
 struct _UfoMessage {
     UfoMessageType  type;

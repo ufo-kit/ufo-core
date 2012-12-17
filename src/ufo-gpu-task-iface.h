@@ -26,7 +26,7 @@ struct _UfoGpuTaskIface {
                          UfoRequisition *requisition,
                          UfoGpuNode *node);
     void     (*reduce)  (UfoGpuTask *task,
-                         UfoBuffer *buffer,
+                         UfoBuffer *output,
                          UfoRequisition *requisition,
                          UfoGpuNode *node);
 };
