@@ -57,21 +57,6 @@ find_program(INTROSPECTION_SCANNER "g-ir-scanner")
 find_program(INTROSPECTION_COMPILER "g-ir-compiler")
 find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
 
-pkg_check_modules(GMODULE2 gmodule-2.0>=2.22 REQUIRED)
-pkg_check_modules(GTHREAD2 gthread-2.0>=2.22 REQUIRED)
-pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
-pkg_check_modules(ZMQ libzmq>=3.2 REQUIRED)
-
-set(ufocore_LIBS
-    ${OPENCL_LIBRARIES}
-    ${GLIB2_LIBRARIES}
-    ${GOBJECT2_LIBRARIES}
-    ${GMODULE2_LIBRARIES}
-    ${GTHREAD2_LIBRARIES}
-    ${JSON_GLIB_LIBRARIES}
-    ${ZMQ_LIBRARIES}
-    )
-
 # --- Add enum generation targets ---------------------------------------------
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
@@ -101,11 +86,6 @@ get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
 set(LIBDIR      "lib${LIB_SUFFIX}")
 set(INCLUDEDIR  "include/ufo")
 
-include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${JSON_GLIB_INCLUDE_DIRS}
-    ${ZMQ_INCLUDE_DIRS})
-
 if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_definitions(-DG_DISABLE_ASSERT)
 endif()
@@ -119,7 +99,7 @@ set_target_properties(ufo PROPERTIES
     VERSION ${PACKAGE_VERSION}
     SOVERSION ${UFO_SO_VERSION})
 
-target_link_libraries(ufo ${ufocore_LIBS})
+target_link_libraries(ufo ${UFOCORE_DEPS})
 
 install(TARGETS ufo
         ARCHIVE DESTINATION ${LIBDIR}

@@ -17,9 +17,15 @@ set(SUITE_BIN "test-suite")
 option(WITH_TESTS "Build test suite" ON)
 
 if (WITH_TESTS)
-    include_directories({CMAKE_CURRENT_SOURCE_DIR})
+    include_directories(
+        {CMAKE_CURRENT_SOURCE_DIR})
+
     add_executable(${SUITE_BIN} ${TEST_SRCS})
-    target_link_libraries(${SUITE_BIN} ufo ${GLIB2_LIBRARIES})
+
+    target_link_libraries(${SUITE_BIN}
+        ufo
+        ${UFOCORE_DEPS})
+
     add_test(${SUITE_BIN} ${SUITE_BIN})
 
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gtester.xsl"

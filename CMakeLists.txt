@@ -47,12 +47,32 @@ find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GLIB2 glib-2.0>=2.22 REQUIRED)
 pkg_check_modules(GOBJECT2 gobject-2.0>=2.22 REQUIRED)
+pkg_check_modules(GMODULE2 gmodule-2.0>=2.22 REQUIRED)
+pkg_check_modules(GTHREAD2 gthread-2.0>=2.22 REQUIRED)
+pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
+pkg_check_modules(ZMQ libzmq>=3.2 REQUIRED)
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR}
+set(UFOCORE_DEPS
+    ${OPENCL_LIBRARIES}
+    ${GLIB2_LIBRARIES}
+    ${GOBJECT2_LIBRARIES}
+    ${GMODULE2_LIBRARIES}
+    ${GTHREAD2_LIBRARIES}
+    ${JSON_GLIB_LIBRARIES}
+    ${ZMQ_LIBRARIES})
+
+
+include_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/src
     ${GLIB2_INCLUDE_DIRS}
     ${OPENCL_INCLUDE_DIRS}
-    )
+    ${JSON_GLIB_INCLUDE_DIRS}
+    ${ZMQ_INCLUDE_DIRS})
+
+link_directories(
+    ${ZMQ_LIBRARY_DIRS}
+    ${JSON_GLIB_LIBRARY_DIRS})
 
 add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
 
