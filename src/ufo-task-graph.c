@@ -106,13 +106,10 @@ ufo_task_graph_save_to_json (UfoTaskGraph *graph,
                              const gchar *filename,
                              GError **error)
 {
-    UfoTaskGraphPrivate *priv;
     GList *task_nodes;
     GError *tmp_error = NULL;
 
     g_return_if_fail (UFO_IS_GRAPH (graph) && (filename != NULL));
-
-    priv = graph->priv;
 
     JsonGenerator *json_generator = json_generator_new ();
     JsonNode *root_node = json_node_new (JSON_NODE_OBJECT);
@@ -426,7 +423,7 @@ handle_json_task_edge (JsonArray *array,
     JsonObject *edge;
     UfoTaskNode *from_node, *to_node;
     JsonObject *from_object, *to_object;
-    guint from_port, to_port;
+    guint to_port;
     const gchar *from_name;
     const gchar *to_name;
     GError *error = NULL;
@@ -448,10 +445,6 @@ handle_json_task_edge (JsonArray *array,
     }
 
     from_name = json_object_get_string_member (from_object, "name");
-    from_port = 0;
-
-    if (json_object_has_member (from_object, "output"))
-        from_port = (guint) json_object_get_int_member (from_object, "output");
 
     /* Get to details */
     to_object = json_object_get_object_member (edge, "to");
