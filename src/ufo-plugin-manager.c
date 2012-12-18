@@ -85,7 +85,7 @@ copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfig *config)
     paths = ufo_config_get_paths (config);
 
     for (guint i = 0; paths[i] != NULL; i++)
-        priv->search_paths = g_slist_prepend (priv->search_paths, g_strdup (paths[i]));
+        priv->search_paths = g_slist_append (priv->search_paths, g_strdup (paths[i]));
 
     g_strfreev (paths);
 }

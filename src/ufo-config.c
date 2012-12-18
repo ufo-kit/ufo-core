@@ -245,7 +245,7 @@ ufo_config_init (UfoConfig *config)
     config->priv->profile_level = UFO_PROFILER_LEVEL_NONE;
     config->priv->profile_output_prefix = NULL;
 
-    ufo_config_add_path (config, LIB_FILTER_DIR);
+    ufo_config_add_path (config, UFO_PLUGIN_DIR);
     ufo_config_add_path (config, "/usr/lib/ufo");
     ufo_config_add_path (config, "/usr/lib64/ufo");
     ufo_config_add_path (config, "/usr/local/lib/ufo");
