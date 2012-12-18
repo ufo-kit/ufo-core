@@ -30,7 +30,8 @@ typedef struct {
     UfoTask         *task;
     UfoTaskMode      mode;
     guint            n_inputs;
-    guint           *n_dims;
+    UfoInputParam   *in_params;
+    gint           *n_fetched;
 } ThreadLocalData;
 
 struct _UfoSchedulerPrivate {
@@ -81,12 +82,18 @@ get_inputs (ThreadLocalData *tld,
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
 
     for (guint i = 0; i < tld->n_inputs; i++) {
-        UfoGroup *group = ufo_task_node_get_current_in_group (node, i);
+        UfoGroup *group;
 
+        if (tld->n_fetched[i] == tld->in_params[i].n_expected)
+            continue;
+
+        group = ufo_task_node_get_current_in_group (node, i);
         inputs[i] = ufo_group_pop_input_buffer (group, tld->task);
 
         if (inputs[i] == UFO_END_OF_STREAM)
             return FALSE;
+
+        tld->n_fetched[i]++;
     }
 
     return TRUE;
@@ -99,7 +106,12 @@ release_inputs (ThreadLocalData *tld,
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
 
     for (guint i = 0; i < tld->n_inputs; i++) {
-        UfoGroup *group = ufo_task_node_get_current_in_group (node, i);
+        UfoGroup *group;
+
+        if (tld->n_fetched[i] == tld->in_params[i].n_expected)
+            continue;
+
+        group = ufo_task_node_get_current_in_group (node, i);
         ufo_group_push_input_buffer (group, tld->task, inputs[i]);
         ufo_task_node_switch_in_group (node, i);
     }
@@ -318,9 +330,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         ufo_task_setup (UFO_TASK (node), resources, error);
         ufo_task_get_structure (UFO_TASK (node),
                                 &tld->n_inputs,
-                                &tld->n_dims,
+                                &tld->in_params,
                                 &tld->mode);
 
+        tld->n_fetched = g_new0 (gint, tld->n_inputs);
         group = ufo_group_new (ufo_graph_get_successors (UFO_GRAPH (task_graph), node),
                                context);
 
@@ -388,6 +401,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         g_object_unref (group);
 
         tld = tlds[i];
+        g_free (tld->n_fetched);
         g_free (tld);
     }
 

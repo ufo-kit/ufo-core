@@ -82,7 +82,7 @@ UfoNode  *ufo_remote_node_new               (gpointer     zmq_context,
 void      ufo_remote_node_request_setup     (UfoRemoteNode *node);
 void      ufo_remote_node_get_structure     (UfoRemoteNode *node,
                                              guint *n_inputs,
-                                             guint **n_dims,
+                                             UfoInputParam **in_params,
                                              UfoTaskMode *mode);
 void      ufo_remote_node_send_inputs       (UfoRemoteNode *node,
                                              UfoBuffer **inputs);

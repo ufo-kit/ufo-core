@@ -16,9 +16,9 @@ G_BEGIN_DECLS
 
 #define UFO_TASK_ERROR            ufo_task_error_quark()
 
-typedef struct _UfoTask             UfoTask;
-typedef struct _UfoTaskIface        UfoTaskIface;
-typedef struct _UfoInputParameter   UfoInputParameter;
+typedef struct _UfoTask         UfoTask;
+typedef struct _UfoTaskIface    UfoTaskIface;
+typedef struct _UfoInputParam   UfoInputParam;
 
 typedef enum {
     UFO_TASK_ERROR_SETUP
@@ -30,6 +30,11 @@ typedef enum {
     UFO_TASK_MODE_GENERATE
 } UfoTaskMode;
 
+struct _UfoInputParam {
+    guint n_dims;
+    gint n_expected;
+};
+
 struct _UfoTaskIface {
     GTypeInterface parent_iface;
 
@@ -38,7 +43,7 @@ struct _UfoTaskIface {
                              GError        **error);
     void (*get_structure)   (UfoTask        *task,
                              guint          *n_inputs,
-                             guint         **n_dims,
+                             UfoInputParam **in_params,
                              UfoTaskMode    *mode);
     void (*get_requisition) (UfoTask        *task,
                              UfoBuffer     **inputs,
@@ -53,7 +58,7 @@ void   ufo_task_get_requisition (UfoTask          *task,
                                  UfoRequisition   *requisition);
 void   ufo_task_get_structure   (UfoTask          *task,
                                  guint            *n_inputs,
-                                 guint           **n_dims,
+                                 UfoInputParam  **in_params,
                                  UfoTaskMode      *mode);
 
 GQuark ufo_task_error_quark     (void);
