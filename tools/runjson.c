@@ -1,9 +1,11 @@
 
 #include <stdlib.h>
 #include <glib-object.h>
-#include "ufo-configuration.h"
-#include "ufo-graph.h"
-#include "ufo-scheduler.h"
+#include <ufo-config.h>
+#include <ufo-task-graph.h>
+#include <ufo-arch-graph.h>
+#include <ufo-scheduler.h>
+#include <ufo-resources.h>
 
 static void
 handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
@@ -17,67 +19,102 @@ handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
 }
 
 static GValueArray *
-split_string (const gchar *string)
+make_path_array (gchar **paths)
 {
     GValueArray *array;
-    gchar **components;
     GValue  value = {0};
 
-    components = g_strsplit (string, ":", -1);
     array = g_value_array_new (2);
     g_value_init (&value, G_TYPE_STRING);
 
-    for (guint i = 0; components[i] != NULL; i++) {
+    for (guint i = 0; paths[i] != NULL; i++) {
         g_value_reset (&value);
-        g_value_set_string (&value, components[i]);
+        g_value_set_string (&value, paths[i]);
         g_value_array_append (array, &value);
     }
 
-    g_strfreev (components);
     return array;
 }
 
-int main(int argc, char const* argv[])
+static void
+execute_json (const gchar *filename,
+              GValueArray *paths)
 {
-    UfoConfiguration *config;
-    UfoGraph         *graph;
-    UfoScheduler     *scheduler;
+    UfoConfig       *config;
+    UfoArchGraph    *arch_graph;
+    UfoTaskGraph    *task_graph;
+    UfoScheduler    *scheduler;
+    UfoResources    *resources;
     UfoPluginManager *manager;
     GError *error = NULL;
 
+    config = ufo_config_new ();
+
+    if (paths != NULL)
+        g_object_set (G_OBJECT (config), "paths", paths, NULL);
+
+    manager = ufo_plugin_manager_new (config);
+
+    task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+    ufo_task_graph_read_from_json (task_graph, manager, filename, &error);
+    handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
+
+    resources = ufo_resources_new (config);
+    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL, resources));
+    scheduler = ufo_scheduler_new ();
+
+    ufo_scheduler_set_task_split (scheduler, FALSE);
+    ufo_scheduler_run (scheduler, arch_graph, task_graph, &error);
+    handle_error ("Executing", error, UFO_GRAPH (task_graph));
+
+    g_object_unref (arch_graph);
+    g_object_unref (task_graph);
+    g_object_unref (scheduler);
+    g_object_unref (manager);
+    g_object_unref (resources);
+    g_object_unref (config);
+}
+
+int main(int argc, char *argv[])
+{
+    GOptionContext *context;
+    GError *error = NULL;
+    GValueArray *path_array = NULL;
+    gchar **paths = NULL;
+
+    GOptionEntry entries[] = {
+        { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths, "Path to node plugins or OpenCL kernels", NULL },
+        { NULL }
+    };
+
     g_type_init();
 
+    context = g_option_context_new ("FILE");
+    g_option_context_add_main_entries (context, entries, NULL);
+
+    if (!g_option_context_parse (context, &argc, &argv, &error)) {
+        g_print ("Option parsing failed: %s\n", error->message);
+        return 1;
+    }
+
     if (argc < 2) {
-        g_print("Usage: runjson FILE [FILTER-PATHS]\n");
-        return 0;
+        gchar *help;
+
+        help = g_option_context_get_help (context, TRUE, NULL);
+        g_print ("%s", help);
+        g_free (help);
+        return 1;
     }
 
-    config = ufo_configuration_new ();
-    graph = ufo_graph_new ();
-
-    if (argc == 2) {
-        manager = ufo_plugin_manager_new (NULL);
-    }
-    else {
-        GValueArray *paths;
-
-        paths = split_string (argv[2]);
-
-        g_object_set (G_OBJECT (config),
-                      "paths", paths,
-                      NULL);
-
-        manager = ufo_plugin_manager_new (config);
-        g_value_array_free (paths);
+    if (paths != NULL) {
+        path_array = make_path_array (paths);
+        g_strfreev (paths);
     }
 
-    ufo_graph_read_from_json(graph, manager, argv[1], &error);
-    handle_error("Reading JSON", error, graph);
+    execute_json (argv[argc-1], path_array);
 
-    scheduler = ufo_scheduler_new (config, NULL);
-    ufo_scheduler_run (scheduler, graph, &error);
-    handle_error("Executing", error, graph);
+    g_value_array_free (path_array);
+    g_option_context_free (context);
 
-    g_object_unref(graph);
     return 0;
 }

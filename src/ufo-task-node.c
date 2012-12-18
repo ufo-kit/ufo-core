@@ -8,12 +8,44 @@ G_DEFINE_TYPE (UfoTaskNode, ufo_task_node, UFO_TYPE_NODE)
 
 
 struct _UfoTaskNodePrivate {
+    gchar           *plugin;
+    gchar           *unique;
     UfoSendPattern   pattern;
     UfoNode         *proc_node;
     UfoGroup        *out_group;
     GList           *in_groups[16];
     GList           *current[16];
 };
+
+void
+ufo_task_node_set_plugin_name (UfoTaskNode *task_node,
+                               const gchar *name)
+{
+    UfoTaskNodePrivate *priv;
+
+    g_return_if_fail (UFO_IS_TASK_NODE (task_node));
+    priv = task_node->priv;
+
+    g_free (priv->plugin);
+    priv->plugin = g_strdup (name);
+
+    g_free (priv->unique);
+    priv->unique = g_strdup_printf ("%s-%p", name, (gpointer) task_node);
+}
+
+const gchar *
+ufo_task_node_get_plugin_name (UfoTaskNode *task_node)
+{
+    g_return_val_if_fail (UFO_IS_TASK_NODE (task_node), NULL);
+    return task_node->priv->plugin;
+}
+
+const gchar *
+ufo_task_node_get_unique_name (UfoTaskNode *task_node)
+{
+    g_return_val_if_fail (UFO_IS_TASK_NODE (task_node), NULL);
+    return task_node->priv->unique;
+}
 
 void
 ufo_task_node_set_send_pattern (UfoTaskNode *node,
@@ -94,8 +126,25 @@ ufo_task_node_get_proc_node (UfoTaskNode *node)
 }
 
 static void
+ufo_task_node_finalize (GObject *object)
+{
+    UfoTaskNodePrivate *priv;
+
+    priv = UFO_TASK_NODE_GET_PRIVATE (object);
+    g_free (priv->plugin);
+    g_free (priv->unique);
+
+    G_OBJECT_CLASS (ufo_task_node_parent_class)->finalize (object);
+}
+
+static void
 ufo_task_node_class_init (UfoTaskNodeClass *klass)
 {
+    GObjectClass *oclass;
+
+    oclass = G_OBJECT_CLASS (klass);
+    oclass->finalize = ufo_task_node_finalize;
+
     g_type_class_add_private (klass, sizeof(UfoTaskNodePrivate));
 }
 
@@ -103,6 +152,8 @@ static void
 ufo_task_node_init (UfoTaskNode *self)
 {
     self->priv = UFO_TASK_NODE_GET_PRIVATE (self);
+    self->priv->plugin = NULL;
+    self->priv->unique = NULL;
     self->priv->pattern = UFO_SEND_BROADCAST;
     self->priv->proc_node = NULL;
     self->priv->out_group = NULL;

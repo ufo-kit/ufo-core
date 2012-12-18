@@ -13,6 +13,7 @@
 #include <glob.h>
 #include <ufo-plugin-manager.h>
 #include <ufo-configurable.h>
+#include <ufo-task-node.h>
 #include "config.h"
 
 G_DEFINE_TYPE_WITH_CODE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT,
@@ -105,7 +106,7 @@ ufo_plugin_manager_new (UfoConfig *config)
     UfoPluginManager *manager;
 
     manager = UFO_PLUGIN_MANAGER (g_object_new (UFO_TYPE_PLUGIN_MANAGER,
-                                                "configuration", config,
+                                                "config", config,
                                                 NULL));
 
     return manager;
@@ -197,7 +198,7 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     }
 
     node = (*func) ();
-    /* ufo_filter_set_plugin_name (filter, name); */
+    ufo_task_node_set_plugin_name (UFO_TASK_NODE (node), name);
     g_message ("UfoPluginManager: Created %s-%p", name, (gpointer) node);
 
     return node;

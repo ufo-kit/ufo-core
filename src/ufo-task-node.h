@@ -45,6 +45,10 @@ struct _UfoTaskNodeClass {
     UfoNodeClass parent_class;
 };
 
+void            ufo_task_node_set_plugin_name       (UfoTaskNode    *task_node,
+                                                     const gchar    *name);
+const gchar    *ufo_task_node_get_plugin_name       (UfoTaskNode    *task_node);
+const gchar    *ufo_task_node_get_unique_name       (UfoTaskNode    *task_node);
 void            ufo_task_node_set_send_pattern      (UfoTaskNode    *task_node,
                                                      UfoSendPattern  pattern);
 UfoSendPattern  ufo_task_node_get_send_pattern      (UfoTaskNode    *task_node);

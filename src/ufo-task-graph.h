@@ -5,6 +5,7 @@
 #include <ufo-graph.h>
 #include <ufo-arch-graph.h>
 #include <ufo-task-node.h>
+#include <ufo-plugin-manager.h>
 
 G_BEGIN_DECLS
 
@@ -15,9 +16,16 @@ G_BEGIN_DECLS
 #define UFO_IS_TASK_GRAPH_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_TASK_GRAPH))
 #define UFO_TASK_GRAPH_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_TASK_GRAPH, UfoTaskGraphClass))
 
+#define UFO_TASK_GRAPH_ERROR            ufo_task_graph_error_quark()
+
 typedef struct _UfoTaskGraph           UfoTaskGraph;
 typedef struct _UfoTaskGraphClass      UfoTaskGraphClass;
 typedef struct _UfoTaskGraphPrivate    UfoTaskGraphPrivate;
+
+
+typedef enum {
+    UFO_TASK_GRAPH_ERROR_JSON_KEY
+} UfoTaskGraphError;
 
 /**
  * UfoTaskGraph:
@@ -43,19 +51,27 @@ struct _UfoTaskGraphClass {
 };
 
 UfoGraph    *ufo_task_graph_new                 (void);
-void         ufo_task_graph_map                 (UfoTaskGraph *task_graph,
-                                                 UfoArchGraph *arch_graph);
-void         ufo_task_graph_split               (UfoTaskGraph *task_graph,
-                                                 UfoArchGraph *arch_graph);
-void         ufo_task_graph_connect_nodes       (UfoTaskGraph *graph,
-                                                 UfoTaskNode  *n1,
-                                                 UfoTaskNode  *n2);
-void         ufo_task_graph_connect_nodes_full  (UfoTaskGraph *graph,
-                                                 UfoTaskNode  *n1,
-                                                 UfoTaskNode  *n2,
-                                                 guint         input);
-void         ufo_task_graph_fuse                (UfoTaskGraph *task_graph);
+void         ufo_task_graph_read_from_json      (UfoTaskGraph       *task_graph,
+                                                 UfoPluginManager   *plugin_manager,
+                                                 const gchar        *filename,
+                                                 GError            **error);
+void         ufo_task_graph_save_to_json        (UfoTaskGraph       *graph,
+                                                 const gchar        *filename,
+                                                 GError            **error);
+void         ufo_task_graph_map                 (UfoTaskGraph       *task_graph,
+                                                 UfoArchGraph       *arch_graph);
+void         ufo_task_graph_split               (UfoTaskGraph       *task_graph,
+                                                 UfoArchGraph       *arch_graph);
+void         ufo_task_graph_connect_nodes       (UfoTaskGraph       *graph,
+                                                 UfoTaskNode        *n1,
+                                                 UfoTaskNode        *n2);
+void         ufo_task_graph_connect_nodes_full  (UfoTaskGraph       *graph,
+                                                 UfoTaskNode        *n1,
+                                                 UfoTaskNode        *n2,
+                                                 guint               input);
+void         ufo_task_graph_fuse                (UfoTaskGraph       *task_graph);
 GType        ufo_task_graph_get_type            (void);
+GQuark       ufo_task_graph_error_quark         (void);
 
 G_END_DECLS
 
