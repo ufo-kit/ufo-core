@@ -7,6 +7,7 @@ G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 #define UFO_REMOTE_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_REMOTE_NODE, UfoRemoteNodePrivate))
 
 static void ufo_msg_send (UfoMessage *msg, gpointer socket, gint flags);
+static void receive_ack (UfoRemoteNodePrivate *priv);
 
 struct _UfoRemoteNodePrivate {
     gpointer context;
@@ -28,6 +29,10 @@ ufo_remote_node_new (gpointer zmq_context,
     priv->socket = zmq_socket (zmq_context, ZMQ_REQ);
     zmq_connect (priv->socket, address);
 
+    g_message ("Connected remote node to `%s' via socket=%p",
+               address,
+               priv->socket);
+
     return UFO_NODE (node);
 }
 
@@ -36,7 +41,6 @@ ufo_remote_node_request_setup (UfoRemoteNode *node)
 {
     UfoRemoteNodePrivate *priv;
     UfoMessage request;
-    zmq_msg_t reply_msg;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
@@ -44,10 +48,30 @@ ufo_remote_node_request_setup (UfoRemoteNode *node)
     request.type = UFO_MESSAGE_SETUP;
     ufo_msg_send (&request, priv->socket, 0);
 
-    /* Receive reply */
-    zmq_msg_init (&reply_msg);
-    zmq_msg_recv (&reply_msg, priv->socket, 0);
-    zmq_msg_close (&reply_msg);
+    receive_ack (priv);
+}
+
+void
+ufo_remote_node_send_json (UfoRemoteNode *node,
+                           const gchar *json,
+                           gsize size)
+{
+    UfoRemoteNodePrivate *priv;
+    UfoMessage request;
+    zmq_msg_t json_msg;
+
+    g_return_if_fail (UFO_IS_REMOTE_NODE (node));
+
+    priv = node->priv;
+    request.type = UFO_MESSAGE_TASK_JSON;
+    ufo_msg_send (&request, priv->socket, ZMQ_SNDMORE);
+
+    zmq_msg_init_size (&json_msg, size);
+    memcpy (zmq_msg_data (&json_msg), json, size);
+    zmq_msg_send (&json_msg, priv->socket, 0);
+    zmq_msg_close (&json_msg);
+
+    receive_ack (priv);
 }
 
 void
@@ -61,7 +85,7 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     UfoMessage *header;
     zmq_msg_t header_msg;
     zmq_msg_t payload_msg;
-    gsize payload_size;
+    UfoInputParam *in_param;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
@@ -76,17 +100,15 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     header = (UfoMessage *) zmq_msg_data (&header_msg);
 
     /* Receive payload */
-    /* zmq_msg_init (&payload_msg); */
-    /* zmq_msg_recv (&payload_msg, priv->socket, 0); */
-    /* payload_size = header->n_inputs * sizeof (guint); */
-    /* g_assert (zmq_msg_size (&payload_msg) >= payload_size); */
-    /* payload = zmq_msg_data (&payload_msg); */
+    zmq_msg_init (&payload_msg);
+    zmq_msg_recv (&payload_msg, priv->socket, 0);
+    in_param = (UfoInputParam *) zmq_msg_data (&payload_msg);
 
     priv->n_inputs = header->n_inputs;
     *n_inputs = header->n_inputs;
-    *in_params = g_new0 (UfoInputParam, header->n_inputs);
-
-    /* TODO: Set in_params! */
+    *in_params = g_new0 (UfoInputParam, 1);
+    (*in_params)[0].n_dims = in_param->n_dims;
+    (*in_params)[0].n_expected = in_param->n_expected;
 
     zmq_msg_close (&header_msg);
     zmq_msg_close (&payload_msg);
@@ -98,7 +120,6 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
 {
     UfoRemoteNodePrivate *priv;
     UfoMessage request;
-    zmq_msg_t reply_msg;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
@@ -135,10 +156,7 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
         zmq_msg_close (&data_msg);
     }
 
-    /* Receive final ACK */
-    zmq_msg_init (&reply_msg);
-    zmq_msg_recv (&reply_msg, priv->socket, 0);
-    zmq_msg_close (&reply_msg);
+    receive_ack (priv);
 }
 
 void
@@ -189,9 +207,10 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
     zmq_msg_close (&reply_msg);
 }
 
-static void ufo_msg_send (UfoMessage *msg,
-                          gpointer socket,
-                          gint flags)
+static void
+ufo_msg_send (UfoMessage *msg,
+              gpointer socket,
+              gint flags)
 {
     zmq_msg_t request;
 
@@ -202,13 +221,29 @@ static void ufo_msg_send (UfoMessage *msg,
 }
 
 static void
-ufo_remote_node_finalize (GObject *object)
+receive_ack (UfoRemoteNodePrivate *priv)
+{
+    zmq_msg_t reply_msg;
+
+    zmq_msg_init (&reply_msg);
+    zmq_msg_recv (&reply_msg, priv->socket, 0);
+    zmq_msg_close (&reply_msg);
+}
+
+static void
+ufo_remote_node_dispose (GObject *object)
 {
     UfoRemoteNodePrivate *priv;
 
     priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
-    zmq_close (priv->socket);
-    G_OBJECT_CLASS (ufo_remote_node_parent_class)->finalize (object);
+
+    if (priv->socket != NULL) {
+        g_debug ("Close socket=%p", priv->socket);
+        zmq_close (priv->socket);
+        priv->socket = NULL;
+    }
+
+    G_OBJECT_CLASS (ufo_remote_node_parent_class)->dispose (object);
 }
 
 static void
@@ -217,7 +252,7 @@ ufo_remote_node_class_init (UfoRemoteNodeClass *klass)
     GObjectClass *oclass;
 
     oclass = G_OBJECT_CLASS (klass);
-    oclass->finalize = ufo_remote_node_finalize;
+    oclass->dispose = ufo_remote_node_dispose;
 
     g_type_class_add_private (klass, sizeof(UfoRemoteNodePrivate));
 }

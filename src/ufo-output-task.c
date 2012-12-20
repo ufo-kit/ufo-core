@@ -103,6 +103,7 @@ ufo_output_task_get_structure (UfoTask *task,
     *n_inputs = 1;
     *in_params = g_new0 (UfoInputParam, 1);
     (*in_params)[0].n_dims = priv->n_dims;
+    (*in_params)[0].n_expected = -1;
 }
 
 static gboolean
@@ -178,10 +179,12 @@ ufo_output_task_class_init (UfoOutputTaskClass *klass)
 }
 
 static void
-ufo_output_task_init(UfoOutputTask *self)
+ufo_output_task_init (UfoOutputTask *task)
 {
-    self->priv = UFO_OUTPUT_TASK_GET_PRIVATE(self);
-    self->priv->out_queue = g_async_queue_new ();
-    self->priv->in_queue = g_async_queue_new ();
-    self->priv->n_copies = 0;
+    task->priv = UFO_OUTPUT_TASK_GET_PRIVATE (task);
+    task->priv->out_queue = g_async_queue_new ();
+    task->priv->in_queue = g_async_queue_new ();
+    task->priv->n_copies = 0;
+
+    ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "output-task");
 }

@@ -55,7 +55,8 @@ struct _UfoRemoteNodeClass {
    @UFO_MESSAGE_ACK:,
  */
 typedef enum {
-    UFO_MESSAGE_SETUP = 0,
+    UFO_MESSAGE_TASK_JSON = 0,
+    UFO_MESSAGE_SETUP,
     UFO_MESSAGE_GET_STRUCTURE,
     UFO_MESSAGE_STRUCTURE,
     UFO_MESSAGE_GET_REQUISITION,
@@ -78,17 +79,20 @@ struct _UfoMessage {
 };
 
 UfoNode  *ufo_remote_node_new               (gpointer     zmq_context,
-                                             const gchar *address);
-void      ufo_remote_node_request_setup     (UfoRemoteNode *node);
-void      ufo_remote_node_get_structure     (UfoRemoteNode *node,
-                                             guint *n_inputs,
+                                             const gchar    *address);
+void      ufo_remote_node_request_setup     (UfoRemoteNode  *node);
+void      ufo_remote_node_send_json         (UfoRemoteNode  *node,
+                                             const gchar    *json,
+                                             gsize           size);
+void      ufo_remote_node_get_structure     (UfoRemoteNode  *node,
+                                             guint          *n_inputs,
                                              UfoInputParam **in_params,
-                                             UfoTaskMode *mode);
-void      ufo_remote_node_send_inputs       (UfoRemoteNode *node,
-                                             UfoBuffer **inputs);
-void      ufo_remote_node_get_result        (UfoRemoteNode *node,
-                                             UfoBuffer *result);
-void      ufo_remote_node_get_requisition   (UfoRemoteNode *node,
+                                             UfoTaskMode    *mode);
+void      ufo_remote_node_send_inputs       (UfoRemoteNode  *node,
+                                             UfoBuffer     **inputs);
+void      ufo_remote_node_get_result        (UfoRemoteNode  *node,
+                                             UfoBuffer      *result);
+void      ufo_remote_node_get_requisition   (UfoRemoteNode  *node,
                                              UfoRequisition *requisition);
 GType     ufo_remote_node_get_type          (void);
 

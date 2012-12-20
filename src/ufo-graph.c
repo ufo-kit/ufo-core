@@ -168,7 +168,7 @@ GList *
 ufo_graph_get_nodes (UfoGraph *graph)
 {
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
-    return graph->priv->nodes;
+    return g_list_copy (graph->priv->nodes);
 }
 
 /**
@@ -181,7 +181,8 @@ ufo_graph_get_nodes (UfoGraph *graph)
  */
 GList *
 ufo_graph_get_nodes_filtered (UfoGraph *graph,
-                              UfoFilterPredicate func)
+                              UfoFilterPredicate func,
+                              gpointer user_data)
 {
     UfoGraphPrivate *priv;
     GList *result = NULL;
@@ -192,7 +193,7 @@ ufo_graph_get_nodes_filtered (UfoGraph *graph,
     for (GList *it = g_list_first (priv->nodes); it != NULL; it = g_list_next (it)) {
         UfoNode *node = UFO_NODE (it->data);
 
-        if (func (node))
+        if (func (node, user_data))
             result = g_list_append (result, node);
     }
 
@@ -265,17 +266,17 @@ ufo_graph_get_edge_label (UfoGraph *graph,
 }
 
 static gboolean
-has_predecessor (UfoGraph *graph,
-                 UfoNode *node)
+has_no_predecessor (UfoNode *node,
+                    UfoGraph *graph)
 {
     for (GList *it = g_list_first (graph->priv->nodes); it != NULL; it = g_list_next (it)) {
         UfoNode *source = (UfoNode *) it->data;
 
         if (ufo_graph_is_connected (graph, source, node))
-            return TRUE;
+            return FALSE;
     }
 
-    return FALSE;
+    return TRUE;
 }
 
 /**
@@ -288,21 +289,36 @@ has_predecessor (UfoGraph *graph,
 GList *
 ufo_graph_get_roots (UfoGraph *graph)
 {
-    UfoGraphPrivate *priv;
-    GList *result;
-
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
-    priv = graph->priv;
-    result = NULL;
+    return ufo_graph_get_nodes_filtered (graph, (UfoFilterPredicate ) has_no_predecessor, graph);
+}
 
-    for (GList *it = g_list_first (priv->nodes); it != NULL; it = g_list_next (it)) {
-        UfoNode *node = (UfoNode *) it->data;
+static gboolean
+has_no_successor (UfoNode *node,
+                  UfoGraph *graph)
+{
+    for (GList *it = g_list_first (graph->priv->nodes); it != NULL; it = g_list_next (it)) {
+        UfoNode *target = (UfoNode *) it->data;
 
-        if (!has_predecessor (graph, node))
-            result = g_list_append (result, node);
+        if (ufo_graph_is_connected (graph, node, target))
+            return FALSE;
     }
 
-    return result;
+    return TRUE;
+}
+
+/**
+ * ufo_graph_get_leaves:
+ * @graph: A #UfoGraph
+ *
+ * Returns: (element-type UfoNode) (transfer container): A list of all nodes
+ * that do not have a predessor node.
+ */
+GList *
+ufo_graph_get_leaves (UfoGraph *graph)
+{
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
+    return ufo_graph_get_nodes_filtered (graph, (UfoFilterPredicate) has_no_successor, graph);
 }
 
 /**
@@ -395,8 +411,8 @@ pickup_paths (UfoGraph *graph,
 {
     GList *successors;
 
-    if (pred (current)) {
-        if (!pred (last))
+    if (pred (current, NULL)) {
+        if (!pred (last, NULL))
             current_path = g_list_append (current_path, last);
 
         current_path = g_list_append (current_path, current);
@@ -479,6 +495,7 @@ ufo_graph_dump_dot (UfoGraph *graph,
         g_list_free (successors);
     }
 
+    g_list_free (nodes);
     fprintf (fp, "}\n");
     fclose (fp);
 }

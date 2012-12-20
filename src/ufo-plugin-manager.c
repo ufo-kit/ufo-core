@@ -14,6 +14,7 @@
 #include <ufo-plugin-manager.h>
 #include <ufo-configurable.h>
 #include <ufo-task-node.h>
+#include <ufo-dummy-task.h>
 #include "config.h"
 
 G_DEFINE_TYPE_WITH_CODE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT,
@@ -153,6 +154,11 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     GModule *module;
     gchar *func_name = NULL;
     gchar *module_name = NULL;
+
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && name != NULL, NULL);
+
+    if (!g_strcmp0 (name, "[dummy]"))
+        return ufo_dummy_task_new ();
 
     func = g_hash_table_lookup (priv->new_funcs, name);
 
@@ -310,7 +316,7 @@ static void
 ufo_plugin_manager_dispose (GObject *object)
 {
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->dispose (object);
-    g_message ("UfoPluginManager: disposed");
+    g_debug ("UfoPluginManager: disposed");
 }
 
 static void
@@ -332,7 +338,7 @@ ufo_plugin_manager_finalize (GObject *gobject)
 
     g_hash_table_destroy (priv->new_funcs);
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);
-    g_message ("UfoPluginManager: finalized");
+    g_debug ("UfoPluginManager: finalized");
 }
 
 static void

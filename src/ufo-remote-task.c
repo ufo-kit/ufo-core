@@ -52,7 +52,6 @@ ufo_remote_task_setup (UfoTask *task,
     priv = UFO_REMOTE_TASK_GET_PRIVATE (UFO_REMOTE_TASK (task));
     priv->remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (task)));
     g_assert (priv->remote != NULL);
-    g_object_ref (priv->remote);
     ufo_remote_node_request_setup (priv->remote);
 }
 
@@ -125,8 +124,12 @@ ufo_remote_task_dispose (GObject *object)
     UfoRemoteTaskPrivate *priv;
 
     priv = UFO_REMOTE_TASK_GET_PRIVATE (object);
-    g_object_unref (priv->remote);
-    priv->remote = NULL;
+
+    if (priv->remote != NULL) {
+        g_object_unref (priv->remote);
+        priv->remote = NULL;
+    }
+
     G_OBJECT_CLASS (ufo_remote_task_parent_class)->dispose (object);
 }
 

@@ -5,14 +5,17 @@
 #include <ufo-resources.h>
 #include <ufo-task-graph.h>
 #include <ufo-scheduler.h>
+#include <ufo-plugin-manager.h>
 #include <ufo-input-task.h>
 #include <ufo-output-task.h>
+#include <ufo-dummy-task.h>
 #include <ufo-remote-node.h>
 
 typedef struct {
     gpointer socket;
     UfoNode *input_task;
     UfoNode *output_task;
+    UfoPluginManager *manager;
     UfoTaskGraph *task_graph;
     UfoArchGraph *arch_graph;
     UfoBuffer **inputs;
@@ -20,6 +23,8 @@ typedef struct {
 } ServerPrivate;
 
 #define CHECK_ZMQ(r) if (r == -1) g_warning ("%s:%i: zmq_error: %s\n", __FILE__, __LINE__, zmq_strerror (errno));
+
+static gpointer run_scheduler (ServerPrivate *priv);
 
 static void
 ufo_msg_send (UfoMessage *msg, gpointer socket, gint flags)
@@ -41,9 +46,96 @@ send_ack (gpointer socket)
 }
 
 static void
+handle_json (ServerPrivate *priv)
+{
+    zmq_msg_t json_msg;
+    gsize size;
+    gchar *json;
+    GList *roots;
+    GList *leaves;
+    UfoNode *first;
+    UfoNode *last;
+    GList *successors;
+    GError *error = NULL;
+
+    zmq_msg_init (&json_msg);
+    size = (gsize) zmq_msg_recv (&json_msg, priv->socket, 0);
+
+    json = g_malloc0 (size + 1);
+    memcpy (json, zmq_msg_data (&json_msg), size);
+    zmq_msg_close (&json_msg);
+    send_ack (priv->socket);
+
+    ufo_task_graph_read_from_json_str (priv->task_graph,
+                                       priv->manager,
+                                       json,
+                                       &error);
+
+    if (error != NULL) {
+        g_printerr ("%s\n", error->message);
+        /* Send error to master */
+        return;
+    }
+
+    roots = ufo_graph_get_roots (UFO_GRAPH (priv->task_graph));
+    g_assert (g_list_length (roots) == 1);
+
+    leaves = ufo_graph_get_leaves (UFO_GRAPH (priv->task_graph));
+    g_assert (g_list_length (leaves) == 1);
+
+    first = UFO_NODE (g_list_nth_data (roots, 0));
+    last = UFO_NODE (g_list_nth_data (leaves, 0));
+
+    priv->output_task = ufo_output_task_new (2);
+    successors = ufo_graph_get_successors (UFO_GRAPH (priv->task_graph), first);
+
+    if (UFO_IS_DUMMY_TASK (first)) {
+        /*
+         * There is a dummy tasks which means we have only task to execute. For
+         * this we remove the dummy task and wrap the only task in the input.
+         */
+        for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
+            UfoNode *target;
+
+            target = UFO_NODE (it->data);
+            ufo_graph_remove_edge (UFO_GRAPH (priv->task_graph), first, target);
+        }
+
+        priv->input_task = ufo_input_task_new (UFO_TASK (last));
+
+        ufo_graph_connect_nodes (UFO_GRAPH (priv->task_graph),
+                                 priv->input_task,
+                                 priv->output_task,
+                                 GINT_TO_POINTER (0));
+    }
+    else {
+        priv->input_task = ufo_input_task_new (UFO_TASK (first));
+
+        for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
+            UfoNode *target;
+            gpointer label;
+
+            target = UFO_NODE (it->data);
+            label = ufo_graph_get_edge_label (UFO_GRAPH (priv->task_graph), first, target);
+            ufo_graph_remove_edge (UFO_GRAPH (priv->task_graph), first, target);
+            ufo_graph_connect_nodes (UFO_GRAPH (priv->task_graph), priv->input_task, target, label);
+        }
+
+        ufo_graph_connect_nodes (UFO_GRAPH (priv->task_graph),
+                                 last,
+                                 priv->output_task,
+                                 GINT_TO_POINTER (0));
+    }
+
+    g_thread_create ((GThreadFunc) run_scheduler, priv, FALSE, NULL);
+    g_free (json);
+    send_ack (priv->socket);
+}
+
+static void
 handle_setup (ServerPrivate *priv)
 {
-    g_print ("handle setup\n");
+    g_message ("Setup requested");
     send_ack (priv->socket);
 }
 
@@ -51,19 +143,21 @@ static void
 handle_get_structure (ServerPrivate *priv)
 {
     UfoMessage header;
+    UfoInputParam in_param;
     zmq_msg_t data_msg;
-    guint n_dims;
 
-    g_print ("handle get_structure\n");
-
+    g_message ("Structure requested");
     header.type = UFO_MESSAGE_STRUCTURE;
+
+    /* TODO: do not hardcode these */
     header.n_inputs = 1;
-    n_dims = 2;
+    in_param.n_dims = 2;
+    in_param.n_expected = -1;
 
     priv->inputs = g_new0 (UfoBuffer *, priv->n_inputs);
 
-    zmq_msg_init_size (&data_msg, sizeof (guint));
-    memcpy (zmq_msg_data (&data_msg), &n_dims, sizeof (guint));
+    zmq_msg_init_size (&data_msg, sizeof (UfoInputParam));
+    memcpy (zmq_msg_data (&data_msg), &in_param, sizeof (UfoInputParam));
 
     ufo_msg_send (&header, priv->socket, ZMQ_SNDMORE);
     zmq_msg_send (&data_msg, priv->socket, 0);
@@ -118,6 +212,7 @@ handle_get_requisition (ServerPrivate *priv)
     zmq_msg_t reply_msg;
 
     /* We need to get the requisition from the last node */
+    g_message ("Requisition requested");
     ufo_output_task_get_output_requisition (UFO_OUTPUT_TASK (priv->output_task),
                                             &requisition);
 
@@ -150,21 +245,68 @@ run_scheduler (ServerPrivate *priv)
     UfoScheduler *scheduler;
 
     scheduler = ufo_scheduler_new ();
-    ufo_scheduler_run (scheduler, priv->arch_graph, priv->task_graph, NULL);
-    g_object_unref (scheduler);
+    ufo_scheduler_set_task_split (scheduler, FALSE);
 
+    g_message ("Start scheduler");
+    ufo_scheduler_run (scheduler, priv->arch_graph, priv->task_graph, NULL);
+
+    g_object_unref (scheduler);
     return NULL;
 }
 
+static GValueArray *
+make_path_array (gchar **paths)
+{
+    GValueArray *array;
+    GValue  value = {0};
+
+    array = g_value_array_new (2);
+    g_value_init (&value, G_TYPE_STRING);
+
+    for (guint i = 0; paths[i] != NULL; i++) {
+        g_value_reset (&value);
+        g_value_set_string (&value, paths[i]);
+        g_value_array_append (array, &value);
+    }
+
+    return array;
+}
+
 int
-main (int argc, char const* argv[])
+main (int argc, char * argv[])
 {
     gpointer context;
     ServerPrivate priv;
+    UfoConfig *config;
     UfoResources *resources;
+    gchar **paths;
+    GError *error = NULL;
+
+    GOptionEntry entries[] = {
+        { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths, "Path to node plugins or OpenCL kernels", NULL },
+        { NULL }
+    };
 
     g_type_init ();
     g_thread_init (NULL);
+
+    context = g_option_context_new ("FILE");
+    g_option_context_add_main_entries (context, entries, NULL);
+
+    if (!g_option_context_parse (context, &argc, &argv, &error)) {
+        g_print ("Option parsing failed: %s\n", error->message);
+        return 1;
+    }
+
+    config = ufo_config_new ();
+
+    if (paths != NULL) {
+        GValueArray *path_array = make_path_array (paths);
+        g_strfreev (paths);
+
+        g_object_set (G_OBJECT (config), "paths", path_array, NULL);
+        g_value_array_free (path_array);
+    }
 
     /* start zmq service */
     context = zmq_ctx_new ();
@@ -172,16 +314,12 @@ main (int argc, char const* argv[])
     zmq_bind (priv.socket, "tcp://*:5555");
 
     /* setup task and arch graphs */
-    resources = ufo_resources_new (NULL);
-    priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL, resources));
+    resources = ufo_resources_new (config);
+
+    priv.manager = ufo_plugin_manager_new (config);
+    priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, resources));
     priv.task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-
     priv.n_inputs = 1;
-    priv.input_task = ufo_input_task_new (NULL);
-    priv.output_task = ufo_output_task_new (2);
-
-    ufo_task_graph_connect_nodes (priv.task_graph, UFO_TASK_NODE (priv.input_task), UFO_TASK_NODE (priv.output_task));
-    g_thread_create ((GThreadFunc) run_scheduler, &priv, FALSE, NULL);
 
     while (1) {
         zmq_msg_t request;
@@ -199,6 +337,9 @@ main (int argc, char const* argv[])
             msg = (UfoMessage *) zmq_msg_data (&request);
 
             switch (msg->type) {
+                case UFO_MESSAGE_TASK_JSON:
+                    handle_json (&priv);
+                    break;
                 case UFO_MESSAGE_SETUP:
                     handle_setup (&priv);
                     break;

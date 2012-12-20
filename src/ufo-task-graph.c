@@ -4,12 +4,15 @@
  * @Title: UfoTaskGraph
  */
 
+#include <string.h>
 #include <ufo-task-graph.h>
 #include <ufo-task-node.h>
+#include <ufo-remote-node.h>
 #include <ufo-cpu-task-iface.h>
 #include <ufo-gpu-task-iface.h>
-#include <ufo-remote-task.h>
 #include <ufo-input-task.h>
+#include <ufo-dummy-task.h>
+#include <ufo-remote-task.h>
 #include <json-glib/json-glib.h>
 
 G_DEFINE_TYPE (UfoTaskGraph, ufo_task_graph, UFO_TYPE_GRAPH)
@@ -29,6 +32,7 @@ static void handle_json_task_edge   (JsonArray *, guint, JsonNode *, gpointer);
 static gboolean handle_json_task_node (JsonNode *, UfoTaskGraphPrivate *priv, GError **error);
 static void add_task_node_to_json_array (UfoNode *, JsonArray *);
 static JsonObject *json_object_from_ufo_node (UfoNode *node);
+static JsonNode *get_json_representation (UfoTaskGraph *, GError **);
 
 /**
  * UfoTaskGraphError:
@@ -93,25 +97,38 @@ ufo_task_graph_read_from_json (UfoTaskGraph *graph,
     g_object_unref (json_parser);
 }
 
-/**
- * ufo_task_graph_save_to_json:
- * @graph: A #UfoTaskGraph.
- * @filename: Path and filename to the JSON file
- * @error: Indicates error in case of failed file saving
- *
- * Save a JSON configuration file with the filter structure of @graph.
- */
 void
-ufo_task_graph_save_to_json (UfoTaskGraph *graph,
-                             const gchar *filename,
-                             GError **error)
+ufo_task_graph_read_from_json_str (UfoTaskGraph *graph,
+                                   UfoPluginManager *manager,
+                                   const gchar *json,
+                                   GError **error)
 {
-    GList *task_nodes;
+    UfoTaskGraphPrivate *priv;
+    JsonParser *json_parser;
     GError *tmp_error = NULL;
 
-    g_return_if_fail (UFO_IS_GRAPH (graph) && (filename != NULL));
+    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) && UFO_IS_PLUGIN_MANAGER (manager) && (json != NULL));
 
-    JsonGenerator *json_generator = json_generator_new ();
+    priv = graph->priv;
+    json_parser = json_parser_new ();
+
+    if (!json_parser_load_from_data (json_parser, json, (gssize) strlen (json), &tmp_error)) {
+        g_propagate_prefixed_error (error, tmp_error, "Parsing JSON: ");
+        return;
+    }
+
+    priv->manager = manager;
+    g_object_ref (manager);
+
+    add_nodes_from_json (graph, json_parser_get_root (json_parser), error);
+    g_object_unref (json_parser);
+}
+
+static JsonNode *
+get_json_representation (UfoTaskGraph *graph,
+                         GError **error)
+{
+    GList *task_nodes;
     JsonNode *root_node = json_node_new (JSON_NODE_OBJECT);
     JsonObject *root_object = json_object_new ();
     JsonArray *nodes = json_array_new ();
@@ -152,19 +169,42 @@ ufo_task_graph_save_to_json (UfoTaskGraph *graph,
     json_object_set_array_member (root_object, "nodes", nodes);
     json_object_set_array_member (root_object, "edges", edges);
     json_node_set_object (root_node, root_object);
-    json_generator_set_root (json_generator, root_node);
+    g_list_free (task_nodes);
 
-    if (!json_generator_to_file (json_generator, filename, &tmp_error)) {
-        g_propagate_error (error, tmp_error);
+    return root_node;
+}
+
+/**
+ * ufo_task_graph_save_to_json:
+ * @graph: A #UfoTaskGraph.
+ * @filename: Path and filename to the JSON file
+ * @error: Indicates error in case of failed file saving
+ *
+ * Save a JSON configuration file with the filter structure of @graph.
+ */
+void
+ufo_task_graph_save_to_json (UfoTaskGraph *graph,
+                             const gchar *filename,
+                             GError **error)
+{
+    JsonNode *root_node;
+    JsonGenerator *generator;
+
+    root_node = get_json_representation (graph, error);
+
+    if (error != NULL && *error != NULL)
         return;
-    }
+
+    generator = json_generator_new ();
+    json_generator_set_root (generator, root_node);
+    json_generator_to_file (generator, filename, error);
 
     json_node_free (root_node);
-    g_object_unref (json_generator);
+    g_object_unref (generator);
 }
 
 static gboolean
-is_gpu_task (UfoNode *node)
+is_gpu_task (UfoNode *node, gpointer user_data)
 {
     return UFO_IS_GPU_TASK (node);
 }
@@ -183,20 +223,81 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
                       UfoArchGraph *arch_graph)
 {
     GList *paths;
+    GList *remotes;
     guint n_gpus;
 
     paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
     n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
+    remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
 
     for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
-        GList *path = (GList *) it->data;
+        UfoTaskGraph *remote_graph;
+        UfoTaskNode *predecessor;
+        UfoTaskNode *node;
+        GList *path;
+        GList *first;
+        GList *last;
+        JsonNode *root;
+        JsonGenerator *generator;
+        gchar *json;
+        gsize size;
 
-        for (guint i = 1; i < n_gpus; i++)
-            ufo_graph_split (UFO_GRAPH (task_graph), path);
+        path = (GList *) it->data;
+        first = g_list_first (path);
+        last = g_list_last (path);
+        remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+        predecessor = NULL;
 
-        g_list_free (path);
+        for (GList *jt = g_list_next (first); jt != last; jt = g_list_next (jt)) {
+            node = UFO_TASK_NODE (jt->data);
+
+            if (predecessor != NULL)
+                ufo_task_graph_connect_nodes (remote_graph, predecessor, node);
+
+            predecessor = node;
+        }
+
+        if (ufo_graph_get_num_nodes (UFO_GRAPH (remote_graph)) == 0) {
+            ufo_task_graph_connect_nodes (remote_graph,
+                                          UFO_TASK_NODE (ufo_dummy_task_new ()),
+                                          node);
+        }
+
+        root = get_json_representation (remote_graph, NULL);
+        generator = json_generator_new ();
+        json_generator_set_root (generator, root);
+        json = json_generator_to_data (generator, &size);
+
+        for (GList *jt = g_list_first (remotes); jt != NULL; jt = g_list_next (jt)) {
+            UfoNode *remote;
+            UfoTaskNode *task;
+
+            remote = UFO_NODE (jt->data);
+            ufo_remote_node_send_json (UFO_REMOTE_NODE (remote), json, size);
+
+            task = UFO_TASK_NODE (ufo_remote_task_new ());
+            ufo_task_node_set_proc_node (task, remote);
+
+            ufo_task_graph_connect_nodes (task_graph, UFO_TASK_NODE (first->data), task);
+            ufo_task_graph_connect_nodes (task_graph, task, UFO_TASK_NODE (last->data));
+        }
+
+        g_free (json);
+        json_node_free (root);
+        g_object_unref (generator);
+        g_object_unref (remote_graph);
     }
 
+    /* for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) { */
+    /*     GList *path = (GList *) it->data; */
+
+    /*     for (guint i = 1; i < n_gpus; i++) */
+    /*         ufo_graph_split (UFO_GRAPH (task_graph), path); */
+
+    /* } */
+
+    g_list_free (remotes);
+    g_list_foreach (paths, (GFunc) g_list_free, NULL);
     g_list_free (paths);
 }
 
@@ -217,8 +318,7 @@ static void
 map_proc_node (UfoGraph *graph,
                UfoNode *node,
                guint proc_index,
-               GList *gpu_nodes,
-               GList *remote_nodes)
+               GList *gpu_nodes)
 {
     GList *successors;
     guint index;
@@ -238,13 +338,8 @@ map_proc_node (UfoGraph *graph,
                                      g_list_nth_data (gpu_nodes, proc_index));
     }
 
-    if (UFO_IS_REMOTE_TASK (node)) {
-        ufo_task_node_set_proc_node (UFO_TASK_NODE (node),
-                                     g_list_nth_data (remote_nodes, 0));
-    }
-
     for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
-        map_proc_node (graph, UFO_NODE (it->data), proc_index + index, gpu_nodes, remote_nodes);
+        map_proc_node (graph, UFO_NODE (it->data), proc_index + index, gpu_nodes);
         index = (index + 1) % n_gpus;
     }
 
@@ -265,15 +360,13 @@ ufo_task_graph_map (UfoTaskGraph *task_graph,
                     UfoArchGraph *arch_graph)
 {
     GList *gpu_nodes;
-    GList *remote_nodes;
     GList *roots;
 
     gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch_graph);
-    remote_nodes = ufo_arch_graph_get_remote_nodes (arch_graph);
     roots = ufo_graph_get_roots (UFO_GRAPH (task_graph));
 
     for (GList *it = g_list_first (roots); it != NULL; it = g_list_next (it))
-        map_proc_node (UFO_GRAPH (task_graph), UFO_NODE (it->data), 0, gpu_nodes, remote_nodes);
+        map_proc_node (UFO_GRAPH (task_graph), UFO_NODE (it->data), 0, gpu_nodes);
 
     g_list_free (roots);
 }

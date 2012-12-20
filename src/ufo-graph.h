@@ -17,7 +17,7 @@ typedef struct _UfoGraph           UfoGraph;
 typedef struct _UfoGraphClass      UfoGraphClass;
 typedef struct _UfoGraphPrivate    UfoGraphPrivate;
 
-typedef gboolean (*UfoFilterPredicate) (UfoNode *node);
+typedef gboolean (*UfoFilterPredicate) (UfoNode *node, gpointer user_data);
 
 /**
  * UfoGraph:
@@ -64,8 +64,10 @@ guint       ufo_graph_get_num_nodes         (UfoGraph       *graph);
 guint       ufo_graph_get_num_edges         (UfoGraph       *graph);
 GList      *ufo_graph_get_nodes             (UfoGraph       *graph);
 GList      *ufo_graph_get_nodes_filtered    (UfoGraph       *graph,
-                                             UfoFilterPredicate func);
+                                             UfoFilterPredicate func,
+                                             gpointer        user_data);
 GList      *ufo_graph_get_roots             (UfoGraph       *graph);
+GList      *ufo_graph_get_leaves            (UfoGraph       *graph);
 GList      *ufo_graph_get_successors        (UfoGraph       *graph,
                                              UfoNode        *node);
 GList      *ufo_graph_get_paths             (UfoGraph       *graph,

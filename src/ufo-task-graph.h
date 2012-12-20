@@ -55,6 +55,10 @@ void         ufo_task_graph_read_from_json      (UfoTaskGraph       *task_graph,
                                                  UfoPluginManager   *plugin_manager,
                                                  const gchar        *filename,
                                                  GError            **error);
+void         ufo_task_graph_read_from_json_str  (UfoTaskGraph       *task_graph,
+                                                 UfoPluginManager   *plugin_manager,
+                                                 const gchar        *json,
+                                                 GError            **error);
 void         ufo_task_graph_save_to_json        (UfoTaskGraph       *graph,
                                                  const gchar        *filename,
                                                  GError            **error);

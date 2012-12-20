@@ -110,6 +110,10 @@ ufo_input_task_setup (UfoTask *task,
                       UfoResources *resources,
                       GError **error)
 {
+    UfoInputTaskPrivate *priv;
+
+    priv = UFO_INPUT_TASK_GET_PRIVATE (task);
+    ufo_task_setup (priv->wrapped, resources, error);
 }
 
 static void
@@ -211,7 +215,8 @@ ufo_input_task_class_init (UfoInputTaskClass *klass)
 }
 
 static void
-ufo_input_task_init(UfoInputTask *self)
+ufo_input_task_init (UfoInputTask *task)
 {
-    self->priv = UFO_INPUT_TASK_GET_PRIVATE(self);
+    task->priv = UFO_INPUT_TASK_GET_PRIVATE (task);
+    ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "input-task");
 }

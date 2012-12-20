@@ -585,7 +585,7 @@ ufo_resources_finalize (GObject *object)
     priv->opencl_platforms = NULL;
 
     G_OBJECT_CLASS (ufo_resources_parent_class)->finalize (object);
-    g_message ("UfoResources: finalized");
+    g_debug ("UfoResources: finalized");
 }
 
 static void

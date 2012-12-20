@@ -126,6 +126,12 @@ ufo_task_node_get_proc_node (UfoTaskNode *node)
 }
 
 static void
+ufo_task_node_dispose (GObject *object)
+{
+    G_OBJECT_CLASS (ufo_task_node_parent_class)->dispose (object);
+}
+
+static void
 ufo_task_node_finalize (GObject *object)
 {
     UfoTaskNodePrivate *priv;
@@ -143,6 +149,7 @@ ufo_task_node_class_init (UfoTaskNodeClass *klass)
     GObjectClass *oclass;
 
     oclass = G_OBJECT_CLASS (klass);
+    oclass->dispose = ufo_task_node_dispose;
     oclass->finalize = ufo_task_node_finalize;
 
     g_type_class_add_private (klass, sizeof(UfoTaskNodePrivate));

@@ -60,7 +60,7 @@ execute_json (const gchar *filename,
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
     resources = ufo_resources_new (config);
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL, resources));
+    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, resources));
     scheduler = ufo_scheduler_new ();
 
     ufo_scheduler_set_task_split (scheduler, FALSE);

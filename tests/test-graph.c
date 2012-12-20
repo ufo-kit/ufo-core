@@ -160,7 +160,7 @@ test_split_and_join (Fixture *fixture, gconstpointer data)
 }
 
 static gboolean
-always_true (UfoNode *node)
+always_true (UfoNode *node, gpointer user_data)
 {
     return TRUE;
 }
@@ -170,7 +170,7 @@ test_get_nodes_filtered (Fixture *fixture, gconstpointer data)
 {
     GList *nodes;
 
-    nodes = ufo_graph_get_nodes_filtered (fixture->sequence, always_true);
+    nodes = ufo_graph_get_nodes_filtered (fixture->sequence, always_true, NULL);
     g_assert (g_list_length (nodes) == 3);
     g_assert (g_list_find (nodes, fixture->root) != NULL);
     g_assert (g_list_find (nodes, fixture->target1) != NULL);
