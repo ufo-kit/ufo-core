@@ -17,28 +17,13 @@ handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
     }
 }
 
-static GValueArray *
-make_path_array (gchar **paths)
-{
-    GValueArray *array;
-    GValue  value = {0};
-
-    array = g_value_array_new (2);
-    g_value_init (&value, G_TYPE_STRING);
-
-    for (guint i = 0; paths[i] != NULL; i++) {
-        g_value_reset (&value);
-        g_value_set_string (&value, paths[i]);
-        g_value_array_append (array, &value);
-    }
-
-    return array;
-}
-
 static GList *
 string_array_to_list (gchar **array)
 {
     GList *result = NULL;
+
+    if (array == NULL)
+        return NULL;
 
     for (guint i = 0; array[i] != NULL; i++)
         result = g_list_append (result, array[i]);
@@ -48,7 +33,7 @@ string_array_to_list (gchar **array)
 
 static void
 execute_json (const gchar *filename,
-              GValueArray *paths,
+              gchar **paths,
               gchar **addresses)
 {
     UfoConfig       *config;
@@ -57,13 +42,15 @@ execute_json (const gchar *filename,
     UfoScheduler    *scheduler;
     UfoResources    *resources;
     UfoPluginManager *manager;
+    GList *path_list = NULL;
     GList *address_list = NULL;
     GError *error = NULL;
 
     config = ufo_config_new ();
 
-    if (paths != NULL)
-        g_object_set (G_OBJECT (config), "paths", paths, NULL);
+    path_list = string_array_to_list (paths);
+    ufo_config_add_paths (config, path_list);
+    g_list_free (path_list);
 
     manager = ufo_plugin_manager_new (config);
 
@@ -93,7 +80,6 @@ int main(int argc, char *argv[])
 {
     GOptionContext *context;
     GError *error = NULL;
-    GValueArray *path_array = NULL;
     gchar **paths = NULL;
     gchar **addresses = NULL;
 
@@ -122,15 +108,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (paths != NULL) {
-        path_array = make_path_array (paths);
-        g_strfreev (paths);
-    }
+    execute_json (argv[argc-1], paths, addresses);
 
-    execute_json (argv[argc-1], path_array, addresses);
+    g_strfreev (paths);
     g_strfreev (addresses);
-
-    g_value_array_free (path_array);
     g_option_context_free (context);
 
     return 0;

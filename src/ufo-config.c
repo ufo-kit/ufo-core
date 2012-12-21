@@ -18,6 +18,8 @@ G_DEFINE_TYPE(UfoConfig, ufo_config, G_TYPE_OBJECT)
 
 #define UFO_CONFIG_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_CONFIG, UfoConfigPrivate))
 
+static void add_path (const gchar *path, UfoConfigPrivate *priv);
+
 enum {
     PROP_0,
     PROP_PATHS,
@@ -77,25 +79,23 @@ ufo_config_get_paths (UfoConfig *config)
     return paths;
 }
 
-/**
- * ufo_config_add_path:
- * @config: A #UfoConfig object
- * @path: A %NULL-terminated string denoting a path
- *
- * Add a path to the list of paths that are searched by #UfoPluginManager and
- * #UfoResourceManager.
- */
+void
+ufo_config_add_paths (UfoConfig *config,
+                      GList *paths)
+{
+    g_return_if_fail (UFO_IS_CONFIG (config));
+    g_list_foreach (paths, (GFunc) add_path, config->priv);
+}
+
 static void
-ufo_config_add_path (UfoConfig *config,
-                            const gchar *path)
+add_path (const gchar *path,
+          UfoConfigPrivate *priv)
 {
     GValue path_value = {0};
 
-    g_return_if_fail (UFO_IS_CONFIG (config));
-
     g_value_init (&path_value, G_TYPE_STRING);
     g_value_set_string (&path_value, path);
-    g_value_array_append (config->priv->path_array, &path_value);
+    g_value_array_append (priv->path_array, &path_value);
     g_value_unset (&path_value);
 }
 
@@ -240,14 +240,16 @@ ufo_config_class_init (UfoConfigClass *klass)
 static void
 ufo_config_init (UfoConfig *config)
 {
-    config->priv = UFO_CONFIG_GET_PRIVATE (config);
-    config->priv->path_array = g_value_array_new (0);
-    config->priv->profile_level = UFO_PROFILER_LEVEL_NONE;
-    config->priv->profile_output_prefix = NULL;
+    UfoConfigPrivate *priv;
 
-    ufo_config_add_path (config, UFO_PLUGIN_DIR);
-    ufo_config_add_path (config, "/usr/lib/ufo");
-    ufo_config_add_path (config, "/usr/lib64/ufo");
-    ufo_config_add_path (config, "/usr/local/lib/ufo");
-    ufo_config_add_path (config, "/usr/local/lib64/ufo");
+    config->priv = priv = UFO_CONFIG_GET_PRIVATE (config);
+    priv->path_array = g_value_array_new (0);
+    priv->profile_level = UFO_PROFILER_LEVEL_NONE;
+    priv->profile_output_prefix = NULL;
+
+    add_path (UFO_PLUGIN_DIR, priv);
+    add_path ("/usr/lib/ufo", priv);
+    add_path ("/usr/lib64/ufo", priv);
+    add_path ("/usr/local/lib/ufo", priv);
+    add_path ("/usr/local/lib64/ufo", priv);
 }

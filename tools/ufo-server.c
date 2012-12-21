@@ -254,22 +254,18 @@ run_scheduler (ServerPrivate *priv)
     return NULL;
 }
 
-static GValueArray *
-make_path_array (gchar **paths)
+static GList *
+string_array_to_list (gchar **array)
 {
-    GValueArray *array;
-    GValue  value = {0};
+    GList *result = NULL;
 
-    array = g_value_array_new (2);
-    g_value_init (&value, G_TYPE_STRING);
+    if (array == NULL)
+        return NULL;
 
-    for (guint i = 0; paths[i] != NULL; i++) {
-        g_value_reset (&value);
-        g_value_set_string (&value, paths[i]);
-        g_value_array_append (array, &value);
-    }
+    for (guint i = 0; array[i] != NULL; i++)
+        result = g_list_append (result, array[i]);
 
-    return array;
+    return result;
 }
 
 int
@@ -280,6 +276,7 @@ main (int argc, char * argv[])
     UfoConfig *config;
     UfoResources *resources;
     gchar **paths = NULL;
+    GList *path_list = NULL;
     GError *error = NULL;
 
     GOptionEntry entries[] = {
@@ -299,14 +296,9 @@ main (int argc, char * argv[])
     }
 
     config = ufo_config_new ();
-
-    if (paths != NULL) {
-        GValueArray *path_array = make_path_array (paths);
-        g_strfreev (paths);
-
-        g_object_set (G_OBJECT (config), "paths", path_array, NULL);
-        g_value_array_free (path_array);
-    }
+    path_list = string_array_to_list (paths);
+    ufo_config_add_paths (config, path_list);
+    g_list_free (path_list);
 
     /* start zmq service */
     context = zmq_ctx_new ();
