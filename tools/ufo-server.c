@@ -279,7 +279,7 @@ main (int argc, char * argv[])
     ServerPrivate priv;
     UfoConfig *config;
     UfoResources *resources;
-    gchar **paths;
+    gchar **paths = NULL;
     GError *error = NULL;
 
     GOptionEntry entries[] = {
