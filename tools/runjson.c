@@ -11,9 +11,8 @@ static void
 handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
 {
     if (error) {
-        g_error ("%s: %s", prefix, error->message);
+        g_warning ("%s: %s", prefix, error->message);
         g_error_free (error);
-        g_object_unref (graph);
         exit (EXIT_FAILURE);
     }
 }
