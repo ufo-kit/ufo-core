@@ -66,10 +66,10 @@ handle_json (ServerPrivate *priv)
     zmq_msg_close (&json_msg);
     send_ack (priv->socket);
 
-    ufo_task_graph_read_from_json_str (priv->task_graph,
-                                       priv->manager,
-                                       json,
-                                       &error);
+    ufo_task_graph_read_from_data (priv->task_graph,
+                                   priv->manager,
+                                   json,
+                                   &error);
 
     if (error != NULL) {
         g_printerr ("%s\n", error->message);

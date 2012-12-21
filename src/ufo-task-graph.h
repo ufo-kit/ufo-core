@@ -51,11 +51,11 @@ struct _UfoTaskGraphClass {
 };
 
 UfoGraph    *ufo_task_graph_new                 (void);
-void         ufo_task_graph_read_from_json      (UfoTaskGraph       *task_graph,
+void         ufo_task_graph_read_from_file      (UfoTaskGraph       *task_graph,
                                                  UfoPluginManager   *plugin_manager,
                                                  const gchar        *filename,
                                                  GError            **error);
-void         ufo_task_graph_read_from_json_str  (UfoTaskGraph       *task_graph,
+void         ufo_task_graph_read_from_data      (UfoTaskGraph       *task_graph,
                                                  UfoPluginManager   *plugin_manager,
                                                  const gchar        *json,
                                                  GError            **error);

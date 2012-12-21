@@ -25,6 +25,11 @@ struct _UfoTaskGraphPrivate {
     GHashTable *json_nodes;
 };
 
+typedef enum {
+    JSON_FILE,
+    JSON_DATA
+} JsonLocation;
+
 static void add_nodes_from_json     (UfoTaskGraph *, JsonNode *, GError **);
 static void handle_json_prop_set    (JsonObject *, const gchar *, JsonNode *, gpointer user);
 static void handle_json_single_prop (JsonObject *, const gchar *, JsonNode *, gpointer user);
@@ -61,67 +66,87 @@ ufo_task_graph_new (void)
     return UFO_GRAPH (graph);
 }
 
-/**
- * ufo_task_graph_read_from_json:
- * @graph: A #UfoTaskGraph.
- * @manager: A #UfoPluginManager used to load the filters
- * @filename: Path and filename to the JSON file
- * @error: Indicates error in case of failed file loading or parsing
- *
- * Read a JSON configuration file to fill the filter structure of @graph.
- */
-void
-ufo_task_graph_read_from_json (UfoTaskGraph *graph,
-                               UfoPluginManager *manager,
-                               const gchar *filename,
-                               GError **error)
+static void
+read_json (UfoTaskGraph *graph,
+           UfoPluginManager *manager,
+           JsonLocation location,
+           const gchar *data,
+           GError **error)
 {
-    UfoTaskGraphPrivate *priv;
     JsonParser *json_parser;
     GError *tmp_error = NULL;
 
-    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) && UFO_IS_PLUGIN_MANAGER (manager) && (filename != NULL));
-
-    priv = graph->priv;
     json_parser = json_parser_new ();
 
-    if (!json_parser_load_from_file (json_parser, filename, &tmp_error)) {
+    switch (location) {
+        case JSON_FILE:
+            json_parser_load_from_file (json_parser,
+                                        data,
+                                        &tmp_error);
+            break;
+
+        case JSON_DATA:
+            json_parser_load_from_data (json_parser,
+                                        data,
+                                        (gssize) strlen (data),
+                                        &tmp_error);
+            break;
+    }
+
+    if (tmp_error != NULL) {
         g_propagate_prefixed_error (error, tmp_error, "Parsing JSON: ");
         return;
     }
 
-    priv->manager = manager;
+    graph->priv->manager = manager;
     g_object_ref (manager);
 
     add_nodes_from_json (graph, json_parser_get_root (json_parser), error);
     g_object_unref (json_parser);
 }
 
+/**
+ * ufo_task_graph_read_from_file:
+ * @graph: A #UfoTaskGraph.
+ * @manager: A #UfoPluginManager used to load the filters
+ * @filename: Path and filename to the JSON file
+ * @error: Indicates error in case of failed file loading or parsing
+ *
+ * Read a JSON configuration file to fill the structure of @graph.
+ */
 void
-ufo_task_graph_read_from_json_str (UfoTaskGraph *graph,
-                                   UfoPluginManager *manager,
-                                   const gchar *json,
-                                   GError **error)
+ufo_task_graph_read_from_file (UfoTaskGraph *graph,
+                               UfoPluginManager *manager,
+                               const gchar *filename,
+                               GError **error)
 {
-    UfoTaskGraphPrivate *priv;
-    JsonParser *json_parser;
-    GError *tmp_error = NULL;
+    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) &&
+                      UFO_IS_PLUGIN_MANAGER (manager) &&
+                      (filename != NULL));
 
-    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) && UFO_IS_PLUGIN_MANAGER (manager) && (json != NULL));
+    read_json (graph, manager, JSON_FILE, filename, error);
+}
 
-    priv = graph->priv;
-    json_parser = json_parser_new ();
+/**
+ * ufo_task_graph_read_from_data:
+ * @graph: A #UfoTaskGraph.
+ * @manager: A #UfoPluginManager used to load the filters
+ * @data: %NULL-terminated string with JSON data
+ * @error: Indicates error in case of failed file loading or parsing
+ *
+ * Read a JSON configuration file to fill the structure of @graph.
+ */
+void
+ufo_task_graph_read_from_data (UfoTaskGraph *graph,
+                               UfoPluginManager *manager,
+                               const gchar *json,
+                               GError **error)
+{
+    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) &&
+                      UFO_IS_PLUGIN_MANAGER (manager) &&
+                      (json != NULL));
 
-    if (!json_parser_load_from_data (json_parser, json, (gssize) strlen (json), &tmp_error)) {
-        g_propagate_prefixed_error (error, tmp_error, "Parsing JSON: ");
-        return;
-    }
-
-    priv->manager = manager;
-    g_object_ref (manager);
-
-    add_nodes_from_json (graph, json_parser_get_root (json_parser), error);
-    g_object_unref (json_parser);
+    read_json (graph, manager, JSON_DATA, json, error);
 }
 
 static JsonNode *
@@ -224,10 +249,9 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
 {
     GList *paths;
     GList *remotes;
-    guint n_gpus;
+    /* guint n_gpus; */
 
     paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
-    n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
     remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
 
     for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
@@ -287,6 +311,8 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
         g_object_unref (generator);
         g_object_unref (remote_graph);
     }
+
+    /* n_gpus = ufo_arch_graph_get_num_gpus (arch_graph); */
 
     /* for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) { */
     /*     GList *path = (GList *) it->data; */

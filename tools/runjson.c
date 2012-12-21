@@ -56,7 +56,7 @@ execute_json (const gchar *filename,
     manager = ufo_plugin_manager_new (config);
 
     task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-    ufo_task_graph_read_from_json (task_graph, manager, filename, &error);
+    ufo_task_graph_read_from_file (task_graph, manager, filename, &error);
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
     resources = ufo_resources_new (config);
