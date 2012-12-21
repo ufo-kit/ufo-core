@@ -35,9 +35,21 @@ make_path_array (gchar **paths)
     return array;
 }
 
+static GList *
+string_array_to_list (gchar **array)
+{
+    GList *result = NULL;
+
+    for (guint i = 0; array[i] != NULL; i++)
+        result = g_list_append (result, array[i]);
+
+    return result;
+}
+
 static void
 execute_json (const gchar *filename,
-              GValueArray *paths)
+              GValueArray *paths,
+              gchar **addresses)
 {
     UfoConfig       *config;
     UfoArchGraph    *arch_graph;
@@ -45,6 +57,7 @@ execute_json (const gchar *filename,
     UfoScheduler    *scheduler;
     UfoResources    *resources;
     UfoPluginManager *manager;
+    GList *address_list = NULL;
     GError *error = NULL;
 
     config = ufo_config_new ();
@@ -58,10 +71,12 @@ execute_json (const gchar *filename,
     ufo_task_graph_read_from_file (task_graph, manager, filename, &error);
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
+    address_list = string_array_to_list (addresses);
     resources = ufo_resources_new (config);
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, resources));
-    scheduler = ufo_scheduler_new ();
+    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (address_list, resources));
+    g_list_free (address_list);
 
+    scheduler = ufo_scheduler_new ();
     ufo_scheduler_set_task_split (scheduler, FALSE);
     ufo_scheduler_run (scheduler, arch_graph, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
@@ -80,9 +95,11 @@ int main(int argc, char *argv[])
     GError *error = NULL;
     GValueArray *path_array = NULL;
     gchar **paths = NULL;
+    gchar **addresses = NULL;
 
     GOptionEntry entries[] = {
         { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths, "Path to node plugins or OpenCL kernels", NULL },
+        { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
         { NULL }
     };
 
@@ -110,7 +127,8 @@ int main(int argc, char *argv[])
         g_strfreev (paths);
     }
 
-    execute_json (argv[argc-1], path_array);
+    execute_json (argv[argc-1], path_array, addresses);
+    g_strfreev (addresses);
 
     g_value_array_free (path_array);
     g_option_context_free (context);
