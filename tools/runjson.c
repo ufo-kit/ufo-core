@@ -64,7 +64,6 @@ execute_json (const gchar *filename,
     g_list_free (address_list);
 
     scheduler = ufo_scheduler_new ();
-    ufo_scheduler_set_task_split (scheduler, FALSE);
     ufo_scheduler_run (scheduler, arch_graph, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
 
