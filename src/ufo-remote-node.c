@@ -27,13 +27,20 @@ ufo_remote_node_new (gpointer zmq_context,
     priv = node->priv;
     priv->context = zmq_context;
     priv->socket = zmq_socket (zmq_context, ZMQ_REQ);
-    zmq_connect (priv->socket, address);
 
-    g_message ("Connected remote node to `%s' via socket=%p",
-               address,
-               priv->socket);
-
-    return UFO_NODE (node);
+    if (zmq_connect (priv->socket, address) == 0) {
+        g_message ("Connected remote node to `%s' via socket=%p",
+                   address,
+                   priv->socket);
+        return UFO_NODE (node);
+    }
+    else {
+        g_warning ("Could not connect to `%s': %s",
+                   address,
+                   zmq_strerror (errno));
+        g_object_unref (node);
+        return NULL;
+    }
 }
 
 void
