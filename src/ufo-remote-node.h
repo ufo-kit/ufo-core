@@ -52,7 +52,8 @@ struct _UfoRemoteNodeClass {
    @UFO_MESSAGE_SEND_INPUTS:
    @UFO_MESSAGE_GET_RESULT:
    @UFO_MESSAGE_RESULT:
-   @UFO_MESSAGE_ACK:,
+   @UFO_MESSAGE_ACK:
+   @UFO_MESSAGE_CLEANUP:
  */
 typedef enum {
     UFO_MESSAGE_TASK_JSON = 0,
@@ -64,6 +65,7 @@ typedef enum {
     UFO_MESSAGE_SEND_INPUTS,
     UFO_MESSAGE_GET_RESULT,
     UFO_MESSAGE_RESULT,
+    UFO_MESSAGE_CLEANUP,
     UFO_MESSAGE_ACK
 } UfoMessageType;
 
@@ -94,6 +96,7 @@ void      ufo_remote_node_get_result        (UfoRemoteNode  *node,
                                              UfoBuffer      *result);
 void      ufo_remote_node_get_requisition   (UfoRemoteNode  *node,
                                              UfoRequisition *requisition);
+void      ufo_remote_node_cleanup           (UfoRemoteNode  *node);
 GType     ufo_remote_node_get_type          (void);
 
 G_END_DECLS

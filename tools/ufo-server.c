@@ -66,6 +66,8 @@ handle_json (ServerPrivate *priv)
     zmq_msg_close (&json_msg);
     send_ack (priv->socket);
 
+    priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+
     ufo_task_graph_read_from_data (priv->task_graph,
                                    priv->manager,
                                    json,
@@ -239,6 +241,20 @@ void handle_get_result (ServerPrivate *priv)
     ufo_output_task_release_output_buffer (UFO_OUTPUT_TASK (priv->output_task), buffer);
 }
 
+static
+void handle_cleanup (ServerPrivate *priv)
+{
+    g_object_unref (priv->input_task);
+    g_object_unref (priv->output_task);
+    g_object_unref (priv->task_graph);
+
+    priv->input_task = NULL;
+    priv->output_task = NULL;
+    priv->task_graph = NULL;
+
+    send_ack (priv->socket);
+}
+
 static gpointer
 run_scheduler (ServerPrivate *priv)
 {
@@ -310,7 +326,6 @@ main (int argc, char * argv[])
 
     priv.manager = ufo_plugin_manager_new (config);
     priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, resources));
-    priv.task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
     priv.n_inputs = 1;
 
     while (1) {
@@ -346,6 +361,9 @@ main (int argc, char * argv[])
                     break;
                 case UFO_MESSAGE_GET_RESULT:
                     handle_get_result (&priv);
+                    break;
+                case UFO_MESSAGE_CLEANUP:
+                    handle_cleanup (&priv);
                     break;
                 default:
                     g_print ("unhandled case\n");

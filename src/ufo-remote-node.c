@@ -7,7 +7,7 @@ G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 #define UFO_REMOTE_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_REMOTE_NODE, UfoRemoteNodePrivate))
 
 static void ufo_msg_send (UfoMessage *msg, gpointer socket, gint flags);
-static void receive_ack (UfoRemoteNodePrivate *priv);
+static void receive_ack (gpointer socket);
 
 struct _UfoRemoteNodePrivate {
     gpointer context;
@@ -55,7 +55,7 @@ ufo_remote_node_request_setup (UfoRemoteNode *node)
     request.type = UFO_MESSAGE_SETUP;
     ufo_msg_send (&request, priv->socket, 0);
 
-    receive_ack (priv);
+    receive_ack (priv->socket);
 }
 
 void
@@ -78,7 +78,7 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
     zmq_msg_send (&json_msg, priv->socket, 0);
     zmq_msg_close (&json_msg);
 
-    receive_ack (priv);
+    receive_ack (priv->socket);
 }
 
 void
@@ -163,7 +163,7 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
         zmq_msg_close (&data_msg);
     }
 
-    receive_ack (priv);
+    receive_ack (priv->socket);
 }
 
 void
@@ -215,6 +215,16 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
 }
 
 static void
+cleanup_remote (gpointer socket)
+{
+    UfoMessage request;
+
+    request.type = UFO_MESSAGE_CLEANUP;
+    ufo_msg_send (&request, socket, 0);
+    receive_ack (socket);
+}
+
+static void
 ufo_msg_send (UfoMessage *msg,
               gpointer socket,
               gint flags)
@@ -228,12 +238,12 @@ ufo_msg_send (UfoMessage *msg,
 }
 
 static void
-receive_ack (UfoRemoteNodePrivate *priv)
+receive_ack (gpointer socket)
 {
     zmq_msg_t reply_msg;
 
     zmq_msg_init (&reply_msg);
-    zmq_msg_recv (&reply_msg, priv->socket, 0);
+    zmq_msg_recv (&reply_msg, socket, 0);
     zmq_msg_close (&reply_msg);
 }
 
@@ -245,6 +255,8 @@ ufo_remote_node_dispose (GObject *object)
     priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
 
     if (priv->socket != NULL) {
+        cleanup_remote (priv->socket);
+
         g_debug ("Close socket=%p", priv->socket);
         zmq_close (priv->socket);
         priv->socket = NULL;

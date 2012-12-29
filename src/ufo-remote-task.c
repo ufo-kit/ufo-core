@@ -121,15 +121,6 @@ ufo_remote_task_get_property(GObject *object, guint property_id, GValue *value, 
 static void
 ufo_remote_task_dispose (GObject *object)
 {
-    UfoRemoteTaskPrivate *priv;
-
-    priv = UFO_REMOTE_TASK_GET_PRIVATE (object);
-
-    if (priv->remote != NULL) {
-        g_object_unref (priv->remote);
-        priv->remote = NULL;
-    }
-
     G_OBJECT_CLASS (ufo_remote_task_parent_class)->dispose (object);
 }
 

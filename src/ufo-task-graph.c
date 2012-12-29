@@ -23,6 +23,7 @@ struct _UfoTaskGraphPrivate {
     UfoPluginManager *manager;
     GHashTable *prop_sets;
     GHashTable *json_nodes;
+    GList *remote_tasks;
 };
 
 typedef enum {
@@ -247,10 +248,14 @@ void
 ufo_task_graph_split (UfoTaskGraph *task_graph,
                       UfoArchGraph *arch_graph)
 {
+    UfoTaskGraphPrivate *priv;
     GList *paths;
     GList *remotes;
     /* guint n_gpus; */
 
+    g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
+
+    priv = task_graph->priv;
     paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
     remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
 
@@ -300,6 +305,7 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
             ufo_remote_node_send_json (UFO_REMOTE_NODE (remote), json, size);
 
             task = UFO_TASK_NODE (ufo_remote_task_new ());
+            priv->remote_tasks = g_list_append (priv->remote_tasks, task);
             ufo_task_node_set_proc_node (task, remote);
 
             ufo_task_graph_connect_nodes (task_graph, UFO_TASK_NODE (first->data), task);
@@ -648,9 +654,48 @@ json_object_from_ufo_node (UfoNode *node)
     return object;
 }
 
+
+static void
+ufo_task_graph_dispose (GObject *object)
+{
+    UfoTaskGraphPrivate *priv;
+
+    priv = UFO_TASK_GRAPH_GET_PRIVATE (object);
+
+    if (priv->manager != NULL) {
+        g_object_unref (priv->manager);
+        priv->manager = NULL;
+    }
+
+    g_list_foreach (priv->remote_tasks, (GFunc) g_object_unref, NULL);
+    g_list_free (priv->remote_tasks);
+    priv->remote_tasks = NULL;
+
+    G_OBJECT_CLASS (ufo_task_graph_parent_class)->dispose (object);
+}
+
+static void
+ufo_task_graph_finalize (GObject *object)
+{
+    UfoTaskGraphPrivate *priv;
+
+    priv = UFO_TASK_GRAPH_GET_PRIVATE (object);
+
+    g_hash_table_destroy (priv->json_nodes);
+    g_hash_table_destroy (priv->prop_sets);
+
+    G_OBJECT_CLASS (ufo_task_graph_parent_class)->finalize (object);
+}
+
 static void
 ufo_task_graph_class_init (UfoTaskGraphClass *klass)
 {
+    GObjectClass *oclass;
+
+    oclass = G_OBJECT_CLASS (klass);
+    oclass->dispose = ufo_task_graph_dispose;
+    oclass->finalize = ufo_task_graph_finalize;
+
     g_type_class_add_private(klass, sizeof(UfoTaskGraphPrivate));
 }
 
@@ -660,6 +705,8 @@ ufo_task_graph_init (UfoTaskGraph *self)
     UfoTaskGraphPrivate *priv;
     self->priv = priv = UFO_TASK_GRAPH_GET_PRIVATE (self);
 
+    priv->manager = NULL;
+    priv->remote_tasks = NULL;
     priv->json_nodes = g_hash_table_new_full (g_str_hash, g_str_equal,
                                               g_free, NULL);
 
