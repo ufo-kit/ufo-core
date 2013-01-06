@@ -227,15 +227,10 @@ ufo_resources_new (UfoConfig *config)
 }
 
 static void
-add_paths (UfoResourcesPrivate *priv, gchar *paths[])
+append_include_path (gchar *path,
+                     GString *directive)
 {
-    if (paths == NULL)
-        return;
-
-    for (guint i = 0; paths[i] != NULL; i++) {
-        priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (paths[i]));
-        g_string_append_printf (priv->include_paths, "-I%s ", paths[i]);
-    }
+    g_string_append_printf (directive, "-I%s", path);
 }
 
 static cl_program
@@ -495,19 +490,19 @@ ufo_resources_set_property (GObject *object,
     switch (property_id) {
         case PROP_CONFIG:
             {
-                UfoConfig *config;
-                gchar **paths;
                 GObject *value_object = g_value_get_object (value);
 
                 if (priv->config)
                     g_object_unref (priv->config);
 
-
                 if (value_object != NULL) {
+                    UfoConfig *config;
+                    GList *paths;
+
                     config = UFO_CONFIG (value_object);
                     paths = ufo_config_get_paths (config);
-                    add_paths (priv, paths);
-                    g_strfreev (paths);
+                    priv->kernel_paths = g_list_concat (priv->kernel_paths, paths);
+                    g_list_foreach (paths, (GFunc) append_include_path, priv->include_paths);
                     g_object_ref (config);
                     priv->config = config;
                 }

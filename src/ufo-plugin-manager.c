@@ -25,7 +25,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT,
 typedef UfoNode* (* NewFunc) (void);
 
 struct _UfoPluginManagerPrivate {
-    GSList      *search_paths;
+    GList       *search_paths;
     GSList      *modules;
     GHashTable  *new_funcs;  /**< maps from gchar* to NewFunc* */
 };
@@ -63,16 +63,13 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
     }
 
     /* If it is not a path, search in all known paths */
-    GSList *p = g_slist_nth (priv->search_paths, 0);
-
-    while (p != NULL) {
+    for (GList *p = g_list_first (priv->search_paths); p != NULL; p = g_list_next (p)) {
         gchar *path = g_build_filename ((gchar *) p->data, name, NULL);
 
         if (g_file_test (path, G_FILE_TEST_EXISTS))
             return path;
 
         g_free (path);
-        p = g_slist_next (p);
     }
 
     return NULL;
@@ -81,14 +78,7 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 static void
 copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfig *config)
 {
-    gchar **paths;
-
-    paths = ufo_config_get_paths (config);
-
-    for (guint i = 0; paths[i] != NULL; i++)
-        priv->search_paths = g_slist_append (priv->search_paths, g_strdup (paths[i]));
-
-    g_strfreev (paths);
+    priv->search_paths = g_list_concat (priv->search_paths, ufo_config_get_paths (config));
 }
 
 /**
@@ -230,14 +220,11 @@ ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     GList *result = NULL;
-    GSList *path;
 
     GRegex *regex = g_regex_new ("libufofilter([A-Za-z]+).so", 0, 0, NULL);
     GMatchInfo *match_info = NULL;
 
-    path = g_slist_nth (priv->search_paths, 0);
-
-    while (path != NULL) {
+    for (GList *path = g_list_first (priv->search_paths); path != NULL; path = g_list_next (path)) {
         glob_t glob_vector;
         gchar *pattern;
 
@@ -256,8 +243,6 @@ ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
 
             i++;
         }
-
-        path = g_slist_next (path);
     }
 
     g_match_info_free (match_info);
@@ -333,8 +318,8 @@ ufo_plugin_manager_finalize (GObject *gobject)
 
     g_slist_free (priv->modules);
 
-    g_slist_foreach (priv->search_paths, (GFunc) g_free, NULL);
-    g_slist_free (priv->search_paths);
+    g_list_foreach (priv->search_paths, (GFunc) g_free, NULL);
+    g_list_free (priv->search_paths);
 
     g_hash_table_destroy (priv->new_funcs);
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);

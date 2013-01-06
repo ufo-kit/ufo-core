@@ -11,7 +11,7 @@ test_path (void)
     GValue       value = {0};
     const gchar *p1 = "/usr/foo/bar";
     const gchar *p2 = "/home/user/foo";
-    gchar **paths;
+    GList *paths;
 
     /* Initialize value array with the two static strings */
     array = g_value_array_new (2);
@@ -44,13 +44,12 @@ test_path (void)
     config = UFO_CONFIG (object);
     paths = ufo_config_get_paths (config);
 
-    g_assert (paths != NULL && paths[0] != NULL);
-    g_assert (g_strcmp0 (p1, paths[0]) == 0);
-    g_assert (paths[1] != NULL);
-    g_assert (g_strcmp0 (p2, paths[1]) == 0);
+    g_assert (paths != NULL);
+    g_assert (g_list_length (paths) >= 2);
+    g_assert (g_strcmp0 (p1, g_list_nth_data (paths, 0)) == 0);
+    g_assert (g_strcmp0 (p2, g_list_nth_data (paths, 1)) == 0);
 
-    g_strfreev (paths);
-
+    g_list_free (paths);
     g_object_unref (object);
 }
 
@@ -58,12 +57,12 @@ static void
 test_path_not_set (void)
 {
     UfoConfig *config;
-    gchar **paths;
+    GList *paths;
 
     config = ufo_config_new ();
     paths = ufo_config_get_paths (config);
     g_assert (paths != NULL);
-
+    g_list_free (paths);
     g_object_unref (config);
 }
 

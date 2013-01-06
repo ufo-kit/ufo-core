@@ -32,15 +32,15 @@ struct _UfoArchGraphPrivate {
 
 /**
  * ufo_arch_graph_new:
+ * @resources: An initialized #UfoResources object
  * @remote_addresses: (element-type utf8): (allow-none): A #GList containing
  * address strings.
- * @resources: An initialized #UfoResources object
  *
  * Returns: A new #UfoArchGraph.
  */
 UfoGraph *
-ufo_arch_graph_new (GList *remote_addresses,
-                    UfoResources *resources)
+ufo_arch_graph_new (UfoResources *resources,
+                    GList *remote_addresses)
 {
     UfoArchGraph *graph;
     UfoArchGraphPrivate *priv;

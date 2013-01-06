@@ -150,6 +150,7 @@ ufo_input_task_process (UfoCpuTask *task,
     g_return_val_if_fail (UFO_IS_INPUT_TASK (task), FALSE);
 
     priv = UFO_INPUT_TASK_GET_PRIVATE (task);
+    active = FALSE;
 
     if (UFO_IS_CPU_TASK (priv->wrapped)) {
         active = ufo_cpu_task_process (UFO_CPU_TASK (priv->wrapped),

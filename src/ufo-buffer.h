@@ -92,6 +92,13 @@ struct _UfoBufferParamSpec {
     UfoBuffer   *default_value;
 };
 
+/**
+ * UfoBufferDepth:
+ * @UFO_BUFFER_DEPTH_8U: 8 bit unsigned
+ * @UFO_BUFFER_DEPTH_16U: 16 bit unsigned
+ *
+ * Source depth of data as used in ufo_buffer_convert().
+ */
 typedef enum {
     UFO_BUFFER_DEPTH_8U,
     UFO_BUFFER_DEPTH_16U

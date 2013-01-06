@@ -60,7 +60,7 @@ execute_json (const gchar *filename,
 
     address_list = string_array_to_list (addresses);
     resources = ufo_resources_new (config);
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (address_list, resources));
+    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, address_list));
     g_list_free (address_list);
 
     scheduler = ufo_scheduler_new ();

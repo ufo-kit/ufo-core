@@ -41,7 +41,7 @@ struct _UfoConfigClass {
 UfoConfig   * ufo_config_new        (void);
 void          ufo_config_add_paths  (UfoConfig  *config,
                                      GList      *paths);
-gchar      ** ufo_config_get_paths  (UfoConfig  *config);
+GList       * ufo_config_get_paths  (UfoConfig  *config);
 GType         ufo_config_get_type   (void);
 
 G_END_DECLS

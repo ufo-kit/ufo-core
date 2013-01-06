@@ -175,6 +175,9 @@ ufo_graph_get_nodes (UfoGraph *graph)
  * ufo_graph_get_nodes_filtered:
  * @graph: A #UfoGraph
  * @func: (scope call): Predicate function to filter out nodes
+ * @user_data: Data to be passed to @func on invocation
+ *
+ * Get nodes filtered by the predicate @func.
  *
  * Returns: (element-type UfoNode) (transfer container): A list of all nodes
  * that are marked as true by the predicate function @func.
@@ -240,6 +243,16 @@ ufo_graph_remove_edge (UfoGraph *graph,
     priv->n_edges--;
 }
 
+/**
+ * ufo_graph_get_edge_label:
+ * @graph: A #UfoGraph
+ * @source: Source node
+ * @target: Target node
+ *
+ * Retrieve edge label between @source and @target.
+ *
+ * Returns: (transfer none): Edge label pointer.
+ */
 gpointer
 ufo_graph_get_edge_label (UfoGraph *graph,
                           UfoNode *source,

@@ -16,6 +16,7 @@ typedef struct _UfoConfigurable         UfoConfigurable;
 typedef struct _UfoConfigurableIface    UfoConfigurableIface;
 
 struct _UfoConfigurableIface {
+    /*< private >*/
     GTypeInterface parent_iface;
 };
 

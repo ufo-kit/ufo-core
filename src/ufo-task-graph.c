@@ -132,7 +132,7 @@ ufo_task_graph_read_from_file (UfoTaskGraph *graph,
  * ufo_task_graph_read_from_data:
  * @graph: A #UfoTaskGraph.
  * @manager: A #UfoPluginManager used to load the filters
- * @data: %NULL-terminated string with JSON data
+ * @json: %NULL-terminated string with JSON data
  * @error: Indicates error in case of failed file loading or parsing
  *
  * Read a JSON configuration file to fill the structure of @graph.
@@ -251,13 +251,15 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
     UfoTaskGraphPrivate *priv;
     GList *paths;
     GList *remotes;
-    /* guint n_gpus; */
+    guint n_gpus;
 
     g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
     priv = task_graph->priv;
     paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
     remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
+
+    g_debug ("Split for %i remote nodes", g_list_length (remotes));
 
     for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
         UfoTaskGraph *remote_graph;
@@ -276,6 +278,7 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
         last = g_list_last (path);
         remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
         predecessor = NULL;
+        node = NULL;
 
         for (GList *jt = g_list_next (first); jt != last; jt = g_list_next (jt)) {
             node = UFO_TASK_NODE (jt->data);
@@ -318,15 +321,16 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
         g_object_unref (remote_graph);
     }
 
-    /* n_gpus = ufo_arch_graph_get_num_gpus (arch_graph); */
+    n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
+    g_debug ("Split for %i GPU nodes", n_gpus);
 
-    /* for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) { */
-    /*     GList *path = (GList *) it->data; */
+    for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
+        GList *path = (GList *) it->data;
 
-    /*     for (guint i = 1; i < n_gpus; i++) */
-    /*         ufo_graph_split (UFO_GRAPH (task_graph), path); */
+        for (guint i = 1; i < n_gpus; i++)
+            ufo_graph_split (UFO_GRAPH (task_graph), path);
 
-    /* } */
+    }
 
     g_list_free (remotes);
     g_list_foreach (paths, (GFunc) g_list_free, NULL);

@@ -42,8 +42,8 @@ struct _UfoArchGraphClass {
     UfoGraphClass parent_class;
 };
 
-UfoGraph       *ufo_arch_graph_new              (GList          *remote_addresses,
-                                                 UfoResources   *resources);
+UfoGraph       *ufo_arch_graph_new              (UfoResources   *resources,
+                                                 GList          *remote_addresses);
 UfoResources   *ufo_arch_graph_get_resources    (UfoArchGraph   *graph);
 gpointer        ufo_arch_graph_get_context      (UfoArchGraph   *graph);
 guint           ufo_arch_graph_get_num_cpus     (UfoArchGraph   *graph);

@@ -325,7 +325,7 @@ main (int argc, char * argv[])
     resources = ufo_resources_new (config);
 
     priv.manager = ufo_plugin_manager_new (config);
-    priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, resources));
+    priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, NULL));
     priv.n_inputs = 1;
 
     while (1) {
