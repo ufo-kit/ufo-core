@@ -95,7 +95,7 @@ add_path (const gchar *path,
 
     g_value_init (&path_value, G_TYPE_STRING);
     g_value_set_string (&path_value, path);
-    g_value_array_append (priv->path_array, &path_value);
+    g_value_array_prepend (priv->path_array, &path_value);
     g_value_unset (&path_value);
 }
 

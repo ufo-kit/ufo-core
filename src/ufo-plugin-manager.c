@@ -78,7 +78,7 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 static void
 copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfig *config)
 {
-    priv->search_paths = g_list_concat (priv->search_paths, ufo_config_get_paths (config));
+    priv->search_paths = g_list_concat (ufo_config_get_paths (config), priv->search_paths);
 }
 
 /**
