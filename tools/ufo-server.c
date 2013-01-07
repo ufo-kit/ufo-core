@@ -244,9 +244,14 @@ void handle_get_result (ServerPrivate *priv)
 static
 void handle_cleanup (ServerPrivate *priv)
 {
-    g_object_unref (priv->input_task);
-    g_object_unref (priv->output_task);
-    g_object_unref (priv->task_graph);
+    if (priv->input_task)
+        g_object_unref (priv->input_task);
+
+    if (priv->output_task)
+        g_object_unref (priv->output_task);
+
+    if (priv->task_graph)
+        g_object_unref (priv->task_graph);
 
     priv->input_task = NULL;
     priv->output_task = NULL;
@@ -327,6 +332,9 @@ main (int argc, char * argv[])
     priv.manager = ufo_plugin_manager_new (config);
     priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, NULL));
     priv.n_inputs = 1;
+    priv.input_task = NULL;
+    priv.output_task = NULL;
+    priv.task_graph = NULL;
 
     while (1) {
         zmq_msg_t request;
