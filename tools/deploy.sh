@@ -35,7 +35,7 @@ function build_package() {
 
     printf "\n** Building $1\n"
     cd $ROOT/$1
-    cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX -DLIB_SUFFIX=$LIBSUFFIX -DWITH_GTK_DOC=OFF || exit 1
+    cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX -DLIB_SUFFIX=$LIBSUFFIX || exit 1
     make || exit 1
     make install
 }

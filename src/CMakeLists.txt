@@ -206,7 +206,7 @@ if(GTK_DOC_FOUND)
         endforeach()
 
         set(GTK_DOC_LDFLAGS)
-        foreach(_lib ${ufocore_LIBS})
+        foreach(_lib ${UFOCORE_DEPS})
             if (NOT ${_lib} MATCHES "^[/]")
                 set(GTK_DOC_LDFLAGS "-l${_lib} ${GTK_DOC_LDFLAGS}")
             endif()
