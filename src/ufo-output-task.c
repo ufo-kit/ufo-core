@@ -20,6 +20,7 @@ struct _UfoOutputTaskPrivate {
     GAsyncQueue *in_queue;
     guint n_dims;
     guint n_copies;
+    GList *copies;
 };
 
 static void ufo_task_interface_init (UfoTaskIface *iface);
@@ -124,6 +125,7 @@ ufo_output_task_process (UfoCpuTask *task,
     if (priv->n_copies == 0) {
         copy = ufo_buffer_dup (outputs[0]);
         g_async_queue_push (priv->in_queue, copy);
+        priv->copies = g_list_append (priv->copies, copy);
         priv->n_copies++;
     }
 
@@ -154,6 +156,29 @@ ufo_output_task_get_property(GObject *object, guint property_id, GValue *value, 
 }
 
 static void
+ufo_output_task_dispose (GObject *object)
+{
+    UfoOutputTaskPrivate *priv;
+
+    priv = UFO_OUTPUT_TASK_GET_PRIVATE (object);
+    g_list_foreach (priv->copies, (GFunc) g_object_unref, NULL);
+
+    G_OBJECT_CLASS (ufo_output_task_parent_class)->dispose (object);
+}
+
+static void
+ufo_output_task_finalize (GObject *object)
+{
+    UfoOutputTaskPrivate *priv;
+
+    priv = UFO_OUTPUT_TASK_GET_PRIVATE (object);
+    g_list_free (priv->copies);
+    priv->copies = NULL;
+
+    G_OBJECT_CLASS (ufo_output_task_parent_class)->finalize (object);
+}
+
+static void
 ufo_task_interface_init (UfoTaskIface *iface)
 {
     iface->setup = ufo_output_task_setup;
@@ -174,6 +199,8 @@ ufo_output_task_class_init (UfoOutputTaskClass *klass)
 
     gobject_class->set_property = ufo_output_task_set_property;
     gobject_class->get_property = ufo_output_task_get_property;
+    gobject_class->dispose = ufo_output_task_dispose;
+    gobject_class->finalize = ufo_output_task_finalize;
 
     g_type_class_add_private (gobject_class, sizeof(UfoOutputTaskPrivate));
 }
@@ -185,6 +212,7 @@ ufo_output_task_init (UfoOutputTask *task)
     task->priv->out_queue = g_async_queue_new ();
     task->priv->in_queue = g_async_queue_new ();
     task->priv->n_copies = 0;
+    task->priv->copies = NULL;
 
     ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "output-task");
 }

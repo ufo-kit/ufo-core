@@ -244,8 +244,26 @@ void handle_get_result (ServerPrivate *priv)
 static
 void handle_cleanup (ServerPrivate *priv)
 {
-    if (priv->input_task)
+    /*
+     * We send the ACK early on, because we don't want to let the host wait for
+     * actually cleaning up (and waiting some time to unref the input task).
+     */
+    send_ack (priv->socket);
+
+    if (priv->input_task) {
+        ufo_input_task_stop (UFO_INPUT_TASK (priv->input_task));
+
+        for (guint i = 0; i < priv->n_inputs; i++) {
+            ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task),
+                                                 i, priv->inputs[i]);
+        }
+
+        g_usleep (2 * G_USEC_PER_SEC);
         g_object_unref (priv->input_task);
+
+        for (guint i = 0; i < priv->n_inputs; i++)
+            g_object_unref (priv->inputs[i]);
+    }
 
     if (priv->output_task)
         g_object_unref (priv->output_task);
@@ -256,8 +274,6 @@ void handle_cleanup (ServerPrivate *priv)
     priv->input_task = NULL;
     priv->output_task = NULL;
     priv->task_graph = NULL;
-
-    send_ack (priv->socket);
 }
 
 static gpointer
@@ -271,6 +287,7 @@ run_scheduler (ServerPrivate *priv)
     g_message ("Start scheduler");
     ufo_scheduler_run (scheduler, priv->arch_graph, priv->task_graph, NULL);
 
+    g_message ("Done");
     g_object_unref (scheduler);
     return NULL;
 }

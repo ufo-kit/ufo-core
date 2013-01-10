@@ -58,6 +58,7 @@ ufo_input_task_new (UfoTask *wrapped)
     priv->in_queues = g_new0 (GAsyncQueue *, priv->n_inputs);
     priv->out_queues = g_new0 (GAsyncQueue *, priv->n_inputs);
     priv->inputs = g_new0 (UfoBuffer *, priv->n_inputs);
+    priv->active = TRUE;
 
     for (guint i = 0; i < priv->n_inputs; i++) {
         priv->in_queues[i] = g_async_queue_new ();
@@ -145,29 +146,29 @@ ufo_input_task_process (UfoCpuTask *task,
                         UfoRequisition *requisition)
 {
     UfoInputTaskPrivate *priv;
-    gboolean active;
 
     g_return_val_if_fail (UFO_IS_INPUT_TASK (task), FALSE);
-
     priv = UFO_INPUT_TASK_GET_PRIVATE (task);
-    active = FALSE;
+
+    if (!priv->active)
+        return FALSE;
 
     if (UFO_IS_CPU_TASK (priv->wrapped)) {
-        active = ufo_cpu_task_process (UFO_CPU_TASK (priv->wrapped),
-                                       priv->inputs, output,
-                                       requisition);
+        priv->active = ufo_cpu_task_process (UFO_CPU_TASK (priv->wrapped),
+                                             priv->inputs, output,
+                                             requisition);
     }
     else if (UFO_IS_GPU_TASK (priv->wrapped)) {
         UfoGpuNode *gpu;
 
         gpu = UFO_GPU_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (task)));
-        active = ufo_gpu_task_process (UFO_GPU_TASK (priv->wrapped),
-                                       priv->inputs, output,
-                                       requisition, gpu);
+        priv->active = ufo_gpu_task_process (UFO_GPU_TASK (priv->wrapped),
+                                             priv->inputs, output,
+                                             requisition, gpu);
     }
 
     push_all_inputs (priv);
-    return active;
+    return priv->active;
 }
 
 static void
