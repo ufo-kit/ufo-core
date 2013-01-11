@@ -396,11 +396,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     /* Cleanup */
     for (guint i = 0; i < n_nodes; i++) {
-        UfoNode *node;
-        ThreadLocalData *tld;
-
-        node = g_list_nth_data (nodes, i);
-        tld = tlds[i];
+        ThreadLocalData *tld = tlds[i];
         g_free (tld->n_fetched);
         g_free (tld->in_params);
         g_free (tld);
