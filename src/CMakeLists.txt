@@ -155,7 +155,7 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
                     -I${CMAKE_CURRENT_SOURCE_DIR}
                     --output ${GIR_XML}
                     --warn-all
-                    ${_gir_input}
+                    ${_gir_input} > /dev/null
             DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 

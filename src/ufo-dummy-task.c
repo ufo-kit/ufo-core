@@ -1,9 +1,3 @@
-/**
- * SECTION:ufo-dummy-task
- * @Short_description: Dummy task
- * @Title: UfoDummyTask
- */
-
 #include <gmodule.h>
 #include <tiffio.h>
 #ifdef __APPLE__

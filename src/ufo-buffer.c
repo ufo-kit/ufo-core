@@ -451,10 +451,8 @@ ufo_buffer_finalize (GObject *gobject)
     UfoBuffer *buffer = UFO_BUFFER (gobject);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
-    if (priv->host_array.data != NULL) {
-        g_free (priv->host_array.data);
-        priv->host_array.data = NULL;
-    }
+    g_free (priv->host_array.data);
+    priv->host_array.data = NULL;
 
     if (priv->device_array != NULL) {
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));

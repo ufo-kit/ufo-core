@@ -309,13 +309,8 @@ ufo_plugin_manager_finalize (GObject *gobject)
 {
     UfoPluginManager *manager = UFO_PLUGIN_MANAGER (gobject);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
-    GSList *module = g_slist_nth (priv->modules, 0);
 
-    while (module != NULL) {
-        g_module_close (module->data);
-        module = g_slist_next (module);
-    }
-
+    g_slist_foreach (priv->modules, (GFunc) g_module_close, NULL);
     g_slist_free (priv->modules);
 
     g_list_foreach (priv->search_paths, (GFunc) g_free, NULL);

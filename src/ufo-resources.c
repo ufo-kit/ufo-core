@@ -170,16 +170,14 @@ resources_load_opencl_program (const gchar *filename)
 }
 
 static void
-resources_release_kernel (gpointer data, gpointer user_data)
+resources_release_kernel (cl_kernel kernel)
 {
-    cl_kernel kernel = (cl_kernel) data;
     UFO_RESOURCES_CHECK_CLERR (clReleaseKernel (kernel));
 }
 
 static void
-resources_release_program (gpointer data)
+resources_release_program (cl_program program)
 {
-    cl_program program = (cl_program) data;
     UFO_RESOURCES_CHECK_CLERR (clReleaseProgram (program));
 }
 
@@ -555,7 +553,7 @@ ufo_resources_finalize (GObject *object)
     g_hash_table_destroy (priv->opencl_programs);
     g_list_foreach (priv->kernel_paths, (GFunc) g_free, NULL);
     g_list_free (priv->kernel_paths);
-    g_list_foreach (priv->opencl_kernels, resources_release_kernel, NULL);
+    g_list_foreach (priv->opencl_kernels, (GFunc) resources_release_kernel, NULL);
     g_list_free (priv->opencl_kernels);
 
     for (guint i = 0; i < priv->num_devices[0]; i++)
@@ -605,7 +603,7 @@ ufo_resources_init (UfoResources *self)
     self->priv = priv = UFO_RESOURCES_GET_PRIVATE (self);
 
     priv->config = NULL;
-    priv->opencl_programs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, resources_release_program);
+    priv->opencl_programs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) resources_release_program);
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->opencl_kernels = NULL;
     priv->opencl_platforms = NULL;

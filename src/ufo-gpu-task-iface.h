@@ -18,6 +18,7 @@ typedef struct _UfoGpuTask         UfoGpuTask;
 typedef struct _UfoGpuTaskIface    UfoGpuTaskIface;
 
 struct _UfoGpuTaskIface {
+    /*< private >*/
     UfoTaskIface parent_iface;
 
     gboolean (*process) (UfoGpuTask *task,

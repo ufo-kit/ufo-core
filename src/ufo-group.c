@@ -40,7 +40,7 @@ static guint         ufo_queue_get_capacity (UfoQueue *queue);
 
 /**
  * ufo_group_new:
- * @targets: (element-type UfoNode): A list of #UfoNode targets
+ * @targets: (transfer full) (element-type UfoNode): A list of #UfoNode targets
  * @context: A cl_context on which the targets should operate on.
  *
  * Create a new #UfoGroup.
@@ -170,6 +170,14 @@ ufo_queue_new (void)
     return queue;
 }
 
+static void
+ufo_queue_free (UfoQueue *queue)
+{
+    g_async_queue_unref (queue->queues[0]);
+    g_async_queue_unref (queue->queues[1]);
+    g_free (queue);
+}
+
 static gpointer
 ufo_queue_pop (UfoQueue *queue, UfoQueueAccess access)
 {
@@ -211,7 +219,19 @@ ufo_group_finalize (GObject *object)
     UfoGroupPrivate *priv;
 
     priv = UFO_GROUP_GET_PRIVATE (object);
+
+    g_list_free (priv->targets);
+    priv->targets = NULL;
+
     g_list_free (priv->buffers);
+    priv->buffers = NULL;
+
+    for (guint i = 0; i < priv->n_targets; i++)
+        ufo_queue_free (priv->queues[i]);
+
+    g_free (priv->queues);
+    priv->queues = NULL;
+
     G_OBJECT_CLASS (ufo_group_parent_class)->finalize (object);
 }
 

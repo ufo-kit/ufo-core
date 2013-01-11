@@ -79,6 +79,13 @@ ufo_config_get_paths (UfoConfig *config)
     return paths;
 }
 
+/**
+ * ufo_config_add_paths:
+ * @config: A #UfoConfig object
+ * @paths: (element-type utf8): List of strings
+ *
+ * Add @paths to the list of search paths for plugins and OpenCL kernel files.
+ */
 void
 ufo_config_add_paths (UfoConfig *config,
                       GList *paths)

@@ -96,6 +96,7 @@ read_json (UfoTaskGraph *graph,
 
     if (tmp_error != NULL) {
         g_propagate_prefixed_error (error, tmp_error, "Parsing JSON: ");
+        g_object_unref (json_parser);
         return;
     }
 
@@ -235,31 +236,14 @@ is_gpu_task (UfoNode *node, gpointer user_data)
     return UFO_IS_GPU_TASK (node);
 }
 
-/**
- * ufo_task_graph_split:
- * @task_graph: A #UfoTaskGraph
- * @arch_graph: A #UfoArchGraph
- *
- * Splits @task_graph in a way that most of the resources in @arch_graph can be
- * occupied. In the simple pipeline case, the longest possible GPU paths are
- * duplicated as much as there are GPUs in @arch_graph.
- */
-void
-ufo_task_graph_split (UfoTaskGraph *task_graph,
-                      UfoArchGraph *arch_graph)
+static void
+split_remotes (UfoTaskGraph *task_graph,
+               GList *remotes,
+               GList *paths)
 {
     UfoTaskGraphPrivate *priv;
-    GList *paths;
-    GList *remotes;
-    guint n_gpus;
-
-    g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
     priv = task_graph->priv;
-    paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
-    remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
-
-    g_debug ("Split for %i remote nodes", g_list_length (remotes));
 
     for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
         UfoTaskGraph *remote_graph;
@@ -319,6 +303,36 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
         json_node_free (root);
         g_object_unref (generator);
         g_object_unref (remote_graph);
+    }
+}
+
+/**
+ * ufo_task_graph_split:
+ * @task_graph: A #UfoTaskGraph
+ * @arch_graph: A #UfoArchGraph
+ *
+ * Splits @task_graph in a way that most of the resources in @arch_graph can be
+ * occupied. In the simple pipeline case, the longest possible GPU paths are
+ * duplicated as much as there are GPUs in @arch_graph.
+ */
+void
+ufo_task_graph_split (UfoTaskGraph *task_graph,
+                      UfoArchGraph *arch_graph)
+{
+    GList *paths;
+    GList *remotes;
+    guint n_gpus;
+    guint n_remotes;
+
+    g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
+
+    paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
+    remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
+    n_remotes = g_list_length (remotes);
+
+    if (n_remotes > 0) {
+        g_debug ("Split for %i remote nodes", n_remotes);
+        split_remotes (task_graph, remotes, paths);
     }
 
     n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
@@ -405,6 +419,7 @@ ufo_task_graph_map (UfoTaskGraph *task_graph,
         map_proc_node (UFO_GRAPH (task_graph), UFO_NODE (it->data), 0, gpu_nodes);
 
     g_list_free (roots);
+    g_list_free (gpu_nodes);
 }
 
 /**

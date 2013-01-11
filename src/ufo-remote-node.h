@@ -43,7 +43,7 @@ struct _UfoRemoteNodeClass {
 };
 
 /**
- * UfoMessageType: (skip)
+ * UfoMessageType:
  * @UFO_MESSAGE_SETUP:
  * @UFO_MESSAGE_GET_STRUCTURE:
  * @UFO_MESSAGE_STRUCTURE:

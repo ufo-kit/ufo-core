@@ -514,6 +514,13 @@ ufo_graph_dump_dot (UfoGraph *graph,
 }
 
 static void
+free_edge_list (GList *list)
+{
+    g_list_foreach (list, (GFunc) g_free, NULL);
+    g_list_free (list);
+}
+
+static void
 ufo_graph_dispose (GObject *object)
 {
     UfoGraphPrivate *priv;
@@ -521,6 +528,11 @@ ufo_graph_dispose (GObject *object)
     priv = UFO_GRAPH_GET_PRIVATE (object);
 
     if (priv->adjacency != NULL) {
+        GList *edge_lists;
+
+        edge_lists = g_hash_table_get_values (priv->adjacency);
+        g_list_foreach (edge_lists, (GFunc) free_edge_list, NULL);
+        g_list_free (edge_lists);
         g_hash_table_destroy (priv->adjacency);
         priv->adjacency = NULL;
     }
@@ -537,6 +549,12 @@ ufo_graph_dispose (GObject *object)
 static void
 ufo_graph_finalize (GObject *object)
 {
+    UfoGraphPrivate *priv;
+
+    priv = UFO_GRAPH_GET_PRIVATE (object);
+    g_list_free (priv->node_types);
+    priv->node_types = NULL;
+
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
 }
 

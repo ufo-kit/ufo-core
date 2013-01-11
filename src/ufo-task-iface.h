@@ -24,18 +24,33 @@ typedef enum {
     UFO_TASK_ERROR_SETUP
 } UfoTaskError;
 
+/**
+ * UfoTaskMode:
+ * @UFO_TASK_MODE_SINGLE: one-by-one processing
+ * @UFO_TASK_MODE_REDUCE: receive fininite stream and generate a reduced stream
+ * @UFO_TASK_MODE_GENERATE: do not receive any data but produce a stream.
+ *
+ * Task modes describe how a task operates considering the input data.
+ */
 typedef enum {
     UFO_TASK_MODE_SINGLE,
     UFO_TASK_MODE_REDUCE,
     UFO_TASK_MODE_GENERATE
 } UfoTaskMode;
 
+/**
+ * UfoInputParam:
+ * @n_dims: Number of dimensions
+ * @n_expected: Number of expected elements depending on the UfoTaskMode. Use -1
+ * to denote arbitrary or "infinite" data stream.
+ */
 struct _UfoInputParam {
     guint n_dims;
     gint n_expected;
 };
 
 struct _UfoTaskIface {
+    /*< private >*/
     GTypeInterface parent_iface;
 
     void (*setup)           (UfoTask        *task,

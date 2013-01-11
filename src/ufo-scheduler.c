@@ -290,6 +290,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     UfoSchedulerPrivate *priv;
     UfoResources *resources;
     GList *nodes;
+    GList *groups;
     guint n_nodes;
     GThread **threads;
     ThreadLocalData **tlds;
@@ -309,6 +310,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (task_graph));
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
+    groups = NULL;
     threads = g_new0 (GThread *, n_nodes);
     tlds = g_new0 (ThreadLocalData *, n_nodes);
 
@@ -316,6 +318,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         return;
 
     for (guint i = 0; i < n_nodes; i++) {
+        GList *successors;
         UfoNode *node;
         UfoGroup *group;
         ThreadLocalData *tld;
@@ -334,8 +337,9 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                                 &tld->mode);
 
         tld->n_fetched = g_new0 (gint, tld->n_inputs);
-        group = ufo_group_new (ufo_graph_get_successors (UFO_GRAPH (task_graph), node),
-                               context);
+        successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
+        group = ufo_group_new (successors, context);
+        groups = g_list_append (groups, group);
 
         ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
 
@@ -393,19 +397,20 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     /* Cleanup */
     for (guint i = 0; i < n_nodes; i++) {
         UfoNode *node;
-        UfoGroup *group;
         ThreadLocalData *tld;
 
         node = g_list_nth_data (nodes, i);
-        group = ufo_task_node_get_out_group (UFO_TASK_NODE (node));
-        g_object_unref (group);
-
         tld = tlds[i];
         g_free (tld->n_fetched);
+        g_free (tld->in_params);
         g_free (tld);
     }
 
+    g_list_foreach (groups, (GFunc) g_object_unref, NULL);
+    g_list_free (groups);
+    g_list_free (nodes);
     g_free (tlds);
+    g_free (threads);
 }
 
 static void
