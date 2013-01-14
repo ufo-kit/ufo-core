@@ -22,6 +22,11 @@ typedef struct {
     guint n_inputs;
 } ServerPrivate;
 
+typedef struct {
+    gchar **paths;
+    gchar *addr;
+} Options;
+
 #define CHECK_ZMQ(r) if (r == -1) g_warning ("%s:%i: zmq_error: %s\n", __FILE__, __LINE__, zmq_strerror (errno));
 
 static gpointer run_scheduler (ServerPrivate *priv);
@@ -292,56 +297,88 @@ run_scheduler (ServerPrivate *priv)
     return NULL;
 }
 
-static GList *
-string_array_to_list (gchar **array)
+static Options *
+opts_parse (gint *argc, gchar ***argv)
 {
-    GList *result = NULL;
+    GOptionContext *context;
+    Options *opts;
+    GError *error = NULL;
 
-    if (array == NULL)
+    opts = g_new0 (Options, 1);
+
+    GOptionEntry entries[] = {
+        { "listen", 'l', 0, G_OPTION_ARG_STRING, &opts->addr,
+          "Address to listen on (see http://api.zeromq.org/3-2:zmq-tcp)", NULL },
+        { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &opts->paths,
+          "Path to node plugins or OpenCL kernels", NULL },
+        { NULL }
+    };
+
+    context = g_option_context_new ("FILE");
+    g_option_context_add_main_entries (context, entries, NULL);
+
+    if (!g_option_context_parse (context, argc, argv, &error)) {
+        g_print ("Option parsing failed: %s\n", error->message);
+        g_free (opts);
         return NULL;
+    }
 
-    for (guint i = 0; array[i] != NULL; i++)
-        result = g_list_append (result, array[i]);
+    if (opts->addr == NULL)
+        opts->addr = g_strdup ("tcp://*:5555");
 
-    return result;
+    g_option_context_free (context);
+
+    return opts;
+}
+
+static UfoConfig *
+opts_new_config (Options *opts)
+{
+    UfoConfig *config;
+    GList *paths = NULL;
+
+    config = ufo_config_new ();
+
+    if (opts->paths != NULL) {
+        for (guint i = 0; opts->paths[i] != NULL; i++)
+            paths = g_list_append (paths, opts->paths[i]);
+
+        ufo_config_add_paths (config, paths);
+        g_list_free (paths);
+    }
+
+    return config;
+}
+
+static void
+opts_free (Options *opts)
+{
+    g_strfreev (opts->paths);
+    g_free (opts->addr);
+    g_free (opts);
 }
 
 int
 main (int argc, char * argv[])
 {
     gpointer context;
-    ServerPrivate priv;
+    Options *opts;
     UfoConfig *config;
     UfoResources *resources;
-    gchar **paths = NULL;
-    GList *path_list = NULL;
-    GError *error = NULL;
-
-    GOptionEntry entries[] = {
-        { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths, "Path to node plugins or OpenCL kernels", NULL },
-        { NULL }
-    };
+    ServerPrivate priv;
 
     g_type_init ();
     g_thread_init (NULL);
 
-    context = g_option_context_new ("FILE");
-    g_option_context_add_main_entries (context, entries, NULL);
-
-    if (!g_option_context_parse (context, &argc, &argv, &error)) {
-        g_print ("Option parsing failed: %s\n", error->message);
+    if ((opts = opts_parse (&argc, &argv)) == NULL)
         return 1;
-    }
 
-    config = ufo_config_new ();
-    path_list = string_array_to_list (paths);
-    ufo_config_add_paths (config, path_list);
-    g_list_free (path_list);
+    config = opts_new_config (opts);
 
     /* start zmq service */
     context = zmq_ctx_new ();
     priv.socket = zmq_socket (context, ZMQ_REP);
-    zmq_bind (priv.socket, "tcp://*:5555");
+    zmq_bind (priv.socket, opts->addr);
 
     /* setup task and arch graphs */
     resources = ufo_resources_new (config);
@@ -404,6 +441,8 @@ main (int argc, char * argv[])
 
     zmq_close (priv.socket);
     zmq_ctx_destroy (context);
+
+    opts_free (opts);
 
     return 0;
 }
