@@ -355,7 +355,6 @@ resources_get_kernel (UfoResourcesPrivate *priv,
     }
 
     priv->opencl_kernels = g_list_append (priv->opencl_kernels, kernel);
-    UFO_RESOURCES_CHECK_CLERR (clRetainKernel (kernel));
     return kernel;
 }
 
@@ -603,7 +602,8 @@ ufo_resources_init (UfoResources *self)
     self->priv = priv = UFO_RESOURCES_GET_PRIVATE (self);
 
     priv->config = NULL;
-    priv->opencl_programs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) resources_release_program);
+    priv->opencl_programs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                   g_free, (GDestroyNotify) resources_release_program);
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->opencl_kernels = NULL;
     priv->opencl_platforms = NULL;

@@ -123,16 +123,18 @@ copy_device_to_device (UfoBufferPrivate *src_priv,
                        UfoBufferPrivate *dst_priv)
 {
     cl_event event;
+    cl_int errcode;
 
-    clEnqueueCopyBuffer (NULL,
-                         src_priv->device_array,
-                         dst_priv->device_array,
-                         0, 0,                      /* offsets */
-                         src_priv->size,
-                         0, NULL, &event);
+    errcode = clEnqueueCopyBuffer (NULL,
+                                   src_priv->device_array,
+                                   dst_priv->device_array,
+                                   0, 0,                      /* offsets */
+                                   src_priv->size,
+                                   0, NULL, &event);
 
-    clWaitForEvents (1, &event);
-    clReleaseEvent (event);
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+    UFO_RESOURCES_CHECK_CLERR (clWaitForEvents (1, &event));
+    UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
 }
 
 static void
