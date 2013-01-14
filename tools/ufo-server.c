@@ -16,8 +16,10 @@ typedef struct {
     UfoNode *input_task;
     UfoNode *output_task;
     UfoPluginManager *manager;
+    UfoConfig *config;
     UfoTaskGraph *task_graph;
     UfoArchGraph *arch_graph;
+    UfoResources *resources;
     UfoBuffer **inputs;
     guint n_inputs;
 } ServerPrivate;
@@ -71,12 +73,13 @@ handle_json (ServerPrivate *priv)
     zmq_msg_close (&json_msg);
     send_ack (priv->socket);
 
-    priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+    /* Setup resources */
+    priv->resources = ufo_resources_new (priv->config);
+    priv->arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources, NULL));
 
-    ufo_task_graph_read_from_data (priv->task_graph,
-                                   priv->manager,
-                                   json,
-                                   &error);
+    /* Setup task graph */
+    priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+    ufo_task_graph_read_from_data (priv->task_graph, priv->manager, json, &error);
 
     if (error != NULL) {
         g_printerr ("%s\n", error->message);
@@ -246,6 +249,15 @@ void handle_get_result (ServerPrivate *priv)
     ufo_output_task_release_output_buffer (UFO_OUTPUT_TASK (priv->output_task), buffer);
 }
 
+static void
+unref_and_free (GObject **object)
+{
+    if (*object) {
+        g_object_unref (*object);
+        *object = NULL;
+    }
+}
+
 static
 void handle_cleanup (ServerPrivate *priv)
 {
@@ -270,15 +282,10 @@ void handle_cleanup (ServerPrivate *priv)
             g_object_unref (priv->inputs[i]);
     }
 
-    if (priv->output_task)
-        g_object_unref (priv->output_task);
-
-    if (priv->task_graph)
-        g_object_unref (priv->task_graph);
-
-    priv->input_task = NULL;
-    priv->output_task = NULL;
-    priv->task_graph = NULL;
+    unref_and_free ((GObject **) &priv->output_task);
+    unref_and_free ((GObject **) &priv->task_graph);
+    unref_and_free ((GObject **) &priv->arch_graph);
+    unref_and_free ((GObject **) &priv->resources);
 }
 
 static gpointer
@@ -363,8 +370,6 @@ main (int argc, char * argv[])
 {
     gpointer context;
     Options *opts;
-    UfoConfig *config;
-    UfoResources *resources;
     ServerPrivate priv;
 
     g_type_init ();
@@ -373,22 +378,16 @@ main (int argc, char * argv[])
     if ((opts = opts_parse (&argc, &argv)) == NULL)
         return 1;
 
-    config = opts_new_config (opts);
+    memset (&priv, 0, sizeof (ServerPrivate));
+    priv.config = opts_new_config (opts);
+    priv.manager = ufo_plugin_manager_new (priv.config);
 
     /* start zmq service */
     context = zmq_ctx_new ();
     priv.socket = zmq_socket (context, ZMQ_REP);
     zmq_bind (priv.socket, opts->addr);
 
-    /* setup task and arch graphs */
-    resources = ufo_resources_new (config);
-
-    priv.manager = ufo_plugin_manager_new (config);
-    priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, NULL));
     priv.n_inputs = 1;
-    priv.input_task = NULL;
-    priv.output_task = NULL;
-    priv.task_graph = NULL;
 
     while (1) {
         zmq_msg_t request;
@@ -436,8 +435,8 @@ main (int argc, char * argv[])
     }
 
     g_object_unref (priv.task_graph);
-    g_object_unref (priv.arch_graph);
-    g_object_unref (resources);
+    g_object_unref (priv.config);
+    g_object_unref (priv.manager);
 
     zmq_close (priv.socket);
     zmq_ctx_destroy (context);

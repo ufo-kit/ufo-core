@@ -678,6 +678,7 @@ static void
 ufo_task_graph_dispose (GObject *object)
 {
     UfoTaskGraphPrivate *priv;
+    /* GList *nodes; */
 
     priv = UFO_TASK_GRAPH_GET_PRIVATE (object);
 
@@ -689,6 +690,10 @@ ufo_task_graph_dispose (GObject *object)
     g_list_foreach (priv->remote_tasks, (GFunc) g_object_unref, NULL);
     g_list_free (priv->remote_tasks);
     priv->remote_tasks = NULL;
+
+    /* nodes = g_hash_table_get_values (priv->json_nodes); */
+    /* g_list_foreach (nodes, (GFunc) g_object_unref, NULL); */
+    /* g_list_free (nodes); */
 
     G_OBJECT_CLASS (ufo_task_graph_parent_class)->dispose (object);
 }
