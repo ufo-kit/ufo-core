@@ -1,10 +1,20 @@
-/**
- * SECTION:ufo-scheduler
- * @Short_description: Schedule the execution of a graph of nodes
- * @Title: UfoScheduler
+/*
+ * Copyright (C) 2011-2013 Karlsruhe Institute of Technology
  *
- * A scheduler object uses a graphs information to schedule the contained nodes
- * on CPU and GPU hardware.
+ * This file is part of Ufo.
+ *
+ * This library is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifdef __APPLE__
@@ -21,6 +31,15 @@
 #include <ufo-task-iface.h>
 #include <ufo-cpu-task-iface.h>
 #include <ufo-gpu-task-iface.h>
+
+/**
+ * SECTION:ufo-scheduler
+ * @Short_description: Schedule the execution of a graph of nodes
+ * @Title: UfoScheduler
+ *
+ * A scheduler object uses a graphs information to schedule the contained nodes
+ * on CPU and GPU hardware.
+ */
 
 G_DEFINE_TYPE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT)
 
