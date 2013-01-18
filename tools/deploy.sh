@@ -19,7 +19,6 @@ function update() {
     cd $ROOT/$1
     git pull
     make || exit 1
-    make install
 }
 
 function build_package() {
@@ -42,6 +41,11 @@ function build_package() {
     make install
 }
 
+function install_package() {
+    cd $ROOT/$1
+    make install
+}
+
 function build() {
     if [ ! -f $ROOT/$ZEROMQ_TARBALL ]; then
         printf "\n** Fetching ZeroMQ\n"
@@ -53,7 +57,6 @@ function build() {
     cd $ROOT/$ZEROMQ_BASE
     ./configure --prefix=$PREFIX --libdir=$LD_LIBRARY_PATH
     make -j 4
-    make install
 
     build_package "ufo-core"
     build_package "oclfft"
@@ -77,6 +80,11 @@ fi
 if [ "$PREFIX" == "update" ]; then
     update "ufo-core"
     update "ufo-filters"
+elif [ "$PREFIX" == "install" ]; then
+    install_package "$ZEROMQ_BASE"
+    install_package "ufo-core"
+    install_package "oclfft"
+    install_package "ufo-filters"
 else
     build
 fi
