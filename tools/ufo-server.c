@@ -313,7 +313,6 @@ run_scheduler (ServerPrivate *priv)
     UfoScheduler *scheduler;
 
     scheduler = ufo_scheduler_new ();
-    ufo_scheduler_set_task_split (scheduler, FALSE);
 
     g_message ("Start scheduler");
     ufo_scheduler_run (scheduler, priv->arch_graph, priv->task_graph, NULL);
