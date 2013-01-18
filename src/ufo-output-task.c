@@ -18,7 +18,6 @@
  */
 
 #include <gmodule.h>
-#include <tiffio.h>
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else

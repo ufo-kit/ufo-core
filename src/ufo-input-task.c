@@ -23,7 +23,6 @@
 #include <CL/cl.h>
 #endif
 #include <gmodule.h>
-#include <tiffio.h>
 #include <ufo-input-task.h>
 #include <ufo-cpu-task-iface.h>
 #include <ufo-gpu-task-iface.h>
