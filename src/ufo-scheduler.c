@@ -189,38 +189,24 @@ run_task (ThreadLocalData *tld)
                     break;
 
                 case UFO_TASK_MODE_GENERATE:
-                    {
-                        do {
-                            ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
-                                                  inputs,
-                                                  output,
-                                                  &requisition,
-                                                  gpu_node);
-                            release_inputs (tld, inputs);
-                            active = get_inputs (tld, inputs);
-                        } while (active);
-                    }
-                    break;
-
                 case UFO_TASK_MODE_REDUCE:
-                    {
-                        do {
-                            ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
-                                                  inputs,
-                                                  output,
-                                                  &requisition,
-                                                  gpu_node);
-                            release_inputs (tld, inputs);
-                            active = get_inputs (tld, inputs);
-                        } while (active);
-
-                        ufo_gpu_task_reduce (UFO_GPU_TASK (tld->task),
-                                             output,
-                                             &requisition,
-                                             gpu_node);
-                    }
+                    do {
+                        ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
+                                              inputs,
+                                              output,
+                                              &requisition,
+                                              gpu_node);
+                        release_inputs (tld, inputs);
+                        active = get_inputs (tld, inputs);
+                    } while (active);
                     break;
             }
+
+            if (tld->mode == UFO_TASK_MODE_REDUCE)
+                ufo_gpu_task_reduce (UFO_GPU_TASK (tld->task),
+                                     output,
+                                     &requisition,
+                                     gpu_node);
         }
         else if (UFO_IS_CPU_TASK (tld->task)) {
             if (output != NULL)
@@ -232,35 +218,22 @@ run_task (ThreadLocalData *tld)
                     break;
 
                 case UFO_TASK_MODE_GENERATE:
-                    {
-                        do {
-                            ufo_cpu_task_process (UFO_CPU_TASK (tld->task),
-                                                  inputs,
-                                                  output,
-                                                  &requisition);
-                            release_inputs (tld, inputs);
-                            active = get_inputs (tld, inputs);
-                        } while (active);
-                    }
-                    break;
-
                 case UFO_TASK_MODE_REDUCE:
-                    {
-                        do {
-                            ufo_cpu_task_process (UFO_CPU_TASK (tld->task),
-                                                  inputs,
-                                                  output,
-                                                  &requisition);
-                            release_inputs (tld, inputs);
-                            active = get_inputs (tld, inputs);
-                        } while (active);
-
-                        ufo_cpu_task_reduce (UFO_CPU_TASK (tld->task),
-                                             output,
-                                             &requisition);
-                    }
+                    do {
+                        ufo_cpu_task_process (UFO_CPU_TASK (tld->task),
+                                              inputs,
+                                              output,
+                                              &requisition);
+                        release_inputs (tld, inputs);
+                        active = get_inputs (tld, inputs);
+                    } while (active);
                     break;
             }
+
+            if (tld->mode == UFO_TASK_MODE_REDUCE)
+                ufo_cpu_task_reduce (UFO_CPU_TASK (tld->task),
+                        output,
+                        &requisition);
         }
 
         /* Release buffers for further consumption */
