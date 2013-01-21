@@ -255,6 +255,60 @@ is_gpu_task (UfoNode *node, gpointer user_data)
     return UFO_IS_GPU_TASK (node);
 }
 
+static UfoTaskNode *
+build_remote_graph (UfoTaskGraph *remote_graph,
+                    GList *first,
+                    GList *last)
+{
+    UfoTaskNode *node;
+    UfoTaskNode *predecessor = NULL;
+
+    for (GList *it = g_list_next (first); it != last; it = g_list_next (it)) {
+        node = UFO_TASK_NODE (it->data);
+
+        if (predecessor != NULL)
+            ufo_task_graph_connect_nodes (remote_graph, predecessor, node);
+
+        predecessor = node;
+    }
+
+    return node;
+}
+
+static void
+create_remote_tasks (UfoTaskGraph *task_graph,
+                     UfoTaskGraph *remote_graph,
+                     UfoTaskNode *first,
+                     UfoTaskNode *last,
+                     UfoRemoteNode *remote)
+{
+    UfoTaskGraphPrivate *priv;
+    UfoTaskNode *task;
+    JsonNode *root;
+    JsonGenerator *generator;
+    gchar *json;
+    gsize size;
+
+    root = get_json_representation (remote_graph, NULL);
+    generator = json_generator_new ();
+    json_generator_set_root (generator, root);
+    json = json_generator_to_data (generator, &size);
+
+    priv = task_graph->priv;
+    ufo_remote_node_send_json (remote, json, size);
+
+    task = UFO_TASK_NODE (ufo_remote_task_new ());
+    priv->remote_tasks = g_list_append (priv->remote_tasks, task);
+    ufo_task_node_set_proc_node (task, UFO_NODE (remote));
+
+    ufo_task_graph_connect_nodes (task_graph, first, task);
+    ufo_task_graph_connect_nodes (task_graph, task, last);
+
+    g_free (json);
+    json_node_free (root);
+    g_object_unref (generator);
+}
+
 static void
 split_remotes (UfoTaskGraph *task_graph,
                GList *remotes,
@@ -266,31 +320,16 @@ split_remotes (UfoTaskGraph *task_graph,
 
     for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
         UfoTaskGraph *remote_graph;
-        UfoTaskNode *predecessor;
         UfoTaskNode *node;
         GList *path;
         GList *first;
         GList *last;
-        JsonNode *root;
-        JsonGenerator *generator;
-        gchar *json;
-        gsize size;
 
         path = (GList *) it->data;
         first = g_list_first (path);
         last = g_list_last (path);
         remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-        predecessor = NULL;
-        node = NULL;
-
-        for (GList *jt = g_list_next (first); jt != last; jt = g_list_next (jt)) {
-            node = UFO_TASK_NODE (jt->data);
-
-            if (predecessor != NULL)
-                ufo_task_graph_connect_nodes (remote_graph, predecessor, node);
-
-            predecessor = node;
-        }
+        node = build_remote_graph (remote_graph, first, last);
 
         if (ufo_graph_get_num_nodes (UFO_GRAPH (remote_graph)) == 0) {
             ufo_task_graph_connect_nodes (remote_graph,
@@ -298,29 +337,11 @@ split_remotes (UfoTaskGraph *task_graph,
                                           node);
         }
 
-        root = get_json_representation (remote_graph, NULL);
-        generator = json_generator_new ();
-        json_generator_set_root (generator, root);
-        json = json_generator_to_data (generator, &size);
-
         for (GList *jt = g_list_first (remotes); jt != NULL; jt = g_list_next (jt)) {
-            UfoNode *remote;
-            UfoTaskNode *task;
-
-            remote = UFO_NODE (jt->data);
-            ufo_remote_node_send_json (UFO_REMOTE_NODE (remote), json, size);
-
-            task = UFO_TASK_NODE (ufo_remote_task_new ());
-            priv->remote_tasks = g_list_append (priv->remote_tasks, task);
-            ufo_task_node_set_proc_node (task, remote);
-
-            ufo_task_graph_connect_nodes (task_graph, UFO_TASK_NODE (first->data), task);
-            ufo_task_graph_connect_nodes (task_graph, task, UFO_TASK_NODE (last->data));
+            create_remote_tasks (task_graph, remote_graph,
+                                 first->data, last->data, jt->data);
         }
 
-        g_free (json);
-        json_node_free (root);
-        g_object_unref (generator);
         g_object_unref (remote_graph);
     }
 }
@@ -362,7 +383,6 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
 
         for (guint i = 1; i < n_gpus; i++)
             ufo_graph_split (UFO_GRAPH (task_graph), path);
-
     }
 
     g_list_free (remotes);

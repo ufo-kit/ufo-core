@@ -62,6 +62,27 @@ ufo_remote_node_new (gpointer zmq_context,
     }
 }
 
+guint
+ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
+{
+    UfoRemoteNodePrivate *priv;
+    UfoMessage request;
+    UfoMessage result;
+    zmq_msg_t reply;
+
+    g_return_val_if_fail (UFO_IS_REMOTE_NODE (node), 0);
+    priv = node->priv;
+    request.type = UFO_MESSAGE_GET_NUM_DEVICES;
+    ufo_msg_send (&request, priv->socket, 0);
+
+    zmq_msg_init (&reply);
+    zmq_msg_recv (&reply, priv->socket, 0);
+    memcpy (&result, zmq_msg_data (&reply), sizeof (UfoMessage));
+    zmq_msg_close (&reply);
+
+    return result.d.n_devices;
+}
+
 void
 ufo_remote_node_request_setup (UfoRemoteNode *node)
 {
@@ -130,8 +151,8 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     zmq_msg_recv (&payload_msg, priv->socket, 0);
     in_param = (UfoInputParam *) zmq_msg_data (&payload_msg);
 
-    priv->n_inputs = header->n_inputs;
-    *n_inputs = header->n_inputs;
+    priv->n_inputs = header->d.n_inputs;
+    *n_inputs = header->d.n_inputs;
     *in_params = g_new0 (UfoInputParam, 1);
     (*in_params)[0].n_dims = in_param->n_dims;
     (*in_params)[0].n_expected = in_param->n_expected;

@@ -35,14 +35,13 @@
  */
 
 struct _UfoInputTaskPrivate {
-    GAsyncQueue **in_queues;
-    GAsyncQueue **out_queues;
-    UfoTask *wrapped;
+    GAsyncQueue *in_queue;
+    GAsyncQueue *out_queue;
     UfoTaskMode mode;
     gboolean active;
     guint n_inputs;
     UfoInputParam *in_params;
-    UfoBuffer **inputs;
+    UfoBuffer *input;
 };
 
 static void ufo_task_interface_init (UfoTaskIface *iface);
@@ -62,26 +61,18 @@ enum {
 };
 
 UfoNode *
-ufo_input_task_new (UfoTask *wrapped)
+ufo_input_task_new (void)
 {
     UfoInputTask *task;
     UfoInputTaskPrivate *priv;
 
     task = UFO_INPUT_TASK (g_object_new (UFO_TYPE_INPUT_TASK, NULL));
     priv = task->priv;
-    priv->wrapped = wrapped;
 
     /* TODO: free in_params and queues */
-    ufo_task_get_structure (wrapped, &priv->n_inputs, &priv->in_params, &priv->mode);
-    priv->in_queues = g_new0 (GAsyncQueue *, priv->n_inputs);
-    priv->out_queues = g_new0 (GAsyncQueue *, priv->n_inputs);
-    priv->inputs = g_new0 (UfoBuffer *, priv->n_inputs);
+    priv->in_queue = g_async_queue_new ();
+    priv->out_queue = g_async_queue_new ();
     priv->active = TRUE;
-
-    for (guint i = 0; i < priv->n_inputs; i++) {
-        priv->in_queues[i] = g_async_queue_new ();
-        priv->out_queues[i] = g_async_queue_new ();
-    }
 
     return UFO_NODE (task);
 }
@@ -95,33 +86,17 @@ ufo_input_task_stop (UfoInputTask *task)
 
 void
 ufo_input_task_release_input_buffer (UfoInputTask *task,
-                                     guint input,
                                      UfoBuffer *buffer)
 {
     g_return_if_fail (UFO_IS_INPUT_TASK (task));
-    g_async_queue_push (task->priv->in_queues[input], buffer);
+    g_async_queue_push (task->priv->in_queue, buffer);
 }
 
 UfoBuffer *
-ufo_input_task_get_input_buffer (UfoInputTask *task,
-                                 gint input)
+ufo_input_task_get_input_buffer (UfoInputTask *task)
 {
     g_return_val_if_fail (UFO_IS_INPUT_TASK (task), NULL);
-    return g_async_queue_pop (task->priv->out_queues[input]);
-}
-
-static void
-pop_all_inputs (UfoInputTaskPrivate *priv)
-{
-    for (guint i = 0; i < priv->n_inputs; i++)
-        priv->inputs[i] = g_async_queue_pop (priv->in_queues[i]);
-}
-
-static void
-push_all_inputs (UfoInputTaskPrivate *priv)
-{
-    for (guint i = 0; i < priv->n_inputs; i++)
-        g_async_queue_push (priv->out_queues[i], priv->inputs[i]);
+    return g_async_queue_pop (task->priv->out_queue);
 }
 
 static void
@@ -129,22 +104,6 @@ ufo_input_task_setup (UfoTask *task,
                       UfoResources *resources,
                       GError **error)
 {
-    UfoInputTaskPrivate *priv;
-
-    priv = UFO_INPUT_TASK_GET_PRIVATE (task);
-    ufo_task_setup (priv->wrapped, resources, error);
-}
-
-static void
-ufo_input_task_get_requisition (UfoTask *task,
-                                UfoBuffer **inputs,
-                                UfoRequisition *requisition)
-{
-    UfoInputTaskPrivate *priv;
-
-    priv = UFO_INPUT_TASK_GET_PRIVATE (task);
-    pop_all_inputs (priv);
-    ufo_task_get_requisition (priv->wrapped, priv->inputs, requisition);
 }
 
 static void
@@ -155,6 +114,20 @@ ufo_input_task_get_structure (UfoTask *task,
 {
     *n_inputs = 0;
     *mode = UFO_TASK_MODE_SINGLE;
+}
+
+static void
+ufo_input_task_get_requisition (UfoTask *task,
+                                UfoBuffer **none,
+                                UfoRequisition *requisition)
+{
+    UfoInputTaskPrivate *priv;
+
+    priv = UFO_INPUT_TASK_GET_PRIVATE (task);
+
+    /* Pop input here but release later in ufo_input_task_process */
+    priv->input = g_async_queue_pop (priv->in_queue);
+    ufo_buffer_get_requisition (priv->input, requisition);
 }
 
 static gboolean
@@ -171,42 +144,23 @@ ufo_input_task_process (UfoCpuTask *task,
     if (!priv->active)
         return FALSE;
 
-    if (UFO_IS_CPU_TASK (priv->wrapped)) {
-        priv->active = ufo_cpu_task_process (UFO_CPU_TASK (priv->wrapped),
-                                             priv->inputs, output,
-                                             requisition);
-    }
-    else if (UFO_IS_GPU_TASK (priv->wrapped)) {
-        UfoGpuNode *gpu;
+    ufo_buffer_discard_location (output, UFO_LOCATION_DEVICE);
+    ufo_buffer_copy (priv->input, output);
 
-        gpu = UFO_GPU_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (task)));
-        priv->active = ufo_gpu_task_process (UFO_GPU_TASK (priv->wrapped),
-                                             priv->inputs, output,
-                                             requisition, gpu);
-    }
+    /* input was popped in ufo_input_task_get_requisition */
+    g_async_queue_push (priv->out_queue, priv->input);
 
-    push_all_inputs (priv);
     return priv->active;
 }
 
 static void
-ufo_input_task_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
+ufo_input_task_finalize (GObject *object)
 {
-    switch (property_id) {
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-            break;
-    }
-}
+    UfoInputTaskPrivate *priv;
 
-static void
-ufo_input_task_get_property(GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
-{
-    switch (property_id) {
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-            break;
-    }
+    priv = UFO_INPUT_TASK_GET_PRIVATE (object);
+    g_async_queue_unref (priv->in_queue);
+    g_async_queue_unref (priv->out_queue);
 }
 
 static void
@@ -228,8 +182,7 @@ ufo_input_task_class_init (UfoInputTaskClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
-    gobject_class->set_property = ufo_input_task_set_property;
-    gobject_class->get_property = ufo_input_task_get_property;
+    gobject_class->finalize = ufo_input_task_finalize;
 
     g_type_class_add_private (gobject_class, sizeof(UfoInputTaskPrivate));
 }

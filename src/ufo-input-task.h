@@ -58,13 +58,11 @@ struct _UfoInputTaskClass {
     UfoTaskNodeClass parent_class;
 };
 
-UfoNode   * ufo_input_task_new                  (UfoTask *wrapped);
+UfoNode   * ufo_input_task_new                  (void);
 void        ufo_input_task_stop                 (UfoInputTask *task);
 void        ufo_input_task_release_input_buffer (UfoInputTask *task,
-                                                 guint input,
                                                  UfoBuffer *buffer);
-UfoBuffer * ufo_input_task_get_input_buffer     (UfoInputTask *task,
-                                                 gint input);
+UfoBuffer * ufo_input_task_get_input_buffer     (UfoInputTask *task);
 GType       ufo_input_task_get_type             (void);
 
 G_END_DECLS

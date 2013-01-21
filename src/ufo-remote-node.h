@@ -63,6 +63,8 @@ struct _UfoRemoteNodeClass {
 
 /**
  * UfoMessageType:
+ * @UFO_MESSAGE_TASK_JSON:
+ * @UFO_MESSAGE_NUM_DEVICES:
  * @UFO_MESSAGE_SETUP:
  * @UFO_MESSAGE_GET_STRUCTURE:
  * @UFO_MESSAGE_STRUCTURE:
@@ -76,6 +78,7 @@ struct _UfoRemoteNodeClass {
  */
 typedef enum {
     UFO_MESSAGE_TASK_JSON = 0,
+    UFO_MESSAGE_GET_NUM_DEVICES,
     UFO_MESSAGE_SETUP,
     UFO_MESSAGE_GET_STRUCTURE,
     UFO_MESSAGE_STRUCTURE,
@@ -96,11 +99,15 @@ typedef enum {
 struct _UfoMessage {
     UfoMessageType  type;
 
-    guint n_inputs;
+    union {
+        guint16 n_inputs;
+        guint16 n_devices;
+    } d;
 };
 
 UfoNode  *ufo_remote_node_new               (gpointer     zmq_context,
                                              const gchar    *address);
+guint     ufo_remote_node_get_num_gpus      (UfoRemoteNode  *node);
 void      ufo_remote_node_request_setup     (UfoRemoteNode  *node);
 void      ufo_remote_node_send_json         (UfoRemoteNode  *node,
                                              const gchar    *json,
