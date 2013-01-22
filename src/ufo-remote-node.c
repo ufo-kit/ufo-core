@@ -32,6 +32,7 @@ struct _UfoRemoteNodePrivate {
     gpointer context;
     gpointer socket;
     guint n_inputs;
+    GMutex *mutex;
 };
 
 UfoNode *
@@ -72,6 +73,9 @@ ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
 
     g_return_val_if_fail (UFO_IS_REMOTE_NODE (node), 0);
     priv = node->priv;
+
+    g_mutex_lock (priv->mutex);
+
     request.type = UFO_MESSAGE_GET_NUM_DEVICES;
     ufo_msg_send (&request, priv->socket, 0);
 
@@ -79,6 +83,8 @@ ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
     zmq_msg_recv (&reply, priv->socket, 0);
     memcpy (&result, zmq_msg_data (&reply), sizeof (UfoMessage));
     zmq_msg_close (&reply);
+
+    g_mutex_unlock (priv->mutex);
 
     return result.d.n_devices;
 }
@@ -93,9 +99,13 @@ ufo_remote_node_request_setup (UfoRemoteNode *node)
 
     priv = node->priv;
     request.type = UFO_MESSAGE_SETUP;
-    ufo_msg_send (&request, priv->socket, 0);
 
+    g_mutex_lock (priv->mutex);
+
+    ufo_msg_send (&request, priv->socket, 0);
     receive_ack (priv->socket);
+
+    g_mutex_unlock (priv->mutex);
 }
 
 void
@@ -111,6 +121,9 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
 
     priv = node->priv;
     request.type = UFO_MESSAGE_TASK_JSON;
+
+    g_mutex_lock (priv->mutex);
+
     ufo_msg_send (&request, priv->socket, ZMQ_SNDMORE);
 
     zmq_msg_init_size (&json_msg, size);
@@ -119,6 +132,8 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
     zmq_msg_close (&json_msg);
 
     receive_ack (priv->socket);
+
+    g_mutex_unlock (priv->mutex);
 }
 
 void
@@ -139,6 +154,9 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     priv = node->priv;
     *mode = UFO_TASK_MODE_SINGLE;
     request.type = UFO_MESSAGE_GET_STRUCTURE;
+
+    g_mutex_lock (priv->mutex);
+
     ufo_msg_send (&request, priv->socket, 0);
 
     /* Receive header */
@@ -159,6 +177,8 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
 
     zmq_msg_close (&header_msg);
     zmq_msg_close (&payload_msg);
+
+    g_mutex_unlock (priv->mutex);
 }
 
 void
@@ -172,6 +192,9 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
 
     priv = node->priv;
     request.type = UFO_MESSAGE_SEND_INPUTS;
+
+    g_mutex_lock (priv->mutex);
+
     ufo_msg_send (&request, priv->socket, ZMQ_SNDMORE);
 
     /*
@@ -204,6 +227,7 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
     }
 
     receive_ack (priv->socket);
+    g_mutex_unlock (priv->mutex);
 }
 
 void
@@ -219,6 +243,9 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
 
     priv = node->priv;
     request.type = UFO_MESSAGE_GET_RESULT;
+
+    g_mutex_lock (priv->mutex);
+
     ufo_msg_send (&request, priv->socket, 0);
 
     /* Get the remote data and put it into our buffer */
@@ -231,6 +258,8 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
     memcpy (host_array, zmq_msg_data (&reply_msg), ufo_buffer_get_size (buffer));
 
     zmq_msg_close (&reply_msg);
+
+    g_mutex_unlock (priv->mutex);
 }
 
 void
@@ -245,6 +274,9 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
 
     priv = node->priv;
     request.type = UFO_MESSAGE_GET_REQUISITION;
+
+    g_mutex_lock (priv->mutex);
+
     ufo_msg_send (&request, priv->socket, 0);
 
     zmq_msg_init (&reply_msg);
@@ -252,6 +284,8 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
     g_assert (zmq_msg_size (&reply_msg) >= sizeof (UfoRequisition));
     memcpy (requisition, zmq_msg_data (&reply_msg), sizeof (UfoRequisition));
     zmq_msg_close (&reply_msg);
+
+    g_mutex_unlock (priv->mutex);
 }
 
 static void
@@ -260,6 +294,7 @@ cleanup_remote (gpointer socket)
     UfoMessage request;
 
     request.type = UFO_MESSAGE_CLEANUP;
+
     ufo_msg_send (&request, socket, 0);
     receive_ack (socket);
 }
@@ -306,12 +341,24 @@ ufo_remote_node_dispose (GObject *object)
 }
 
 static void
+ufo_remote_node_finalize (GObject *object)
+{
+    UfoRemoteNodePrivate *priv;
+
+    priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
+    g_mutex_free (priv->mutex);
+
+    G_OBJECT_CLASS (ufo_remote_node_parent_class)->finalize (object);
+}
+
+static void
 ufo_remote_node_class_init (UfoRemoteNodeClass *klass)
 {
     GObjectClass *oclass;
 
     oclass = G_OBJECT_CLASS (klass);
     oclass->dispose = ufo_remote_node_dispose;
+    oclass->finalize = ufo_remote_node_finalize;
 
     g_type_class_add_private (klass, sizeof(UfoRemoteNodePrivate));
 }
@@ -324,4 +371,5 @@ ufo_remote_node_init (UfoRemoteNode *self)
     priv->context = NULL;
     priv->socket = NULL;
     priv->n_inputs = 0;
+    priv->mutex = g_mutex_new ();
 }

@@ -31,6 +31,9 @@
 #include <ufo-task-iface.h>
 #include <ufo-cpu-task-iface.h>
 #include <ufo-gpu-task-iface.h>
+#include <ufo-remote-task.h>
+#include <ufo-remote-node.h>
+
 
 /**
  * SECTION:ufo-scheduler
@@ -51,7 +54,7 @@ typedef struct {
     guint            n_inputs;
     UfoInputParam   *in_params;
     gint           *n_fetched;
-} ThreadLocalData;
+} TaskLocalData;
 
 struct _UfoSchedulerPrivate {
     gboolean split;
@@ -95,7 +98,7 @@ ufo_scheduler_set_task_split (UfoScheduler *scheduler,
 }
 
 static gboolean
-get_inputs (ThreadLocalData *tld,
+get_inputs (TaskLocalData *tld,
             UfoBuffer **inputs)
 {
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
@@ -119,7 +122,7 @@ get_inputs (ThreadLocalData *tld,
 }
 
 static void
-release_inputs (ThreadLocalData *tld,
+release_inputs (TaskLocalData *tld,
                 UfoBuffer **inputs)
 {
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
@@ -136,8 +139,59 @@ release_inputs (ThreadLocalData *tld,
     }
 }
 
+static void
+exchange_data (UfoBuffer *input,
+               TaskLocalData *tld)
+{
+    UfoRemoteNode *remote;
+    UfoGroup *group;
+    UfoBuffer *output;
+    UfoRequisition requisition;
+
+    remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
+    ufo_remote_node_send_inputs (remote, &input);
+    release_inputs (tld, &input);
+
+    ufo_remote_node_get_requisition (remote, &requisition);
+    group = ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task));
+    output = ufo_group_pop_output_buffer (group, &requisition);
+    ufo_remote_node_get_result (remote, output);
+    ufo_group_push_output_buffer (group, output);
+}
+
+static void
+run_remote_task (TaskLocalData *tld)
+{
+    UfoRemoteNode *remote;
+    UfoBuffer *input;
+    guint n_remote_gpus;
+    GThreadPool *pool;
+    GError *error = NULL;
+
+    g_assert (tld->n_inputs == 1);
+    remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
+    n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
+    pool = g_thread_pool_new ((GFunc) exchange_data, tld, (gint) n_remote_gpus, TRUE, &error);
+    g_assert_no_error (error);
+
+    /*
+     * We launch a new thread for each incoming input data set because then we
+     * can send as many items as we have remote GPUs available without waiting
+     * for processing to stop.
+     */
+    while (1) {
+        if (get_inputs (tld, &input))
+            g_thread_pool_push (pool, input, &error);
+        else
+            break;
+    }
+
+    g_thread_pool_free (pool, FALSE, TRUE);
+    ufo_group_finish (ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task)));
+}
+
 static gpointer
-run_task (ThreadLocalData *tld)
+run_task (TaskLocalData *tld)
 {
     UfoBuffer *inputs[tld->n_inputs];
     UfoBuffer *output;
@@ -148,6 +202,11 @@ run_task (ThreadLocalData *tld)
     node = UFO_TASK_NODE (tld->task);
     active = TRUE;
     output = NULL;
+
+    if (UFO_IS_REMOTE_TASK (tld->task)) {
+        run_remote_task (tld);
+        return NULL;
+    }
 
     while (active) {
         UfoGroup *group;
@@ -182,20 +241,16 @@ run_task (ThreadLocalData *tld)
             switch (tld->mode) {
                 case UFO_TASK_MODE_SINGLE:
                     active = ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
-                                                   inputs,
-                                                   output,
-                                                   &requisition,
-                                                   gpu_node);
+                                                   inputs, output,
+                                                   &requisition, gpu_node);
                     break;
 
                 case UFO_TASK_MODE_GENERATE:
                 case UFO_TASK_MODE_REDUCE:
                     do {
                         ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
-                                              inputs,
-                                              output,
-                                              &requisition,
-                                              gpu_node);
+                                              inputs, output,
+                                              &requisition, gpu_node);
                         release_inputs (tld, inputs);
                         active = get_inputs (tld, inputs);
                     } while (active);
@@ -231,9 +286,7 @@ run_task (ThreadLocalData *tld)
             }
 
             if (tld->mode == UFO_TASK_MODE_REDUCE)
-                ufo_cpu_task_reduce (UFO_CPU_TASK (tld->task),
-                        output,
-                        &requisition);
+                ufo_cpu_task_reduce (UFO_CPU_TASK (tld->task), output, &requisition);
         }
 
         /* Release buffers for further consumption */
@@ -285,7 +338,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     GList *groups;
     guint n_nodes;
     GThread **threads;
-    ThreadLocalData **tlds;
+    TaskLocalData **tlds;
     GTimer *timer;
     gpointer context;
 
@@ -304,7 +357,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
     groups = NULL;
     threads = g_new0 (GThread *, n_nodes);
-    tlds = g_new0 (ThreadLocalData *, n_nodes);
+    tlds = g_new0 (TaskLocalData *, n_nodes);
 
     if (error && (*error != NULL))
         return;
@@ -313,12 +366,12 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         GList *successors;
         UfoNode *node;
         UfoGroup *group;
-        ThreadLocalData *tld;
+        TaskLocalData *tld;
 
         node = g_list_nth_data (nodes, i);
 
         /* Setup thread data */
-        tld = g_new0 (ThreadLocalData, 1);
+        tld = g_new0 (TaskLocalData, 1);
         tld->task = UFO_TASK (node);
         tlds[i] = tld;
 
@@ -388,7 +441,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     /* Cleanup */
     for (guint i = 0; i < n_nodes; i++) {
-        ThreadLocalData *tld = tlds[i];
+        TaskLocalData *tld = tlds[i];
         g_free (tld->n_fetched);
         g_free (tld->in_params);
         g_free (tld);
