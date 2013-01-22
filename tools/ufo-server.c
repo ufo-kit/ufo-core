@@ -89,7 +89,6 @@ handle_json (ServerPrivate *priv)
     GList *leaves;
     UfoNode *first;
     UfoNode *last;
-    GList *successors;
     GError *error = NULL;
 
     zmq_msg_init (&json_msg);
@@ -117,7 +116,6 @@ handle_json (ServerPrivate *priv)
 
     first = UFO_NODE (g_list_nth_data (roots, 0));
     last = UFO_NODE (g_list_nth_data (leaves, 0));
-    successors = ufo_graph_get_successors (UFO_GRAPH (priv->task_graph), first);
 
     priv->input_task = ufo_input_task_new ();
     priv->output_task = ufo_output_task_new (2);

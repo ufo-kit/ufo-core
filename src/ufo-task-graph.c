@@ -314,10 +314,6 @@ split_remotes (UfoTaskGraph *task_graph,
                GList *remotes,
                GList *paths)
 {
-    UfoTaskGraphPrivate *priv;
-
-    priv = task_graph->priv;
-
     for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
         UfoTaskGraph *remote_graph;
         UfoTaskNode *node;
