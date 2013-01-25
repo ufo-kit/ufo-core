@@ -87,6 +87,8 @@ GList      *ufo_graph_get_nodes_filtered    (UfoGraph       *graph,
                                              gpointer        user_data);
 GList      *ufo_graph_get_roots             (UfoGraph       *graph);
 GList      *ufo_graph_get_leaves            (UfoGraph       *graph);
+GList      *ufo_graph_get_predecessors      (UfoGraph       *graph,
+                                             UfoNode        *node);
 GList      *ufo_graph_get_successors        (UfoGraph       *graph,
                                              UfoNode        *node);
 GList      *ufo_graph_get_paths             (UfoGraph       *graph,
