@@ -313,7 +313,9 @@ run_task (TaskLocalData *tld)
                                                             output,
                                                             &requisition);
                             ufo_group_push_output_buffer (group, output);
-                            output = ufo_group_pop_output_buffer (group, &requisition);
+
+                            if (active)
+                                output = ufo_group_pop_output_buffer (group, &requisition);
                         } while (active);
 
                         ufo_group_finish (group);
@@ -385,7 +387,6 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
         group = ufo_group_new (successors, context);
         groups = g_list_append (groups, group);
-
         ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
 
         /* TODO: cleanup */

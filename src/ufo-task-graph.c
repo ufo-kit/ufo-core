@@ -342,6 +342,44 @@ split_remotes (UfoTaskGraph *task_graph,
     }
 }
 
+static gboolean
+path_contains_nodes (GList *path,
+                     GList **visited)
+{
+    for (GList *it = g_list_first (path); it != NULL; it = g_list_next (it)) {
+        UfoNode *node;
+
+        node = (UfoNode *) it->data;
+        if (g_list_find (*visited, node))
+            return FALSE;
+
+        *visited = g_list_append (*visited, node);
+    }
+
+    return TRUE;
+}
+
+static GList *
+remove_common_ancestry_paths (GList *paths)
+{
+    GList *result;
+    GList *visited;
+
+    result = NULL;
+    visited = NULL;
+
+    for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
+        GList *path = (GList *) it->data;
+
+        if (!path_contains_nodes (it->data, &visited))
+            result = g_list_append (result, path);
+    }
+
+    g_list_free (visited);
+    g_list_free (paths);
+    return result;
+}
+
 /**
  * ufo_task_graph_split:
  * @task_graph: A #UfoTaskGraph
@@ -363,6 +401,8 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
     g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
     paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
+    paths = remove_common_ancestry_paths (paths);
+
     remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
     n_remotes = g_list_length (remotes);
 
