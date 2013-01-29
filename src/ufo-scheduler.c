@@ -312,10 +312,10 @@ run_task (TaskLocalData *tld)
                             active = ufo_cpu_task_generate (UFO_CPU_TASK (tld->task),
                                                             output,
                                                             &requisition);
-                            ufo_group_push_output_buffer (group, output);
-
-                            if (active)
+                            if (active) {
+                                ufo_group_push_output_buffer (group, output);
                                 output = ufo_group_pop_output_buffer (group, &requisition);
+                            }
                         } while (active);
 
                         ufo_group_finish (group);
@@ -369,6 +369,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         UfoNode *node;
         UfoGroup *group;
         TaskLocalData *tld;
+        UfoSendPattern pattern;
 
         node = g_list_nth_data (nodes, i);
 
@@ -385,7 +386,9 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
         tld->n_fetched = g_new0 (gint, tld->n_inputs);
         successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
-        group = ufo_group_new (successors, context);
+        pattern = ufo_task_node_get_send_pattern (UFO_TASK_NODE (node));
+
+        group = ufo_group_new (successors, context, pattern);
         groups = g_list_append (groups, group);
         ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
 

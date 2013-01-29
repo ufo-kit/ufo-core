@@ -68,7 +68,8 @@ static guint         ufo_queue_get_capacity (UfoQueue *queue);
  */
 UfoGroup *
 ufo_group_new (GList *targets,
-               gpointer context)
+               gpointer context,
+               UfoSendPattern pattern)
 {
     UfoGroup *group;
     UfoGroupPrivate *priv;
@@ -79,7 +80,7 @@ ufo_group_new (GList *targets,
     priv->targets = targets;
     priv->n_targets = g_list_length (targets);
     priv->queues = g_new0 (UfoQueue *, priv->n_targets);
-    priv->pattern = UFO_SEND_SCATTER;
+    priv->pattern = pattern;
     priv->current = 0;
     priv->context = context;
 
@@ -89,30 +90,38 @@ ufo_group_new (GList *targets,
     return group;
 }
 
+static UfoBuffer *
+pop_or_alloc_buffer (UfoGroupPrivate *priv,
+                     guint pos,
+                     UfoRequisition *requisition)
+{
+    UfoBuffer *buffer;
+
+    if (ufo_queue_get_capacity (priv->queues[pos]) < priv->n_targets) {
+        buffer = ufo_buffer_new (requisition, priv->context);
+        priv->buffers = g_list_append (priv->buffers, buffer);
+        ufo_queue_insert (priv->queues[pos], UFO_QUEUE_PRODUCER, buffer);
+    }
+
+    buffer = ufo_queue_pop (priv->queues[pos], UFO_QUEUE_PRODUCER);
+
+    if (ufo_buffer_cmp_dimensions (buffer, requisition))
+        ufo_buffer_resize (buffer, requisition);
+
+    return buffer;
+}
+
 UfoBuffer *
 ufo_group_pop_output_buffer (UfoGroup *group,
                              UfoRequisition *requisition)
 {
-    UfoBuffer *output;
     UfoGroupPrivate *priv;
+    guint pos;
 
     priv = group->priv;
+    pos = priv->pattern == UFO_SEND_SCATTER ? priv->current : 0;
 
-    if (ufo_queue_get_capacity (priv->queues[priv->current]) < priv->n_targets) {
-        output = ufo_buffer_new (requisition, priv->context);
-        priv->buffers = g_list_append (priv->buffers, output);
-        ufo_queue_insert (priv->queues[priv->current],
-                          UFO_QUEUE_PRODUCER,
-                          output);
-    }
-
-    output = ufo_queue_pop (priv->queues[priv->current],
-                            UFO_QUEUE_PRODUCER);
-
-    if (ufo_buffer_cmp_dimensions (output, requisition))
-        ufo_buffer_resize (output, requisition);
-
-    return output;
+    return pop_or_alloc_buffer (priv, pos, requisition);
 }
 
 void
@@ -131,8 +140,21 @@ ufo_group_push_output_buffer (UfoGroup *group,
 
         priv->current = (priv->current + 1) % priv->n_targets;
     }
-    else
-        g_print ("Other send methods are not yet supported\n");
+    else if (priv->pattern == UFO_SEND_BROADCAST) {
+        UfoRequisition requisition;
+
+        ufo_buffer_get_requisition (buffer, &requisition);
+
+        for (guint pos = 1; pos < priv->n_targets; pos++) {
+            UfoBuffer *copy;
+
+            copy = pop_or_alloc_buffer (priv, pos, &requisition);
+            ufo_buffer_copy (buffer, copy);
+            ufo_queue_push (priv->queues[pos], UFO_QUEUE_PRODUCER, copy);
+        }
+
+        ufo_queue_push (priv->queues[0], UFO_QUEUE_PRODUCER, buffer);
+    }
 }
 
 UfoBuffer *

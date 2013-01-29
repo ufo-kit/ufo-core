@@ -143,8 +143,12 @@ copy_device_to_device (UfoBufferPrivate *src_priv,
 {
     cl_event event;
     cl_int errcode;
+    cl_command_queue cmd_queue;
 
-    errcode = clEnqueueCopyBuffer (NULL,
+    cmd_queue = src_priv->last_queue != NULL ? src_priv->last_queue : dst_priv->last_queue;
+    g_assert (cmd_queue != NULL);
+
+    errcode = clEnqueueCopyBuffer (cmd_queue,
                                    src_priv->device_array,
                                    dst_priv->device_array,
                                    0, 0,                      /* offsets */
@@ -195,6 +199,7 @@ ufo_buffer_to_device (UfoBuffer *buffer, gpointer cmd_queue)
 
     queue = cmd_queue == NULL ? priv->last_queue : cmd_queue;
     priv->last_queue = cmd_queue;
+    g_assert (cmd_queue);
 
     if (priv->location == UFO_LOCATION_DEVICE)
         return;
@@ -221,30 +226,39 @@ ufo_buffer_to_device (UfoBuffer *buffer, gpointer cmd_queue)
 void
 ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
 {
+    UfoBufferPrivate *spriv;
+    UfoBufferPrivate *dpriv;
+
     g_return_if_fail (UFO_IS_BUFFER (src) && UFO_IS_BUFFER (dst));
     g_return_if_fail (src->priv->size == dst->priv->size);
 
-    /* Copy depending on location */
-    if (src->priv->location == dst->priv->location) {
-        switch (src->priv->location) {
+    spriv = src->priv;
+    dpriv = dst->priv;
+
+    if (spriv->location == dpriv->location) {
+        switch (spriv->location) {
             case UFO_LOCATION_HOST:
-                copy_host_to_host (src->priv, dst->priv);
+                copy_host_to_host (spriv, dpriv);
                 break;
             case UFO_LOCATION_DEVICE:
-                copy_device_to_device (src->priv, dst->priv);
+                copy_device_to_device (spriv, dpriv);
                 break;
             default:
                 g_warning ("oops, we should not copy invalid data");
         }
     }
     else {
-        if (dst->priv->location == UFO_LOCATION_HOST) {
-            ufo_buffer_to_host (src, NULL);
-            copy_host_to_host (src->priv, dst->priv);
+        cl_command_queue cmd_queue;
+
+        cmd_queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
+
+        if (cmd_queue == NULL || dpriv->location == UFO_LOCATION_HOST) {
+            ufo_buffer_to_host (src, cmd_queue);
+            copy_host_to_host (spriv, dpriv);
         }
         else {
-            ufo_buffer_to_device (src, NULL);
-            copy_device_to_device (src->priv, src->priv);
+            ufo_buffer_to_device (src, cmd_queue);
+            copy_device_to_device (spriv, dpriv);
         }
     }
 }

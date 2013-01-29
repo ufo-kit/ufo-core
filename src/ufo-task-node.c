@@ -180,7 +180,7 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv = UFO_TASK_NODE_GET_PRIVATE (self);
     self->priv->plugin = NULL;
     self->priv->unique = NULL;
-    self->priv->pattern = UFO_SEND_BROADCAST;
+    self->priv->pattern = UFO_SEND_SCATTER;
     self->priv->proc_node = NULL;
     self->priv->out_group = NULL;
 

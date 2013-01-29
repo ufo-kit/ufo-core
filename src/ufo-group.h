@@ -40,6 +40,18 @@ typedef struct _UfoGroupPrivate    UfoGroupPrivate;
 #define UFO_END_OF_STREAM (GINT_TO_POINTER(1))
 
 /**
+ * UfoSendPattern:
+ * @UFO_SEND_BROADCAST: Broadcast data to all connected nodes
+ * @UFO_SEND_SCATTER: Scatter data among connected nodes.
+ *
+ * The send pattern describes how results are passed to connected nodes.
+ */
+typedef enum {
+    UFO_SEND_BROADCAST,
+    UFO_SEND_SCATTER
+} UfoSendPattern;
+
+/**
  * UfoGroup:
  *
  * Main object for organizing filters. The contents of the #UfoGroup structure
@@ -63,7 +75,8 @@ struct _UfoGroupClass {
 };
 
 UfoGroup  * ufo_group_new                   (GList          *targets,
-                                             gpointer        context);
+                                             gpointer        context,
+                                             UfoSendPattern  pattern);
 UfoBuffer * ufo_group_pop_output_buffer     (UfoGroup       *group,
                                              UfoRequisition *requisition);
 void        ufo_group_push_output_buffer    (UfoGroup       *group,

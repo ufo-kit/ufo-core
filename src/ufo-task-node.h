@@ -36,17 +36,6 @@ typedef struct _UfoTaskNode           UfoTaskNode;
 typedef struct _UfoTaskNodeClass      UfoTaskNodeClass;
 typedef struct _UfoTaskNodePrivate    UfoTaskNodePrivate;
 
-/**
- * UfoSendPattern:
- * @UFO_SEND_BROADCAST: Broadcast data to all connected nodes
- * @UFO_SEND_SCATTER: Scatter data among connected nodes.
- *
- * The send pattern describes how results are passed to connected nodes.
- */
-typedef enum {
-    UFO_SEND_BROADCAST,
-    UFO_SEND_SCATTER
-} UfoSendPattern;
 
 /**
  * UfoTaskNode:
