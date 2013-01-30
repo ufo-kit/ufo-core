@@ -421,24 +421,14 @@ ufo_graph_split (UfoGraph *graph,
     current = orig;
 
     for (GList *it = g_list_next (head); it != tail; it = g_list_next (it)) {
-        GList *predecessors;
         UfoNode *next;
         UfoNode *copy;
+        gpointer label;
 
         next = UFO_NODE (it->data);
         copy = ufo_node_copy (next, &error);
-        predecessors = ufo_graph_get_predecessors (graph, next);
-
-        for (GList *jt = g_list_first (predecessors); jt != NULL; jt = g_list_next (jt)) {
-            UfoNode *predecessor;
-            gpointer label;
-
-            predecessor = UFO_NODE (jt->data);
-            label = ufo_graph_get_edge_label (graph, predecessor, next);
-            ufo_graph_connect_nodes (graph, predecessor, copy, label);
-        }
-
-        g_list_free (predecessors);
+        label = ufo_graph_get_edge_label (graph, orig, next);
+        ufo_graph_connect_nodes (graph, current, copy, label);
         current = copy;
         orig = next;
     }

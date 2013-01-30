@@ -312,34 +312,30 @@ create_remote_tasks (UfoTaskGraph *task_graph,
 static void
 split_remotes (UfoTaskGraph *task_graph,
                GList *remotes,
-               GList *paths)
+               GList *path)
 {
-    for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
-        UfoTaskGraph *remote_graph;
-        UfoTaskNode *node;
-        GList *path;
-        GList *first;
-        GList *last;
+    UfoTaskGraph *remote_graph;
+    UfoTaskNode *node;
+    GList *first;
+    GList *last;
 
-        path = (GList *) it->data;
-        first = g_list_first (path);
-        last = g_list_last (path);
-        remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-        node = build_remote_graph (remote_graph, first, last);
+    first = g_list_first (path);
+    last = g_list_last (path);
+    remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+    node = build_remote_graph (remote_graph, first, last);
 
-        if (ufo_graph_get_num_nodes (UFO_GRAPH (remote_graph)) == 0) {
-            ufo_task_graph_connect_nodes (remote_graph,
-                                          UFO_TASK_NODE (ufo_dummy_task_new ()),
-                                          node);
-        }
-
-        for (GList *jt = g_list_first (remotes); jt != NULL; jt = g_list_next (jt)) {
-            create_remote_tasks (task_graph, remote_graph,
-                                 first->data, last->data, jt->data);
-        }
-
-        g_object_unref (remote_graph);
+    if (ufo_graph_get_num_nodes (UFO_GRAPH (remote_graph)) == 0) {
+        ufo_task_graph_connect_nodes (remote_graph,
+                                      UFO_TASK_NODE (ufo_dummy_task_new ()),
+                                      node);
     }
+
+    for (GList *jt = g_list_first (remotes); jt != NULL; jt = g_list_next (jt)) {
+        create_remote_tasks (task_graph, remote_graph,
+                             first->data, last->data, jt->data);
+    }
+
+    g_object_unref (remote_graph);
 }
 
 static gboolean
@@ -380,6 +376,28 @@ remove_common_ancestry_paths (GList *paths)
     return result;
 }
 
+static GList *
+find_longest_path (GList *paths)
+{
+    GList *longest = NULL;
+    guint max_length = 0;
+
+    for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
+        guint length;
+        GList *path;
+
+        path = (GList *) it->data;
+        length = g_list_length (path);
+
+        if (length > max_length) {
+            max_length = length;
+            longest = path;
+        }
+    }
+
+    return longest;
+}
+
 /**
  * ufo_task_graph_split:
  * @task_graph: A #UfoTaskGraph
@@ -394,34 +412,38 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
                       UfoArchGraph *arch_graph)
 {
     GList *paths;
-    GList *remotes;
-    guint n_gpus;
-    guint n_remotes;
+    GList *path;
 
     g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
     paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
     paths = remove_common_ancestry_paths (paths);
+    path = find_longest_path (paths);
 
-    remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
-    n_remotes = g_list_length (remotes);
+    if (path != NULL) {
+        GList *remotes;
+        guint n_gpus;
+        guint n_remotes;
 
-    if (n_remotes > 0) {
-        g_debug ("Split for %i remote nodes", n_remotes);
-        split_remotes (task_graph, remotes, paths);
-    }
+        remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
+        n_remotes = g_list_length (remotes);
 
-    n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
-    g_debug ("Split for %i GPU nodes", n_gpus);
+        if (n_remotes > 0) {
+            g_debug ("Split for %i remote nodes", n_remotes);
+            split_remotes (task_graph, remotes, path);
+        }
 
-    for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
-        GList *path = (GList *) it->data;
+        n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
+        g_debug ("Split for %i GPU nodes", n_gpus);
 
         for (guint i = 1; i < n_gpus; i++)
             ufo_graph_split (UFO_GRAPH (task_graph), path);
+
+        g_list_free (remotes);
     }
 
-    g_list_free (remotes);
+    ufo_graph_dump_dot (UFO_GRAPH (task_graph), "graph.dot");
+
     g_list_foreach (paths, (GFunc) g_list_free, NULL);
     g_list_free (paths);
 }
@@ -445,27 +467,28 @@ map_proc_node (UfoGraph *graph,
                guint proc_index,
                GList *gpu_nodes)
 {
+    UfoNode *proc_node;
     GList *successors;
-    guint index;
     guint n_gpus;
+
+    proc_node = UFO_NODE (g_list_nth_data (gpu_nodes, proc_index));
+
+    if ((UFO_IS_GPU_TASK (node) || UFO_IS_INPUT_TASK (node)) &&
+        (!ufo_task_node_get_proc_node (UFO_TASK_NODE (node)))) {
+
+        g_debug ("Mapping GPU %i to %s-%p",
+                 proc_index, G_OBJECT_TYPE_NAME (node),
+                 (gpointer) node);
+
+        ufo_task_node_set_proc_node (UFO_TASK_NODE (node), proc_node);
+    }
 
     n_gpus = g_list_length (gpu_nodes);
     successors = ufo_graph_get_successors (graph, node);
-    index = 0;
-
-    if (UFO_IS_GPU_TASK (node)) {
-        ufo_task_node_set_proc_node (UFO_TASK_NODE (node),
-                                     g_list_nth_data (gpu_nodes, proc_index));
-    }
-
-    if (UFO_IS_INPUT_TASK (node)) {
-        ufo_task_node_set_proc_node (UFO_TASK_NODE (node),
-                                     g_list_nth_data (gpu_nodes, proc_index));
-    }
 
     for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
-        map_proc_node (graph, UFO_NODE (it->data), proc_index + index, gpu_nodes);
-        index = (index + 1) % n_gpus;
+        map_proc_node (graph, UFO_NODE (it->data), proc_index, gpu_nodes);
+        proc_index = (proc_index + 1) % n_gpus;
     }
 
     g_list_free (successors);
