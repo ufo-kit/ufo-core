@@ -342,7 +342,13 @@ static gboolean
 path_unvisited (GList *path,
                 GList **visited)
 {
-    for (GList *it = g_list_first (path); it != NULL; it = g_list_next (it)) {
+    GList *head;
+    GList *tail;
+
+    head = g_list_first (path);
+    tail = g_list_last (path);
+
+    for (GList *it = g_list_first (head); it != tail; it = g_list_next (it)) {
         UfoNode *node = (UfoNode *) it->data;
 
         if (g_list_find (*visited, node))
