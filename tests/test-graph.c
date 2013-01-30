@@ -127,31 +127,13 @@ test_get_num_edges (Fixture *fixture, gconstpointer data)
 }
 
 static void
-test_get_successors (Fixture *fixture, gconstpointer data)
+test_remove_edge (Fixture *fixture, gconstpointer data)
 {
     GList *successors;
 
     successors = ufo_graph_get_successors (fixture->sequence, fixture->target1);
     g_assert (g_list_length (successors) == 1);
-    g_assert (g_list_nth_data (successors, 0) == fixture->target2);
     g_list_free (successors);
-}
-
-static void
-test_get_predecessors (Fixture *fixture, gconstpointer data)
-{
-    GList *predecessors;
-
-    predecessors = ufo_graph_get_predecessors (fixture->sequence, fixture->target2);
-    g_assert (g_list_length (predecessors) == 1);
-    g_assert (g_list_nth_data (predecessors, 0) == fixture->target1);
-    g_list_free (predecessors);
-}
-
-static void
-test_remove_edge (Fixture *fixture, gconstpointer data)
-{
-    GList *successors;
 
     ufo_graph_remove_edge (fixture->sequence, fixture->target1, fixture->target2);
     successors = ufo_graph_get_successors (fixture->sequence, fixture->target1);
@@ -233,14 +215,6 @@ test_add_graph (void)
     g_test_add ("/graph/num-edges",
                 Fixture, NULL,
                 fixture_setup, test_get_num_edges, fixture_teardown);
-
-    g_test_add ("/graph/get-successors",
-                Fixture, NULL,
-                fixture_setup, test_get_successors, fixture_teardown);
-
-    g_test_add ("/graph/get-predecessors",
-                Fixture, NULL,
-                fixture_setup, test_get_predecessors, fixture_teardown);
 
     g_test_add ("/graph/remove-edge",
                 Fixture, NULL,
