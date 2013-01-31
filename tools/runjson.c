@@ -18,7 +18,7 @@
  */
 
 #include <stdlib.h>
-#include <ufo.h>
+#include <ufo/ufo.h>
 
 static void
 handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
@@ -50,10 +50,8 @@ execute_json (const gchar *filename,
               gchar **addresses)
 {
     UfoConfig       *config;
-    UfoArchGraph    *arch_graph;
     UfoTaskGraph    *task_graph;
     UfoScheduler    *scheduler;
-    UfoResources    *resources;
     UfoPluginManager *manager;
     GList *path_list = NULL;
     GList *address_list = NULL;
@@ -72,19 +70,15 @@ execute_json (const gchar *filename,
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
     address_list = string_array_to_list (addresses);
-    resources = ufo_resources_new (config);
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, address_list));
+    scheduler = ufo_scheduler_new (config, address_list);
     g_list_free (address_list);
 
-    scheduler = ufo_scheduler_new ();
-    ufo_scheduler_run (scheduler, arch_graph, task_graph, &error);
+    ufo_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
 
-    g_object_unref (arch_graph);
     g_object_unref (task_graph);
     g_object_unref (scheduler);
     g_object_unref (manager);
-    g_object_unref (resources);
     g_object_unref (config);
 }
 

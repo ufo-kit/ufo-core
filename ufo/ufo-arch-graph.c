@@ -130,34 +130,6 @@ ufo_arch_graph_new (UfoResources *resources,
 }
 
 /**
- * ufo_arch_graph_get_resources:
- * @graph: A #UfoArchGraph object
- *
- * Get associated resources object.
- *
- * Returns: (transfer full): #UfoResources object associated with @graph.
- */
-UfoResources *
-ufo_arch_graph_get_resources (UfoArchGraph *graph)
-{
-    g_return_val_if_fail (UFO_IS_ARCH_GRAPH (graph), NULL);
-    return graph->priv->resources;
-}
-
-/**
- * ufo_arch_graph_get_context:
- * @graph: A #UfoArchGraph object
- *
- * Returns: (transfer none): OpenCL context associated with @graph.
- */
-gpointer
-ufo_arch_graph_get_context (UfoArchGraph *graph)
-{
-    g_return_val_if_fail (UFO_IS_ARCH_GRAPH (graph), NULL);
-    return graph->priv->ocl_context;
-}
-
-/**
  * ufo_arch_graph_get_num_cpus:
  * @graph: A #UfoArchGraph object
  *

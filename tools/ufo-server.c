@@ -17,19 +17,23 @@
  * License along with ufod.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
+#include <CL/cl.h>
+#endif
 #include <zmq.h>
 #include <string.h>
-#include <ufo.h>
+#include <ufo/ufo.h>
 
 typedef struct {
+    UfoConfig *config;
+    UfoPluginManager *manager;
+    UfoTaskGraph *task_graph;
+    UfoScheduler *scheduler;
     gpointer socket;
     UfoNode *input_task;
     UfoNode *output_task;
-    UfoPluginManager *manager;
-    UfoConfig *config;
-    UfoTaskGraph *task_graph;
-    UfoArchGraph *arch_graph;
-    UfoResources *resources;
     UfoBuffer *input;
 } ServerPrivate;
 
@@ -65,8 +69,16 @@ static void
 handle_get_num_devices (ServerPrivate *priv)
 {
     UfoMessage msg;
+    cl_context context;
 
-    msg.d.n_devices = (guint16) ufo_arch_graph_get_num_gpus (priv->arch_graph);
+    context = ufo_scheduler_get_context (priv->scheduler);
+
+    UFO_RESOURCES_CHECK_CLERR (clGetContextInfo (context,
+                                                 CL_CONTEXT_NUM_DEVICES,
+                                                 sizeof (cl_uint),
+                                                 &msg.d.n_devices,
+                                                 NULL));
+
     ufo_msg_send (&msg, priv->socket, 0);
 }
 
@@ -162,7 +174,7 @@ handle_send_inputs (ServerPrivate *priv)
     zmq_msg_t data_msg;
     gpointer context;
 
-    context = ufo_arch_graph_get_context (priv->arch_graph);
+    context = ufo_scheduler_get_context (priv->scheduler);
 
     /* Receive buffer size */
     zmq_msg_init (&requisition_msg);
@@ -264,15 +276,13 @@ void handle_cleanup (ServerPrivate *priv)
 static gpointer
 run_scheduler (ServerPrivate *priv)
 {
-    UfoScheduler *scheduler;
-
-    scheduler = ufo_scheduler_new ();
-
     g_message ("Start scheduler");
-    ufo_scheduler_run (scheduler, priv->arch_graph, priv->task_graph, NULL);
+    ufo_scheduler_run (priv->scheduler, priv->task_graph, NULL);
 
     g_message ("Done");
-    g_object_unref (scheduler);
+    g_object_unref (priv->scheduler);
+
+    priv->scheduler = ufo_scheduler_new (priv->config, NULL);
     return NULL;
 }
 
@@ -351,12 +361,10 @@ main (int argc, char * argv[])
         return 1;
 
     memset (&priv, 0, sizeof (ServerPrivate));
+
     priv.config = opts_new_config (opts);
     priv.manager = ufo_plugin_manager_new (priv.config);
-
-    /* Setup resources */
-    priv.resources = ufo_resources_new (priv.config);
-    priv.arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv.resources, NULL));
+    priv.scheduler = ufo_scheduler_new (priv.config, NULL);
 
     /* start zmq service */
     context = zmq_ctx_new ();
@@ -414,8 +422,7 @@ main (int argc, char * argv[])
     g_object_unref (priv.task_graph);
     g_object_unref (priv.config);
     g_object_unref (priv.manager);
-    g_object_unref (priv.arch_graph);
-    g_object_unref (priv.resources);
+    g_object_unref (priv.scheduler);
 
     zmq_close (priv.socket);
     zmq_ctx_destroy (context);

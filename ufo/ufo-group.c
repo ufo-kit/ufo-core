@@ -61,6 +61,7 @@ static guint         ufo_queue_get_capacity (UfoQueue *queue);
  * ufo_group_new:
  * @targets: (transfer full) (element-type UfoNode): A list of #UfoNode targets
  * @context: A cl_context on which the targets should operate on.
+ * @pattern: Pattern to distribute data among the @targets
  *
  * Create a new #UfoGroup.
  *

@@ -25,15 +25,17 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-buffer.h>
-#include <ufo/ufo-task-node.h>
-#include <ufo/ufo-task-iface.h>
+#include <ufo/ufo-config.h>
+#include <ufo/ufo-configurable.h>
 #include <ufo/ufo-cpu-task-iface.h>
 #include <ufo/ufo-gpu-task-iface.h>
-#include <ufo/ufo-remote-task.h>
 #include <ufo/ufo-remote-node.h>
-
+#include <ufo/ufo-remote-task.h>
+#include <ufo/ufo-resources.h>
+#include <ufo/ufo-scheduler.h>
+#include <ufo/ufo-task-node.h>
+#include <ufo/ufo-task-iface.h>
 
 /**
  * SECTION:ufo-scheduler
@@ -44,7 +46,8 @@
  * on CPU and GPU hardware.
  */
 
-G_DEFINE_TYPE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
 
 #define UFO_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SCHEDULER, UfoSchedulerPrivate))
 
@@ -53,32 +56,68 @@ typedef struct {
     UfoTaskMode      mode;
     guint            n_inputs;
     UfoInputParam   *in_params;
-    gint           *n_fetched;
+    gint            *n_fetched;
 } TaskLocalData;
 
 struct _UfoSchedulerPrivate {
-    gboolean split;
+    UfoConfig       *config;
+    UfoResources    *resources;
+    GList           *remotes;
+    gboolean         split;
 };
 
 enum {
     PROP_0,
     PROP_SPLIT,
-    N_PROPERTIES
+    PROP_REMOTES,
+    N_PROPERTIES,
+
+    /* Here come the overriden properties that we don't install ourselves. */
+    PROP_CONFIG,
 };
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 /**
  * ufo_scheduler_new:
+ * @config: A #UfoConfig or %NULL
+ * @remotes: (element-type utf8): A #GList with strings describing remote machines or %NULL
  *
  * Creates a new #UfoScheduler.
  *
  * Return value: A new #UfoScheduler
  */
 UfoScheduler *
-ufo_scheduler_new (void)
+ufo_scheduler_new (UfoConfig *config,
+                   GList *remotes)
 {
-    return UFO_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER, NULL));
+    UfoScheduler *sched;
+    UfoSchedulerPrivate *priv;
+
+    sched = UFO_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER,
+                                         "config", config,
+                                         NULL));
+    priv = sched->priv;
+
+    for (GList *it = g_list_first (remotes); it != NULL; it = g_list_next (it))
+        priv->remotes = g_list_append (priv->remotes, g_strdup (it->data));
+
+    return sched;
+}
+
+/**
+ * ufo_scheduler_get_context:
+ * @scheduler: A #UfoScheduler
+ *
+ * Get the associated OpenCL context of @scheduler.
+ *
+ * Returns: An cl_context structure or %NULL on error.
+ */
+gpointer
+ufo_scheduler_get_context (UfoScheduler *scheduler)
+{
+    g_return_val_if_fail (UFO_IS_SCHEDULER (scheduler), NULL);
+    return ufo_resources_get_context (scheduler->priv->resources);
 }
 
 /**
@@ -330,31 +369,31 @@ run_task (TaskLocalData *tld)
 
 void
 ufo_scheduler_run (UfoScheduler *scheduler,
-                   UfoArchGraph *arch_graph,
                    UfoTaskGraph *task_graph,
                    GError **error)
 {
     UfoSchedulerPrivate *priv;
-    UfoResources *resources;
+    UfoArchGraph *arch_graph;
     GList *nodes;
     GList *groups;
     guint n_nodes;
     GThread **threads;
     TaskLocalData **tlds;
     GTimer *timer;
-    gpointer context;
+    cl_context context;
 
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
     priv = scheduler->priv;
+
+    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources,
+                                                     priv->remotes));
 
     if (priv->split)
         ufo_task_graph_split (task_graph, arch_graph);
 
     ufo_task_graph_map (task_graph, arch_graph);
 
-    context = ufo_arch_graph_get_context (arch_graph);
-    resources = ufo_arch_graph_get_resources (arch_graph);
-
+    context = ufo_resources_get_context (priv->resources);
     n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (task_graph));
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
     groups = NULL;
@@ -378,7 +417,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         tld->task = UFO_TASK (node);
         tlds[i] = tld;
 
-        ufo_task_setup (UFO_TASK (node), resources, error);
+        ufo_task_setup (UFO_TASK (node), priv->resources, error);
         ufo_task_get_structure (UFO_TASK (node),
                                 &tld->n_inputs,
                                 &tld->in_params,
@@ -456,6 +495,24 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_list_free (nodes);
     g_free (tlds);
     g_free (threads);
+
+    g_object_unref (arch_graph);
+}
+
+static void
+copy_remote_list (UfoSchedulerPrivate *priv,
+                  GValueArray *array)
+{
+    if (priv->remotes != NULL) {
+        g_list_foreach (priv->remotes, (GFunc) g_free, NULL);
+        g_list_free (priv->remotes);
+        priv->remotes = NULL;
+    }
+
+    for (guint i = 0; i < array->n_values; i++) {
+        priv->remotes = g_list_append (priv->remotes,
+                                       g_strdup (g_value_get_string (g_value_array_get_nth (array, i))));
+    }
 }
 
 static void
@@ -467,9 +524,28 @@ ufo_scheduler_set_property (GObject      *object,
     UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE (object);
 
     switch (property_id) {
+        case PROP_CONFIG:
+            {
+                GObject *vobject = g_value_get_object (value);
+
+                if (vobject != NULL) {
+                    if (priv->config != NULL)
+                        g_object_unref (priv->config);
+
+                    priv->config = UFO_CONFIG (vobject);
+                    g_object_ref (priv->config);
+                }
+            }
+            break;
+
+        case PROP_REMOTES:
+            copy_remote_list (priv, g_value_get_boxed (value));
+            break;
+
         case PROP_SPLIT:
             priv->split = g_value_get_boolean (value);
             break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -488,6 +564,7 @@ ufo_scheduler_get_property (GObject      *object,
         case PROP_SPLIT:
             g_value_set_boolean (value, priv->split);
             break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -495,14 +572,45 @@ ufo_scheduler_get_property (GObject      *object,
 }
 
 static void
+ufo_scheduler_constructed (GObject *object)
+{
+    UfoSchedulerPrivate *priv;
+
+    priv = UFO_SCHEDULER_GET_PRIVATE (object);
+    priv->resources = ufo_resources_new (priv->config);
+}
+
+static void
 ufo_scheduler_dispose (GObject *object)
 {
+    UfoSchedulerPrivate *priv;
+
+    priv = UFO_SCHEDULER_GET_PRIVATE (object);
+
+    if (priv->config != NULL) {
+        g_object_unref (priv->config);
+        priv->config = NULL;
+    }
+
+    if (priv->resources != NULL) {
+        g_object_unref (priv->resources);
+        priv->resources = NULL;
+    }
+
     G_OBJECT_CLASS (ufo_scheduler_parent_class)->dispose (object);
 }
 
 static void
 ufo_scheduler_finalize (GObject *object)
 {
+    UfoSchedulerPrivate *priv;
+
+    priv = UFO_SCHEDULER_GET_PRIVATE (object);
+
+    g_list_foreach (priv->remotes, (GFunc) g_free, NULL);
+    g_list_free (priv->remotes);
+    priv->remotes = NULL;
+
     G_OBJECT_CLASS (ufo_scheduler_parent_class)->finalize (object);
 }
 
@@ -510,6 +618,7 @@ static void
 ufo_scheduler_class_init (UfoSchedulerClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+    gobject_class->constructed  = ufo_scheduler_constructed;
     gobject_class->set_property = ufo_scheduler_set_property;
     gobject_class->get_property = ufo_scheduler_get_property;
     gobject_class->dispose      = ufo_scheduler_dispose;
@@ -522,8 +631,21 @@ ufo_scheduler_class_init (UfoSchedulerClass *klass)
                               TRUE,
                               G_PARAM_READWRITE);
 
+    properties[PROP_REMOTES] =
+        g_param_spec_value_array ("remotes",
+                                  "List containing remote addresses",
+                                  "List containing remote addresses of machines running ufod",
+                                  g_param_spec_string ("remote",
+                                                       "A remote address in the form tcp://addr:port",
+                                                       "A remote address in the form tcp://addr:port (see http://api.zeromq.org/3-2:zmq-tcp)",
+                                                       ".",
+                                                       G_PARAM_READWRITE),
+                                  G_PARAM_READWRITE);
+
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
         g_object_class_install_property (gobject_class, i, properties[i]);
+
+    g_object_class_override_property (gobject_class, PROP_CONFIG, "config");
 
     g_type_class_add_private (klass, sizeof (UfoSchedulerPrivate));
 }
@@ -535,4 +657,7 @@ ufo_scheduler_init (UfoScheduler *scheduler)
 
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
     priv->split = TRUE;
+    priv->config = NULL;
+    priv->resources = NULL;
+    priv->remotes = NULL;
 }
