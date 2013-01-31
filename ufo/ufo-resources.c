@@ -17,6 +17,8 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <glib.h>
 #include <stdio.h>
 #ifdef __APPLE__
@@ -623,11 +625,13 @@ ufo_resources_init (UfoResources *self)
     priv->config = NULL;
     priv->opencl_programs = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                    g_free, (GDestroyNotify) resources_release_program);
-    priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->opencl_kernels = NULL;
     priv->opencl_platforms = NULL;
     priv->opencl_build_options = g_string_new ("-cl-mad-enable ");
     priv->include_paths = g_string_new ("-I. ");
+
+    priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
+    priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_PLUGIN_DIR));
 
     /* initialize OpenCL subsystem */
     int errcode = CL_SUCCESS;
