@@ -239,7 +239,7 @@ if(GTK_DOC_FOUND)
         add_custom_command(OUTPUT ${docs_out}/Ufo-decl.txt
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
-                    --source-dir=${CMAKE_CURRENT_SOURCE_DIR}/../src
+                    --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 
