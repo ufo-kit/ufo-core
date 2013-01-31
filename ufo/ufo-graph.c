@@ -18,8 +18,8 @@
  */
 
 #include <stdio.h>
-#include <ufo-node.h>
-#include <ufo-graph.h>
+#include <ufo/ufo-node.h>
+#include <ufo/ufo-graph.h>
 
 /**
  * SECTION:ufo-graph

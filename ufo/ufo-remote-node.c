@@ -19,7 +19,7 @@
 
 #include <zmq.h>
 #include <string.h>
-#include <ufo-remote-node.h>
+#include <ufo/ufo-remote-node.h>
 
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 

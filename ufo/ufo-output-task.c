@@ -24,7 +24,7 @@
 #include <CL/cl.h>
 #endif
 
-#include <ufo-output-task.h>
+#include <ufo/ufo-output-task.h>
 #include <ufo-cpu-task-iface.h>
 
 /**

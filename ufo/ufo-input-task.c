@@ -23,10 +23,10 @@
 #include <CL/cl.h>
 #endif
 #include <gmodule.h>
-#include <ufo-input-task.h>
-#include <ufo-cpu-task-iface.h>
-#include <ufo-gpu-task-iface.h>
-#include <ufo-gpu-node.h>
+#include <ufo/ufo-input-task.h>
+#include <ufo/ufo-cpu-task-iface.h>
+#include <ufo/ufo-gpu-task-iface.h>
+#include <ufo/ufo-gpu-node.h>
 
 /**
  * SECTION:ufo-input-task

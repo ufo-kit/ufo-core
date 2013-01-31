@@ -24,7 +24,7 @@
 #include <CL/cl.h>
 #endif
 
-#include <ufo-dummy-task.h>
+#include <ufo/ufo-dummy-task.h>
 
 static void ufo_task_interface_init (UfoTaskIface *iface);
 

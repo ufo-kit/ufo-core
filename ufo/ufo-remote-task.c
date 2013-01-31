@@ -24,9 +24,9 @@
 #include <CL/cl.h>
 #endif
 
-#include <ufo-remote-task.h>
-#include <ufo-remote-node.h>
-#include <ufo-cpu-task-iface.h>
+#include <ufo/ufo-remote-task.h>
+#include <ufo/ufo-remote-node.h>
+#include <ufo/ufo-cpu-task-iface.h>
 
 /**
  * SECTION:ufo-remote-task

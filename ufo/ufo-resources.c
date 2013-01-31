@@ -25,8 +25,8 @@
 #include <CL/cl.h>
 #endif
 
-#include <ufo-resources.h>
-#include <ufo-configurable.h>
+#include <ufo/ufo-resources.h>
+#include <ufo/ufo-configurable.h>
 
 /**
  * SECTION:ufo-resources

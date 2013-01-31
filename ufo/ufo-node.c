@@ -17,7 +17,7 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ufo-node.h>
+#include <ufo/ufo-node.h>
 
 /**
  * SECTION:ufo-node

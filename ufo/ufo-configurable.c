@@ -17,8 +17,8 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ufo-configurable.h>
-#include <ufo-config.h>
+#include <ufo/ufo-configurable.h>
+#include <ufo/ufo-config.h>
 
 /**
  * SECTION:ufo-configurable

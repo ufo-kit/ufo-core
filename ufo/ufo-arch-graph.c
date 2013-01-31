@@ -21,10 +21,10 @@
 #include <sys/sysinfo.h>
 #include <sched.h>
 #include <zmq.h>
-#include <ufo-arch-graph.h>
-#include <ufo-cpu-node.h>
-#include <ufo-gpu-node.h>
-#include <ufo-remote-node.h>
+#include <ufo/ufo-arch-graph.h>
+#include <ufo/ufo-cpu-node.h>
+#include <ufo/ufo-gpu-node.h>
+#include <ufo/ufo-remote-node.h>
 
 /**
  * SECTION:ufo-arch-graph

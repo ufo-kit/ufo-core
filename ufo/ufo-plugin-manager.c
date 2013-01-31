@@ -17,13 +17,13 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include <gmodule.h>
 #include <glob.h>
-#include <ufo-plugin-manager.h>
-#include <ufo-configurable.h>
-#include <ufo-task-node.h>
-#include <ufo-dummy-task.h>
-#include "config.h"
+#include <ufo/ufo-plugin-manager.h>
+#include <ufo/ufo-configurable.h>
+#include <ufo/ufo-task-node.h>
+#include <ufo/ufo-dummy-task.h>
 
 /**
  * SECTION:ufo-plugin-manager

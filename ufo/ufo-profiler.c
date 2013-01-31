@@ -25,8 +25,8 @@
 #include <gmodule.h>
 #include <glob.h>
 
-#include <ufo-profiler.h>
-#include <ufo-resources.h>
+#include <ufo/ufo-profiler.h>
+#include <ufo/ufo-resources.h>
 
 /**
  * SECTION:ufo-profiler

@@ -18,15 +18,15 @@
  */
 
 #include <string.h>
-#include <ufo-task-graph.h>
-#include <ufo-task-node.h>
-#include <ufo-remote-node.h>
-#include <ufo-cpu-task-iface.h>
-#include <ufo-gpu-task-iface.h>
-#include <ufo-input-task.h>
-#include <ufo-dummy-task.h>
-#include <ufo-remote-task.h>
 #include <json-glib/json-glib.h>
+#include <ufo/ufo-task-graph.h>
+#include <ufo/ufo-task-node.h>
+#include <ufo/ufo-remote-node.h>
+#include <ufo/ufo-cpu-task-iface.h>
+#include <ufo/ufo-gpu-task-iface.h>
+#include <ufo/ufo-input-task.h>
+#include <ufo/ufo-dummy-task.h>
+#include <ufo/ufo-remote-task.h>
 
 /**
  * SECTION:ufo-task-graph

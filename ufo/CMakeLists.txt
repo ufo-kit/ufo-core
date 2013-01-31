@@ -88,6 +88,7 @@ get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
 set(LIBDIR      "lib${LIB_SUFFIX}")
 set(INCLUDEDIR  "include/ufo")
 
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 add_definitions(-DUFO_COMPILATION)
 
 if(CMAKE_BUILD_TYPE MATCHES "Release")
@@ -156,11 +157,11 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
                     --include=GModule-2.0
                     --include=GLib-2.0
                     -I${OPENCL_INCLUDE_DIRS}
-                    -I${CMAKE_CURRENT_SOURCE_DIR}
+                    -I${CMAKE_CURRENT_SOURCE_DIR}/..
                     -DUFO_COMPILATION
                     --output ${GIR_XML}
                     --warn-all
-                    ${_gir_input}# > /dev/null
+                    ${_gir_input} > /dev/null
             DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 

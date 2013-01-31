@@ -17,7 +17,7 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ufo-task-iface.h>
+#include <ufo/ufo-task-iface.h>
 
 typedef UfoTaskIface UfoTaskInterface;
 

@@ -18,7 +18,7 @@
  */
 
 #include <CL/cl.h>
-#include <ufo-gpu-node.h>
+#include <ufo/ufo-gpu-node.h>
 
 G_DEFINE_TYPE (UfoGpuNode, ufo_gpu_node, UFO_TYPE_NODE)
 
