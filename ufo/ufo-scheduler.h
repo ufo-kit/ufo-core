@@ -24,8 +24,8 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#include <ufo-arch-graph.h>
-#include <ufo-task-graph.h>
+#include <ufo/ufo-arch-graph.h>
+#include <ufo/ufo-task-graph.h>
 
 G_BEGIN_DECLS
 

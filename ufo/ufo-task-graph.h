@@ -24,10 +24,10 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#include <ufo-graph.h>
-#include <ufo-arch-graph.h>
-#include <ufo-task-node.h>
-#include <ufo-plugin-manager.h>
+#include <ufo/ufo-graph.h>
+#include <ufo/ufo-arch-graph.h>
+#include <ufo/ufo-task-node.h>
+#include <ufo/ufo-plugin-manager.h>
 
 G_BEGIN_DECLS
 

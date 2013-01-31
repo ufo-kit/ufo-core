@@ -24,7 +24,7 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#include <ufo-task-node.h>
+#include <ufo/ufo-task-node.h>
 
 G_BEGIN_DECLS
 

@@ -26,7 +26,8 @@ enable_testing()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ufo")
 
 
 # --- Options -----------------------------------------------------------------
@@ -86,7 +87,7 @@ endif()
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 
-add_subdirectory(src)
+add_subdirectory(ufo)
 add_subdirectory(docs)
 #add_subdirectory(python)
 add_subdirectory(tests)

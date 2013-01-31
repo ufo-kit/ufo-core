@@ -24,9 +24,9 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#include <ufo-configurable.h>
-#include <ufo-config.h>
-#include <ufo-node.h>
+#include <ufo/ufo-configurable.h>
+#include <ufo/ufo-config.h>
+#include <ufo/ufo-node.h>
 
 G_BEGIN_DECLS
 

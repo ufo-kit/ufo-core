@@ -268,4 +268,3 @@ if(GTK_DOC_FOUND)
         install(FILES ${reference_files} DESTINATION share/gtk-doc/html/Ufo)
     endif()
 endif(GTK_DOC_FOUND)
-
