@@ -20,7 +20,10 @@
 #ifndef __UFO_GROUP_H
 #define __UFO_GROUP_H
 
-#include <glib-object.h>
+#if !defined (__UFO_H_INSIDE__) && !defined (UFO_COMPILATION)
+#error "Only <ufo/ufo.h> can be included directly."
+#endif
+
 #include <ufo-task-iface.h>
 #include <ufo-buffer.h>
 

@@ -20,6 +20,10 @@
 #ifndef __UFO_CPU_NODE_H
 #define __UFO_CPU_NODE_H
 
+#if !defined (__UFO_H_INSIDE__) && !defined (UFO_COMPILATION)
+#error "Only <ufo/ufo.h> can be included directly."
+#endif
+
 #include <ufo-node.h>
 
 G_BEGIN_DECLS

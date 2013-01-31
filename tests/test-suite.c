@@ -20,10 +20,11 @@
 #include <glib-object.h>
 #include "test-suite.h"
 
-static void ignore_log (const gchar     *domain,
-                        GLogLevelFlags   flags,
-                        const gchar     *message,
-                        gpointer         data)
+static void
+ignore_log (const gchar     *domain,
+            GLogLevelFlags   flags,
+            const gchar     *message,
+            gpointer         data)
 {
 }
 

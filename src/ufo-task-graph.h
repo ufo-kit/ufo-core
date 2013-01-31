@@ -20,7 +20,10 @@
 #ifndef __UFO_TASK_GRAPH_H
 #define __UFO_TASK_GRAPH_H
 
-#include <glib-object.h>
+#if !defined (__UFO_H_INSIDE__) && !defined (UFO_COMPILATION)
+#error "Only <ufo/ufo.h> can be included directly."
+#endif
+
 #include <ufo-graph.h>
 #include <ufo-arch-graph.h>
 #include <ufo-task-node.h>

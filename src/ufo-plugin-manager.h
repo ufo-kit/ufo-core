@@ -20,7 +20,11 @@
 #ifndef __UFO_PLUGIN_MANAGER_H
 #define __UFO_PLUGIN_MANAGER_H
 
-#include <glib-object.h>
+#if !defined (__UFO_H_INSIDE__) && !defined (UFO_COMPILATION)
+#error "Only <ufo/ufo.h> can be included directly."
+#endif
+
+#include <ufo-configurable.h>
 #include <ufo-config.h>
 #include <ufo-node.h>
 

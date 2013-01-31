@@ -17,11 +17,8 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glib.h>
+#include <ufo.h>
 #include "test-suite.h"
-#include "ufo-graph.h"
-#include "ufo-node.h"
-
 
 typedef struct {
     UfoGraph *graph;

@@ -20,7 +20,10 @@
 #ifndef __UFO_SCHEDULER_H
 #define __UFO_SCHEDULER_H
 
-#include <glib-object.h>
+#if !defined (__UFO_H_INSIDE__) && !defined (UFO_COMPILATION)
+#error "Only <ufo/ufo.h> can be included directly."
+#endif
+
 #include <ufo-arch-graph.h>
 #include <ufo-task-graph.h>
 

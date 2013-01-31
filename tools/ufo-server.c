@@ -18,17 +18,8 @@
  */
 
 #include <zmq.h>
-#include <glib-object.h>
 #include <string.h>
-#include <ufo-buffer.h>
-#include <ufo-resources.h>
-#include <ufo-task-graph.h>
-#include <ufo-scheduler.h>
-#include <ufo-plugin-manager.h>
-#include <ufo-input-task.h>
-#include <ufo-output-task.h>
-#include <ufo-dummy-task.h>
-#include <ufo-remote-node.h>
+#include <ufo.h>
 
 typedef struct {
     gpointer socket;

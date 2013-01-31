@@ -18,12 +18,7 @@
  */
 
 #include <stdlib.h>
-#include <glib-object.h>
-#include <ufo-config.h>
-#include <ufo-task-graph.h>
-#include <ufo-arch-graph.h>
-#include <ufo-scheduler.h>
-#include <ufo-resources.h>
+#include <ufo.h>
 
 static void
 handle_error (const gchar *prefix, GError *error, UfoGraph *graph)

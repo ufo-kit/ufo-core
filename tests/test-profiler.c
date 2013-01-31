@@ -21,8 +21,8 @@
 #include <glib/gstdio.h>
 #include <stdio.h>
 #include <string.h>
+#include <ufo.h>
 #include "test-suite.h"
-#include "ufo-profiler.h"
 
 typedef struct {
     UfoProfiler *profiler;

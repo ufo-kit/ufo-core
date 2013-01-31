@@ -61,25 +61,25 @@ find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
 
 # --- Add enum generation targets ---------------------------------------------
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
-  COMMAND ${GLIB2_MKENUMS}
-  ARGS
-    --template ufo-enums.h.template
-    ${ufocore_HDRS} > ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  DEPENDS ${ufocore_HDRS}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.h.template
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+    COMMAND ${GLIB2_MKENUMS}
+    ARGS
+        --template ufo-enums.h.template
+        ${ufocore_HDRS} > ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ${ufocore_HDRS}
+            ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.h.template
 )
 
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c
-  COMMAND ${GLIB2_MKENUMS}
-  ARGS
-    --template ufo-enums.c.template
-    ${ufocore_HDRS} > ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  DEPENDS ${ufocore_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
-          ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.c.template
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c
+    COMMAND ${GLIB2_MKENUMS}
+    ARGS
+        --template ufo-enums.c.template
+        ${ufocore_HDRS} > ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ${ufocore_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.c.template
 )
 
 # --- Target ------------------------------------------------------------------
@@ -88,14 +88,16 @@ get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
 set(LIBDIR      "lib${LIB_SUFFIX}")
 set(INCLUDEDIR  "include/ufo")
 
+add_definitions(-DUFO_COMPILATION)
+
 if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_definitions(-DG_DISABLE_ASSERT)
 endif()
 
 add_library(ufo SHARED
-    ${ufocore_SRCS}
-    ${ufocore_NODOC_SRCS}
-    ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
+            ${ufocore_SRCS}
+            ${ufocore_NODOC_SRCS}
+            ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 set_target_properties(ufo PROPERTIES
     VERSION ${PACKAGE_VERSION}
@@ -107,16 +109,18 @@ install(TARGETS ufo
         ARCHIVE DESTINATION ${LIBDIR}
         LIBRARY DESTINATION ${LIBDIR})
 
-install(FILES ${ufocore_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+install(FILES ${ufocore_HDRS}
+              ${CMAKE_CURRENT_SOURCE_DIR}/ufo.h
+              ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
         DESTINATION ${INCLUDEDIR})
 
 
 # --- pkg-config --------------------------------------------------------------
 set(UFO_PKG_PREFIX      "${CMAKE_INSTALL_PREFIX}")
 set(UFO_PKG_EXEC_PREFIX "${UFO_PKG_PREFIX}/bin")
-set(UFO_PKG_LIBDIR      "${UFO_PKG_PREFIX}/${LIBDIR}")
-set(UFO_PKG_INCLUDEDIR  "${UFO_PKG_PREFIX}/${INCLUDEDIR}")
+set(UFO_PKG_INCLUDEDIR  "${UFO_PKG_PREFIX}/include")
 set(UFO_PKG_GIRDIR      "${UFO_PKG_PREFIX}/share/gir-1.0")
+set(UFO_PKG_LIBDIR      "${UFO_PKG_PREFIX}/${LIBDIR}")
 set(UFO_PKG_TYPELIBDIR  "${UFO_PKG_PREFIX}/${LIBDIR}/girepository-1.0")
 
 # FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
@@ -153,9 +157,10 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
                     --include=GLib-2.0
                     -I${OPENCL_INCLUDE_DIRS}
                     -I${CMAKE_CURRENT_SOURCE_DIR}
+                    -DUFO_COMPILATION
                     --output ${GIR_XML}
                     --warn-all
-                    ${_gir_input} > /dev/null
+                    ${_gir_input}# > /dev/null
             DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
