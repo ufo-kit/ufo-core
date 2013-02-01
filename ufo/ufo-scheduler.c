@@ -367,6 +367,102 @@ run_task (TaskLocalData *tld)
     return NULL;
 }
 
+static void
+cleanup_task_local_data (TaskLocalData **tlds,
+                         guint n)
+{
+    for (guint i = 0; i < n; i++) {
+        TaskLocalData *tld = tlds[i];
+        g_free (tld->n_fetched);
+        g_free (tld->in_params);
+        g_free (tld);
+    }
+
+    g_free (tlds);
+}
+
+static TaskLocalData **
+setup_tasks (UfoSchedulerPrivate *priv,
+             UfoTaskGraph *task_graph,
+             GError **error)
+{
+    TaskLocalData **tlds;
+    GList *nodes;
+    guint n_nodes;
+
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
+    n_nodes = g_list_length (nodes);
+
+    tlds = g_new0 (TaskLocalData *, n_nodes);
+
+    for (guint i = 0; i < n_nodes; i++) {
+        UfoNode *node;
+        TaskLocalData *tld;
+
+        node = g_list_nth_data (nodes, i);
+        tld = g_new0 (TaskLocalData, 1);
+        tld->task = UFO_TASK (node);
+        tlds[i] = tld;
+
+        ufo_task_setup (UFO_TASK (node), priv->resources, error);
+        ufo_task_get_structure (UFO_TASK (node), &tld->n_inputs, &tld->in_params, &tld->mode);
+
+        tld->n_fetched = g_new0 (gint, tld->n_inputs);
+
+        if (error && *error != NULL) {
+            cleanup_task_local_data (tlds, n_nodes);
+            return NULL;
+        }
+    }
+
+    g_list_free (nodes);
+    return tlds;
+}
+
+static GList *
+setup_groups (UfoSchedulerPrivate *priv,
+              UfoTaskGraph *task_graph)
+{
+    GList *groups;
+    GList *nodes;
+    cl_context context;
+
+    groups = NULL;
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
+    context = ufo_resources_get_context (priv->resources);
+
+    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+        GList *successors;
+        UfoNode *node;
+        UfoGroup *group;
+        UfoSendPattern pattern;
+
+        node = UFO_NODE (it->data);
+        successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
+        pattern = ufo_task_node_get_send_pattern (UFO_TASK_NODE (node));
+
+        group = ufo_group_new (successors, context, pattern);
+        groups = g_list_append (groups, group);
+        ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
+
+        for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+            UfoNode *target;
+            gpointer label;
+            guint input;
+
+            target = UFO_NODE (jt->data);
+            label = ufo_graph_get_edge_label (UFO_GRAPH (task_graph), node, target);
+            input = (guint) GPOINTER_TO_INT (label);
+            ufo_task_node_add_in_group (UFO_TASK_NODE (target), input, group);
+        }
+
+        g_list_free (successors);
+    }
+
+    g_list_free (nodes);
+    return groups;
+}
+
 void
 ufo_scheduler_run (UfoScheduler *scheduler,
                    UfoTaskGraph *task_graph,
@@ -374,13 +470,11 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 {
     UfoSchedulerPrivate *priv;
     UfoArchGraph *arch_graph;
-    GList *nodes;
     GList *groups;
     guint n_nodes;
     GThread **threads;
     TaskLocalData **tlds;
     GTimer *timer;
-    cl_context context;
 
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
     priv = scheduler->priv;
@@ -393,82 +487,21 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     ufo_task_graph_map (task_graph, arch_graph);
 
-    context = ufo_resources_get_context (priv->resources);
-    n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (task_graph));
-    nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
-    groups = NULL;
-    threads = g_new0 (GThread *, n_nodes);
-    tlds = g_new0 (TaskLocalData *, n_nodes);
+    /* Prepare task structures */
+    tlds = setup_tasks (priv, task_graph, error);
 
-    if (error && (*error != NULL))
+    if (tlds == NULL)
         return;
 
-    for (guint i = 0; i < n_nodes; i++) {
-        GList *successors;
-        UfoNode *node;
-        UfoGroup *group;
-        TaskLocalData *tld;
-        UfoSendPattern pattern;
-
-        node = g_list_nth_data (nodes, i);
-
-        /* Setup thread data */
-        tld = g_new0 (TaskLocalData, 1);
-        tld->task = UFO_TASK (node);
-        tlds[i] = tld;
-
-        ufo_task_setup (UFO_TASK (node), priv->resources, error);
-        ufo_task_get_structure (UFO_TASK (node),
-                                &tld->n_inputs,
-                                &tld->in_params,
-                                &tld->mode);
-
-        tld->n_fetched = g_new0 (gint, tld->n_inputs);
-        successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
-        pattern = ufo_task_node_get_send_pattern (UFO_TASK_NODE (node));
-
-        group = ufo_group_new (successors, context, pattern);
-        groups = g_list_append (groups, group);
-        ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
-
-        /* TODO: cleanup */
-        if (error && *error != NULL)
-            return;
-
-        g_object_set_data (G_OBJECT (node), "thread-local-data", tld);
-    }
-
-    /* Connect group references */
-    for (guint i = 0; i < n_nodes; i++) {
-        UfoNode *node;
-        UfoGroup *group;
-        GList *successors;
-
-        node = g_list_nth_data (nodes, i);
-        group = ufo_task_node_get_out_group (UFO_TASK_NODE (node));
-        successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
-
-        for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
-            UfoNode *target;
-            gpointer label;
-            guint input;
-
-            target = UFO_NODE (it->data);
-            label = ufo_graph_get_edge_label (UFO_GRAPH (task_graph), node, target);
-            input = (guint) GPOINTER_TO_INT (label);
-            ufo_task_node_add_in_group (UFO_TASK_NODE (target), input, group);
-        }
-
-        g_list_free (successors);
-    }
-
+    groups = setup_groups (priv, task_graph);
+    n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (task_graph));
+    threads = g_new0 (GThread *, n_nodes);
     timer = g_timer_new ();
 
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
-        threads[i] = g_thread_create ((GThreadFunc) run_task,
-                                      tlds[i],
-                                      TRUE, error);
+        threads[i] = g_thread_create ((GThreadFunc) run_task, tlds[i], TRUE, error);
+
         if (error && (*error != NULL))
             return;
     }
@@ -477,23 +510,13 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     for (guint i = 0; i < n_nodes; i++)
         g_thread_join (threads[i]);
 
-    g_timer_stop (timer);
-    g_print ("Processing finished after %3.5fs\n",
-             g_timer_elapsed (timer, NULL));
+    g_print ("Processing finished after %3.5fs\n", g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
 
     /* Cleanup */
-    for (guint i = 0; i < n_nodes; i++) {
-        TaskLocalData *tld = tlds[i];
-        g_free (tld->n_fetched);
-        g_free (tld->in_params);
-        g_free (tld);
-    }
-
+    cleanup_task_local_data (tlds, n_nodes);
     g_list_foreach (groups, (GFunc) g_object_unref, NULL);
     g_list_free (groups);
-    g_list_free (nodes);
-    g_free (tlds);
     g_free (threads);
 
     g_object_unref (arch_graph);

@@ -59,7 +59,7 @@ static guint         ufo_queue_get_capacity (UfoQueue *queue);
 
 /**
  * ufo_group_new:
- * @targets: (transfer full) (element-type UfoNode): A list of #UfoNode targets
+ * @targets: (element-type UfoNode): A list of #UfoNode targets
  * @context: A cl_context on which the targets should operate on.
  * @pattern: Pattern to distribute data among the @targets
  *
@@ -78,7 +78,7 @@ ufo_group_new (GList *targets,
     group = UFO_GROUP (g_object_new (UFO_TYPE_GROUP, NULL));
     priv = group->priv;
 
-    priv->targets = targets;
+    priv->targets = g_list_copy (targets);
     priv->n_targets = g_list_length (targets);
     priv->queues = g_new0 (UfoQueue *, priv->n_targets);
     priv->pattern = pattern;
