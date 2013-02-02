@@ -8,10 +8,11 @@ if(SPHINX)
     option(WITH_MANUAL "Build user manual" ON)
 
     if (WITH_MANUAL)
-        set(sphinx_output_dir ${CMAKE_CURRENT_BINARY_DIR}/manual)
+        set(input_dir ${CMAKE_CURRENT_SOURCE_DIR}/manual)
+        set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/manual)
 
-        file(GLOB_RECURSE sphinx_source ${CMAKE_CURRENT_SOURCE_DIR}/source/*.rst)
-        list(APPEND sphinx_source "${sphinx_output_dir}/conf.py")
+        file(GLOB_RECURSE sphinx_source ${input_dir}/*.rst)
+        list(APPEND sphinx_source "${output_dir}/conf.py")
 
         set(sphinx_static
             _static/ufo-logo.png
@@ -20,22 +21,19 @@ if(SPHINX)
             _templates/layout.html
             )
 
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/conf.py.in
-            ${sphinx_output_dir}/conf.py)
+        configure_file(${input_dir}/conf.py.in ${output_dir}/conf.py)
         
         foreach(file ${sphinx_static})
-            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/${file}
-                ${CMAKE_CURRENT_BINARY_DIR}/manual/${file} COPYONLY)
+            configure_file(${input_dir}/${file} ${output_dir}/${file} COPYONLY)
         endforeach()
 
-        add_custom_command(OUTPUT ${sphinx_output_dir}/html/index.html
-            COMMAND ${SPHINX} -b html -c ${sphinx_output_dir} ${CMAKE_CURRENT_SOURCE_DIR}/source html
+        add_custom_command(OUTPUT ${output_dir}/html/index.html
+            COMMAND ${SPHINX} -b html -c ${output_dir} ${input_dir} html
             DEPENDS ${sphinx_source}
-            WORKING_DIRECTORY ${sphinx_output_dir}
+            WORKING_DIRECTORY ${output_dir}
             COMMENT "Build Sphinx HTML")
 
-        add_custom_target(manual 
-            ALL DEPENDS ${sphinx_output_dir}/html/index.html)
+        add_custom_target(manual ALL DEPENDS ${output_dir}/html/index.html)
 
         add_dependencies(manual ufo)
     endif()
