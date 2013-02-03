@@ -4,6 +4,65 @@
 Quick start guide
 =================
 
+There are essentially two ways to specify and execute a graph of tasks. One
+involves writing a :ref:`JSON file <json-configuration>` that is executed by the
+``runjson`` utility, the other way uses the provided language bindings to setup
+the task graph specifically.
+
+
+Using a JSON description
+========================
+
+The custom JSON format, described :ref:`here <json-configuration>`, has the
+advantage to be language-agnostic and portable across different versions of the
+UFO framework. Let's start with a simple example, that computes the
+one-dimensional Fourier-transform on a set of input files::
+
+    {
+        "nodes" : [
+            {
+                "plugin": "reader",
+                "name": "reader",
+                "properties" : { "path": "*.tif" }
+            },
+            {
+                "plugin": "fft",
+                "name": "fft"
+            }
+            {
+                "plugin": "writer",
+                "name": "writer",
+                "properties" : { "prefix": "fft-" }
+            }
+        ],
+        "edges" : [
+            {
+                "from": { "name": "reader" },
+                "to": { "name": "fft" }
+            },
+            {
+                "from": { "name": "fft" },
+                "to": { "name": "writer" }
+            }
+        ]
+    }
+
+Save this to a file named ``fft.json`` and execute it by calling the ``runjson``
+tool::
+
+    $ runjson fft.json
+
+``runjson`` takes two optional parameters. ``-p`` or ``--path`` expects a path
+name to a location where UFO plugins are stored. This can be useful if the
+standard nodes were installed in a user-defined location or third-party nodes
+should be looked up too.
+
+The ``-a`` or ``--address`` parameter expects a ZeroMQ-conform address where a
+``ufod`` server is running. Part of the work is then distributed to that
+machine. For more information, read up on :ref:`clustering <using-cluster>`.
+
+
+
 Writing a pipeline in C
 =======================
 

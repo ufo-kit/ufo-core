@@ -26,5 +26,6 @@ own image processing pipeline or implement a new filter.
     quickstart.rst
     background.rst
     examples.rst
+    cluster.rst
     filters.rst
     
