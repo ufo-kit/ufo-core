@@ -2,7 +2,7 @@
 
 """
 This file generates GObject file templates that a filter author can use, to
-implement their own filters.
+implement their own nodes.
 """
 
 import sys
@@ -11,8 +11,6 @@ import string
 import textwrap
 import argparse
 import jinja2
-
-FILTER_TYPES = ['source', 'sink', 'process', 'reduce']
 
 def type_list():
     return ', '.join(['`' + f + '\'' for f in FILTER_TYPES])
@@ -26,8 +24,9 @@ class FilternameAction(argparse.Action):
 
 class TypeAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        if values not in FILTER_TYPES:
-            raise argparse.ArgumentTypeError('Type must be one of ' + type_list())
+        lower = values.lower()
+        if lower not in ['gpu', 'cpu']:
+            raise argparse.ArgumentTypeError("Type must be either `cpu' or `gpu'")
         setattr(namespace, self.dest, values)
 
 
@@ -41,14 +40,14 @@ def generate_file(args, env, suffix='h'):
     underscored = hyphenated.replace('-', '_')
     uppercased = underscored.upper()
 
-    template = env.get_template('ufo-filter-%s.%s.in' % (args.type, suffix))
+    template = env.get_template('ufo-%s-task.%s.in' % (args.type, suffix))
     res = template.render(camelcased=camelcased,
                           uppercased=uppercased,
                           hyphenated=hyphenated,
                           underscored=underscored,
                           args=args)
 
-    filename = "ufo-filter-%s.%s" % (hyphenated, suffix)
+    filename = "ufo-%s-task.%s" % (hyphenated, suffix)
 
     with open(filename, 'w') as f:
         f.writelines(res)
@@ -57,13 +56,16 @@ def generate_file(args, env, suffix='h'):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate UfoFilter skeletons')
-    parser.add_argument('--name', required=True, type=str,
-            action=FilternameAction, help='Name of the new filter in CamelCase')
-    parser.add_argument('--type', required=True, type=str, action=TypeAction,
-            help='Type of the new filter [one of %s]' % type_list())
-    parser.add_argument('-d', '--disable-comments', action='store_false',
-            help='Do not insert comments into source files')
+    parser = argparse.ArgumentParser(description='Generate UfoNode skeletons')
+    parser.add_argument('-n', '--name', required=True, type=str,
+                        action=FilternameAction,
+                        help='Name of the new filter in CamelCase')
+    parser.add_argument('-t', '--type', type=str, default='cpu',
+                        action=TypeAction,
+                        help="Either `cpu' or `gpu' (cpu is default)")
+    parser.add_argument('-d', '--disable-comments',
+                        action='store_false',
+                        help='Do not insert comments into source files')
 
     try:
         args = parser.parse_args()
