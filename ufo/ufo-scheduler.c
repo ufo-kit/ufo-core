@@ -409,10 +409,8 @@ setup_tasks (UfoSchedulerPrivate *priv,
 
         tld->n_fetched = g_new0 (gint, tld->n_inputs);
 
-        if (error && *error != NULL) {
-            cleanup_task_local_data (tlds, n_nodes);
+        if (error && *error != NULL)
             return NULL;
-        }
     }
 
     g_list_free (nodes);
