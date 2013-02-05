@@ -49,6 +49,27 @@ as well::
   >>> graph = Ufo.Graph(paths='/home/user/path/to/filters:/another/path')
 
 
+Can I split a linear data stream?
+---------------------------------
+
+The output data stream of a node can be split by setting the
+``UFO_SEND_SEQUENTIAL`` mode and adjusting the number of expecting data items on
+each connected node::
+
+    from gi.repository import Ufo
+
+    out_node.set_send_pattern(Ufo.SendPattern.SEQUENTIAL)
+    in1_node.set_num_expected(0, 5)  # expect five items on the first input
+    in2_node.set_num_expected(0, -1) # expect all items
+
+    g = Ufo.TaskGraph()
+    g.connect_nodes(out_node, in1_node)
+    g.connect_nodes(out_node, in2_node)
+
+The connection order matters here! If it would be reversed, ``in2_node`` would
+receive all items whereas ``in1_node`` wouldn't receive anything.
+
+
 How can I control the debug output from libufo?
 -----------------------------------------------
 

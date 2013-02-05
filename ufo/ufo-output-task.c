@@ -122,7 +122,6 @@ ufo_output_task_get_structure (UfoTask *task,
     *n_inputs = 1;
     *in_params = g_new0 (UfoInputParam, 1);
     (*in_params)[0].n_dims = priv->n_dims;
-    (*in_params)[0].n_expected = -1;
 }
 
 static gboolean

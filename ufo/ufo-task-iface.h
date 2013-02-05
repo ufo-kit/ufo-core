@@ -68,7 +68,6 @@ typedef enum {
  */
 struct _UfoInputParam {
     guint n_dims;
-    gint n_expected;
 };
 
 struct _UfoTaskIface {

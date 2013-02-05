@@ -156,7 +156,6 @@ handle_get_structure (ServerPrivate *priv)
     /* TODO: do not hardcode these */
     header.d.n_inputs = 1;
     in_param.n_dims = 2;
-    in_param.n_expected = -1;
 
     zmq_msg_init_size (&data_msg, sizeof (UfoInputParam));
     memcpy (zmq_msg_data (&data_msg), &in_param, sizeof (UfoInputParam));

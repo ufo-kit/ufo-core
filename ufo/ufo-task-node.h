@@ -71,6 +71,11 @@ const gchar    *ufo_task_node_get_unique_name       (UfoTaskNode    *task_node);
 void            ufo_task_node_set_send_pattern      (UfoTaskNode    *task_node,
                                                      UfoSendPattern  pattern);
 UfoSendPattern  ufo_task_node_get_send_pattern      (UfoTaskNode    *task_node);
+void            ufo_task_node_set_num_expected      (UfoTaskNode    *task_node,
+                                                     guint           pos,
+                                                     gint            n_expected);
+gint            ufo_task_node_get_num_expected      (UfoTaskNode    *task_node,
+                                                     guint           pos);
 void            ufo_task_node_set_out_group         (UfoTaskNode    *task_node,
                                                      UfoGroup       *group);
 UfoGroup       *ufo_task_node_get_out_group         (UfoTaskNode    *task_node);

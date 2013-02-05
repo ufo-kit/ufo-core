@@ -145,9 +145,6 @@ get_inputs (TaskLocalData *tld,
     for (guint i = 0; i < tld->n_inputs; i++) {
         UfoGroup *group;
 
-        if (tld->n_fetched[i] == tld->in_params[i].n_expected)
-            continue;
-
         group = ufo_task_node_get_current_in_group (node, i);
         inputs[i] = ufo_group_pop_input_buffer (group, tld->task);
 
@@ -168,9 +165,6 @@ release_inputs (TaskLocalData *tld,
 
     for (guint i = 0; i < tld->n_inputs; i++) {
         UfoGroup *group;
-
-        if (tld->n_fetched[i] == tld->in_params[i].n_expected)
-            continue;
 
         group = ufo_task_node_get_current_in_group (node, i);
         ufo_group_push_input_buffer (group, tld->task, inputs[i]);
@@ -452,6 +446,9 @@ setup_groups (UfoSchedulerPrivate *priv,
             label = ufo_graph_get_edge_label (UFO_GRAPH (task_graph), node, target);
             input = (guint) GPOINTER_TO_INT (label);
             ufo_task_node_add_in_group (UFO_TASK_NODE (target), input, group);
+            ufo_group_set_num_expected (group, UFO_TASK (target),
+                                        ufo_task_node_get_num_expected (UFO_TASK_NODE (target),
+                                                                        input));
         }
 
         g_list_free (successors);

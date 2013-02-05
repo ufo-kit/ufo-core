@@ -34,6 +34,8 @@ struct _UfoGroupPrivate {
     GList           *targets;
     guint            n_targets;
     UfoQueue       **queues;
+    gint            *n_expected;
+    gint             n_received;
     gboolean        *ready;
     UfoSendPattern   pattern;
     guint            current;
@@ -81,12 +83,17 @@ ufo_group_new (GList *targets,
     priv->targets = g_list_copy (targets);
     priv->n_targets = g_list_length (targets);
     priv->queues = g_new0 (UfoQueue *, priv->n_targets);
+    priv->n_expected = g_new0 (gint, priv->n_targets);
     priv->pattern = pattern;
     priv->current = 0;
     priv->context = context;
+    priv->n_received = 0;
 
     for (guint i = 0; i < priv->n_targets; i++)
         priv->queues[i] = ufo_queue_new ();
+
+    if (pattern == UFO_SEND_SEQUENTIAL)
+        priv->targets = g_list_reverse (priv->targets);
 
     return group;
 }
@@ -120,7 +127,7 @@ ufo_group_pop_output_buffer (UfoGroup *group,
     guint pos;
 
     priv = group->priv;
-    pos = priv->pattern == UFO_SEND_SCATTER ? priv->current : 0;
+    pos = priv->pattern == UFO_SEND_SCATTER || UFO_SEND_SEQUENTIAL ? priv->current : 0;
 
     return pop_or_alloc_buffer (priv, pos, requisition);
 }
@@ -132,6 +139,7 @@ ufo_group_push_output_buffer (UfoGroup *group,
     UfoGroupPrivate *priv;
 
     priv = group->priv;
+    priv->n_received++;
 
     /* Copy or not depending on the send pattern */
     if (priv->pattern == UFO_SEND_SCATTER) {
@@ -156,6 +164,30 @@ ufo_group_push_output_buffer (UfoGroup *group,
 
         ufo_queue_push (priv->queues[0], UFO_QUEUE_PRODUCER, buffer);
     }
+    else if (priv->pattern == UFO_SEND_SEQUENTIAL) {
+        ufo_queue_push (priv->queues[priv->current],
+                        UFO_QUEUE_PRODUCER,
+                        buffer);
+
+        if (priv->n_expected[priv->current] == priv->n_received) {
+            priv->current = (priv->current + 1) % priv->n_targets;
+            priv->n_received = 0;
+        }
+    }
+}
+
+void
+ufo_group_set_num_expected (UfoGroup *group,
+                            UfoTask *target,
+                            gint n_expected)
+{
+    UfoGroupPrivate *priv;
+    gint pos;
+
+    g_return_if_fail (UFO_IS_GROUP (group));
+    priv = group->priv;
+    pos = g_list_index (priv->targets, target);
+    priv->n_expected[pos] = n_expected;
 }
 
 UfoBuffer *

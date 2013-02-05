@@ -173,7 +173,6 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     *n_inputs = header->d.n_inputs;
     *in_params = g_new0 (UfoInputParam, 1);
     (*in_params)[0].n_dims = in_param->n_dims;
-    (*in_params)[0].n_expected = in_param->n_expected;
 
     zmq_msg_close (&header_msg);
     zmq_msg_close (&payload_msg);

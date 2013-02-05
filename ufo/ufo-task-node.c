@@ -34,6 +34,7 @@ struct _UfoTaskNodePrivate {
     UfoGroup        *out_group;
     GList           *in_groups[16];
     GList           *current[16];
+    gint             n_expected[16];
 };
 
 void
@@ -79,6 +80,25 @@ ufo_task_node_get_send_pattern (UfoTaskNode *node)
 {
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), 0);
     return node->priv->pattern;
+}
+
+void
+ufo_task_node_set_num_expected (UfoTaskNode *node,
+                                guint pos,
+                                gint n_expected)
+{
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    g_return_if_fail (pos < 16);
+    node->priv->n_expected[pos] = n_expected;
+}
+
+gint
+ufo_task_node_get_num_expected (UfoTaskNode *node,
+                                guint pos)
+{
+    g_return_val_if_fail (UFO_IS_TASK_NODE (node), 0);
+    g_return_val_if_fail (pos < 16, 0);
+    return node->priv->n_expected[pos];
 }
 
 void
@@ -187,5 +207,6 @@ ufo_task_node_init (UfoTaskNode *self)
     for (guint i = 0; i < 16; i++) {
         self->priv->in_groups[i] = NULL;
         self->priv->current[i] = NULL;
+        self->priv->n_expected[i] = -1;
     }
 }

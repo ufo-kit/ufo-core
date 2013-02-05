@@ -51,7 +51,8 @@ typedef struct _UfoGroupPrivate    UfoGroupPrivate;
  */
 typedef enum {
     UFO_SEND_BROADCAST,
-    UFO_SEND_SCATTER
+    UFO_SEND_SCATTER,
+    UFO_SEND_SEQUENTIAL
 } UfoSendPattern;
 
 /**
@@ -80,6 +81,9 @@ struct _UfoGroupClass {
 UfoGroup  * ufo_group_new                   (GList          *targets,
                                              gpointer        context,
                                              UfoSendPattern  pattern);
+void        ufo_group_set_num_expected      (UfoGroup       *group,
+                                             UfoTask        *target,
+                                             gint            n_expected);
 UfoBuffer * ufo_group_pop_output_buffer     (UfoGroup       *group,
                                              UfoRequisition *requisition);
 void        ufo_group_push_output_buffer    (UfoGroup       *group,
