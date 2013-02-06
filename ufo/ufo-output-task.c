@@ -80,6 +80,15 @@ ufo_output_task_get_output_requisition (UfoOutputTask *task,
     g_async_queue_push (priv->out_queue, buffer);
 }
 
+/**
+ * ufo_input_task_get_output_buffer:
+ * @task: A #UfoInputTask
+ *
+ * Get the output buffer from which we read the data to be sent to the master
+ * remote node.
+ *
+ * Return value: (transfer full): A #UfoBuffer for reading output data.
+ */
 UfoBuffer *
 ufo_output_task_get_output_buffer (UfoOutputTask *task)
 {

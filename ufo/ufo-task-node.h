@@ -64,31 +64,31 @@ struct _UfoTaskNodeClass {
     UfoNodeClass parent_class;
 };
 
-void            ufo_task_node_set_plugin_name       (UfoTaskNode    *task_node,
+void            ufo_task_node_set_plugin_name       (UfoTaskNode    *node,
                                                      const gchar    *name);
-const gchar    *ufo_task_node_get_plugin_name       (UfoTaskNode    *task_node);
-const gchar    *ufo_task_node_get_unique_name       (UfoTaskNode    *task_node);
-void            ufo_task_node_set_send_pattern      (UfoTaskNode    *task_node,
+const gchar    *ufo_task_node_get_plugin_name       (UfoTaskNode    *node);
+const gchar    *ufo_task_node_get_unique_name       (UfoTaskNode    *node);
+void            ufo_task_node_set_send_pattern      (UfoTaskNode    *node,
                                                      UfoSendPattern  pattern);
-UfoSendPattern  ufo_task_node_get_send_pattern      (UfoTaskNode    *task_node);
-void            ufo_task_node_set_num_expected      (UfoTaskNode    *task_node,
+UfoSendPattern  ufo_task_node_get_send_pattern      (UfoTaskNode    *node);
+void            ufo_task_node_set_num_expected      (UfoTaskNode    *node,
                                                      guint           pos,
                                                      gint            n_expected);
-gint            ufo_task_node_get_num_expected      (UfoTaskNode    *task_node,
+gint            ufo_task_node_get_num_expected      (UfoTaskNode    *node,
                                                      guint           pos);
-void            ufo_task_node_set_out_group         (UfoTaskNode    *task_node,
+void            ufo_task_node_set_out_group         (UfoTaskNode    *node,
                                                      UfoGroup       *group);
-UfoGroup       *ufo_task_node_get_out_group         (UfoTaskNode    *task_node);
-void            ufo_task_node_add_in_group          (UfoTaskNode    *task_node,
+UfoGroup       *ufo_task_node_get_out_group         (UfoTaskNode    *node);
+void            ufo_task_node_add_in_group          (UfoTaskNode    *node,
                                                      guint           pos,
                                                      UfoGroup       *group);
-UfoGroup       *ufo_task_node_get_current_in_group  (UfoTaskNode    *task_node,
+UfoGroup       *ufo_task_node_get_current_in_group  (UfoTaskNode    *node,
                                                      guint           pos);
-void            ufo_task_node_switch_in_group       (UfoTaskNode    *task_node,
+void            ufo_task_node_switch_in_group       (UfoTaskNode    *node,
                                                      guint           pos);
 void            ufo_task_node_set_proc_node         (UfoTaskNode    *task_node,
                                                      UfoNode        *proc_node);
-UfoNode        *ufo_task_node_get_proc_node         (UfoTaskNode    *task_node);
+UfoNode        *ufo_task_node_get_proc_node         (UfoTaskNode    *node);
 GType           ufo_task_node_get_type              (void);
 
 G_END_DECLS

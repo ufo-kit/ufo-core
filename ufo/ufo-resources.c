@@ -479,7 +479,7 @@ ufo_resources_get_context (UfoResources *resources)
  *
  * Get all command queues managed by @resources.
  *
- * Returns: (element-type gpointer) (transfer container): List with
+ * Return value: (element-type gpointer) (transfer container): List with
  * cl_command_queue objects. Free with g_list_free() but not its elements.
  */
 GList *

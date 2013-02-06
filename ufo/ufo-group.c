@@ -119,6 +119,14 @@ pop_or_alloc_buffer (UfoGroupPrivate *priv,
     return buffer;
 }
 
+/**
+ * ufo_group_pop_output_buffer:
+ * @group: A #UfoGroup
+ * @requisition: Size of the buffer.
+ *
+ * Return value: (transfer full): A newly allocated buffer or a re-used buffer
+ * that must be released with ufo_group_push_output_buffer().
+ */
 UfoBuffer *
 ufo_group_pop_output_buffer (UfoGroup *group,
                              UfoRequisition *requisition)
@@ -194,6 +202,14 @@ ufo_group_set_num_expected (UfoGroup *group,
     priv->n_expected[pos] = n_expected;
 }
 
+/**
+ * ufo_group_pop_input_buffer:
+ * @group: A #UfoGroup
+ * @target: The #UfoTask that is a target in @group
+ *
+ * Return value: (transfer full): A buffer that must be released with
+ * ufo_group_push_input_buffer().
+ */
 UfoBuffer *
 ufo_group_pop_input_buffer (UfoGroup *group,
                             UfoTask *target)

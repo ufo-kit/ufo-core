@@ -92,6 +92,15 @@ ufo_input_task_release_input_buffer (UfoInputTask *task,
     g_async_queue_push (task->priv->in_queue, buffer);
 }
 
+/**
+ * ufo_input_task_get_input_buffer:
+ * @task: A #UfoInputTask
+ *
+ * Get the input buffer to which we write the data received from the master
+ * remote node.
+ *
+ * Return value: (transfer full): A #UfoBuffer for writing input data.
+ */
 UfoBuffer *
 ufo_input_task_get_input_buffer (UfoInputTask *task)
 {

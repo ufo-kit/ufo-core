@@ -63,8 +63,6 @@ typedef enum {
 /**
  * UfoInputParam:
  * @n_dims: Number of dimensions
- * @n_expected: Number of expected elements depending on the UfoTaskMode. Use -1
- * to denote arbitrary or "infinite" data stream.
  */
 struct _UfoInputParam {
     guint n_dims;

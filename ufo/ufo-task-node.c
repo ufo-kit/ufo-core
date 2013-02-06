@@ -109,6 +109,15 @@ ufo_task_node_set_out_group (UfoTaskNode *node,
     node->priv->out_group = group;
 }
 
+/**
+ * ufo_task_node_get_out_group:
+ * @node: A #UfoTaskNode
+ *
+ * Get the current out of @node. The out group is used to fetch the ouput buffer
+ * for @node using ufo_group_pop_output_buffer().
+ *
+ * Return value: (transfer full): The out group of @node.
+ */
 UfoGroup *
 ufo_task_node_get_out_group (UfoTaskNode *node)
 {
@@ -127,6 +136,17 @@ ufo_task_node_add_in_group (UfoTaskNode *node,
     node->priv->current[pos] = node->priv->in_groups[pos];
 }
 
+/**
+ * ufo_task_node_get_current_in_group:
+ * @node: A #UfoTaskNode
+ * @pos: Input position of @node
+ *
+ * Several nodes can be connected to input @pos of @node. However, at a time
+ * @node will fetch only one buffer from all its inputs. This method returns the
+ * currently selected input group at @pos.
+ *
+ * Return value: (transfer full): The current in group of @node for @pos.
+ */
 UfoGroup *
 ufo_task_node_get_current_in_group (UfoTaskNode *node,
                                     guint pos)
@@ -157,6 +177,14 @@ ufo_task_node_set_proc_node (UfoTaskNode *task_node,
     task_node->priv->proc_node = proc_node;
 }
 
+/**
+ * ufo_task_node_get_proc_node:
+ * @node: A #UfoTaskNode
+ *
+ * Get the associated processing node of @node.
+ *
+ * Return value: (transfer full): A #UfoNode.
+ */
 UfoNode *
 ufo_task_node_get_proc_node (UfoTaskNode *node)
 {

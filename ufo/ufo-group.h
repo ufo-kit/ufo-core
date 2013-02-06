@@ -46,6 +46,8 @@ typedef struct _UfoGroupPrivate    UfoGroupPrivate;
  * UfoSendPattern:
  * @UFO_SEND_BROADCAST: Broadcast data to all connected nodes
  * @UFO_SEND_SCATTER: Scatter data among connected nodes.
+ * @UFO_SEND_SEQUENTIAL: Break up a linear input stream and transfer sub streams
+ * one by one to connected nodes.
  *
  * The send pattern describes how results are passed to connected nodes.
  */
