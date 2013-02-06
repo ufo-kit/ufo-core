@@ -82,6 +82,27 @@ handle_get_num_devices (ServerPrivate *priv)
     ufo_msg_send (&msg, priv->socket, 0);
 }
 
+static UfoNode *
+remove_dummy_if_present (UfoGraph *graph,
+                         UfoNode *first)
+{
+    UfoNode *real = first;
+
+    if (UFO_IS_DUMMY_TASK (first)) {
+        UfoNode *dummy;
+        GList *successors;
+
+        dummy = first;
+        successors = ufo_graph_get_successors (graph, dummy);
+        g_assert (g_list_length (successors) == 1);
+        real = UFO_NODE (successors->data);
+        g_list_free (successors);
+        ufo_graph_remove_edge (graph, dummy, real);
+    }
+
+    return real;
+}
+
 static void
 handle_json (ServerPrivate *priv)
 {
@@ -119,6 +140,8 @@ handle_json (ServerPrivate *priv)
 
     first = UFO_NODE (g_list_nth_data (roots, 0));
     last = UFO_NODE (g_list_nth_data (leaves, 0));
+
+    first = remove_dummy_if_present (UFO_GRAPH (priv->task_graph), first);
 
     priv->input_task = ufo_input_task_new ();
     priv->output_task = ufo_output_task_new (2);
