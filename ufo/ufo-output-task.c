@@ -81,7 +81,7 @@ ufo_output_task_get_output_requisition (UfoOutputTask *task,
 }
 
 /**
- * ufo_input_task_get_output_buffer:
+ * ufo_output_task_get_output_buffer:
  * @task: A #UfoInputTask
  *
  * Get the output buffer from which we read the data to be sent to the master

@@ -72,7 +72,7 @@ GList      *ufo_graph_get_registered_node_types
 void        ufo_graph_connect_nodes         (UfoGraph       *graph,
                                              UfoNode        *source,
                                              UfoNode        *target,
-                                             gpointer        edge_label);
+                                             gpointer        label);
 gboolean    ufo_graph_is_connected          (UfoGraph       *graph,
                                              UfoNode        *from,
                                              UfoNode        *to);

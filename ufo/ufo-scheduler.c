@@ -111,7 +111,7 @@ ufo_scheduler_new (UfoConfig *config,
  *
  * Get the associated OpenCL context of @scheduler.
  *
- * Returns: An cl_context structure or %NULL on error.
+ * Return value: (transfer full): An cl_context structure or %NULL on error.
  */
 gpointer
 ufo_scheduler_get_context (UfoScheduler *scheduler)

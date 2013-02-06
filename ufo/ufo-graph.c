@@ -48,12 +48,27 @@ enum {
     N_PROPERTIES
 };
 
+/**
+ * ufo_graph_new:
+ *
+ * Create a new #UfoGraph object.
+ *
+ * Returns: (transfer full): A #UfoGraph.
+ */
 UfoGraph *
 ufo_graph_new (void)
 {
     return UFO_GRAPH (g_object_new (UFO_TYPE_GRAPH, NULL));
 }
 
+/**
+ * ufo_graph_register_node_type:
+ * @graph: A #UfoGraph
+ * @type: A #GType
+ *
+ * Registers @type to be a valid node type of this graph. If a type has not be
+ * an added to @graph, any attempt to add such a node will fail.
+ */
 void
 ufo_graph_register_node_type (UfoGraph *graph,
                               GType type)
@@ -73,6 +88,8 @@ ufo_graph_register_node_type (UfoGraph *graph,
  * ufo_graph_get_registered_node_types:
  * @graph: A #UfoGraph
  *
+ * Get all types of nodes that can be added to @graph.
+ *
  * Returns: (element-type GType) (transfer container): A list of #GType
  * identifiers that can be added to @graph.
  */
@@ -83,6 +100,16 @@ ufo_graph_get_registered_node_types (UfoGraph *graph)
     return g_list_copy (graph->priv->node_types);
 }
 
+/**
+ * ufo_graph_is_connected:
+ * @graph: A #UfoGraph
+ * @from: A source node
+ * @to: A target node
+ *
+ * Check whether @from is connected to @to.
+ *
+ * Returns: %TRUE if @from is connected to @to, otherwise %FALSE.
+ */
 gboolean
 ufo_graph_is_connected (UfoGraph *graph,
                         UfoNode *from,
@@ -133,11 +160,21 @@ add_node_if_not_found (UfoGraphPrivate *priv,
     }
 }
 
+/**
+ * ufo_graph_connect_nodes:
+ * @graph: A #UfoGraph
+ * @source: A source node
+ * @target: A target node
+ * @label: An arbitrary label
+ *
+ * Connect @source with @target in @graph and annotate the edge with
+ * @label.
+ */
 void
 ufo_graph_connect_nodes (UfoGraph *graph,
                          UfoNode *source,
                          UfoNode *target,
-                         gpointer edge_label)
+                         gpointer label)
 {
     UfoGraphPrivate *priv;
     UfoEdge *edge;
@@ -150,7 +187,7 @@ ufo_graph_connect_nodes (UfoGraph *graph,
 
     edge = g_new0 (UfoEdge, 1);
     edge->target = target;
-    edge->label = edge_label;
+    edge->label = label;
 
     successors = g_hash_table_lookup (priv->adjacency, source);
     successors = g_list_append (successors, edge);
@@ -162,6 +199,14 @@ ufo_graph_connect_nodes (UfoGraph *graph,
     priv->n_edges++;
 }
 
+/**
+ * ufo_graph_get_num_nodes:
+ * @graph: A #UfoGraph
+ *
+ * Get number of nodes in @graph. The number is always divisible by two, because
+ * nodes are only part of a graph if member of an edge.
+ * Returns: Number of nodes.
+ */
 guint
 ufo_graph_get_num_nodes (UfoGraph *graph)
 {
@@ -169,6 +214,14 @@ ufo_graph_get_num_nodes (UfoGraph *graph)
     return g_list_length (graph->priv->nodes);
 }
 
+/**
+ * ufo_graph_get_num_edges:
+ * @graph: A #UfoGraph
+ *
+ * Get number of edges present in @graph.
+ *
+ * Returns: Number of edges.
+ */
 guint
 ufo_graph_get_num_edges (UfoGraph *graph)
 {
@@ -222,6 +275,14 @@ ufo_graph_get_nodes_filtered (UfoGraph *graph,
     return result;
 }
 
+/**
+ * ufo_graph_remove_edge:
+ * @graph: A #UfoGraph
+ * @source: A source node
+ * @target: A target node
+ *
+ * Remove edge between @source and @target.
+ */
 void
 ufo_graph_remove_edge (UfoGraph *graph,
                        UfoNode *source,
@@ -315,6 +376,8 @@ has_no_predecessor (UfoNode *node,
  * ufo_graph_get_roots:
  * @graph: A #UfoGraph
  *
+ * Get all roots of @graph.
+ *
  * Returns: (element-type UfoNode) (transfer container): A list of all nodes
  * that do not have a predessor node.
  */
@@ -342,6 +405,8 @@ has_no_successor (UfoNode *node,
 /**
  * ufo_graph_get_leaves:
  * @graph: A #UfoGraph
+ *
+ * Get all leaves of @graph.
  *
  * Returns: (element-type UfoNode) (transfer container): A list of all nodes
  * that do not have a predessor node.
@@ -495,6 +560,13 @@ ufo_graph_get_paths (UfoGraph *graph,
     return paths;
 }
 
+/**
+ * ufo_graph_dump_dot:
+ * @graph: A #UfoGraph
+ * @filename: A string containing a filename
+ *
+ * Stores a GraphViz dot representation of @graph in @filename.
+ */
 void
 ufo_graph_dump_dot (UfoGraph *graph,
                     const gchar *filename)

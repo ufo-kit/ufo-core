@@ -26,7 +26,7 @@
  * @Title: UfoConfigurable
  *
  * An object that implements the #UfoConfigurable interface provides the common
- * #UfoConfigurable:configuration property.
+ * #UfoConfigurable:config property.
  */
 
 typedef UfoConfigurableIface UfoConfigurableInterface;
