@@ -358,6 +358,8 @@ run_task (TaskLocalData *tld)
         }
     }
 
+    g_message ("`%s' finished", G_OBJECT_TYPE_NAME (tld->task));
+
     return NULL;
 }
 

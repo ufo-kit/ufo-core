@@ -170,6 +170,10 @@ ufo_group_push_output_buffer (UfoGroup *group,
                         buffer);
 
         if (priv->n_expected[priv->current] == priv->n_received) {
+            ufo_queue_push (priv->queues[priv->current],
+                            UFO_QUEUE_PRODUCER,
+                            UFO_END_OF_STREAM);
+            /* FIXME: setting priv->current to 0 again wouldn't be right */
             priv->current = (priv->current + 1) % priv->n_targets;
             priv->n_received = 0;
         }
