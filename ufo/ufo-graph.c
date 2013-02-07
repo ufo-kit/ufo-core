@@ -32,21 +32,27 @@ G_DEFINE_TYPE (UfoGraph, ufo_graph, G_TYPE_OBJECT)
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
 typedef struct {
+    UfoNode     *source;
     UfoNode     *target;
     gpointer     label;
 } UfoEdge;
 
 struct _UfoGraphPrivate {
-    GHashTable *adjacency;
     GList *node_types;
     GList *nodes;
-    guint n_edges;
+    GList *edges;
 };
 
 enum {
     PROP_0,
     N_PROPERTIES
 };
+
+static gint cmp_edge (gconstpointer a, gconstpointer b);
+static gint cmp_edge_source (gconstpointer a, gconstpointer b);
+static gint cmp_edge_target (gconstpointer a, gconstpointer b);
+static UfoEdge *find_edge (GList *edges, UfoNode *source, UfoNode *target);
+static GList *g_list_find_all_data (GList *list, gconstpointer data, GCompareFunc func);
 
 /**
  * ufo_graph_new:
@@ -116,24 +122,12 @@ ufo_graph_is_connected (UfoGraph *graph,
                         UfoNode *to)
 {
     UfoGraphPrivate *priv;
-    GList *successors;
-    gboolean found = FALSE;
+    UfoEdge *edge;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), FALSE);
-
     priv = graph->priv;
-    successors = g_hash_table_lookup (priv->adjacency, from);
-
-    for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
-        UfoEdge *edge = (UfoEdge *) it->data;
-
-        if (edge->target == to) {
-            found = TRUE;
-            break;
-        }
-    }
-
-    return found;
+    edge = find_edge (priv->edges, from, to);
+    return edge != NULL;
 }
 
 static gboolean
@@ -178,7 +172,6 @@ ufo_graph_connect_nodes (UfoGraph *graph,
 {
     UfoGraphPrivate *priv;
     UfoEdge *edge;
-    GList *successors;
 
     g_return_if_fail (UFO_IS_GRAPH (graph));
     priv = graph->priv;
@@ -186,17 +179,14 @@ ufo_graph_connect_nodes (UfoGraph *graph,
     g_return_if_fail (is_valid_node_type (priv, source) && is_valid_node_type (priv, target));
 
     edge = g_new0 (UfoEdge, 1);
+    edge->source = source;
     edge->target = target;
     edge->label = label;
 
-    successors = g_hash_table_lookup (priv->adjacency, source);
-    successors = g_list_append (successors, edge);
-    g_hash_table_insert (priv->adjacency, source, successors);
+    priv->edges = g_list_append (priv->edges, edge);
 
     add_node_if_not_found (priv, source);
     add_node_if_not_found (priv, target);
-
-    priv->n_edges++;
 }
 
 /**
@@ -226,7 +216,7 @@ guint
 ufo_graph_get_num_edges (UfoGraph *graph)
 {
     g_return_val_if_fail (UFO_IS_GRAPH (graph), 0);
-    return graph->priv->n_edges;
+    return g_list_length (graph->priv->edges);
 }
 
 /**
@@ -289,38 +279,21 @@ ufo_graph_remove_edge (UfoGraph *graph,
                        UfoNode *target)
 {
     UfoGraphPrivate *priv;
-    GList *edges;
+    UfoEdge *edge;
 
     g_return_if_fail (UFO_IS_GRAPH (graph));
     priv = graph->priv;
+    edge = find_edge (priv->edges, source, target);
 
-    edges = g_hash_table_lookup (priv->adjacency, source);
+    if (edge != NULL) {
+        priv->nodes = g_list_remove (priv->nodes, source);
+        g_object_unref (source);
 
-    if (edges != NULL) {
-        UfoEdge *edge = NULL;
+        priv->nodes = g_list_remove (priv->nodes, target);
+        g_object_unref (target);
 
-        for (GList *it = g_list_first (edges); it != NULL; it = g_list_next (it)) {
-            UfoEdge *candidate = (UfoEdge *) it->data;
-
-            if (candidate->target == target) {
-                edge = candidate;
-                break;
-            }
-        }
-
-        if (edge != NULL) {
-            priv->nodes = g_list_remove (priv->nodes, source);
-            g_object_unref (source);
-
-            priv->nodes = g_list_remove (priv->nodes, edge->target);
-            g_object_unref (edge->target);
-
-            edges = g_list_remove (edges, edge);
-            g_hash_table_insert (priv->adjacency, source, edges);
-        }
+        priv->edges = g_list_remove (priv->edges, edge);
     }
-
-    priv->n_edges--;
 }
 
 /**
@@ -339,20 +312,14 @@ ufo_graph_get_edge_label (UfoGraph *graph,
                           UfoNode *target)
 {
     UfoGraphPrivate *priv;
-    GList *edges;
+    UfoEdge *edge;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
     priv = graph->priv;
-    edges = g_hash_table_lookup (priv->adjacency, source);
+    edge = find_edge (priv->edges, source, target);
 
-    for (GList *it = g_list_first (edges); it != NULL; it = g_list_next (it)) {
-        UfoEdge *edge = (UfoEdge *) it->data;
-
-        if (edge->target == target) {
-            gpointer label = edge->label;
-            return label;
-        }
-    }
+    if (edge != NULL)
+        return edge->label;
 
     g_warning ("target not found");
     return NULL;
@@ -419,6 +386,41 @@ ufo_graph_get_leaves (UfoGraph *graph)
 }
 
 /**
+ * ufo_graph_get_predecessors:
+ * @graph: A #UfoGraph
+ * @node: A #UfoNode whose predecessors are returned.
+ *
+ * Get the all nodes connected to @node.
+ *
+ * Returns: (element-type UfoNode) (transfer container): A list with preceeding
+ * nodes of @node. Free the list with g_list_free() but not its elements.
+ */
+GList *
+ufo_graph_get_predecessors (UfoGraph *graph,
+                            UfoNode *node)
+{
+    UfoGraphPrivate *priv;
+    UfoEdge match;
+    GList *edges;
+    GList *result;
+
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
+    priv = graph->priv;
+
+    match.target = node;
+    edges = g_list_find_all_data (priv->edges, &match, cmp_edge_target);
+    result = NULL;
+
+    for (GList *it = g_list_first (edges); it != NULL; it = g_list_next (it)) {
+        UfoEdge *edge = (UfoEdge *) it->data;
+        result = g_list_prepend (result, edge->source);
+    }
+
+    g_list_free (edges);
+    return result;
+}
+
+/**
  * ufo_graph_get_successors:
  * @graph: A #UfoGraph
  * @node: A #UfoNode whose successors are returned.
@@ -433,19 +435,23 @@ ufo_graph_get_successors (UfoGraph *graph,
                           UfoNode *node)
 {
     UfoGraphPrivate *priv;
+    UfoEdge match;
     GList *edges;
     GList *result;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
     priv = graph->priv;
-    edges = g_hash_table_lookup (priv->adjacency, node);
+
+    match.source = node;
+    edges = g_list_find_all_data (priv->edges, &match, cmp_edge_source);
     result = NULL;
 
     for (GList *it = g_list_first (edges); it != NULL; it = g_list_next (it)) {
         UfoEdge *edge = (UfoEdge *) it->data;
-        result = g_list_prepend (result, edge->target);
+        result = g_list_append (result, edge->target);
     }
 
+    g_list_free (edges);
     return result;
 }
 
@@ -604,11 +610,73 @@ ufo_graph_dump_dot (UfoGraph *graph,
     fclose (fp);
 }
 
-static void
-free_edge_list (GList *list)
+static gint
+cmp_edge (gconstpointer a, gconstpointer b)
 {
-    g_list_foreach (list, (GFunc) g_free, NULL);
-    g_list_free (list);
+    const UfoEdge *edge_a = a;
+    const UfoEdge *edge_b = b;
+
+    if ((edge_a->source == edge_b->source) &&
+        (edge_a->target == edge_b->target)) {
+        return 0;
+    }
+
+    return -1;
+}
+
+static gint
+cmp_edge_source (gconstpointer a, gconstpointer b)
+{
+    const UfoEdge *edge_a = a;
+    const UfoEdge *edge_b = b;
+
+    if (edge_a->source == edge_b->source)
+        return 0;
+
+    return -1;
+}
+
+static gint
+cmp_edge_target (gconstpointer a, gconstpointer b)
+{
+    const UfoEdge *edge_a = a;
+    const UfoEdge *edge_b = b;
+
+    if (edge_a->target == edge_b->target)
+        return 0;
+
+    return -1;
+}
+
+static GList *
+g_list_find_all_data (GList *list,
+                      gconstpointer data,
+                      GCompareFunc func)
+{
+    GList *result = NULL;
+
+    for (GList *it = g_list_first (list); it != NULL; it = g_list_next (it)) {
+        if (func (data, it->data) == 0)
+            result = g_list_prepend (result, it->data);
+    }
+
+    return result;
+}
+
+static UfoEdge *
+find_edge (GList *edges,
+           UfoNode *source,
+           UfoNode *target)
+{
+    UfoEdge search_edge;
+    UfoEdge *edge;
+    GList *result;
+
+    search_edge.source = source;
+    search_edge.target = target;
+    result = g_list_find_custom (edges, &search_edge, cmp_edge);
+    edge = result != NULL ? g_list_nth_data (result, 0) : NULL;
+    return edge;
 }
 
 static void
@@ -618,14 +686,10 @@ ufo_graph_dispose (GObject *object)
 
     priv = UFO_GRAPH_GET_PRIVATE (object);
 
-    if (priv->adjacency != NULL) {
-        GList *edge_lists;
-
-        edge_lists = g_hash_table_get_values (priv->adjacency);
-        g_list_foreach (edge_lists, (GFunc) free_edge_list, NULL);
-        g_list_free (edge_lists);
-        g_hash_table_destroy (priv->adjacency);
-        priv->adjacency = NULL;
+    if (priv->edges != NULL) {
+        g_list_foreach (priv->edges, (GFunc) g_free, NULL);
+        g_list_free (priv->edges);
+        priv->edges = NULL;
     }
 
     if (priv->nodes != NULL) {
@@ -665,8 +729,6 @@ ufo_graph_init (UfoGraph *self)
 {
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
-    priv->adjacency = g_hash_table_new (g_direct_hash, g_direct_equal);
     priv->node_types = NULL;
     priv->nodes = NULL;
-    priv->n_edges = 0;
 }
