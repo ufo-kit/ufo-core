@@ -38,8 +38,23 @@ G_BEGIN_DECLS
 typedef struct _UfoGraph           UfoGraph;
 typedef struct _UfoGraphClass      UfoGraphClass;
 typedef struct _UfoGraphPrivate    UfoGraphPrivate;
+typedef struct _UfoEdge            UfoEdge;
 
 typedef gboolean (*UfoFilterPredicate) (UfoNode *node, gpointer user_data);
+
+/**
+ * UfoEdge:
+ * @source: source node
+ * @target: target node
+ * @label: label
+ *
+ * An edge in a #UfoGraph.
+ */
+struct _UfoEdge {
+    UfoNode     *source;
+    UfoNode     *target;
+    gpointer     label;
+};
 
 /**
  * UfoGraph:
@@ -83,11 +98,12 @@ gpointer    ufo_graph_get_edge_label        (UfoGraph       *graph,
                                              UfoNode        *source,
                                              UfoNode        *target);
 guint       ufo_graph_get_num_nodes         (UfoGraph       *graph);
-guint       ufo_graph_get_num_edges         (UfoGraph       *graph);
 GList      *ufo_graph_get_nodes             (UfoGraph       *graph);
 GList      *ufo_graph_get_nodes_filtered    (UfoGraph       *graph,
                                              UfoFilterPredicate func,
                                              gpointer        user_data);
+guint       ufo_graph_get_num_edges         (UfoGraph       *graph);
+GList      *ufo_graph_get_edges             (UfoGraph       *graph);
 GList      *ufo_graph_get_roots             (UfoGraph       *graph);
 GList      *ufo_graph_get_leaves            (UfoGraph       *graph);
 GList      *ufo_graph_get_predecessors      (UfoGraph       *graph,

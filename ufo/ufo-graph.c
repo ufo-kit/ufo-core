@@ -31,12 +31,6 @@ G_DEFINE_TYPE (UfoGraph, ufo_graph, G_TYPE_OBJECT)
 
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
-typedef struct {
-    UfoNode     *source;
-    UfoNode     *target;
-    gpointer     label;
-} UfoEdge;
-
 struct _UfoGraphPrivate {
     GList *node_types;
     GList *nodes;
@@ -217,6 +211,22 @@ ufo_graph_get_num_edges (UfoGraph *graph)
 {
     g_return_val_if_fail (UFO_IS_GRAPH (graph), 0);
     return g_list_length (graph->priv->edges);
+}
+
+/**
+ * ufo_graph_get_edges:
+ * @graph: A #UfoGraph
+ *
+ * Get all edges contained in @graph.
+ *
+ * Returns: (element-type UfoEdge): a list of #UfoEdge elements or %NULL on
+ * error. Release the list with g_list_free().
+ */
+GList *
+ufo_graph_get_edges (UfoGraph *graph)
+{
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
+    return g_list_copy (graph->priv->edges);
 }
 
 /**
