@@ -1,8 +1,8 @@
 .. _filters:
 
-=======
-Filters
-=======
+=====
+Tasks
+=====
 
 .. default-domain:: c
 
@@ -10,8 +10,8 @@ UFO filters are simple shared objects that expose their ``GType`` and implement
 the :type:`UfoFilter` class.
 
 
-Writing a filter in C
-=====================
+Writing a task in C
+===================
 
 .. highlight:: bash
 
@@ -21,246 +21,131 @@ Writing a new UFO filter is simple and by calling ::
 
 in the ``tools/`` directory, you can avoid writing that tedious GObject boiler
 plate code on your own. The name is a camel-cased version of your new filter.
-Depending on how your filter works you need to specify the correct type. You can
-choose between:
+Type must be one of
 
-* ``source``: Takes no input produces output (e.g. a file reader)
-* ``sink``: Takes input produces no output (e.g. a file writer)
-* ``process``: Takes one input at a time and produces another output.
-* ``reduce``: Takes an arbitrary amount of input data and produces an arbitrary
-  amount of data as soon as an internal condition is met.
+* ``cpu``: For a CPU-based task
+* ``gpu``: For a CPU-based task
 
-You are now left with two files ``ufo-filter-awesome-foo.c`` and
-``ufo-filter-awesome-foo.h``. If you intend to distribute that filter with the
-main UFO filter distribution, copy these files to ``filters/src``. If you are
-not depending on any third-party library you can just add the following line to
-the CMakeLists.txt file::
+You are now left with two files ``ufo-awesome-foo-task.c`` and
+``ufo-awesome-foo-task.h``. If you intend to distribute that filter with the
+main UFO filter distribution, copy these files to ``ufo-filters/src``. If you
+are not depending on any third-party library you can just add the following line
+to the ``CMakeLists.txt`` file::
 
-    --- core/filters/CMakeLists.txt old
-    +++ core/filters/CMakeLists.txt new
-    @@ -6,6 +6,7 @@
-         ufo-filter-hist.c
-         ufo-filter-raw.c
-         ufo-filter-scale.c
-    +    ufo-filter-awesome-foo.c
-    )
-
-    set(ufofilter_KERNELS)
+    set(ufofilter_SRCS
+        ...
+        ufo-awesome-foo-task.c
+        ...)
 
 You can compile this as usual by typing ::
 
     make
 
-in your CMake build directory.
+in the CMake build directory of ``ufo-filters``.
 
 
 Initializing filters
 --------------------
 
-Regardless of filter type, the ``ufo_filter_awesome_foo_init()`` method is the
-*constructor* of the filter object and usually the correct place to specify the
-inputs and outputs and their respective number of dimensions using
-:c:func:`ufo_filter_register_inputs` and :c:func:`ufo_filter_register_outputs`.
-
-The ``ufo_filter_awesome_foo_class_init()`` method on the other hand ist the
-*class constructor* that is used to *override* virtual methods by setting
-function pointers in each classes' vtable. Depending on the filter type you need
-to implement different methods for producing and consuming data.
-
-All consumption methods are passed an array of input buffers. The length is the
-number of input elements as specified with :c:func:`ufo_filter_register_inputs`.
-Similarly, all production methods are passed an array of output buffers having a
-length specified with :c:func:`ufo_filter_register_outputs`. Both methods also
-receive a ``cmd_queue`` parameter that is used to get the actual data from the
-buffer.
-
-
 .. highlight:: c
 
-Implementing filters
---------------------
+Regardless of filter type, the ``ufo_awesome_foo_task_init()`` method is the
+*constructor* of the filter object and the best place to setup all data that
+does not depend on any input data.
 
-Implementing source filters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``ufo__awesome_foo_task_class_init()`` method on the other hand ist the
+*class constructor* that is used to *override* virtual methods by setting
+function pointers in each classes' vtable.
 
-A source filter must implement ``generate`` and can implement ``initialize``. To
-signal that no more data is produced the ``generate`` method must return
-``FALSE`` otherwise ``TRUE``::
+You *must* override the following methods: ``ufo_awesome_task_get_structure``,
+``ufo_awesome_task_setup``, ``ufo_awesome_task_get_requisition`` and
+``ufo_awesome_task_process``.
+
+``get_structure`` is called by the run-time in order to determine how many
+inputs your task expects, which dimensions are allowed on each input and what
+processing mode your task runs ::
 
     static void
-    ufo_filter_reader_initialize (UfoFilterSource   *filter,
-                                  guint            **dims,
-                                  GError           **error)
+    ufo_awesome_task_get_structure (UfoTask *task,
+                                    guint *n_inputs,
+                                    UfoInputParam **in_params,
+                                    UfoTaskMode *mode)
     {
-        /* Setup necessary auxiliary data */
+        *mode = UFO_TASK_MODE_SINGLE;
+        *n_inputs = 1;
+        *in_params = g_new0 (UfoInputParam, 1);
+        (*in_params)[0].n_dims = 2;
     }
+
+This task expects one two-dimensional input. Be aware, that the callee must
+allocate memory for the ``in_params`` data structure.
+
+``setup`` can be used to initialize data that depends on run-time resources like
+OpenCL contexts etc. This method is called only *once* ::
+
+    static void
+    ufo_awesome_task_setup (UfoTask *task,
+                            UfoResources *resources,
+                            GError **error)
+    {
+        cl_context context;
+
+        context = ufo_resources_get_context (resources);
+
+        /*
+           Do something with the context like allocating buffers or create
+           kernels.
+         */
+    }
+
+On the other hand, ``get_requisition`` is called on each iteration right before
+``process``. It is used to determine which size an output buffer must have
+depending on the inputs. For this you must fill in the ``requisition`` structure
+correctly. If our output buffer needs to be as big as our input buffer we would
+specify ::
+
+    static void
+    ufo_awesome_task_get_requisition (UfoTask *task,
+                                      UfoBuffer **inputs,
+                                      UfoRequisition *requisition)
+    {
+        ufo_buffer_get_requisition (inputs[0], requisition);
+    }
+
+Finally, you have to override the ``process`` method. Note, that the function
+signatures differ for GPU and CPU tasks ::
 
     static gboolean
-    ufo_filter_reader_generate (UfoFilterSource  *filter,
-                                UfoBuffer        *output[],
-                                gpointer          cmd_queue,
-                                GError          **error)
+    ufo_awesome_task_process (UfoGpuTask *task,
+                              UfoBuffer **inputs,
+                              UfoBuffer *output,
+                              UfoRequisition *requisition,
+                              UfoGpuNode *node)
     {
-        gboolean more_data = TRUE;
+        /* Now we can request cl_mem or float arrays from in and outputs. */
+        cl_command_queue cmd_queue;
+        cl_mem host_in;
+        cl_mem host_out;
 
-        /* Produce data and store result in an output buffer */
+        cmd_queue = ufo_gpu_node_get_cmd_queue (node);
+        host_in = ufo_buffer_get_device_array (inputs[0], cmd_queue);
+        host_out = ufo_buffer_get_device_array (output, cmd_queue);
 
-        return more_data;
+        /* Call a kernel or do other meaningful work. */
     }
 
-    static void
-    ufo_filter_reader_class_init (UfoFilterReaderClass *klass)
-    {
-        UfoFilterSourceClass *filter_class = UFO_FILTER_SOURCE_CLASS (klass);
+Tasks can and will be copied to speed up the computation on multi-GPU systems.
+Any parameters that are accessible from the outside via a property are
+automatically copied by the run-time system. To copy private data that is only
+visible at the file scope, you have to override the ``UFO_NODE_CLASS`` method
+``copy`` and copy the data yourself. This method is *always* called before
+``setup`` so you can be assured to re-create your private data on the copied
+task.
 
-        filter_class->initialize = ufo_filter_reader_initialize;
-        filter_class->generate = ufo_filter_reader_generate_cpu;
-    }
+.. note::
 
-    static void
-    ufo_filter_reader_init(UfoFilterReader *self)
-    {
-        UfoOutputParameter output_params[] = {{2}};
-
-        /* We provide one two-dimensional output */
-        ufo_filter_register_outputs (UFO_FILTER (self), 1, output_params);
-    }
-
-
-Implementing sink filters
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A sink filter must implement ``consume`` and can implement ``initialize``::
-
-    static void
-    ufo_filter_writer_consume (UfoFilterSink    *filter,
-                               UfoBuffer        *input[],
-                               gpointer          cmd_queue,
-                               GError          **error)
-    {
-    }
-
-    static void
-    ufo_filter_writer_class_init(UfoFilterWriterClass *klass)
-    {
-        UfoFilterSinkClass *filter_class = UFO_FILTER_SINK_CLASS (klass);
-
-        filter_class->consume = ufo_filter_writer_consume;
-    }
-
-    static void
-    ufo_filter_writer_init(UfoFilterWriter *self)
-    {
-        UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT}};
-
-        /* We expect one two-dimensional input */
-        ufo_filter_register_inputs (UFO_FILTER (self), 1, input_params);
-    }
-
-
-Implementing processing filters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A "normal" processing filter can implement ``initialize`` and must implement
-either ``process_cpu`` or ``process_gpu`` or both::
-
-    static void
-    ufo_filter_gaussian_blur_initialize (UfoFilter  *filter,
-                                         UfoBuffer  *params[],
-                                         guint     **dims,
-                                         GError    **error)
-    {
-    }
-
-    static void
-    ufo_filter_gaussian_blur_process_gpu (UfoFilter     *filter,
-                                          UfoBuffer     *input[],
-                                          UfoBuffer     *output[],
-                                          gpointer       cmd_queue,
-                                          GError       **error)
-    {
-    }
-
-    static void
-    ufo_filter_gaussian_blur_class_init (UfoFilterGaussianBlurClass *klass)
-    {
-        UfoFilterClass *filter_class = UFO_FILTER_CLASS(klass);
-
-        filter_class->initialize    = ufo_filter_gaussian_blur_initialize;
-        filter_class->process_gpu   = ufo_filter_gaussian_blur_process_gpu;
-    }
-
-    static void
-    ufo_filter_gaussian_blur_init (UfoFilterGaussianBlur *self)
-    {
-        UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT}};
-        UfoOutputParameter output_params[] = {{2}};
-
-        ufo_filter_register_inputs (UFO_FILTER (self), 1, input_params);
-        ufo_filter_register_outputs (UFO_FILTER (self), 1, output_params);
-    }
-
-
-Implementing reduction filters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A reduction is special::
-
-    static void
-    ufo_filter_averager_initialize (UfoFilterReduce *filter,
-                                    UfoBuffer       *input[],
-                                    guint **dims,
-                                    gfloat *default_value,
-                                    GError **error)
-    {
-        *default_value = 0.0f;
-    }
-
-    static void
-    ufo_filter_averager_collect (UfoFilterReduce *filter,
-                                 UfoBuffer       *input[],
-                                 UfoBuffer       *output[],
-                                 gpointer         cmd_queue,
-                                 GError         **error)
-    {
-    }
-
-    static gboolean
-    ufo_filter_averager_reduce (UfoFilterReduce *filter,
-                                UfoBuffer       *output[],
-                                gpointer         cmd_queue,
-                                GError         **error)
-    {
-        return FALSE;
-    }
-
-    static void
-    ufo_filter_averager_class_init(UfoFilterAveragerClass *klass)
-    {
-        UfoFilterReduceClass *filter_class = UFO_FILTER_REDUCE_CLASS(klass);
-
-        filter_class->initialize = ufo_filter_averager_initialize;
-        filter_class->collect = ufo_filter_averager_collect;
-        filter_class->reduce = ufo_filter_averager_reduce;
-    }
-
-    static void
-    ufo_filter_averager_init(UfoFilterAverager *self)
-    {
-        UfoInputParameter input_params[] = {{2, UFO_FILTER_INFINITE_INPUT}};
-        UfoOutputParameter output_params[] = {{2}};
-
-        ufo_filter_register_inputs (UFO_FILTER (self), 1, input_params);
-        ufo_filter_register_outputs (UFO_FILTER (self), 1, output_params);
-    }
-
-
-Moreover, you can override methods from the base GObject class. The getters and
-setters for properties are overridden by default but in certain cases it makes
-sense to override the ``dispose`` method to unref any GObjects and the
-``finalize`` method to clean-up any other resources (e.g. allocated memory,
-files).
-
+    It is strongly encouraged that you export all your parameters as properties
+    and re-build any internal data structures off of these parameters.
 
 
 Additional source files
@@ -306,7 +191,7 @@ We wire this small kernel into this short Python script::
     writer = pm.get_filter('writer')
 
     # this filter applies the kernel
-    cl = pm.get_filter('cl')
+    cl = pm.get_filter('opencl')
     cl.set_properties(file='simple.cl', kernel='invert')
 
     g = Ufo.Graph()

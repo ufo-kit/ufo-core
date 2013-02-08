@@ -10,4 +10,4 @@ of the design decisions were made the way they are now.
 .. toctree::
     
     general.rst
-    ufo-0.2.rst
+    ufo-0.3.rst

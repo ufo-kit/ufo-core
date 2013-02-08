@@ -9,7 +9,7 @@ Major breakage
   This is implemented by a TaskGraph.
 
 - Filters are now called TaskNodes and connected with
-  `ufo_task_graph_connect_nodes` and `ufo_task_graph_connect_nodes_full`
+  ``ufo_task_graph_connect_nodes`` and ``ufo_task_graph_connect_nodes_full``
   respectively.
 
 
@@ -18,13 +18,14 @@ Graph expansion
 
 With 0.2, Using multiple GPUs was possible by manually splitting paths in the
 graph and assigning GPUs. Now, task graphs are automatically expanded depending
-on the number of available GPUs and remote processing slaves.
+on the number of available GPUs and remote processing slaves that are started
+with the newly added ``ufod`` server software.
 
 
 Minor improvements
 ==================
 
-- A `deploy.sh` script has been added for easier deployment of the software
+- A ``deploy.sh`` script has been added for easier deployment of the software
   stack. This is especially useful to install everything in the home directory
-  of the user, who only needs to setup `LD_LIBRARY_PATH` and `GI_TYPELIB_PATH`
-  correctly to run the software.
+  of the user, who only needs to setup ``LD_LIBRARY_PATH`` and
+  ``GI_TYPELIB_PATH`` correctly to run the software.

@@ -4,26 +4,6 @@
 Installation on Linux
 #####################
 
-================================
-Installing pre-compiled binaries
-================================
-
-Debian and RPM packages are provided. To install the Debian package under Ubuntu
-or Debian, issue ::
-
-  $ sudo dpkg -i libufo-x.y.deb
-  $ sudo dpkg -i ufo-filters-x.y.deb
-
-Unfortunately, the OpenCL distributions from NVIDIA and AMD are not known to the
-repository system of openSUSE. When installing UFO, ``rpm`` will complain, that
-it cannot find this dependency. To solve this problem use ``zypper`` ::
-
-  $ sudo zypper install libufo-x.y.rpm
-  $ sudo zypper install ufo-filters-x.y.rpm
-
-and when asked to fix the dependency, ignore it.
-
-
 ====================
 Building from source
 ====================
@@ -31,7 +11,8 @@ Building from source
 UFO has only a few hard source dependencies, namely
 
   - `GLib 2.0 <http://developer.gnome.org/glib/stable/>`_,
-  - `JSON-GLib 1.0 <http://live.gnome.org/JsonGlib>`_ and
+  - `JSON-GLib 1.0 <http://live.gnome.org/JsonGlib>`_
+  - `ZeroMQ 3.2 <http://zeromq.org>`_ and
   - a valid OpenCL installation.
 
 Furthermore, it is necessary to build the framework with a recent version of
@@ -46,16 +27,19 @@ In case you use openSUSE, just issue ::
     $ zypper install gtk-doc python-Sphinx
     $ zypper install libtiff-devel
 
-to install all dependencies.
+to install dependencies from the package repositories. Depending on which system
+you are using you have to install ZeroMQ 3.2 from source ::
 
-
-Building dependencies
-=====================
+    $ wget http://download.zeromq.org/zeromq-3.2.2.tar.gz
+    $ tar xfz zeromq-3.2.2.tar.gz
+    $ cd zeromq-3.2.2
+    $ ./configure && make && make distcheck
+    $ make install
 
 OpenCL development files must be installed in order to build UFO. However, we
 cannot give general advices as installation procedures vary between different
 vendors. However, our CMake build facility is in most cases intelligent enough
-to find header files and libraries.
+to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
 
 
 Retrieving the source code
@@ -79,6 +63,15 @@ repositories. All stable versions are tagged. To see a list of all releases
 issue::
 
     $ git tag -l
+
+
+Quick deployment
+================
+
+UFO comes with a deploy script located in ``$UFO_ROOT/tools``. If executed
+without any arguments it will try to build and install ZeroMQ, UFO (core and
+filters) and oclfft for ``/usr/local``. You can set the installation prefix as
+an argument to install it into your home directory.
 
 
 System-wide installation

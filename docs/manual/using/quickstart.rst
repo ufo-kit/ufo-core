@@ -62,35 +62,37 @@ The ``-a`` or ``--address`` parameter expects a ZeroMQ-conform address where a
 machine. For more information, read up on :ref:`clustering <using-cluster>`.
 
 
-
-Writing a pipeline in C
-=======================
+C interface
+===========
 
 .. highlight:: c
 
-A simple UFO program written in C can look like this::
+A simple UFO program written in C that loads the JSON description can look like
+this::
 
-    /* foo.c */
-    #include <ufo/ufo-graph.h>
-    #include <ufo/ufo-scheduler.h>
+    /* ufo/ufo.h is the only header allowed to be included */
+    #include <ufo/ufo.h>
 
     int main (void)
     {
-        UfoGraph *graph;
-        UfoBaseScheduler *scheduler;
+        UfoTaskGraph *graph;
+        UfoScheduler *scheduler;
+        UfoPluginManager *manager;
 
         g_type_init ();  /* you _must_ call this! */
 
         graph = ufo_graph_new ();
+        manager = ufo_plugin_manager_new ();
 
-        ufo_graph_read_from_json (graph, NULL, "hello-world.json", NULL);
+        ufo_task_graph_read_from_json (graph, manager, "hello-world.json", NULL);
 
-        scheduler = ufo_scheduler (NULL);
-        ufo_scheduler_run (graph);
+        scheduler = ufo_scheduler_new (NULL, NULL);
+        ufo_scheduler_run (scheduler, graph, NULL);
 
-        /* Destroy the graph object */
+        /* Destroy all objects */
         g_object_unref (graph);
         g_object_unref (scheduler);
+        g_object_unref (manager);
         return 0;
     }
 
@@ -113,31 +115,31 @@ hand::
     {
         UfoGraph *graph;
         UfoPluginManager *manager;
-        UfoBaseScheduler *scheduler;
-        UfoFilter *reader;
-        UfoFilter *writer;
+        UfoScheduler *scheduler;
+        UfoNode *reader;
+        UfoNode *writer;
 
         g_type_init ();  /* you _must_ call this! */
 
         graph = ufo_graph_new ();
         manager = ufo_plugin_manager_new (NULL);
-        scheduler = ufo_scheduler_new (NULL);
-        reader = ufo_plugin_manager_get_filter (manager, "reader", NULL);
-        writer = ufo_plugin_manager_get_filter (manager, "writer", NULL);
+        scheduler = ufo_scheduler_new (NULL, NULL);
+        reader = ufo_plugin_manager_get_task (manager, "reader", NULL);
+        writer = ufo_plugin_manager_get_task (manager, "writer", NULL);
 
         g_object_set (G_OBJECT (reader),
                       "path", "/home/user/data/*.tif",
                       "count", 5,
                       NULL);
 
-        ufo_graph_connect_filters (graph, reader, writer, NULL);
-        ufo_scheduler_run (graph);
+        ufo_graph_connect_nodes (graph, reader, writer, NULL);
+        ufo_scheduler_run (scheduler, graph, NULL);
         return 0;
     }
 
 
-Writing a pipeline in Python
-============================
+Python Interface
+================
 
 There are no plans to support any languages with manually written language
 bindings. However, UFO is a GObject-based library from which ``gir`` (GObject
@@ -170,7 +172,7 @@ look like this::
     from gi.repository import Ufo
 
     manager = Ufo.PluginManager()
-    graph = Ufo.Graph()
+    graph = Ufo.TaskGraph()
     scheduler = Ufo.Scheduler()
 
     graph.read_from_json(manager, "some-graph.json")
@@ -185,9 +187,9 @@ and keyword system::
     manager = Ufo.PluginManager()
     scheduler = Ufo.Scheduler()
 
-    reader = manager.get_filter('reader')
-    writer = manager.get_filter('writer')
+    reader = manager.get_task('reader')
+    writer = manager.get_task('writer')
     reader.set_properties(path='/home/user/data/*.tif', count=5)
 
-    graph.connect_filters(reader, writer)
+    graph.connect_nodes(reader, writer)
     scheduler.run(graph)
