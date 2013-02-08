@@ -249,7 +249,7 @@ static void
 append_include_path (gchar *path,
                      GString *directive)
 {
-    g_string_append_printf (directive, "-I%s", path);
+    g_string_append_printf (directive, " -I%s", path);
 }
 
 static cl_program
