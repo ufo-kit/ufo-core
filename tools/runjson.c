@@ -17,6 +17,7 @@
  * License along with runjson.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include <stdlib.h>
 #include <ufo/ufo.h>
 
@@ -88,10 +89,15 @@ int main(int argc, char *argv[])
     GError *error = NULL;
     gchar **paths = NULL;
     gchar **addresses = NULL;
+    gboolean show_version = FALSE;
 
     GOptionEntry entries[] = {
-        { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths, "Path to node plugins or OpenCL kernels", NULL },
-        { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
+        { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths,
+          "Path to node plugins or OpenCL kernels", NULL },
+        { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
+          "Address of remote server running `ufod'", NULL },
+        { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
+          "Show version information", NULL },
         { NULL }
     };
 
@@ -103,6 +109,11 @@ int main(int argc, char *argv[])
     if (!g_option_context_parse (context, &argc, &argv, &error)) {
         g_print ("Option parsing failed: %s\n", error->message);
         return 1;
+    }
+
+    if (show_version) {
+        g_print ("runjson %s\n", UFO_VERSION);
+        exit (EXIT_SUCCESS);
     }
 
     if (argc < 2) {

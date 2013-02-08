@@ -17,6 +17,8 @@
  * License along with ufod.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
@@ -313,6 +315,7 @@ opts_parse (gint *argc, gchar ***argv)
 {
     GOptionContext *context;
     Options *opts;
+    gboolean show_version = FALSE;
     GError *error = NULL;
 
     opts = g_new0 (Options, 1);
@@ -322,6 +325,8 @@ opts_parse (gint *argc, gchar ***argv)
           "Address to listen on (see http://api.zeromq.org/3-2:zmq-tcp)", NULL },
         { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &opts->paths,
           "Path to node plugins or OpenCL kernels", NULL },
+        { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
+          "Show version information", NULL },
         { NULL }
     };
 
@@ -332,6 +337,11 @@ opts_parse (gint *argc, gchar ***argv)
         g_print ("Option parsing failed: %s\n", error->message);
         g_free (opts);
         return NULL;
+    }
+
+    if (show_version) {
+        g_print ("ufod %s\n", UFO_VERSION);
+        exit (EXIT_SUCCESS);
     }
 
     if (opts->addr == NULL)
@@ -392,6 +402,8 @@ main (int argc, char * argv[])
     context = zmq_ctx_new ();
     priv.socket = zmq_socket (context, ZMQ_REP);
     zmq_bind (priv.socket, opts->addr);
+
+    g_print ("ufod %s - waiting for requests ...\n", UFO_VERSION);
 
     while (1) {
         zmq_msg_t request;
