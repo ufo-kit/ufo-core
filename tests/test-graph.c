@@ -188,7 +188,7 @@ test_get_labels (Fixture *fixture, gconstpointer data)
 }
 
 static void
-test_split_and_join (Fixture *fixture, gconstpointer data)
+test_expansion (Fixture *fixture, gconstpointer data)
 {
     GList *successors;
     UfoNode *node;
@@ -198,7 +198,7 @@ test_split_and_join (Fixture *fixture, gconstpointer data)
     path = g_list_append (path, fixture->target1);
     path = g_list_append (path, fixture->target2);
 
-    ufo_graph_split (fixture->sequence, path);
+    ufo_graph_expand (fixture->sequence, path);
     g_list_free (path);
 
     successors = ufo_graph_get_successors (fixture->sequence, fixture->root);
@@ -241,31 +241,35 @@ test_add_graph (void)
                 Fixture, NULL,
                 fixture_setup, test_connected, fixture_teardown);
 
-    g_test_add ("/graph/roots",
-                Fixture, NULL,
-                fixture_setup, test_get_roots, fixture_teardown);
-
-    g_test_add ("/graph/num-nodes",
+    g_test_add ("/graph/nodes/number",
                 Fixture, NULL,
                 fixture_setup, test_get_num_nodes, fixture_teardown);
 
-    g_test_add ("/graph/num-edges",
+    g_test_add ("/graph/nodes/roots",
                 Fixture, NULL,
-                fixture_setup, test_get_num_edges, fixture_teardown);
+                fixture_setup, test_get_roots, fixture_teardown);
 
-    g_test_add ("/graph/edges/get",
-                Fixture, NULL,
-                fixture_setup, test_get_edges, fixture_teardown);
-
-    g_test_add ("/graph/get-successors",
+    g_test_add ("/graph/nodes/successors",
                 Fixture, NULL,
                 fixture_setup, test_get_successors, fixture_teardown);
 
-    g_test_add ("/graph/get-predecessors",
+    g_test_add ("/graph/nodes/predecessors",
                 Fixture, NULL,
                 fixture_setup, test_get_predecessors, fixture_teardown);
 
-    g_test_add ("/graph/remove-edge",
+    g_test_add ("/graph/nodes/filtered",
+                Fixture, NULL,
+                fixture_setup, test_get_nodes_filtered, fixture_teardown);
+
+    g_test_add ("/graph/edges/number",
+                Fixture, NULL,
+                fixture_setup, test_get_num_edges, fixture_teardown);
+
+    g_test_add ("/graph/edges/all",
+                Fixture, NULL,
+                fixture_setup, test_get_edges, fixture_teardown);
+
+    g_test_add ("/graph/edges/remove",
                 Fixture, NULL,
                 fixture_setup, test_remove_edge, fixture_teardown);
 
@@ -273,11 +277,7 @@ test_add_graph (void)
                 Fixture, NULL,
                 fixture_setup, test_get_labels, fixture_teardown);
 
-    g_test_add ("/graph/split-join",
+    g_test_add ("/graph/expansion",
                 Fixture, NULL,
-                fixture_setup, test_split_and_join, fixture_teardown);
-
-    g_test_add ("/graph/get-nodes-filtered",
-                Fixture, NULL,
-                fixture_setup, test_get_nodes_filtered, fixture_teardown);
+                fixture_setup, test_expansion, fixture_teardown);
 }

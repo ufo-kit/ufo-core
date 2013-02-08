@@ -310,9 +310,9 @@ create_remote_tasks (UfoTaskGraph *task_graph,
 }
 
 static void
-split_remotes (UfoTaskGraph *task_graph,
-               GList *remotes,
-               GList *path)
+expand_remotes (UfoTaskGraph *task_graph,
+                GList *remotes,
+                GList *path)
 {
     UfoTaskGraph *remote_graph;
     UfoTaskNode *node;
@@ -404,16 +404,16 @@ find_longest_path (GList *paths)
 }
 
 /**
- * ufo_task_graph_split:
+ * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
  * @arch_graph: A #UfoArchGraph
  *
- * Splits @task_graph in a way that most of the resources in @arch_graph can be
+ * Expands @task_graph in a way that most of the resources in @arch_graph can be
  * occupied. In the simple pipeline case, the longest possible GPU paths are
  * duplicated as much as there are GPUs in @arch_graph.
  */
 void
-ufo_task_graph_split (UfoTaskGraph *task_graph,
+ufo_task_graph_expand (UfoTaskGraph *task_graph,
                       UfoArchGraph *arch_graph)
 {
     GList *paths;
@@ -436,15 +436,15 @@ ufo_task_graph_split (UfoTaskGraph *task_graph,
         n_remotes = g_list_length (remotes);
 
         if (n_remotes > 0) {
-            g_debug ("Split for %i remote nodes", n_remotes);
-            split_remotes (task_graph, remotes, path);
+            g_debug ("Expand for %i remote nodes", n_remotes);
+            expand_remotes (task_graph, remotes, path);
         }
 
         n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
-        g_debug ("Split for %i GPU nodes", n_gpus);
+        g_debug ("Expand for %i GPU nodes", n_gpus);
 
         for (guint i = 1; i < n_gpus; i++)
-            ufo_graph_split (UFO_GRAPH (task_graph), path);
+            ufo_graph_expand (UFO_GRAPH (task_graph), path);
 
         g_list_free (remotes);
     }

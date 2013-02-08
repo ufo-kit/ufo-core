@@ -112,7 +112,7 @@ GList      *ufo_graph_get_successors        (UfoGraph       *graph,
                                              UfoNode        *node);
 GList      *ufo_graph_get_paths             (UfoGraph       *graph,
                                              UfoFilterPredicate pred);
-void        ufo_graph_split                 (UfoGraph       *graph,
+void        ufo_graph_expand                (UfoGraph       *graph,
                                              GList          *path);
 void        ufo_graph_dump_dot              (UfoGraph       *graph,
                                              const gchar    *filename);

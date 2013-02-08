@@ -63,12 +63,12 @@ struct _UfoSchedulerPrivate {
     UfoConfig       *config;
     UfoResources    *resources;
     GList           *remotes;
-    gboolean         split;
+    gboolean         expand;
 };
 
 enum {
     PROP_0,
-    PROP_SPLIT,
+    PROP_EXPAND,
     PROP_REMOTES,
     N_PROPERTIES,
 
@@ -121,19 +121,19 @@ ufo_scheduler_get_context (UfoScheduler *scheduler)
 }
 
 /**
- * ufo_scheduler_set_task_split:
+ * ufo_scheduler_set_task_expansion:
  * @scheduler: A #UfoScheduler
  * @split: %TRUE if task graph should be split
  *
- * Sets whether the task graph should be split before execution to increase
+ * Sets whether the task graph should be expanded before execution to increase
  * multi GPU performance.
  */
 void
-ufo_scheduler_set_task_split (UfoScheduler *scheduler,
-                              gboolean split)
+ufo_scheduler_set_task_expansion (UfoScheduler *scheduler,
+                                  gboolean expand)
 {
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
-    g_object_set (G_OBJECT (scheduler), "split", split, NULL);
+    g_object_set (G_OBJECT (scheduler), "expand", expand, NULL);
 }
 
 static gboolean
@@ -479,8 +479,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources,
                                                      priv->remotes));
 
-    if (priv->split)
-        ufo_task_graph_split (task_graph, arch_graph);
+    if (priv->expand)
+        ufo_task_graph_expand (task_graph, arch_graph);
 
     ufo_task_graph_map (task_graph, arch_graph);
 
@@ -562,8 +562,8 @@ ufo_scheduler_set_property (GObject      *object,
             copy_remote_list (priv, g_value_get_boxed (value));
             break;
 
-        case PROP_SPLIT:
-            priv->split = g_value_get_boolean (value);
+        case PROP_EXPAND:
+            priv->expand = g_value_get_boolean (value);
             break;
 
         default:
@@ -581,8 +581,8 @@ ufo_scheduler_get_property (GObject      *object,
     UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE (object);
 
     switch (property_id) {
-        case PROP_SPLIT:
-            g_value_set_boolean (value, priv->split);
+        case PROP_EXPAND:
+            g_value_set_boolean (value, priv->expand);
             break;
 
         default:
@@ -644,10 +644,10 @@ ufo_scheduler_class_init (UfoSchedulerClass *klass)
     gobject_class->dispose      = ufo_scheduler_dispose;
     gobject_class->finalize     = ufo_scheduler_finalize;
 
-    properties[PROP_SPLIT] =
-        g_param_spec_boolean ("split",
-                              "Split the task graph for better multi GPU support",
-                              "Split the task graph for better multi GPU support",
+    properties[PROP_EXPAND] =
+        g_param_spec_boolean ("expand",
+                              "Expand the task graph for better multi GPU performance",
+                              "Expand the task graph for better multi GPU performance",
                               TRUE,
                               G_PARAM_READWRITE);
 
@@ -676,7 +676,7 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     UfoSchedulerPrivate *priv;
 
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
-    priv->split = TRUE;
+    priv->expand = TRUE;
     priv->config = NULL;
     priv->resources = NULL;
     priv->remotes = NULL;

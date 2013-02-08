@@ -70,7 +70,8 @@ void          ufo_scheduler_run             (UfoScheduler  *scheduler,
                                              UfoTaskGraph  *task_graph,
                                              GError**       error);
 gpointer      ufo_scheduler_get_context     (UfoScheduler  *scheduler);
-void          ufo_scheduler_set_task_split  (UfoScheduler  *scheduler,
+void          ufo_scheduler_set_task_expansion
+                                            (UfoScheduler  *scheduler,
                                              gboolean       split);
 GType         ufo_scheduler_get_type        (void);
 

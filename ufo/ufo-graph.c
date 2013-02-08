@@ -466,7 +466,7 @@ ufo_graph_get_successors (UfoGraph *graph,
 }
 
 /**
- * ufo_graph_split:
+ * ufo_graph_expand:
  * @graph: A #UfoGraph
  * @path: (element-type UfoNode): A path of nodes, preferably created with
  * ufo_graph_get_paths().
@@ -475,8 +475,8 @@ ufo_graph_get_successors (UfoGraph *graph,
  * position of where path started and ended.
  */
 void
-ufo_graph_split (UfoGraph *graph,
-                 GList *path)
+ufo_graph_expand (UfoGraph *graph,
+                  GList *path)
 {
     GList *head;
     GList *tail;
