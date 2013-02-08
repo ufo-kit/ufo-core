@@ -28,6 +28,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ufo")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/ufo")
 
 
 # --- Options -----------------------------------------------------------------
