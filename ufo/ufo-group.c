@@ -92,9 +92,6 @@ ufo_group_new (GList *targets,
     for (guint i = 0; i < priv->n_targets; i++)
         priv->queues[i] = ufo_queue_new ();
 
-    if (pattern == UFO_SEND_SEQUENTIAL)
-        priv->targets = g_list_reverse (priv->targets);
-
     return group;
 }
 
