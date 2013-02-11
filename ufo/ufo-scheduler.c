@@ -56,7 +56,7 @@ typedef struct {
     UfoTaskMode      mode;
     guint            n_inputs;
     UfoInputParam   *in_params;
-    gint            *n_fetched;
+    gboolean        *finished;
 } TaskLocalData;
 
 struct _UfoSchedulerPrivate {
@@ -141,20 +141,29 @@ get_inputs (TaskLocalData *tld,
             UfoBuffer **inputs)
 {
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
+    guint n_finished = 0;
 
     for (guint i = 0; i < tld->n_inputs; i++) {
         UfoGroup *group;
 
-        group = ufo_task_node_get_current_in_group (node, i);
-        inputs[i] = ufo_group_pop_input_buffer (group, tld->task);
+        if (!tld->finished[i]) {
+            UfoBuffer *input;
 
-        if (inputs[i] == UFO_END_OF_STREAM)
-            return FALSE;
+            group = ufo_task_node_get_current_in_group (node, i);
+            input = ufo_group_pop_input_buffer (group, tld->task);
 
-        tld->n_fetched[i]++;
+            if (input == UFO_END_OF_STREAM) {
+                tld->finished[i] = TRUE;
+                n_finished++;
+            }
+            else
+                inputs[i] = input;
+        }
+        else
+            n_finished++;
     }
 
-    return TRUE;
+    return (tld->n_inputs == 0) || (n_finished < tld->n_inputs);
 }
 
 static void
@@ -369,8 +378,8 @@ cleanup_task_local_data (TaskLocalData **tlds,
 {
     for (guint i = 0; i < n; i++) {
         TaskLocalData *tld = tlds[i];
-        g_free (tld->n_fetched);
         g_free (tld->in_params);
+        g_free (tld->finished);
         g_free (tld);
     }
 
@@ -403,7 +412,7 @@ setup_tasks (UfoSchedulerPrivate *priv,
         ufo_task_setup (UFO_TASK (node), priv->resources, error);
         ufo_task_get_structure (UFO_TASK (node), &tld->n_inputs, &tld->in_params, &tld->mode);
 
-        tld->n_fetched = g_new0 (gint, tld->n_inputs);
+        tld->finished = g_new0 (gboolean, tld->n_inputs);
 
         if (error && *error != NULL)
             return NULL;
