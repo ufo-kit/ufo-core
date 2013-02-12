@@ -25,6 +25,7 @@
 #include <CL/cl.h>
 #endif
 #include <zmq.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ufo/ufo.h>
 
