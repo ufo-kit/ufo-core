@@ -449,8 +449,6 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         g_list_free (remotes);
     }
 
-    ufo_graph_dump_dot (UFO_GRAPH (task_graph), "graph.dot");
-
     g_list_foreach (paths, (GFunc) g_list_free, NULL);
     g_list_free (paths);
 }
