@@ -351,9 +351,21 @@ run_task (TaskLocalData *tld)
                 case UFO_TASK_MODE_GENERATE:
                     {
                         do {
-                            active = ufo_cpu_task_generate (UFO_CPU_TASK (tld->task),
-                                                            output,
-                                                            &requisition);
+                            if (UFO_IS_GPU_TASK (tld->task)) {
+                                UfoGpuNode *gpu_node;
+
+                                ufo_buffer_discard_location (output, UFO_LOCATION_HOST);
+                                gpu_node = UFO_GPU_NODE (ufo_task_node_get_proc_node (node));
+                                active = ufo_gpu_task_generate (UFO_GPU_TASK (tld->task),
+                                                                output,
+                                                                &requisition, gpu_node);
+                            }
+                            else {
+                                active = ufo_cpu_task_generate (UFO_CPU_TASK (tld->task),
+                                                                output,
+                                                                &requisition);
+                            }
+
                             if (active) {
                                 ufo_group_push_output_buffer (group, output);
                                 output = ufo_group_pop_output_buffer (group, &requisition);

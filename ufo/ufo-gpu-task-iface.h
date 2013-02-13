@@ -44,15 +44,19 @@ struct _UfoGpuTaskIface {
     /*< private >*/
     UfoTaskIface parent_iface;
 
-    gboolean (*process) (UfoGpuTask *task,
-                         UfoBuffer **inputs,
-                         UfoBuffer *output,
+    gboolean (*process) (UfoGpuTask     *task,
+                         UfoBuffer     **inputs,
+                         UfoBuffer      *output,
                          UfoRequisition *requisition,
-                         UfoGpuNode *node);
-    void     (*reduce)  (UfoGpuTask *task,
-                         UfoBuffer *output,
+                         UfoGpuNode     *node);
+    void     (*reduce)  (UfoGpuTask     *task,
+                         UfoBuffer      *output,
                          UfoRequisition *requisition,
-                         UfoGpuNode *node);
+                         UfoGpuNode     *node);
+    gboolean (*generate)(UfoGpuTask     *task,
+                         UfoBuffer      *output,
+                         UfoRequisition *requisition,
+                         UfoGpuNode     *node);
 };
 
 gboolean ufo_gpu_task_process (UfoGpuTask       *task,
@@ -61,6 +65,10 @@ gboolean ufo_gpu_task_process (UfoGpuTask       *task,
                                UfoRequisition   *requisition,
                                UfoGpuNode       *node);
 void     ufo_gpu_task_reduce  (UfoGpuTask       *task,
+                               UfoBuffer        *output,
+                               UfoRequisition   *requisition,
+                               UfoGpuNode       *node);
+gboolean ufo_gpu_task_generate(UfoGpuTask       *task,
                                UfoBuffer        *output,
                                UfoRequisition   *requisition,
                                UfoGpuNode       *node);
