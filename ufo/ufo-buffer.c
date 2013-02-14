@@ -44,14 +44,9 @@ enum {
     N_PROPERTIES
 };
 
-typedef struct {
-    guint num_dims;
-    gfloat *data;
-    gsize dim_size[UFO_BUFFER_MAX_NDIMS];
-} nd_array;
-
 struct _UfoBufferPrivate {
-    nd_array            host_array;
+    UfoRequisition      requisition;
+    gfloat             *host_array;
     cl_mem              device_array;
     cl_context          context;
     cl_command_queue    last_queue;
@@ -65,21 +60,21 @@ alloc_mem (UfoBufferPrivate *priv,
 {
     cl_int err;
 
-    if (priv->host_array.data != NULL)
-        g_free (priv->host_array.data);
+    if (priv->host_array != NULL)
+        g_free (priv->host_array);
 
     if (priv->device_array != NULL)
         clReleaseMemObject (priv->device_array);
 
     priv->size = sizeof(gfloat);
-    priv->host_array.num_dims = requisition->n_dims;
+    priv->requisition.n_dims = requisition->n_dims;
 
     for (guint i = 0; i < requisition->n_dims; i++) {
-        priv->host_array.dim_size[i] = requisition->dims[i];
+        priv->requisition.dims[i] = requisition->dims[i];
         priv->size *= requisition->dims[i];
     }
 
-    priv->host_array.data = g_malloc0 (priv->size);
+    priv->host_array = g_malloc0 (priv->size);
     priv->device_array = clCreateBuffer (priv->context,
                                          CL_MEM_READ_WRITE, /* XXX: we _should_ evaluate USE_HOST_PTR */
                                          priv->size,
@@ -131,8 +126,8 @@ static void
 copy_host_to_host (UfoBufferPrivate *src_priv,
                    UfoBufferPrivate *dst_priv)
 {
-    g_memmove (dst_priv->host_array.data,
-               src_priv->host_array.data,
+    g_memmove (dst_priv->host_array,
+               src_priv->host_array,
                src_priv->size);
 }
 
@@ -179,7 +174,7 @@ ufo_buffer_to_host (UfoBuffer *buffer, gpointer cmd_queue)
                                   priv->device_array,
                                   CL_TRUE,
                                   0, priv->size,
-                                  priv->host_array.data,
+                                  priv->host_array,
                                   0, NULL, NULL);
 
     priv->location = UFO_LOCATION_HOST;
@@ -207,7 +202,7 @@ ufo_buffer_to_device (UfoBuffer *buffer, gpointer cmd_queue)
                                    priv->device_array,
                                    CL_TRUE,
                                    0, priv->size,
-                                   priv->host_array.data,
+                                   priv->host_array,
                                    0, NULL, NULL);
 
     priv->location = UFO_LOCATION_DEVICE;
@@ -302,9 +297,9 @@ ufo_buffer_resize (UfoBuffer *buffer,
 
     priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
-    if (priv->host_array.data != NULL) {
-        g_free (priv->host_array.data);
-        priv->host_array.data = NULL;
+    if (priv->host_array != NULL) {
+        g_free (priv->host_array);
+        priv->host_array = NULL;
     }
 
     if (priv->device_array != NULL) {
@@ -328,14 +323,17 @@ gint
 ufo_buffer_cmp_dimensions (UfoBuffer *buffer,
                            UfoRequisition *requisition)
 {
+    UfoBufferPrivate *priv;
     gint result;
+
     g_return_val_if_fail (UFO_IS_BUFFER(buffer), FALSE);
 
+    priv = buffer->priv;
     result = 0;
 
-    for (guint i = 0; i < buffer->priv->host_array.num_dims; i++) {
+    for (guint i = 0; i < priv->requisition.n_dims; i++) {
         gint req_dim = (gint) requisition->dims[i];
-        gint host_dim = (gint) buffer->priv->host_array.dim_size[i];
+        gint host_dim = (gint) priv->requisition.dims[i];
         result += req_dim - host_dim;
     }
 
@@ -357,10 +355,10 @@ ufo_buffer_get_requisition (UfoBuffer *buffer,
 
     g_return_if_fail (UFO_IS_BUFFER (buffer) && (requisition != NULL));
     priv = buffer->priv;
-    requisition->n_dims = priv->host_array.num_dims;
+    requisition->n_dims = priv->requisition.n_dims;
 
-    for (guint i = 0; i < priv->host_array.num_dims; i++)
-        requisition->dims[i] = priv->host_array.dim_size[i];
+    for (guint i = 0; i < priv->requisition.n_dims; i++)
+        requisition->dims[i] = priv->requisition.dims[i];
 }
 
 /**
@@ -377,7 +375,7 @@ ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
 {
     g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
     ufo_buffer_to_host (buffer, cmd_queue);
-    return buffer->priv->host_array.data;
+    return buffer->priv->host_array;
 }
 
 /**
@@ -433,20 +431,20 @@ ufo_buffer_convert (UfoBuffer *buffer,
     g_return_if_fail (UFO_IS_BUFFER (buffer));
     priv = buffer->priv;
     n_pixels = (gint) (priv->size / 4);
-    dst = priv->host_array.data;
+    dst = priv->host_array;
 
     /* To save a memory allocation and several copies, we process data from back
      * to front. This is possible if src bit depth is at most half as wide as
      * the 32-bit target buffer. The processor cache should not be a
      * problem. */
     if (depth == UFO_BUFFER_DEPTH_8U) {
-        guint8 *src = (guint8 *) priv->host_array.data;
+        guint8 *src = (guint8 *) priv->host_array;
 
         for (gint i = (n_pixels - 1); i >= 0; i--)
             dst[i] = ((gfloat) src[i]);
     }
     else if (depth == UFO_BUFFER_DEPTH_16U) {
-        guint16 *src = (guint16 *) priv->host_array.data;
+        guint16 *src = (guint16 *) priv->host_array;
 
         for (gint i = (n_pixels - 1); i >= 0; i--)
             dst[i] = ((gfloat) src[i]);
@@ -485,8 +483,8 @@ ufo_buffer_finalize (GObject *gobject)
     UfoBuffer *buffer = UFO_BUFFER (gobject);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
-    g_free (priv->host_array.data);
-    priv->host_array.data = NULL;
+    g_free (priv->host_array);
+    priv->host_array = NULL;
 
     if (priv->device_array != NULL) {
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
@@ -512,8 +510,8 @@ ufo_buffer_init (UfoBuffer *buffer)
     buffer->priv = priv = UFO_BUFFER_GET_PRIVATE(buffer);
     priv->last_queue = NULL;
     priv->device_array = NULL;
-    priv->host_array.data = NULL;
-    priv->host_array.num_dims = 0;
+    priv->host_array = NULL;
+    priv->requisition.n_dims = 0;
 }
 
 static void
