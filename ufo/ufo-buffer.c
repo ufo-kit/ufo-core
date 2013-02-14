@@ -57,7 +57,6 @@ struct _UfoBufferPrivate {
     cl_command_queue    last_queue;
     gsize               size;   /**< size of buffer in bytes */
     UfoMemLocation      location;
-    GTimer             *timer;
 };
 
 static void
@@ -494,11 +493,6 @@ ufo_buffer_finalize (GObject *gobject)
         priv->device_array = NULL;
     }
 
-    if (priv->timer != NULL) {
-        g_timer_destroy (priv->timer);
-        priv->timer = NULL;
-    }
-
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
@@ -520,8 +514,6 @@ ufo_buffer_init (UfoBuffer *buffer)
     priv->device_array = NULL;
     priv->host_array.data = NULL;
     priv->host_array.num_dims = 0;
-    priv->timer = g_timer_new ();
-    g_timer_stop (priv->timer);
 }
 
 static void
