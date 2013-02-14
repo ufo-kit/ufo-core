@@ -264,11 +264,25 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
         cmd_queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
 
         if (cmd_queue == NULL || dpriv->location == UFO_LOCATION_HOST) {
+            if (spriv->host_array == NULL)
+                alloc_host_mem (spriv);
+
             transfer_to_host (spriv, cmd_queue);
+
+            if (dpriv->host_array == NULL)
+                alloc_host_mem (dpriv);
+
             copy_host_to_host (spriv, dpriv);
         }
         else {
+            if (spriv->device_array == NULL)
+                alloc_device_mem (spriv);
+
             transfer_to_device (spriv, cmd_queue);
+
+            if (dpriv->device_array == NULL)
+                alloc_device_mem (dpriv);
+
             copy_device_to_device (spriv, dpriv);
         }
     }
