@@ -55,33 +55,52 @@ struct _UfoBufferPrivate {
 };
 
 static void
-alloc_mem (UfoBufferPrivate *priv,
-           UfoRequisition *requisition)
+copy_requisition (UfoRequisition *src,
+                  UfoRequisition *dst)
 {
-    cl_int err;
+    const guint n_dims = src->n_dims;
 
+    dst->n_dims = n_dims;
+
+    for (guint i = 0; i < n_dims; i++)
+        dst->dims[i] = src->dims[i];
+}
+
+static gsize
+compute_required_size (UfoRequisition *requisition)
+{
+    gsize size = sizeof (gfloat);
+
+    for (guint i = 0; i < requisition->n_dims; i++)
+        size *= requisition->dims[i];
+
+    return size;
+}
+
+static void
+alloc_host_mem (UfoBufferPrivate *priv)
+{
     if (priv->host_array != NULL)
         g_free (priv->host_array);
 
-    if (priv->device_array != NULL)
-        clReleaseMemObject (priv->device_array);
-
-    priv->size = sizeof(gfloat);
-    priv->requisition.n_dims = requisition->n_dims;
-
-    for (guint i = 0; i < requisition->n_dims; i++) {
-        priv->requisition.dims[i] = requisition->dims[i];
-        priv->size *= requisition->dims[i];
-    }
-
     priv->host_array = g_malloc0 (priv->size);
+}
+
+static void
+alloc_device_mem (UfoBufferPrivate *priv)
+{
+    cl_int err;
+
+    if (priv->device_array != NULL)
+        UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
+
     priv->device_array = clCreateBuffer (priv->context,
                                          CL_MEM_READ_WRITE, /* XXX: we _should_ evaluate USE_HOST_PTR */
                                          priv->size,
                                          NULL,
                                          &err);
+
     UFO_RESOURCES_CHECK_CLERR (err);
-    priv->location = UFO_LOCATION_HOST;
 }
 
 /**
@@ -98,12 +117,16 @@ ufo_buffer_new (UfoRequisition *requisition,
                 gpointer context)
 {
     UfoBuffer *buffer;
+    UfoBufferPrivate *priv;
 
     g_return_val_if_fail ((requisition->n_dims <= UFO_BUFFER_MAX_NDIMS), NULL);
     buffer = UFO_BUFFER (g_object_new (UFO_TYPE_BUFFER, NULL));
-    buffer->priv->context = context;
+    priv = buffer->priv;
+    priv->context = context;
 
-    alloc_mem (buffer->priv, requisition);
+    priv->size = compute_required_size (requisition);
+    copy_requisition (requisition, &priv->requisition);
+
     return buffer;
 }
 
@@ -155,14 +178,11 @@ copy_device_to_device (UfoBufferPrivate *src_priv,
 }
 
 static void
-ufo_buffer_to_host (UfoBuffer *buffer, gpointer cmd_queue)
+transfer_to_host (UfoBufferPrivate *priv,
+                  gpointer cmd_queue)
 {
-    UfoBufferPrivate *priv;
     cl_int cl_err;
     cl_command_queue queue;
-
-    g_return_if_fail (UFO_IS_BUFFER (buffer));
-    priv = buffer->priv;
 
     queue = cmd_queue == NULL ? priv->last_queue : cmd_queue;
     priv->last_queue = cmd_queue;
@@ -182,14 +202,11 @@ ufo_buffer_to_host (UfoBuffer *buffer, gpointer cmd_queue)
 }
 
 static void
-ufo_buffer_to_device (UfoBuffer *buffer, gpointer cmd_queue)
+transfer_to_device (UfoBufferPrivate *priv,
+                    gpointer cmd_queue)
 {
-    UfoBufferPrivate *priv;
     cl_int cl_err;
     cl_command_queue queue;
-
-    g_return_if_fail (UFO_IS_BUFFER (buffer));
-    priv = buffer->priv;
 
     queue = cmd_queue == NULL ? priv->last_queue : cmd_queue;
     priv->last_queue = cmd_queue;
@@ -247,11 +264,11 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
         cmd_queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
 
         if (cmd_queue == NULL || dpriv->location == UFO_LOCATION_HOST) {
-            ufo_buffer_to_host (src, cmd_queue);
+            transfer_to_host (spriv, cmd_queue);
             copy_host_to_host (spriv, dpriv);
         }
         else {
-            ufo_buffer_to_device (src, cmd_queue);
+            transfer_to_device (spriv, cmd_queue);
             copy_device_to_device (spriv, dpriv);
         }
     }
@@ -307,7 +324,7 @@ ufo_buffer_resize (UfoBuffer *buffer,
         priv->device_array = NULL;
     }
 
-    alloc_mem (priv, requisition);
+    copy_requisition (requisition, &priv->requisition);
 }
 
 /**
@@ -355,10 +372,16 @@ ufo_buffer_get_requisition (UfoBuffer *buffer,
 
     g_return_if_fail (UFO_IS_BUFFER (buffer) && (requisition != NULL));
     priv = buffer->priv;
-    requisition->n_dims = priv->requisition.n_dims;
 
-    for (guint i = 0; i < priv->requisition.n_dims; i++)
-        requisition->dims[i] = priv->requisition.dims[i];
+    copy_requisition (&priv->requisition, requisition);
+}
+
+static void
+update_last_queue (UfoBufferPrivate *priv,
+                   cl_command_queue queue)
+{
+    if (queue != NULL)
+        priv->last_queue = queue;
 }
 
 /**
@@ -373,9 +396,21 @@ ufo_buffer_get_requisition (UfoBuffer *buffer,
 gfloat *
 ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
 {
+    UfoBufferPrivate *priv;
+
     g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
-    ufo_buffer_to_host (buffer, cmd_queue);
-    return buffer->priv->host_array;
+    priv = buffer->priv;
+
+    update_last_queue (priv, cmd_queue);
+
+    if (priv->host_array == NULL)
+        alloc_host_mem (priv);
+
+    if (priv->device_array != NULL)
+        transfer_to_host (priv, cmd_queue);
+
+    priv->location = UFO_LOCATION_HOST;
+    return priv->host_array;
 }
 
 /**
@@ -392,9 +427,21 @@ ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
 gpointer
 ufo_buffer_get_device_array (UfoBuffer *buffer, gpointer cmd_queue)
 {
+    UfoBufferPrivate *priv;
+
     g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
-    ufo_buffer_to_device (buffer, cmd_queue);
-    return buffer->priv->device_array;
+    priv = buffer->priv;
+
+    update_last_queue (priv, cmd_queue);
+
+    if (priv->device_array == NULL)
+        alloc_device_mem (priv);
+
+    if (priv->host_array != NULL)
+        transfer_to_device (priv, cmd_queue);
+
+    priv->location = UFO_LOCATION_DEVICE;
+    return priv->device_array;
 }
 
 /**
