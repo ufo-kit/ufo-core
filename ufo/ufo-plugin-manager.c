@@ -152,7 +152,7 @@ transform_string (const gchar *pattern,
  *
  * Since: 0.2, the error parameter is available
  *
- * Returns: (transfer none): (allow-none): #UfoFilter or %NULL if module cannot be found
+ * Returns: (transfer full): (allow-none): #UfoFilter or %NULL if module cannot be found
  */
 UfoNode *
 ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GError **error)
@@ -330,8 +330,15 @@ ufo_plugin_manager_finalize (GObject *gobject)
     UfoPluginManager *manager = UFO_PLUGIN_MANAGER (gobject);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
 
-    g_slist_foreach (priv->modules, (GFunc) g_module_close, NULL);
-    g_slist_free (priv->modules);
+    /* XXX: This is a necessary hack! We return a full reference for
+     * ufo_plugin_manager_get_task() so that the Python run-time can cleanup
+     * the tasks that are assigned. However, there is no relationship between
+     * graphs, tasks and the plugin manager and it might happen, that the plugin
+     * manager is destroy before the graph which in turn would unref invalid
+     * objects. So, we just don't close the modules and hope for the best.
+     */
+    /* g_slist_foreach (priv->modules, (GFunc) g_module_close, NULL); */
+    /* g_slist_free (priv->modules); */
 
     g_list_foreach (priv->search_paths, (GFunc) g_free, NULL);
     g_list_free (priv->search_paths);
