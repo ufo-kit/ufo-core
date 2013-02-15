@@ -44,13 +44,15 @@ G_BEGIN_DECLS
  * @UFO_LOCATION_INVALID: Memory is neither valid on host nor on device.
  * @UFO_LOCATION_HOST: Memory is valid on host memory.
  * @UFO_LOCATION_DEVICE: Memory is valid on device memory.
+ * @UFO_LOCATION_DEVICE_IMAGE: Memory is valid on device image memory.
  *
  * Memory locations of a #UfoBuffer.
  */
 typedef enum {
-    UFO_LOCATION_INVALID,
-    UFO_LOCATION_HOST,
-    UFO_LOCATION_DEVICE
+    UFO_LOCATION_HOST = 0,
+    UFO_LOCATION_DEVICE,
+    UFO_LOCATION_DEVICE_IMAGE,
+    UFO_LOCATION_INVALID
 } UfoMemLocation;
 
 typedef struct _UfoBuffer           UfoBuffer;
@@ -143,8 +145,9 @@ gfloat*     ufo_buffer_get_host_array       (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
 gpointer    ufo_buffer_get_device_array     (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
-void        ufo_buffer_discard_location     (UfoBuffer      *buffer,
-                                             UfoMemLocation  location);
+gpointer    ufo_buffer_get_device_image     (UfoBuffer      *buffer,
+                                             gpointer        cmd_queue);
+void        ufo_buffer_discard_location     (UfoBuffer      *buffer);
 void        ufo_buffer_convert              (UfoBuffer      *buffer,
                                              UfoBufferDepth  depth);
 GType       ufo_buffer_get_type             (void);

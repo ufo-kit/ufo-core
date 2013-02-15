@@ -48,10 +48,12 @@ struct _UfoBufferPrivate {
     UfoRequisition      requisition;
     gfloat             *host_array;
     cl_mem              device_array;
+    cl_mem              device_image;
     cl_context          context;
     cl_command_queue    last_queue;
     gsize               size;   /**< size of buffer in bytes */
     UfoMemLocation      location;
+    UfoMemLocation      last_location;
 };
 
 static void
@@ -87,21 +89,108 @@ alloc_host_mem (UfoBufferPrivate *priv)
 }
 
 static void
-alloc_device_mem (UfoBufferPrivate *priv)
+alloc_device_array (UfoBufferPrivate *priv)
 {
     cl_int err;
+    cl_mem mem;
 
     if (priv->device_array != NULL)
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
 
-    priv->device_array = clCreateBuffer (priv->context,
-                                         CL_MEM_READ_WRITE, /* XXX: we _should_ evaluate USE_HOST_PTR */
-                                         priv->size,
-                                         NULL,
-                                         &err);
+    mem = clCreateBuffer (priv->context,
+                          CL_MEM_READ_WRITE,
+                          priv->size,
+                          NULL, &err);
 
     UFO_RESOURCES_CHECK_CLERR (err);
+    priv->device_array = mem;
 }
+
+#ifdef CL_VERSION_1_2
+static void
+alloc_device_image (UfoBufferPrivate *priv)
+{
+    cl_image_desc desc;
+    cl_image_format format;
+    cl_int errcode;
+    cl_mem mem;
+
+    g_assert ((priv->requisition.n_dims == 2) ||
+              (priv->requisition.n_dims == 3));
+
+    if (priv->device_image != NULL)
+        UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_image));
+
+    format.image_channel_order = CL_R;
+    format.image_channel_data_type = CL_FLOAT;
+
+    if (priv->requisition.n_dims == 2) {
+        desc.image_type = CL_MEM_OBJECT_IMAGE2D;
+        desc.image_depth = 1;
+    }
+    else {
+        desc.image_type = CL_MEM_OBJECT_IMAGE3D;
+        desc.image_depth = priv->requisition.dims[2];
+    }
+
+    desc.image_width = priv->requisition.dims[0];
+    desc.image_height = priv->requisition.dims[1];
+    desc.image_array_size = 0;
+    desc.image_row_pitch = 0;
+    desc.image_slice_pitch = 0;
+    desc.num_mip_levels = 0;
+    desc.num_samples = 0;
+    desc.buffer = NULL;
+
+    mem = clCreateImage (priv->context,
+                         CL_MEM_READ_WRITE,
+                         &format, &desc,
+                         NULL, &errcode);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+    priv->device_image = mem;
+}
+#else
+static void
+alloc_device_image (UfoBufferPrivate *priv)
+{
+    cl_image_format format;
+    cl_mem_flags flags;
+    cl_mem mem;
+    cl_int err;
+    gsize width, height, depth;
+
+    g_assert ((priv->requisition.n_dims == 2) ||
+              (priv->requisition.n_dims == 3));
+
+    if (priv->device_image != NULL)
+        UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_image));
+
+    format.image_channel_order = CL_R;
+    format.image_channel_data_type = CL_FLOAT;
+
+    flags = CL_MEM_READ_WRITE;
+    width = priv->requisition.dims[0];
+    height = priv->requisition.dims[1];
+    depth = priv->requisition.dims[2];
+
+    if (priv->requisition.n_dims == 2) {
+        mem = clCreateImage2D (priv->context,
+                               flags, &format,
+                               width, height, 0,
+                               NULL, &err);
+    }
+    else if (priv->requisition.n_dims == 3) {
+        mem = clCreateImage3D (priv->context,
+                               flags, &format,
+                               width, height, depth, 0, 0,
+                               NULL, &err);
+    }
+
+    UFO_RESOURCES_CHECK_CLERR (err);
+    priv->device_image = mem;
+}
+#endif
 
 /**
  * ufo_buffer_new:
@@ -146,8 +235,22 @@ ufo_buffer_get_size (UfoBuffer *buffer)
 }
 
 static void
-copy_host_to_host (UfoBufferPrivate *src_priv,
-                   UfoBufferPrivate *dst_priv)
+set_region_from_requisition (size_t region[3],
+                             UfoRequisition *requisition)
+{
+    region[0] = requisition->dims[0];
+    region[1] = requisition->dims[1];
+
+    if (requisition->n_dims == 3)
+        region[2] = requisition->dims[2];
+    else
+        region[2] = 1;
+}
+
+static void
+transfer_host_to_host (UfoBufferPrivate *src_priv,
+                       UfoBufferPrivate *dst_priv,
+                       cl_command_queue queue)
 {
     g_memmove (dst_priv->host_array,
                src_priv->host_array,
@@ -155,20 +258,59 @@ copy_host_to_host (UfoBufferPrivate *src_priv,
 }
 
 static void
-copy_device_to_device (UfoBufferPrivate *src_priv,
-                       UfoBufferPrivate *dst_priv)
+transfer_host_to_device (UfoBufferPrivate *src_priv,
+                         UfoBufferPrivate *dst_priv,
+                         cl_command_queue queue)
+{
+    cl_int errcode;
+
+    errcode = clEnqueueWriteBuffer (queue,
+                                    dst_priv->device_array,
+                                    CL_TRUE,
+                                    0, src_priv->size,
+                                    src_priv->host_array,
+                                    0, NULL, NULL);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+}
+
+static void
+transfer_host_to_image (UfoBufferPrivate *src_priv,
+                        UfoBufferPrivate *dst_priv,
+                        cl_command_queue queue)
+{
+    cl_int errcode;
+    cl_event event;
+    size_t region[3];
+    size_t origin[] = { 0, 0, 0 };
+
+    set_region_from_requisition (region, &src_priv->requisition);
+
+    errcode = clEnqueueWriteImage (queue,
+                                   dst_priv->device_image,
+                                   CL_TRUE,
+                                   origin, region,
+                                   0, 0,
+                                   src_priv->host_array,
+                                   0, NULL, &event);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+    UFO_RESOURCES_CHECK_CLERR (clWaitForEvents (1, &event));
+    UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
+}
+
+static void
+transfer_device_to_device (UfoBufferPrivate *src_priv,
+                           UfoBufferPrivate *dst_priv,
+                           cl_command_queue queue)
 {
     cl_event event;
     cl_int errcode;
-    cl_command_queue cmd_queue;
 
-    cmd_queue = src_priv->last_queue != NULL ? src_priv->last_queue : dst_priv->last_queue;
-    g_assert (cmd_queue != NULL);
-
-    errcode = clEnqueueCopyBuffer (cmd_queue,
+    errcode = clEnqueueCopyBuffer (queue,
                                    src_priv->device_array,
                                    dst_priv->device_array,
-                                   0, 0,                      /* offsets */
+                                   0, 0,
                                    src_priv->size,
                                    0, NULL, &event);
 
@@ -178,53 +320,113 @@ copy_device_to_device (UfoBufferPrivate *src_priv,
 }
 
 static void
-transfer_to_host (UfoBufferPrivate *priv,
-                  gpointer cmd_queue)
+transfer_device_to_host (UfoBufferPrivate *src_priv,
+                         UfoBufferPrivate *dst_priv,
+                         cl_command_queue queue)
 {
-    cl_int cl_err;
-    cl_command_queue queue;
+    cl_int errcode;
 
-    queue = cmd_queue == NULL ? priv->last_queue : cmd_queue;
-    priv->last_queue = cmd_queue;
+    errcode = clEnqueueReadBuffer (queue,
+                                   src_priv->device_array,
+                                   CL_TRUE,
+                                   0, src_priv->size,
+                                   dst_priv->host_array,
+                                   0, NULL, NULL);
 
-    if (priv->location == UFO_LOCATION_HOST)
-        return;
-
-    cl_err = clEnqueueReadBuffer (queue,
-                                  priv->device_array,
-                                  CL_TRUE,
-                                  0, priv->size,
-                                  priv->host_array,
-                                  0, NULL, NULL);
-
-    priv->location = UFO_LOCATION_HOST;
-    UFO_RESOURCES_CHECK_CLERR (cl_err);
+    UFO_RESOURCES_CHECK_CLERR (errcode);
 }
 
 static void
-transfer_to_device (UfoBufferPrivate *priv,
-                    gpointer cmd_queue)
+transfer_device_to_image (UfoBufferPrivate *src_priv,
+                          UfoBufferPrivate *dst_priv,
+                          cl_command_queue queue)
 {
-    cl_int cl_err;
-    cl_command_queue queue;
+    cl_event event;
+    cl_int errcode;
+    size_t region[3];
+    size_t origin[] = { 0, 0, 0 };
 
-    queue = cmd_queue == NULL ? priv->last_queue : cmd_queue;
-    priv->last_queue = cmd_queue;
-    g_assert (cmd_queue);
+    set_region_from_requisition (region, &src_priv->requisition);
 
-    if (priv->location == UFO_LOCATION_DEVICE)
-        return;
+    errcode = clEnqueueCopyBufferToImage (queue,
+                                          src_priv->device_array,
+                                          dst_priv->device_image,
+                                          0, origin, region,
+                                          0, NULL, &event);
 
-    cl_err = clEnqueueWriteBuffer ((cl_command_queue) queue,
-                                   priv->device_array,
-                                   CL_TRUE,
-                                   0, priv->size,
-                                   priv->host_array,
-                                   0, NULL, NULL);
-
-    priv->location = UFO_LOCATION_DEVICE;
-    UFO_RESOURCES_CHECK_CLERR (cl_err);
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+    UFO_RESOURCES_CHECK_CLERR (clWaitForEvents (1, &event));
+    UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
 }
+
+static void
+transfer_image_to_image (UfoBufferPrivate *src_priv,
+                         UfoBufferPrivate *dst_priv,
+                         cl_command_queue queue)
+{
+    cl_event event;
+    cl_int errcode;
+    size_t region[3];
+    size_t origin[] = { 0, 0, 0 };
+
+    set_region_from_requisition (region, &src_priv->requisition);
+
+    errcode = clEnqueueCopyImage (queue,
+                                  src_priv->device_image,
+                                  dst_priv->device_image,
+                                  origin, origin, region,
+                                  0, NULL, &event);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+    UFO_RESOURCES_CHECK_CLERR (clWaitForEvents (1, &event));
+    UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
+}
+
+static void
+transfer_image_to_host (UfoBufferPrivate *src_priv,
+                        UfoBufferPrivate *dst_priv,
+                        cl_command_queue queue)
+{
+    cl_int errcode;
+    size_t region[3];
+    size_t origin[] = { 0, 0, 0 };
+
+    set_region_from_requisition (region, &src_priv->requisition);
+
+    errcode = clEnqueueReadImage (queue,
+                                  src_priv->device_image,
+                                  CL_TRUE,
+                                  origin, region,
+                                  0, 0,
+                                  dst_priv->host_array,
+                                  0, NULL, NULL);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+}
+
+static void
+transfer_image_to_device (UfoBufferPrivate *src_priv,
+                          UfoBufferPrivate *dst_priv,
+                          cl_command_queue queue)
+{
+    cl_event event;
+    cl_int errcode;
+    size_t region[3];
+    size_t origin[] = { 0, 0, 0 };
+
+    set_region_from_requisition (region, &src_priv->requisition);
+
+    errcode = clEnqueueCopyImageToBuffer (queue,
+                                          src_priv->device_image,
+                                          dst_priv->device_array,
+                                          origin, region, 0,
+                                          0, NULL, &event);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+    UFO_RESOURCES_CHECK_CLERR (clWaitForEvents (1, &event));
+    UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
+}
+
 
 /**
  * ufo_buffer_copy:
@@ -237,55 +439,34 @@ transfer_to_device (UfoBufferPrivate *priv,
 void
 ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
 {
+    typedef void (*TransferFunc) (UfoBufferPrivate *, UfoBufferPrivate *, cl_command_queue);
+    typedef void (*AllocFunc) (UfoBufferPrivate *priv);
+
     UfoBufferPrivate *spriv;
     UfoBufferPrivate *dpriv;
+    cl_command_queue queue;
+
+    TransferFunc transfer[3][3] = {
+        { transfer_host_to_host, transfer_host_to_device, transfer_host_to_image },
+        { transfer_device_to_host, transfer_device_to_device, transfer_device_to_image },
+        { transfer_image_to_host, transfer_image_to_device, transfer_image_to_image }
+    };
+
+    AllocFunc alloc[3] = { alloc_host_mem, alloc_device_array, alloc_device_image };
 
     g_return_if_fail (UFO_IS_BUFFER (src) && UFO_IS_BUFFER (dst));
     g_return_if_fail (src->priv->size == dst->priv->size);
 
     spriv = src->priv;
     dpriv = dst->priv;
+    queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
 
-    if (spriv->location == dpriv->location) {
-        switch (spriv->location) {
-            case UFO_LOCATION_HOST:
-                copy_host_to_host (spriv, dpriv);
-                break;
-            case UFO_LOCATION_DEVICE:
-                copy_device_to_device (spriv, dpriv);
-                break;
-            default:
-                g_warning ("oops, we should not copy invalid data");
-        }
+    if (dpriv->location == UFO_LOCATION_INVALID) {
+        alloc[spriv->location](dpriv);
+        dpriv->location = spriv->location;
     }
-    else {
-        cl_command_queue cmd_queue;
 
-        cmd_queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
-
-        if (cmd_queue == NULL || dpriv->location == UFO_LOCATION_HOST) {
-            if (spriv->host_array == NULL)
-                alloc_host_mem (spriv);
-
-            transfer_to_host (spriv, cmd_queue);
-
-            if (dpriv->host_array == NULL)
-                alloc_host_mem (dpriv);
-
-            copy_host_to_host (spriv, dpriv);
-        }
-        else {
-            if (spriv->device_array == NULL)
-                alloc_device_mem (spriv);
-
-            transfer_to_device (spriv, cmd_queue);
-
-            if (dpriv->device_array == NULL)
-                alloc_device_mem (dpriv);
-
-            copy_device_to_device (spriv, dpriv);
-        }
-    }
+    transfer[spriv->location][dpriv->location](spriv, dpriv, queue);
 }
 
 /**
@@ -398,6 +579,14 @@ update_last_queue (UfoBufferPrivate *priv,
         priv->last_queue = queue;
 }
 
+static void
+update_location (UfoBufferPrivate *priv,
+                 UfoMemLocation new_location)
+{
+    priv->last_location = priv->location;
+    priv->location = new_location;
+}
+
 /**
  * ufo_buffer_get_host_array:
  * @buffer: A #UfoBuffer.
@@ -420,10 +609,14 @@ ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
     if (priv->host_array == NULL)
         alloc_host_mem (priv);
 
-    if (priv->device_array != NULL)
-        transfer_to_host (priv, cmd_queue);
+    if (priv->location == UFO_LOCATION_DEVICE && priv->device_array)
+        transfer_device_to_host (priv, priv, priv->last_queue);
 
-    priv->location = UFO_LOCATION_HOST;
+    if (priv->location == UFO_LOCATION_DEVICE_IMAGE && priv->device_image)
+        transfer_image_to_host (priv, priv, priv->last_queue);
+
+    update_location (priv, UFO_LOCATION_HOST);
+
     return priv->host_array;
 }
 
@@ -449,28 +642,67 @@ ufo_buffer_get_device_array (UfoBuffer *buffer, gpointer cmd_queue)
     update_last_queue (priv, cmd_queue);
 
     if (priv->device_array == NULL)
-        alloc_device_mem (priv);
+        alloc_device_array (priv);
 
-    if (priv->host_array != NULL)
-        transfer_to_device (priv, cmd_queue);
+    if (priv->location == UFO_LOCATION_HOST && priv->host_array)
+        transfer_host_to_device (priv, priv, priv->last_queue);
 
-    priv->location = UFO_LOCATION_DEVICE;
+    if (priv->location == UFO_LOCATION_DEVICE_IMAGE && priv->device_array)
+        transfer_image_to_device (priv, priv, priv->last_queue);
+
+    update_location (priv, UFO_LOCATION_DEVICE);
+
     return priv->device_array;
+}
+
+/**
+ * ufo_buffer_get_device_image:
+ * @buffer: A #UfoBuffer.
+ * @cmd_queue: (allow-none): A cl_command_queue object or %NULL.
+ *
+ * Return the current cl_mem image object of @buffer. If the data is not yet in
+ * device memory, it is transfered via @cmd_queue to the object. If @cmd_queue
+ * is %NULL @cmd_queue, the last used command queue is used.
+ *
+ * Returns: (transfer none): A cl_mem image object associated with @buffer.
+ */
+gpointer
+ufo_buffer_get_device_image (UfoBuffer *buffer,
+                             gpointer cmd_queue)
+{
+    UfoBufferPrivate *priv;
+
+    g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
+    priv = buffer->priv;
+
+    update_last_queue (priv, cmd_queue);
+
+    if (priv->device_image == NULL)
+        alloc_device_image (priv);
+
+    if (priv->location == UFO_LOCATION_HOST && priv->host_array)
+        transfer_host_to_image (priv, priv, priv->last_queue);
+
+    if (priv->location == UFO_LOCATION_DEVICE && priv->device_array)
+        transfer_device_to_image (priv, priv, priv->last_queue);
+
+    update_location (priv, UFO_LOCATION_DEVICE_IMAGE);
+
+    return priv->device_image;
 }
 
 /**
  * ufo_buffer_discard_location:
  * @buffer: A #UfoBuffer
- * @location: Location to discard
  *
- * Discard @location and use "other" location without copying to it first.
+ * Discard the current and use the last location without copying to it first.
  */
 void
-ufo_buffer_discard_location (UfoBuffer *buffer,
-                             UfoMemLocation location)
+ufo_buffer_discard_location (UfoBuffer *buffer)
 {
     g_return_if_fail (UFO_IS_BUFFER (buffer));
-    buffer->priv->location = location == UFO_LOCATION_HOST ? UFO_LOCATION_DEVICE : UFO_LOCATION_HOST;
+
+    buffer->priv->location = buffer->priv->last_location;
 }
 
 /**
@@ -539,6 +771,17 @@ ufo_buffer_param_spec(const gchar *name, const gchar *nick, const gchar *blurb, 
 }
 
 static void
+free_cl_mem (cl_mem *mem)
+{
+    g_assert (mem != NULL);
+
+    if (*mem != NULL) {
+        UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (*mem));
+        *mem = NULL;
+    }
+}
+
+static void
 ufo_buffer_finalize (GObject *gobject)
 {
     UfoBuffer *buffer = UFO_BUFFER (gobject);
@@ -547,10 +790,8 @@ ufo_buffer_finalize (GObject *gobject)
     g_free (priv->host_array);
     priv->host_array = NULL;
 
-    if (priv->device_array != NULL) {
-        UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
-        priv->device_array = NULL;
-    }
+    free_cl_mem (&priv->device_array);
+    free_cl_mem (&priv->device_image);
 
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
@@ -571,7 +812,11 @@ ufo_buffer_init (UfoBuffer *buffer)
     buffer->priv = priv = UFO_BUFFER_GET_PRIVATE(buffer);
     priv->last_queue = NULL;
     priv->device_array = NULL;
+    priv->device_image = NULL;
     priv->host_array = NULL;
+
+    priv->location = UFO_LOCATION_INVALID;
+    priv->last_location = UFO_LOCATION_INVALID;
     priv->requisition.n_dims = 0;
 }
 

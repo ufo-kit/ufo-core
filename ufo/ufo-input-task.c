@@ -153,7 +153,7 @@ ufo_input_task_process (UfoCpuTask *task,
     if (!priv->active)
         return FALSE;
 
-    ufo_buffer_discard_location (output, UFO_LOCATION_DEVICE);
+    ufo_buffer_discard_location (output);
     ufo_buffer_copy (priv->input, output);
 
     /* input was popped in ufo_input_task_get_requisition */

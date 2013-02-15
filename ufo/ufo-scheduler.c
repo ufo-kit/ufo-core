@@ -276,7 +276,7 @@ run_task (TaskLocalData *tld)
             UfoGpuNode *gpu_node;
 
             if (output != NULL)
-                ufo_buffer_discard_location (output, UFO_LOCATION_HOST);
+                ufo_buffer_discard_location (output);
 
             gpu_node = UFO_GPU_NODE (ufo_task_node_get_proc_node (node));
 
@@ -307,7 +307,7 @@ run_task (TaskLocalData *tld)
         }
         else if (UFO_IS_CPU_TASK (tld->task)) {
             if (output != NULL)
-                ufo_buffer_discard_location (output, UFO_LOCATION_DEVICE);
+                ufo_buffer_discard_location (output);
 
             switch (tld->mode) {
                 case UFO_TASK_MODE_SINGLE:
@@ -354,7 +354,7 @@ run_task (TaskLocalData *tld)
                             if (UFO_IS_GPU_TASK (tld->task)) {
                                 UfoGpuNode *gpu_node;
 
-                                ufo_buffer_discard_location (output, UFO_LOCATION_HOST);
+                                ufo_buffer_discard_location (output);
                                 gpu_node = UFO_GPU_NODE (ufo_task_node_get_proc_node (node));
                                 active = ufo_gpu_task_generate (UFO_GPU_TASK (tld->task),
                                                                 output,

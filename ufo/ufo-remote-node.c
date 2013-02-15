@@ -251,7 +251,7 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
     zmq_msg_init (&reply_msg);
     zmq_msg_recv (&reply_msg, priv->socket, 0);
 
-    ufo_buffer_discard_location (buffer, UFO_LOCATION_DEVICE);
+    ufo_buffer_discard_location (buffer);
     host_array = ufo_buffer_get_host_array (buffer, NULL);
     g_assert (ufo_buffer_get_size (buffer) == zmq_msg_size (&reply_msg));
     memcpy (host_array, zmq_msg_data (&reply_msg), ufo_buffer_get_size (buffer));
