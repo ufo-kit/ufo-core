@@ -37,6 +37,13 @@ G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT)
 
 #define UFO_BUFFER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BUFFER, UfoBufferPrivate))
 
+typedef enum {
+    UFO_LOCATION_HOST = 0,
+    UFO_LOCATION_DEVICE,
+    UFO_LOCATION_DEVICE_IMAGE,
+    UFO_LOCATION_INVALID
+} UfoMemLocation;
+
 enum {
     PROP_0,
     PROP_ID,

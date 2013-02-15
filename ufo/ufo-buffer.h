@@ -39,22 +39,6 @@ G_BEGIN_DECLS
 #define UFO_IS_PARAM_SPEC_BUFFER(pspec)  (G_TYPE_CHECK_INSTANCE_TYPE((pspec), UFO_TYPE_PARAM_BUFFER))
 #define UFO_BUFFER_PARAM_SPEC(pspec)     (G_TYPE_CHECK_INSTANCE_CAST((pspec), UFO_TYPE_PARAM_BUFFER, UfoBufferParamSpec))
 
-/**
- * UfoMemLocation:
- * @UFO_LOCATION_INVALID: Memory is neither valid on host nor on device.
- * @UFO_LOCATION_HOST: Memory is valid on host memory.
- * @UFO_LOCATION_DEVICE: Memory is valid on device memory.
- * @UFO_LOCATION_DEVICE_IMAGE: Memory is valid on device image memory.
- *
- * Memory locations of a #UfoBuffer.
- */
-typedef enum {
-    UFO_LOCATION_HOST = 0,
-    UFO_LOCATION_DEVICE,
-    UFO_LOCATION_DEVICE_IMAGE,
-    UFO_LOCATION_INVALID
-} UfoMemLocation;
-
 typedef struct _UfoBuffer           UfoBuffer;
 typedef struct _UfoBufferClass      UfoBufferClass;
 typedef struct _UfoBufferPrivate    UfoBufferPrivate;
