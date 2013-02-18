@@ -59,6 +59,8 @@ static void add_task_node_to_json_array (UfoNode *, JsonArray *);
 static JsonObject *json_object_from_ufo_node (UfoNode *node);
 static JsonNode *get_json_representation (UfoTaskGraph *, GError **);
 
+static const gchar *JSON_API_VERSION = "1.0";
+
 /**
  * UfoTaskGraphError:
  * @UFO_TASK_GRAPH_ERROR_JSON_KEY: Key is not found in JSON
@@ -212,6 +214,7 @@ get_json_representation (UfoTaskGraph *graph,
         g_list_free (successors);
     }
 
+    json_object_set_string_member (root_object, "version", JSON_API_VERSION);
     json_object_set_array_member (root_object, "nodes", nodes);
     json_object_set_array_member (root_object, "edges", edges);
     json_node_set_object (root_node, root_object);
