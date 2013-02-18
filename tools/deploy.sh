@@ -57,6 +57,7 @@ function build() {
     cd $ROOT/$ZEROMQ_BASE
     ./configure --prefix=$PREFIX --libdir=$LD_LIBRARY_PATH
     make -j 4
+    make install
 
     build_package "ufo-core"
     build_package "oclfft"
