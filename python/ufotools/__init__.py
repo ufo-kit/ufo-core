@@ -1,27 +1,30 @@
-class CallableFilter(object):
-    def __init__(self, gobject, graph):
-        self.gobject = gobject
+from gi.repository import Ufo
+
+
+class TaskWrapper(object):
+    def __init__(self, task, graph):
+        self.task = task
         self.graph = graph
-        self.name = gobject.get_plugin_name()
+        self.name = task.get_plugin_name()
 
     def __call__(self, *args, **kwargs):
-        n_inputs = self.gobject.get_num_inputs()
-
-        if n_inputs != len(args):
-            raise TypeError("`%s' receives only %i argument(s) but was called with %i parameters" % (self.name, n_inputs, len(args)))
-
         for i, target in enumerate(args):
-            self.graph.connect_filters_full(target.gobject, 0, self.gobject, i, Ufo.TransferMode.DISTRIBUTE)
+            self.graph.connect_nodes_full(target.task, self.task, i)
 
         return self
 
 
-class NodeFactory(object):
-    def __init__(self, plugin_manager, graph):
-        self.pm = plugin_manager
-        self.graph = graph
+class Factory(object):
+    def __init__(self, config=None):
+        self.pm = Ufo.PluginManager(config=config)
+        self.graph = Ufo.TaskGraph()
+        self.config = config
 
     def get(self, name, **kwargs):
-        gobject = self.pm.get_filter(name)
-        gobject.set_properties(kwargs)
-        return CallableFilter(gobject, graph)
+        task = self.pm.get_task(name)
+        task.set_properties(**kwargs)
+        return TaskWrapper(task, self.graph)
+
+    def run(self):
+        sched = Ufo.Scheduler(config=self.config)
+        sched.run(self.graph)
