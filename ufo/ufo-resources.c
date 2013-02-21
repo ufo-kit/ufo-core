@@ -714,7 +714,7 @@ add_vendor_to_build_opts (GString *opts,
 static gboolean
 platform_has_gpus (cl_platform_id platform)
 {
-    cl_uint n_devices;
+    cl_uint n_devices = 0;
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (platform,
                                                CL_DEVICE_TYPE_GPU,
@@ -753,11 +753,8 @@ initialize_opencl (UfoResourcesPrivate *priv)
     cl_int errcode = CL_SUCCESS;
     cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
 
-    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (1, &priv->platform, NULL));
-
-    add_vendor_to_build_opts (priv->build_opts, priv->platform);
-
     priv->platform = get_preferably_gpu_based_platform ();
+    add_vendor_to_build_opts (priv->build_opts, priv->platform);
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
                                                CL_DEVICE_TYPE_ALL,
