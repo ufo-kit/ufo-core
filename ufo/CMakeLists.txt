@@ -218,6 +218,11 @@ if(GTK_DOC_FOUND)
             endif()
         endforeach()
 
+        get_directory_property(_current_link_dirs LINK_DIRECTORIES)
+        foreach(_linkdir ${_current_link_dirs})
+            set(GTK_DOC_LDFLAGS "-L${_linkdir} ${GTK_DOC_LDFLAGS}")
+        endforeach()
+
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in" "${docs_out}/Ufo-docs.xml")
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/scangobj.sh.in" "${docs_out}/scangobj.sh")
 
