@@ -715,10 +715,15 @@ static gboolean
 platform_has_gpus (cl_platform_id platform)
 {
     cl_uint n_devices = 0;
+    cl_int err;
 
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (platform,
-                                               CL_DEVICE_TYPE_GPU,
-                                               0, NULL, &n_devices));
+    err = clGetDeviceIDs (platform,
+                          CL_DEVICE_TYPE_GPU,
+                          0, NULL, &n_devices);
+
+    if (err != CL_DEVICE_NOT_FOUND)
+        UFO_RESOURCES_CHECK_CLERR (err);
+
     return n_devices > 0;
 }
 
