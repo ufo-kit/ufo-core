@@ -134,6 +134,9 @@ gpointer    ufo_buffer_get_device_image     (UfoBuffer      *buffer,
 void        ufo_buffer_discard_location     (UfoBuffer      *buffer);
 void        ufo_buffer_convert              (UfoBuffer      *buffer,
                                              UfoBufferDepth  depth);
+void        ufo_buffer_convert_from_data    (UfoBuffer      *buffer,
+                                             gconstpointer   data,
+                                             UfoBufferDepth  depth);
 GType       ufo_buffer_get_type             (void);
 
 GParamSpec* ufo_buffer_param_spec           (const gchar*   name,

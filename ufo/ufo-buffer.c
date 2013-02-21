@@ -202,7 +202,7 @@ alloc_device_image (UfoBufferPrivate *priv)
 /**
  * ufo_buffer_new:
  * @requisition: (in): size requisition
- * @context: (in): cl_context to use for creating the device array
+ * @context: (in) (allow-none): cl_context to use for creating the device array
  *
  * Create a new #UfoBuffer.
  *
@@ -215,7 +215,8 @@ ufo_buffer_new (UfoRequisition *requisition,
     UfoBuffer *buffer;
     UfoBufferPrivate *priv;
 
-    g_return_val_if_fail ((requisition->n_dims <= UFO_BUFFER_MAX_NDIMS), NULL);
+    g_return_val_if_fail ((requisition->n_dims <= UFO_BUFFER_MAX_NDIMS) &&
+                          (requisition->n_dims > 0), NULL);
     buffer = UFO_BUFFER (g_object_new (UFO_TYPE_BUFFER, NULL));
     priv = buffer->priv;
     priv->context = context;
@@ -712,24 +713,14 @@ ufo_buffer_discard_location (UfoBuffer *buffer)
     buffer->priv->location = buffer->priv->last_location;
 }
 
-/**
- * ufo_buffer_convert:
- * @buffer: A #UfoBuffer
- * @depth: Source bit depth of host data
- *
- * Convert host data according to its @depth to the internal 32-bit floating
- * point representation.
- */
-void
-ufo_buffer_convert (UfoBuffer *buffer,
-                    UfoBufferDepth depth)
+static void
+convert_data (UfoBufferPrivate *priv,
+              gconstpointer data,
+              UfoBufferDepth depth)
 {
-    UfoBufferPrivate *priv;
     gint n_pixels;
     gfloat *dst;
 
-    g_return_if_fail (UFO_IS_BUFFER (buffer));
-    priv = buffer->priv;
     n_pixels = (gint) (priv->size / 4);
     dst = priv->host_array;
 
@@ -738,17 +729,67 @@ ufo_buffer_convert (UfoBuffer *buffer,
      * the 32-bit target buffer. The processor cache should not be a
      * problem. */
     if (depth == UFO_BUFFER_DEPTH_8U) {
-        guint8 *src = (guint8 *) priv->host_array;
+        const guint8 *src = (const guint8 *) data;
 
         for (gint i = (n_pixels - 1); i >= 0; i--)
             dst[i] = ((gfloat) src[i]);
     }
     else if (depth == UFO_BUFFER_DEPTH_16U) {
-        guint16 *src = (guint16 *) priv->host_array;
+        const guint16 *src = (const guint16 *) data;
 
         for (gint i = (n_pixels - 1); i >= 0; i--)
             dst[i] = ((gfloat) src[i]);
     }
+}
+
+/**
+ * ufo_buffer_convert:
+ * @buffer: A #UfoBuffer
+ * @depth: Source bit depth of host data
+ *
+ * Convert host data according to its @depth to the internal 32-bit floating
+ * point representation.
+ *
+ * @Deprecated: 0.4: Use ufo_buffer_convert_from_data() instead.
+ */
+void
+ufo_buffer_convert (UfoBuffer *buffer,
+                    UfoBufferDepth depth)
+{
+    UfoBufferPrivate *priv;
+
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+    priv = buffer->priv;
+
+    if (priv->host_array != NULL)
+        convert_data (priv, priv->host_array, depth);
+}
+
+/**
+ * ufo_buffer_convert_from_data:
+ * @buffer: A #UfoBuffer
+ * @data: Pointer to data that should be converted
+ * @depth: Source bit depth of host data
+ *
+ * Convert @data according from @depth to the internal 32-bit floating
+ * point representation.
+ *
+ * @Note: @data must provide as many bytes as the buffer was initialized with.
+ */
+void
+ufo_buffer_convert_from_data (UfoBuffer *buffer,
+                              gconstpointer data,
+                              UfoBufferDepth depth)
+{
+    UfoBufferPrivate *priv;
+
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+    priv = buffer->priv;
+
+    if (priv->host_array == NULL)
+        alloc_host_mem (priv);
+
+    convert_data (priv, data, depth);
 }
 
 /**
