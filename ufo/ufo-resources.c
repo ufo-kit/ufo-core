@@ -682,24 +682,69 @@ ufo_resources_class_init (UfoResourcesClass *klass)
     g_type_class_add_private (klass, sizeof (UfoResourcesPrivate));
 }
 
-static void
-add_vendor_to_build_opts (GString *opts,
-                          cl_platform_id platform)
+static gboolean
+platform_vendor_has_prefix (cl_platform_id platform,
+                            const gchar *prefix)
 {
-    gsize size;
+    gboolean has_prefix;
     gchar *str;
+    gsize size;
 
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformInfo (platform, CL_PLATFORM_VENDOR, 0, NULL, &size));
     str = g_malloc0 (size);
 
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformInfo (platform, CL_PLATFORM_VENDOR, size, str, NULL));
-
-    if (g_str_has_prefix (str, "NVIDIA"))
-        g_string_append (opts, "-cl-nv-verbose -DVENDOR=NVIDIA");
-    else if (g_str_has_prefix (str, "Advanced Micro Devices"))
-        g_string_append (opts, "-DVENDOR=AMD");
+    has_prefix = g_str_has_prefix (str, prefix);
 
     g_free (str);
+    return has_prefix;
+}
+
+static void
+add_vendor_to_build_opts (GString *opts,
+                          cl_platform_id platform)
+{
+    if (platform_vendor_has_prefix (platform, "NVIDIA"))
+        g_string_append (opts, "-cl-nv-verbose -DVENDOR=NVIDIA");
+
+    if (platform_vendor_has_prefix (platform, "Advanced Micro Devices"))
+        g_string_append (opts, "-DVENDOR=AMD");
+}
+
+static gboolean
+platform_has_gpus (cl_platform_id platform)
+{
+    cl_uint n_devices;
+
+    UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (platform,
+                                               CL_DEVICE_TYPE_GPU,
+                                               0, NULL, &n_devices));
+    return n_devices > 0;
+}
+
+static cl_platform_id
+get_preferably_gpu_based_platform (void)
+{
+    cl_platform_id *platforms;
+    cl_uint n_platforms;
+    cl_platform_id candidate;
+
+    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (0, NULL, &n_platforms));
+    platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
+    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
+
+    if (n_platforms > 0)
+        candidate = platforms[0];
+
+    for (guint i = 0; i < n_platforms; i++) {
+        if (platform_has_gpus (platforms[i])) {
+            candidate = platforms[i];
+            break;
+        }
+    }
+
+    g_free (platforms);
+    return candidate;
 }
 
 static void
@@ -711,6 +756,8 @@ initialize_opencl (UfoResourcesPrivate *priv)
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (1, &priv->platform, NULL));
 
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
+
+    priv->platform = get_preferably_gpu_based_platform ();
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
                                                CL_DEVICE_TYPE_ALL,
