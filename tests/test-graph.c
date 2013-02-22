@@ -39,10 +39,6 @@ fixture_setup (Fixture *fixture, gconstpointer data)
     g_assert (UFO_IS_GRAPH (fixture->graph));
 
     fixture->sequence = ufo_graph_new ();
-
-    ufo_graph_register_node_type (fixture->graph, UFO_TYPE_NODE);
-    ufo_graph_register_node_type (fixture->sequence, UFO_TYPE_NODE);
-
     fixture->root = ufo_node_new (FOO_LABEL);
     fixture->target1 = ufo_node_new (BAR_LABEL);
     fixture->target2 = ufo_node_new (BAZ_LABEL);

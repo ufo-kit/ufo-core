@@ -842,8 +842,4 @@ ufo_task_graph_init (UfoTaskGraph *self)
 
     priv->prop_sets = g_hash_table_new_full (g_str_hash, g_str_equal,
                                              g_free, (GDestroyNotify) json_object_unref);
-
-    /* Maybe we should define a specific task node type from which all tasks
-     * must inherit */
-    ufo_graph_register_node_type (UFO_GRAPH (self), UFO_TYPE_NODE);
 }

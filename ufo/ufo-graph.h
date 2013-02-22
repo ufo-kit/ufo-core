@@ -80,10 +80,6 @@ struct _UfoGraphClass {
 };
 
 UfoGraph   *ufo_graph_new                   (void);
-void        ufo_graph_register_node_type    (UfoGraph       *graph,
-                                             GType           type);
-GList      *ufo_graph_get_registered_node_types
-                                            (UfoGraph       *graph);
 void        ufo_graph_connect_nodes         (UfoGraph       *graph,
                                              UfoNode        *source,
                                              UfoNode        *target,

@@ -285,8 +285,4 @@ ufo_arch_graph_init (UfoArchGraph *self)
     priv->cpu_nodes = NULL;
     priv->gpu_nodes = NULL;
     priv->remote_nodes = NULL;
-
-    ufo_graph_register_node_type (UFO_GRAPH (self), UFO_TYPE_CPU_NODE);
-    ufo_graph_register_node_type (UFO_GRAPH (self), UFO_TYPE_GPU_NODE);
-    ufo_graph_register_node_type (UFO_GRAPH (self), UFO_TYPE_REMOTE_NODE);
 }

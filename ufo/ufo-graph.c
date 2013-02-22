@@ -32,7 +32,6 @@ G_DEFINE_TYPE (UfoGraph, ufo_graph, G_TYPE_OBJECT)
 #define UFO_GRAPH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GRAPH, UfoGraphPrivate))
 
 struct _UfoGraphPrivate {
-    GList *node_types;
     GList *nodes;
     GList *edges;
 };
@@ -62,45 +61,6 @@ ufo_graph_new (void)
 }
 
 /**
- * ufo_graph_register_node_type:
- * @graph: A #UfoGraph
- * @type: A #GType
- *
- * Registers @type to be a valid node type of this graph. If a type has not be
- * an added to @graph, any attempt to add such a node will fail.
- */
-void
-ufo_graph_register_node_type (UfoGraph *graph,
-                              GType type)
-{
-    UfoGraphPrivate *priv;
-
-    g_return_if_fail (UFO_IS_GRAPH (graph));
-
-    /* Make sure type is at least a node type */
-    g_return_if_fail (g_type_is_a (type, UFO_TYPE_NODE));
-
-    priv = graph->priv;
-    priv->node_types = g_list_append (priv->node_types, GINT_TO_POINTER (type));
-}
-
-/**
- * ufo_graph_get_registered_node_types:
- * @graph: A #UfoGraph
- *
- * Get all types of nodes that can be added to @graph.
- *
- * Returns: (element-type GType) (transfer container): A list of #GType
- * identifiers that can be added to @graph.
- */
-GList *
-ufo_graph_get_registered_node_types (UfoGraph *graph)
-{
-    g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
-    return g_list_copy (graph->priv->node_types);
-}
-
-/**
  * ufo_graph_is_connected:
  * @graph: A #UfoGraph
  * @from: A source node
@@ -122,20 +82,6 @@ ufo_graph_is_connected (UfoGraph *graph,
     priv = graph->priv;
     edge = find_edge (priv->edges, from, to);
     return edge != NULL;
-}
-
-static gboolean
-is_valid_node_type (UfoGraphPrivate *priv,
-                    UfoNode *node)
-{
-    for (GList *it = g_list_first (priv->node_types); it != NULL; it = g_list_next (it)) {
-        GType type = (GType) GPOINTER_TO_INT (it->data);
-
-        if (G_TYPE_CHECK_INSTANCE_TYPE (node, type))
-            return TRUE;
-    }
-
-    return FALSE;
 }
 
 static void
@@ -169,8 +115,6 @@ ufo_graph_connect_nodes (UfoGraph *graph,
 
     g_return_if_fail (UFO_IS_GRAPH (graph));
     priv = graph->priv;
-
-    g_return_if_fail (is_valid_node_type (priv, source) && is_valid_node_type (priv, target));
 
     edge = g_new0 (UfoEdge, 1);
     edge->source = source;
@@ -714,12 +658,6 @@ ufo_graph_dispose (GObject *object)
 static void
 ufo_graph_finalize (GObject *object)
 {
-    UfoGraphPrivate *priv;
-
-    priv = UFO_GRAPH_GET_PRIVATE (object);
-    g_list_free (priv->node_types);
-    priv->node_types = NULL;
-
     G_OBJECT_CLASS (ufo_graph_parent_class)->finalize (object);
 }
 
@@ -739,6 +677,5 @@ ufo_graph_init (UfoGraph *self)
 {
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
-    priv->node_types = NULL;
     priv->nodes = NULL;
 }
