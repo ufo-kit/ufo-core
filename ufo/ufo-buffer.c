@@ -475,6 +475,7 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
     }
 
     transfer[spriv->location][dpriv->location](spriv, dpriv, queue);
+    dpriv->last_queue = queue;
 }
 
 /**
