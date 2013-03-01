@@ -4,7 +4,7 @@ project(ufo C)
 set(TARNAME "libufo")
 set(UFO_VERSION_MAJOR "0")
 set(UFO_VERSION_MINOR "3")
-set(UFO_VERSION_PATCH "0")
+set(UFO_VERSION_PATCH "1")
 set(UFO_GIR_VERSION "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}")
 
 # increase UFO_SO_VERSION on each version that breaks ABI compatibility
