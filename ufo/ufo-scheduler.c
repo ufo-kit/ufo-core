@@ -182,53 +182,50 @@ release_inputs (TaskLocalData *tld,
 }
 
 static void
-exchange_data (UfoBuffer *input,
-               TaskLocalData *tld)
-{
-    UfoRemoteNode *remote;
-    UfoGroup *group;
-    UfoBuffer *output;
-    UfoRequisition requisition;
-
-    remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
-    ufo_remote_node_send_inputs (remote, &input);
-    release_inputs (tld, &input);
-
-    ufo_remote_node_get_requisition (remote, &requisition);
-    group = ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task));
-    output = ufo_group_pop_output_buffer (group, &requisition);
-    ufo_remote_node_get_result (remote, output);
-    ufo_group_push_output_buffer (group, output);
-}
-
-static void
 run_remote_task (TaskLocalData *tld)
 {
     UfoRemoteNode *remote;
-    UfoBuffer *input;
     guint n_remote_gpus;
-    GThreadPool *pool;
-    GError *error = NULL;
+    gboolean done = FALSE;
 
     g_assert (tld->n_inputs == 1);
     remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
     n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
-    pool = g_thread_pool_new ((GFunc) exchange_data, tld, (gint) n_remote_gpus, TRUE, &error);
-    g_assert_no_error (error);
 
     /*
      * We launch a new thread for each incoming input data set because then we
      * can send as many items as we have remote GPUs available without waiting
      * for processing to stop.
      */
-    while (1) {
-        if (get_inputs (tld, &input))
-            g_thread_pool_push (pool, input, &error);
-        else
-            break;
+    while (!done) {
+        for (guint i = 0; i < n_remote_gpus; i++) {
+            UfoBuffer *input;
+
+            if (get_inputs (tld, &input)) {
+                ufo_remote_node_send_inputs (remote, &input);
+                release_inputs (tld, &input);
+            }
+            else {
+                done = TRUE;
+                break;
+            }
+        }
+
+        if (!done) {
+            for (guint i = 0; i < n_remote_gpus; i++) {
+                UfoGroup *group;
+                UfoBuffer *output;
+                UfoRequisition requisition;
+
+                ufo_remote_node_get_requisition (remote, &requisition);
+                group = ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task));
+                output = ufo_group_pop_output_buffer (group, &requisition);
+                ufo_remote_node_get_result (remote, output);
+                ufo_group_push_output_buffer (group, output);
+            }
+        }
     }
 
-    g_thread_pool_free (pool, FALSE, TRUE);
     ufo_group_finish (ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task)));
 }
 
