@@ -32,9 +32,13 @@
  *
  * The plugin manager opens shared object modules searched for in locations
  * specified with ufo_plugin_manager_add_paths(). An #UfoFilter can be
- * instantiated with ufo_plugin_manager_get_filter() with a one-to-one mapping
- * between filter name xyz and module name libfilterxyz.so. Any errors are
+ * instantiated with ufo_plugin_manager_get_task() with a one-to-one mapping
+ * between filter name xyz and module name libufofilterxyz.so. Any errors are
  * reported as one of #UfoPluginManagerError codes.
+ *
+ * Apart from standard locations and paths passed through the #UfoConfig object,
+ * #UfoPluginManager also looks into the path that is specified in the
+ * UFO_PLUGIN_PATH environment variable.
  */
 
 G_DEFINE_TYPE_WITH_CODE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT,
@@ -366,6 +370,7 @@ ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
 static void
 ufo_plugin_manager_init (UfoPluginManager *manager)
 {
+    static const gchar *PATH_VAR = "UFO_PLUGIN_PATH";
     UfoPluginManagerPrivate *priv;
 
     manager->priv = priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
@@ -373,4 +378,9 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
     priv->search_paths = NULL;
     priv->new_funcs = g_hash_table_new_full (g_str_hash, g_str_equal,
                                              g_free, g_free);
+
+    if (g_getenv (PATH_VAR)) {
+        priv->search_paths = g_list_append (priv->search_paths,
+                                            g_strdup (g_getenv (PATH_VAR)));
+    }
 }
