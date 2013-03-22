@@ -262,6 +262,13 @@ escape_device_name (gchar *name)
     return name;
 }
 
+static void
+append_include_path (const gchar *path,
+                     GString *str)
+{
+    g_string_append_printf (str, " -I%s", path);
+}
+
 static gchar *
 get_device_build_options (UfoResourcesPrivate *priv,
                           guint device_index,
@@ -287,6 +294,8 @@ get_device_build_options (UfoResourcesPrivate *priv,
 
     g_string_append_printf (opts, " -D=%s", escape_device_name (name));
     g_free (name);
+
+    g_list_foreach (priv->include_paths, (GFunc) append_include_path, opts);
 
     return g_string_free (opts, FALSE);
 }
