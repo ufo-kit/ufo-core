@@ -189,6 +189,8 @@ test_expansion (Fixture *fixture, gconstpointer data)
     GList *successors;
     UfoNode *node;
     GList *path = NULL;
+    guint index;
+    guint other_index;
 
     path = g_list_append (path, fixture->root);
     path = g_list_append (path, fixture->target1);
@@ -201,6 +203,16 @@ test_expansion (Fixture *fixture, gconstpointer data)
     g_assert (g_list_length (successors) == 2);
 
     node = UFO_NODE (g_list_nth_data (successors, 0));
+    index = ufo_node_get_index (node);
+
+    g_assert ((index == 0) || (index == 1));
+    g_assert (ufo_node_get_total (node) == 2);
+
+    node = UFO_NODE (g_list_nth_data (successors, 1));
+    other_index = 1 - index;
+    g_assert (ufo_node_get_index (node) == other_index);
+    g_assert (ufo_node_get_total (node) == 2);
+
     g_list_free (successors);
 
     successors = ufo_graph_get_successors (fixture->sequence, node);

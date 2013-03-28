@@ -73,6 +73,8 @@ UfoNode     *ufo_node_copy      (UfoNode    *node,
                                  GError    **error);
 gboolean     ufo_node_equal     (UfoNode    *n1,
                                  UfoNode    *n2);
+guint        ufo_node_get_index (UfoNode    *node);
+guint        ufo_node_get_total (UfoNode    *node);
 GType        ufo_node_get_type  (void);
 
 G_END_DECLS

@@ -31,6 +31,8 @@ G_DEFINE_TYPE (UfoNode, ufo_node, G_TYPE_OBJECT)
 
 struct _UfoNodePrivate {
     UfoNode  *copied_from;
+    guint     index;
+    guint     total;
     gpointer  label;
 };
 
@@ -99,13 +101,25 @@ ufo_node_equal_real (UfoNode *n1,
            n2->priv->copied_from == n1;
 }
 
+static void
+update_total (UfoNode *node,
+              guint total)
+{
+    node->priv = UFO_NODE_GET_PRIVATE (node);
+    node->priv->total = total;
+
+    if (node->priv->copied_from != NULL)
+        update_total (node->priv->copied_from, total);
+}
+
 /**
  * ufo_node_copy:
  * @node: A #UfoNode
  * @error: Location for an error
  *
  * Get a copy of @node. How "deep" the copy is, depends on the inherited
- * implementation of @node.
+ * implementation of @node. The copy receives an new index and the total amount
+ * of nodes is increased by one.
  *
  * Returns: (transfer full): Copy of @node.
  */
@@ -117,7 +131,45 @@ ufo_node_copy (UfoNode *node,
 
     offspring = UFO_NODE_GET_CLASS (node)->copy (node, error);
     offspring->priv->copied_from = node;
+    offspring->priv->index = node->priv->total;
+    offspring->priv->total = offspring->priv->index + 1;
+
+    update_total (node, offspring->priv->total);
+
     return offspring;
+}
+
+/**
+ * ufo_node_get_index:
+ * @node: A #UfoNode
+ *
+ * Get the index of this node. When a graph is expanded, nodes are copied. The
+ * original node has index 1, all successive copies receive a monotonous
+ * increasing index. The total amount of copied nodes can be queried with
+ * ufo_node_get_total().
+ *
+ * Returns: The index of @node.
+ */
+guint
+ufo_node_get_index (UfoNode *node)
+{
+    g_return_val_if_fail (UFO_IS_NODE (node), 0);
+    return node->priv->index;
+}
+
+/**
+ * ufo_node_get_total:
+ * @node: A #UfoNode
+ *
+ * Get the total amount of copied nodes.
+ *
+ * Returns: The number of copied nodes.
+ */
+guint
+ufo_node_get_total (UfoNode *node)
+{
+    g_return_val_if_fail (UFO_IS_NODE (node), 0);
+    return node->priv->total;
 }
 
 gboolean
@@ -143,5 +195,7 @@ ufo_node_init (UfoNode *self)
     self->priv = priv = UFO_NODE_GET_PRIVATE (self);
 
     priv->copied_from = NULL;
+    priv->index = 0;
+    priv->total = 1;
     priv->label = NULL;
 }
