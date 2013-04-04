@@ -192,6 +192,26 @@ ufo_task_node_get_proc_node (UfoTaskNode *node)
     return node->priv->proc_node;
 }
 
+static UfoNode *
+ufo_task_node_copy (UfoNode *node,
+                    GError **error)
+{
+    UfoTaskNode *orig;
+    UfoTaskNode *copy;
+
+    copy = UFO_TASK_NODE (UFO_NODE_CLASS (ufo_task_node_parent_class)->copy (node, error));
+    orig = UFO_TASK_NODE (node);
+
+    copy->priv->pattern = orig->priv->pattern;
+
+    for (guint i = 0; i < 16; i++)
+        copy->priv->n_expected[i] = orig->priv->n_expected[i];
+
+    ufo_task_node_set_plugin_name (copy, orig->priv->plugin);
+
+    return UFO_NODE (copy);
+}
+
 static void
 ufo_task_node_dispose (GObject *object)
 {
@@ -214,10 +234,14 @@ static void
 ufo_task_node_class_init (UfoTaskNodeClass *klass)
 {
     GObjectClass *oclass;
+    UfoNodeClass *nclass;
 
     oclass = G_OBJECT_CLASS (klass);
     oclass->dispose = ufo_task_node_dispose;
     oclass->finalize = ufo_task_node_finalize;
+
+    nclass = UFO_NODE_CLASS (klass);
+    nclass->copy = ufo_task_node_copy;
 
     g_type_class_add_private (klass, sizeof(UfoTaskNodePrivate));
 }

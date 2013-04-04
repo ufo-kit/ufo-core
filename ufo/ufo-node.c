@@ -86,6 +86,8 @@ ufo_node_copy_real (UfoNode *node,
     }
 
     g_free (props);
+    UFO_NODE (copy)->priv->label = node->priv->label;
+
     return UFO_NODE (copy);
 }
 

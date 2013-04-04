@@ -23,9 +23,11 @@
 typedef struct {
     UfoGraph *graph;
     UfoGraph *sequence;
+    UfoGraph *diamond;
     UfoNode *root;
     UfoNode *target1;
     UfoNode *target2;
+    UfoNode *target3;
 } Fixture;
 
 static gpointer FOO_LABEL = GINT_TO_POINTER (0xDEADF00D);
@@ -39,9 +41,15 @@ fixture_setup (Fixture *fixture, gconstpointer data)
     g_assert (UFO_IS_GRAPH (fixture->graph));
 
     fixture->sequence = ufo_graph_new ();
+    g_assert (UFO_IS_GRAPH (fixture->sequence));
+
+    fixture->diamond = ufo_graph_new ();
+    g_assert (UFO_IS_GRAPH (fixture->diamond));
+
     fixture->root = ufo_node_new (FOO_LABEL);
     fixture->target1 = ufo_node_new (BAR_LABEL);
     fixture->target2 = ufo_node_new (BAZ_LABEL);
+    fixture->target3 = ufo_node_new (FOO_LABEL);
 
     ufo_graph_connect_nodes (fixture->graph,
                              fixture->root,
@@ -62,6 +70,26 @@ fixture_setup (Fixture *fixture, gconstpointer data)
                              fixture->target1,
                              fixture->target2,
                              FOO_LABEL);
+
+    ufo_graph_connect_nodes (fixture->diamond,
+                             fixture->root,
+                             fixture->target1,
+                             BAR_LABEL);
+
+    ufo_graph_connect_nodes (fixture->diamond,
+                             fixture->root,
+                             fixture->target2,
+                             BAR_LABEL);
+
+    ufo_graph_connect_nodes (fixture->diamond,
+                             fixture->target1,
+                             fixture->target3,
+                             BAR_LABEL);
+
+    ufo_graph_connect_nodes (fixture->diamond,
+                             fixture->target2,
+                             fixture->target3,
+                             BAR_LABEL);
 }
 
 static void
@@ -69,6 +97,10 @@ fixture_teardown (Fixture *fixture, gconstpointer data)
 {
     g_object_unref (fixture->graph);
     g_object_unref (fixture->sequence);
+    g_object_unref (fixture->diamond);
+    g_object_unref (fixture->target1);
+    g_object_unref (fixture->target2);
+    g_object_unref (fixture->target3);
 }
 
 static void
@@ -223,6 +255,48 @@ test_expansion (Fixture *fixture, gconstpointer data)
     g_assert (ufo_node_equal (node, fixture->target2));
 }
 
+static void
+test_copy (Fixture *fixture, gconstpointer data)
+{
+    UfoGraph *copy;
+    GList *roots;
+    GList *successors;
+    GError *error = NULL;
+
+    copy = ufo_graph_copy (fixture->graph, &error);
+    g_assert (copy != NULL);
+    g_assert_no_error (error);
+    g_assert (ufo_graph_get_num_edges (copy) == 2);
+    g_assert (ufo_graph_get_num_nodes (copy) == 3);
+
+    /* Check that copying preserved the order */
+    roots = ufo_graph_get_roots (copy);
+    g_assert (ufo_node_get_label (g_list_nth_data (roots, 0)) == FOO_LABEL);
+
+    successors = ufo_graph_get_successors (copy,
+                                           g_list_nth_data (roots, 0));
+
+    g_assert (ufo_node_get_label (g_list_nth_data (successors, 0)) == BAR_LABEL);
+    g_assert (ufo_node_get_label (g_list_nth_data (successors, 1)) == BAZ_LABEL);
+    g_list_free (successors);
+    g_list_free (roots);
+    g_object_unref (copy);
+
+    copy = ufo_graph_copy (fixture->sequence, &error);
+    g_assert (copy != NULL);
+    g_assert_no_error (error);
+    g_assert (ufo_graph_get_num_edges (copy) == 2);
+    g_assert (ufo_graph_get_num_nodes (copy) == 3);
+    g_object_unref (copy);
+
+    copy = ufo_graph_copy (fixture->diamond, &error);
+    g_assert (copy != NULL);
+    g_assert_no_error (error);
+    g_assert (ufo_graph_get_num_edges (copy) == 4);
+    g_assert (ufo_graph_get_num_nodes (copy) == 4);
+    g_object_unref (copy);
+}
+
 static gboolean
 always_true (UfoNode *node, gpointer user_data)
 {
@@ -288,4 +362,8 @@ test_add_graph (void)
     g_test_add ("/graph/expansion",
                 Fixture, NULL,
                 fixture_setup, test_expansion, fixture_teardown);
+
+    g_test_add ("/graph/copy",
+                Fixture, NULL,
+                fixture_setup, test_copy, fixture_teardown);
 }

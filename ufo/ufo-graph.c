@@ -409,6 +409,99 @@ ufo_graph_get_successors (UfoGraph *graph,
     return result;
 }
 
+
+static void
+copy_and_connect_successors (UfoGraph *graph,
+                             UfoGraph *copy,
+                             UfoNode *source,
+                             GHashTable *map,
+                             GError **error)
+{
+    GList *successors;
+    UfoNode *copied_source;
+
+    copied_source = g_hash_table_lookup (map, source);
+    successors = ufo_graph_get_successors (graph, source);
+
+    for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+        UfoNode *target;
+        UfoNode *copied_target;
+        gpointer label;
+
+        target = UFO_NODE (jt->data);
+        copied_target = g_hash_table_lookup (map, target);
+
+        if (copied_target == NULL) {
+            copied_target = ufo_node_copy (target, error);
+
+            if (*error != NULL)
+                return;
+
+            g_hash_table_insert (map, target, copied_target);
+        }
+
+        label = ufo_graph_get_edge_label (graph, source, target);
+        ufo_graph_connect_nodes (copy, copied_source, copied_target, label);
+        copy_and_connect_successors (graph, copy, target, map, error);
+    }
+
+    g_list_free (successors);
+}
+
+/**
+ * ufo_graph_copy:
+ * @graph: A #UfoGraph
+ * @error: Location for an error or %NULL
+ *
+ * Deep-copies the structure of @graph by duplicating all nodes via
+ * ufo_node_copy(). This means the nodes will not be the same but have the same
+ * properties.
+ *
+ * Returns: A copy of @graph or %NULL on error.
+ */
+UfoGraph *
+ufo_graph_copy (UfoGraph *graph,
+                GError **error)
+{
+    UfoGraph *copy;
+    GList *roots;
+    GHashTable *map;    /* maps from real node to copied node */
+    GError *tmp_error = NULL;
+
+    copy = UFO_GRAPH (g_object_new (G_OBJECT_TYPE (graph), NULL));
+    map = g_hash_table_new (NULL, NULL);
+    roots = ufo_graph_get_roots (graph);
+
+    for (GList *it = g_list_first (roots); it != NULL; it = g_list_next (it)) {
+        UfoNode *root;
+        UfoNode *copied_root;
+
+        root = UFO_NODE (it->data);
+        copied_root = ufo_node_copy (root, &tmp_error);
+
+        if (tmp_error != NULL)
+            break;
+
+        g_hash_table_insert (map, root, copied_root);
+        copy_and_connect_successors (graph, copy, root, map, &tmp_error);
+
+        if (tmp_error != NULL)
+            break;
+    }
+
+    g_hash_table_destroy (map);
+    g_list_free (roots);
+
+    if (tmp_error != NULL) {
+        g_warning ("Error: %s", tmp_error->message);
+        g_propagate_error (error, tmp_error);
+        g_object_unref (copy);
+        return NULL;
+    }
+
+    return copy;
+}
+
 /**
  * ufo_graph_expand:
  * @graph: A #UfoGraph

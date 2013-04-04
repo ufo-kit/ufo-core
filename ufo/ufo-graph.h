@@ -110,6 +110,8 @@ GList      *ufo_graph_get_paths             (UfoGraph       *graph,
                                              UfoFilterPredicate pred);
 void        ufo_graph_expand                (UfoGraph       *graph,
                                              GList          *path);
+UfoGraph   *ufo_graph_copy                  (UfoGraph       *graph,
+                                             GError        **error);
 void        ufo_graph_dump_dot              (UfoGraph       *graph,
                                              const gchar    *filename);
 GType       ufo_graph_get_type              (void);
