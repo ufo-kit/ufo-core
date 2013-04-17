@@ -1,3 +1,4 @@
 #cmakedefine WITH_PROFILING 1
+#cmakedefine HAVE_VIENNACL 1
 #define UFO_PLUGIN_DIR "${CMAKE_INSTALL_PREFIX}/${LIBDIR}/ufo"
 #define UFO_VERSION "${PACKAGE_VERSION}"
