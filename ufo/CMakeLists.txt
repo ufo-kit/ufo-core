@@ -59,6 +59,12 @@ find_program(INTROSPECTION_SCANNER "g-ir-scanner")
 find_program(INTROSPECTION_COMPILER "g-ir-compiler")
 find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
 
+find_path(HAVE_VIENNACL viennacl)
+if (HAVE_VIENNACL)
+    set(ufocore_SRCS ${ufocore_SRCS} ufo-viennacl.cpp)
+    set(ufocore_HDRS ${ufocore_HDRS} ufo-viennacl.h)
+endif()
+
 # --- Add enum generation targets ---------------------------------------------
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h

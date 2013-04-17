@@ -562,6 +562,57 @@ ufo_resources_get_cmd_queues (UfoResources *resources)
     return result;
 }
 
+/**
+ * ufo_resources_get_devices:
+ * @resources: A #UfoResources
+ *
+ * Get all devices queues managed by @resources.
+ *
+ * Return value: (element-type gpointer) (transfer container): List with
+ * cl_device_id objects. Free with g_list_free() but not its elements.
+ */
+GList *
+ufo_resources_get_devices (UfoResources *resources)
+{
+    UfoResourcesPrivate *priv;
+    GList *result = NULL;
+
+    g_return_val_if_fail (UFO_IS_RESOURCES(resources), NULL);
+    priv = resources->priv;
+
+    for (guint i = 0; i < priv->n_devices; i++)
+        result = g_list_append (result, priv->devices[i]);
+
+    return result;
+}
+
+/**
+ * ufo_resources_get_mapped_cmd_queues:
+ * @resources: A #UfoResources
+ *
+ * Get all devices queues managed by @resources.
+ *
+ * Return value: (element-type gpointer) (transfer container): Hast table
+ * with cl_device_id objects as key and cl_command_queue objects as value. 
+ * Free with g_hash_table_destroy() but not its elements.
+ */
+GHashTable *
+ufo_resources_get_mapped_cmd_queues (UfoResources *resources)
+{
+    UfoResourcesPrivate *priv;
+    GHashTable *result = NULL;
+
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources), NULL);
+    priv = resources->priv;
+    result = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                                    NULL, (GDestroyNotify) release_program);
+
+    for (guint i = 0; i < priv->n_devices; i++)
+        g_hash_table_insert(result, priv->devices[i], priv->command_queues[i]);
+
+    return result;
+}
+
 static GList *
 append_config_paths (GList *list, UfoConfig *config)
 {

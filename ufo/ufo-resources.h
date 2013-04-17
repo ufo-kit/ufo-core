@@ -94,6 +94,8 @@ gpointer         ufo_resources_get_kernel_from_source   (UfoResources   *resourc
                                                          GError        **error);
 gpointer         ufo_resources_get_context              (UfoResources   *resources);
 GList          * ufo_resources_get_cmd_queues           (UfoResources   *resources);
+GList          * ufo_resources_get_devices              (UfoResources   *resources);
+GHashTable     * ufo_resources_get_mapped_cmd_queues    (UfoResources   *resources);
 const gchar    * ufo_resources_clerr                    (int             error);
 GType            ufo_resources_get_type                 (void);
 GQuark           ufo_resources_error_quark              (void);
