@@ -592,9 +592,9 @@ ufo_resources_get_devices (UfoResources *resources)
  *
  * Get all devices queues managed by @resources.
  *
- * Return value: (element-type gpointer) (transfer container): Hast table
- * with cl_device_id objects as key and cl_command_queue objects as value. 
- * Free with g_hash_table_destroy() but not its elements.
+ * Return value: Hash table with cl_device_id objects as key and
+ * cl_command_queue objects as value. Free with g_hash_table_destroy() but not
+ * its elements.
  */
 GHashTable *
 ufo_resources_get_mapped_cmd_queues (UfoResources *resources)
