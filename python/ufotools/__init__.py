@@ -69,5 +69,5 @@ class Factory(object):
         return TaskWrapper(task, self.graph, self.config)
 
     def run(self):
-        """Exec
+        """Execute the wrapped graph."""
         _run(self.graph, self.config)
