@@ -1,27 +1,10 @@
+import types
 from gi.repository import Ufo
 
 
 def _run(graph, config=None):
     sched = Ufo.Scheduler(config=config)
     sched.run(graph)
-
-
-class TaskWrapper(object):
-    def __init__(self, task, graph, config=None):
-        self.task = task
-        self.graph = graph
-        self.name = task.get_plugin_name()
-        self.config = config
-
-    def __call__(self, *args, **kwargs):
-        for i, target in enumerate(args):
-            self.graph.connect_nodes_full(target.task, self.task, i)
-
-        return self
-
-    def run(self):
-        """Execute the implied task graph that this node is connected in."""
-        _run(self.graph, self.config)
 
 
 class Factory(object):
@@ -66,8 +49,18 @@ class Factory(object):
         """
         task = self.pm.get_task(name)
         task.set_properties(**kwargs)
-        return TaskWrapper(task, self.graph, self.config)
+
+        task.__class__.__call__ = types.MethodType(self._connect, task)
+        task.run = self.run
+
+        return task
 
     def run(self):
         """Execute the wrapped graph."""
         _run(self.graph, self.config)
+
+    def _connect(self, task, *args, **kwargs):
+        for i, target in enumerate(args):
+            self.graph.connect_nodes_full(target, task, i)
+
+        return task
