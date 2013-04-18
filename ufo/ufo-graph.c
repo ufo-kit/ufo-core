@@ -116,6 +116,11 @@ ufo_graph_connect_nodes (UfoGraph *graph,
     g_return_if_fail (UFO_IS_GRAPH (graph));
     priv = graph->priv;
 
+    if (ufo_graph_is_connected (graph, source, target) &&
+        ufo_graph_get_edge_label (graph, source, target) == label) {
+        return;
+    }
+
     edge = g_new0 (UfoEdge, 1);
     edge->source = source;
     edge->target = target;
