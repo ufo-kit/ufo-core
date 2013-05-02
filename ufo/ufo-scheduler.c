@@ -480,12 +480,11 @@ setup_groups (UfoSchedulerPrivate *priv,
 
 void
 ufo_scheduler_run (UfoScheduler *scheduler,
-                   UfoTaskGraph *input_task_graph,
+                   UfoTaskGraph *task_graph,
                    GError **error)
 {
     UfoSchedulerPrivate *priv;
     UfoArchGraph *arch_graph;
-    UfoTaskGraph *task_graph;
     GList *groups;
     guint n_nodes;
     GThread **threads;
@@ -497,9 +496,6 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources,
                                                      priv->remotes));
-
-    task_graph = UFO_TASK_GRAPH (ufo_graph_copy (UFO_GRAPH (input_task_graph),
-                                                 error));
 
     if (priv->expand)
         ufo_task_graph_expand (task_graph, arch_graph);
@@ -539,7 +535,6 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_free (threads);
 
     g_object_unref (arch_graph);
-    g_object_unref (task_graph);
 }
 
 static void
