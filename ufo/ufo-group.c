@@ -95,6 +95,13 @@ ufo_group_new (GList *targets,
     return group;
 }
 
+guint
+ufo_group_get_num_targets (UfoGroup *group)
+{
+    g_return_val_if_fail (UFO_IS_GROUP (group), 0);
+    return group->priv->n_targets;
+}
+
 static UfoBuffer *
 pop_or_alloc_buffer (UfoGroupPrivate *priv,
                      guint pos,

@@ -79,6 +79,17 @@ enum {
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 /**
+ * UfoSchedulerError:
+ * @UFO_SCHEDULER_ERROR_SETUP: Could not start scheduler due to error
+ */
+GQuark
+ufo_scheduler_error_quark (void)
+{
+    return g_quark_from_static_string ("ufo-scheduler-error-quark");
+}
+
+
+/**
  * ufo_scheduler_new:
  * @config: A #UfoConfig or %NULL
  * @remotes: (element-type utf8): A #GList with strings describing remote machines or %NULL
@@ -478,6 +489,40 @@ setup_groups (UfoSchedulerPrivate *priv,
     return groups;
 }
 
+static gboolean
+correct_connections (UfoTaskGraph *graph,
+                     GError **error)
+{
+    GList *nodes;
+    gboolean result = TRUE;
+
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
+
+    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+        UfoTaskNode *node;
+        UfoInputParam *in_params;
+        guint n_inputs;
+        UfoTaskMode mode;
+        UfoGroup *group;
+
+        node = UFO_TASK_NODE (it->data);
+        ufo_task_get_structure (UFO_TASK (node), &n_inputs, &in_params, &mode);
+        group = ufo_task_node_get_out_group (node);
+
+        if (((mode == UFO_TASK_MODE_GENERATE) || (mode == UFO_TASK_MODE_REDUCE)) &&
+            ufo_group_get_num_targets (group) < 1) {
+            g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
+                         "No outgoing node for `%s'",
+                         ufo_task_node_get_unique_name (node));
+            result = FALSE;
+            break;
+        }
+    }
+
+    g_list_free (nodes);
+    return result;
+}
+
 void
 ufo_scheduler_run (UfoScheduler *scheduler,
                    UfoTaskGraph *task_graph,
@@ -509,6 +554,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         return;
 
     groups = setup_groups (priv, task_graph);
+
+    if (!correct_connections (task_graph, error))
+        return;
+
     n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (task_graph));
     threads = g_new0 (GThread *, n_nodes);
     timer = g_timer_new ();

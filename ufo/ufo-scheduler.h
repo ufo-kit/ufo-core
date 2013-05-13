@@ -36,9 +36,15 @@ G_BEGIN_DECLS
 #define UFO_IS_SCHEDULER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), UFO_TYPE_SCHEDULER))
 #define UFO_SCHEDULER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS((obj), UFO_TYPE_SCHEDULER, UfoSchedulerClass))
 
+#define UFO_SCHEDULER_ERROR            ufo_scheduler_error_quark()
+
 typedef struct _UfoScheduler           UfoScheduler;
 typedef struct _UfoSchedulerClass      UfoSchedulerClass;
 typedef struct _UfoSchedulerPrivate    UfoSchedulerPrivate;
+
+typedef enum {
+    UFO_SCHEDULER_ERROR_SETUP
+} UfoSchedulerError;
 
 /**
  * UfoScheduler:
@@ -74,6 +80,7 @@ void          ufo_scheduler_set_task_expansion
                                             (UfoScheduler  *scheduler,
                                              gboolean       split);
 GType         ufo_scheduler_get_type        (void);
+GQuark        ufo_scheduler_error_quark     (void);
 
 G_END_DECLS
 
