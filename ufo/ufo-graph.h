@@ -102,7 +102,11 @@ guint       ufo_graph_get_num_edges         (UfoGraph       *graph);
 GList      *ufo_graph_get_edges             (UfoGraph       *graph);
 GList      *ufo_graph_get_roots             (UfoGraph       *graph);
 GList      *ufo_graph_get_leaves            (UfoGraph       *graph);
+guint       ufo_graph_get_num_predecessors  (UfoGraph       *graph,
+                                             UfoNode        *node);
 GList      *ufo_graph_get_predecessors      (UfoGraph       *graph,
+                                             UfoNode        *node);
+guint       ufo_graph_get_num_successors    (UfoGraph       *graph,
                                              UfoNode        *node);
 GList      *ufo_graph_get_successors        (UfoGraph       *graph,
                                              UfoNode        *node);

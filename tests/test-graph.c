@@ -152,6 +152,20 @@ test_get_num_edges (Fixture *fixture, gconstpointer data)
 }
 
 static void
+test_get_num_successors (Fixture *fixture, gconstpointer data)
+{
+    g_assert (ufo_graph_get_num_successors (fixture->sequence, fixture->root) == 1);
+    g_assert (ufo_graph_get_num_successors (fixture->diamond, fixture->root) == 2);
+}
+
+static void
+test_get_num_predecessors (Fixture *fixture, gconstpointer data)
+{
+    g_assert (ufo_graph_get_num_predecessors (fixture->sequence, fixture->target1) == 1);
+    g_assert (ufo_graph_get_num_predecessors (fixture->diamond, fixture->target3) == 2);
+}
+
+static void
 test_get_edges (Fixture *fixture, gconstpointer data)
 {
     GList *edges;
@@ -335,9 +349,17 @@ test_add_graph (void)
                 Fixture, NULL,
                 fixture_setup, test_get_successors, fixture_teardown);
 
+    g_test_add ("/graph/nodes/successors/num",
+                Fixture, NULL,
+                fixture_setup, test_get_num_successors, fixture_teardown);
+
     g_test_add ("/graph/nodes/predecessors",
                 Fixture, NULL,
                 fixture_setup, test_get_predecessors, fixture_teardown);
+
+    g_test_add ("/graph/nodes/predecessors/num",
+                Fixture, NULL,
+                fixture_setup, test_get_num_predecessors, fixture_teardown);
 
     g_test_add ("/graph/nodes/filtered",
                 Fixture, NULL,

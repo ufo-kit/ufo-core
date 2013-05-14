@@ -344,6 +344,26 @@ ufo_graph_get_leaves (UfoGraph *graph)
     return ufo_graph_get_nodes_filtered (graph, (UfoFilterPredicate) has_no_successor, graph);
 }
 
+static GList *
+get_target_edges (GList *edges,
+                  UfoNode *target)
+{
+    UfoEdge match;
+
+    match.target = target;
+    return g_list_find_all_data (edges, &match, cmp_edge_target);
+}
+
+static GList *
+get_source_edges (GList *edges,
+                  UfoNode *source)
+{
+    UfoEdge match;
+
+    match.source = source;
+    return g_list_find_all_data (edges, &match, cmp_edge_source);
+}
+
 /**
  * ufo_graph_get_predecessors:
  * @graph: A #UfoGraph
@@ -359,15 +379,12 @@ ufo_graph_get_predecessors (UfoGraph *graph,
                             UfoNode *node)
 {
     UfoGraphPrivate *priv;
-    UfoEdge match;
     GList *edges;
     GList *result;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
     priv = graph->priv;
-
-    match.target = node;
-    edges = g_list_find_all_data (priv->edges, &match, cmp_edge_target);
+    edges = get_target_edges (priv->edges, node);
     result = NULL;
 
     for (GList *it = g_list_first (edges); it != NULL; it = g_list_next (it)) {
@@ -377,6 +394,22 @@ ufo_graph_get_predecessors (UfoGraph *graph,
 
     g_list_free (edges);
     return result;
+}
+
+guint
+ufo_graph_get_num_predecessors (UfoGraph *graph,
+                                UfoNode *node)
+{
+    UfoGraphPrivate *priv;
+    GList *edges;
+    guint n_predecessors;
+
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), 0);
+    priv = graph->priv;
+    edges = get_target_edges (priv->edges, node);
+    n_predecessors = g_list_length (edges);
+    g_list_free (edges);
+    return n_predecessors;
 }
 
 /**
@@ -394,15 +427,12 @@ ufo_graph_get_successors (UfoGraph *graph,
                           UfoNode *node)
 {
     UfoGraphPrivate *priv;
-    UfoEdge match;
     GList *edges;
     GList *result;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
     priv = graph->priv;
-
-    match.source = node;
-    edges = g_list_find_all_data (priv->edges, &match, cmp_edge_source);
+    edges = get_source_edges (priv->edges, node);
     result = NULL;
 
     for (GList *it = g_list_first (edges); it != NULL; it = g_list_next (it)) {
@@ -414,6 +444,21 @@ ufo_graph_get_successors (UfoGraph *graph,
     return result;
 }
 
+guint
+ufo_graph_get_num_successors (UfoGraph *graph,
+                              UfoNode *node)
+{
+    UfoGraphPrivate *priv;
+    GList *edges;
+    guint n_successors;
+
+    g_return_val_if_fail (UFO_IS_GRAPH (graph), 0);
+    priv = graph->priv;
+    edges = get_source_edges (priv->edges, node);
+    n_successors = g_list_length (edges);
+    g_list_free (edges);
+    return n_successors;
+}
 
 static void
 copy_and_connect_successors (UfoGraph *graph,
@@ -543,6 +588,8 @@ ufo_graph_expand (UfoGraph *graph,
         gpointer label;
 
         next = UFO_NODE (it->data);
+
+
         copy = ufo_node_copy (next, &error);
         label = ufo_graph_get_edge_label (graph, orig, next);
         ufo_graph_connect_nodes (graph, current, copy, label);
