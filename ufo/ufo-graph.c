@@ -589,11 +589,22 @@ ufo_graph_expand (UfoGraph *graph,
 
         next = UFO_NODE (it->data);
 
+        /*
+         * Do not copy node if it has more than one input because input data
+         * cannot be reliably associated
+         */
+        if (ufo_graph_get_num_predecessors (graph, next) <= 1) {
+            copy = ufo_node_copy (next, &error);
+            label = ufo_graph_get_edge_label (graph, orig, next);
+            ufo_graph_connect_nodes (graph, current, copy, label);
+            current = copy;
+        }
+        else {
+            label = ufo_graph_get_edge_label (graph, orig, next);
+            ufo_graph_connect_nodes (graph, current, next, label);
+            current = next;
+        }
 
-        copy = ufo_node_copy (next, &error);
-        label = ufo_graph_get_edge_label (graph, orig, next);
-        ufo_graph_connect_nodes (graph, current, copy, label);
-        current = copy;
         orig = next;
     }
 
