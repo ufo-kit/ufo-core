@@ -588,7 +588,9 @@ append_level (UfoGraph *graph,
  * ufo_graph_flatten:
  * @graph: A #UfoGraph
  *
- * Returns: a GList of GList, each containing nodes at the same height.
+ * Flatten @graph to lists of lists.
+ *
+ * Returns: (element-type GList): a GList of GList, each containing nodes at the same height.
  */
 GList *
 ufo_graph_flatten (UfoGraph *graph)
