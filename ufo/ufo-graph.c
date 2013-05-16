@@ -552,6 +552,54 @@ ufo_graph_copy (UfoGraph *graph,
     return copy;
 }
 
+static GList *
+append_level (UfoGraph *graph,
+              GList *current_level,
+              GList *result)
+{
+    GList *next_level = NULL;
+
+    result = g_list_append (result, current_level);
+
+    for (GList *it = g_list_first (current_level); it != NULL; it = g_list_next (it)) {
+        GList *successors;
+        UfoNode *node;
+
+        node = UFO_NODE (it->data);
+        successors = ufo_graph_get_successors (graph, node);
+
+        for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+            UfoNode *succ;
+
+            succ = UFO_NODE (jt->data);
+
+            if (g_list_find (next_level, succ) == NULL)
+                next_level = g_list_append (next_level, succ);
+        }
+    }
+
+    if (next_level == NULL)
+        return result;
+
+    return append_level (graph, next_level, result);
+}
+
+/**
+ * ufo_graph_flatten:
+ * @graph: A #UfoGraph
+ *
+ * Returns: a GList of GList, each containing nodes at the same height.
+ */
+GList *
+ufo_graph_flatten (UfoGraph *graph)
+{
+    GList *roots;
+    GList *result = NULL;
+
+    roots = ufo_graph_get_roots (graph);
+    return append_level (graph, roots, result);
+}
+
 /**
  * ufo_graph_expand:
  * @graph: A #UfoGraph

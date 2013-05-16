@@ -30,6 +30,11 @@ typedef struct {
     UfoNode *target3;
 } Fixture;
 
+typedef struct {
+    const gchar *path;
+    void (*test_func) (Fixture *, gconstpointer);
+} TestCase;
+
 static gpointer FOO_LABEL = GINT_TO_POINTER (0xDEADF00D);
 static gpointer BAR_LABEL = GINT_TO_POINTER (0xF00BA);
 static gpointer BAZ_LABEL = GINT_TO_POINTER (0xBA22BA22);
@@ -330,62 +335,60 @@ test_get_nodes_filtered (Fixture *fixture, gconstpointer data)
     g_list_free (nodes);
 }
 
+static void
+test_flatten (Fixture *fixture, gconstpointer data)
+{
+    GList *levels;
+    GList *roots;
+    GList *second_level;
+    GList *third_level;
+
+    levels = ufo_graph_flatten (fixture->diamond);
+    g_assert (g_list_length (levels) == 3);
+
+    roots = g_list_nth_data (levels, 0);
+    g_assert (g_list_length (roots) == 1);
+    g_assert (g_list_nth_data (roots, 0) == fixture->root);
+    g_list_free (roots);
+
+    second_level = g_list_nth_data (levels, 1);
+    g_assert (g_list_length (second_level) == 2);
+    g_assert (g_list_find (second_level, fixture->target1) != NULL);
+    g_assert (g_list_find (second_level, fixture->target2) != NULL);
+    g_list_free (second_level);
+
+    third_level = g_list_nth_data (levels, 2);
+    g_assert (g_list_length (third_level) == 1);
+    g_assert (g_list_find (third_level, fixture->target3) != NULL);
+    g_list_free (third_level);
+
+    g_list_free (levels);
+}
+
 void
 test_add_graph (void)
 {
-    g_test_add ("/graph/connected",
-                Fixture, NULL,
-                fixture_setup, test_connected, fixture_teardown);
+    TestCase test_cases[] = {
+        { "/graph/connected",               test_connected },
+        { "/graph/nodes/number",            test_get_num_nodes },
+        { "/graph/nodes/roots",             test_get_roots },
+        { "/graph/nodes/successors",        test_get_successors },
+        { "/graph/nodes/successors/num",    test_get_num_successors },
+        { "/graph/nodes/predecessors",      test_get_predecessors },
+        { "/graph/nodes/predecessors/num",  test_get_num_predecessors },
+        { "/graph/nodes/filtered",          test_get_nodes_filtered },
+        { "/graph/edges/number",            test_get_num_edges },
+        { "/graph/edges/all",               test_get_edges },
+        { "/graph/edges/remove",            test_remove_edge },
+        { "/graph/labels",                  test_get_labels },
+        { "/graph/expansion",               test_expansion },
+        { "/graph/copy",                    test_copy },
+        { "/graph/flatten",                 test_flatten },
+        { NULL, NULL }
+    };
 
-    g_test_add ("/graph/nodes/number",
-                Fixture, NULL,
-                fixture_setup, test_get_num_nodes, fixture_teardown);
-
-    g_test_add ("/graph/nodes/roots",
-                Fixture, NULL,
-                fixture_setup, test_get_roots, fixture_teardown);
-
-    g_test_add ("/graph/nodes/successors",
-                Fixture, NULL,
-                fixture_setup, test_get_successors, fixture_teardown);
-
-    g_test_add ("/graph/nodes/successors/num",
-                Fixture, NULL,
-                fixture_setup, test_get_num_successors, fixture_teardown);
-
-    g_test_add ("/graph/nodes/predecessors",
-                Fixture, NULL,
-                fixture_setup, test_get_predecessors, fixture_teardown);
-
-    g_test_add ("/graph/nodes/predecessors/num",
-                Fixture, NULL,
-                fixture_setup, test_get_num_predecessors, fixture_teardown);
-
-    g_test_add ("/graph/nodes/filtered",
-                Fixture, NULL,
-                fixture_setup, test_get_nodes_filtered, fixture_teardown);
-
-    g_test_add ("/graph/edges/number",
-                Fixture, NULL,
-                fixture_setup, test_get_num_edges, fixture_teardown);
-
-    g_test_add ("/graph/edges/all",
-                Fixture, NULL,
-                fixture_setup, test_get_edges, fixture_teardown);
-
-    g_test_add ("/graph/edges/remove",
-                Fixture, NULL,
-                fixture_setup, test_remove_edge, fixture_teardown);
-
-    g_test_add ("/graph/labels",
-                Fixture, NULL,
-                fixture_setup, test_get_labels, fixture_teardown);
-
-    g_test_add ("/graph/expansion",
-                Fixture, NULL,
-                fixture_setup, test_expansion, fixture_teardown);
-
-    g_test_add ("/graph/copy",
-                Fixture, NULL,
-                fixture_setup, test_copy, fixture_teardown);
+    for (guint i = 0; test_cases[i].path != NULL; i++) {
+        g_test_add (test_cases[i].path, Fixture, NULL,
+                    fixture_setup, test_cases[i].test_func, fixture_teardown);
+    }
 }

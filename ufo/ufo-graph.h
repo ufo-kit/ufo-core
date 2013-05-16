@@ -112,6 +112,7 @@ GList      *ufo_graph_get_successors        (UfoGraph       *graph,
                                              UfoNode        *node);
 GList      *ufo_graph_get_paths             (UfoGraph       *graph,
                                              UfoFilterPredicate pred);
+GList      *ufo_graph_flatten               (UfoGraph       *graph);
 void        ufo_graph_expand                (UfoGraph       *graph,
                                              GList          *path);
 UfoGraph   *ufo_graph_copy                  (UfoGraph       *graph,
