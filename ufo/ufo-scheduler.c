@@ -240,6 +240,42 @@ run_remote_task (TaskLocalData *tld)
     ufo_group_finish (ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task)));
 }
 
+static gboolean
+check_implementation (UfoTaskNode *node,
+                      const gchar *func,
+                      const gchar *type,
+                      gboolean assertion)
+{
+    if (!assertion) {
+        g_error ("%s is not implemented, although %s is a %s",
+                 func, ufo_task_node_get_plugin_name (node), type);
+    }
+
+    return assertion;
+}
+
+static gboolean
+is_correctly_implemented (UfoTaskNode *node,
+                          UfoTaskMode mode,
+                          UfoTaskProcessFunc process,
+                          UfoTaskGenerateFunc generate)
+{
+    switch (mode) {
+        case UFO_TASK_MODE_GENERATOR:
+            return check_implementation (node, "generate", "generator", generate != NULL);
+
+        case UFO_TASK_MODE_PROCESSOR:
+            return check_implementation (node, "process", "processor", process != NULL);
+
+        case UFO_TASK_MODE_REDUCTOR:
+            return check_implementation (node, "process or generate", "reductor",
+                                         (process != NULL) && (generate != NULL));
+        default:
+            g_error ("Unknown mode");
+            return FALSE;
+    }
+}
+
 static gpointer
 run_task (TaskLocalData *tld)
 {
@@ -268,6 +304,9 @@ run_task (TaskLocalData *tld)
         process = (UfoTaskProcessFunc) ufo_cpu_task_process;
         generate = (UfoTaskGenerateFunc) ufo_cpu_task_generate;
     }
+
+    if (!is_correctly_implemented (node, tld->mode, process, generate))
+        return NULL;
 
     while (active) {
         UfoGroup *group;
