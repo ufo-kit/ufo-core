@@ -246,6 +246,8 @@ run_task (TaskLocalData *tld)
     UfoBuffer *inputs[tld->n_inputs];
     UfoBuffer *output;
     UfoTaskNode *node;
+    UfoTaskProcessFunc process;
+    UfoTaskGenerateFunc generate;
     UfoRequisition requisition;
     gboolean active;
 
@@ -258,8 +260,18 @@ run_task (TaskLocalData *tld)
         return NULL;
     }
 
+    if (UFO_IS_GPU_TASK (tld->task)) {
+        process = (UfoTaskProcessFunc) ufo_gpu_task_process;
+        generate = (UfoTaskGenerateFunc) ufo_gpu_task_generate;
+    }
+    else {
+        process = (UfoTaskProcessFunc) ufo_cpu_task_process;
+        generate = (UfoTaskGenerateFunc) ufo_cpu_task_generate;
+    }
+
     while (active) {
         UfoGroup *group;
+        gboolean produces;
 
         group = ufo_task_node_get_out_group (node);
 
@@ -273,122 +285,56 @@ run_task (TaskLocalData *tld)
 
         /* Get output buffers */
         ufo_task_get_requisition (tld->task, inputs, &requisition);
+        produces = requisition.n_dims > 0;
 
-        if (requisition.n_dims > 0) {
+        if (produces) {
             output = ufo_group_pop_output_buffer (group, &requisition);
             g_assert (output != NULL);
         }
 
-        /* Process */
-        if (UFO_IS_GPU_TASK (tld->task)) {
-            UfoGpuNode *gpu_node;
+        if (output != NULL)
+            ufo_buffer_discard_location (output);
 
-            if (output != NULL)
-                ufo_buffer_discard_location (output);
+        switch (tld->mode) {
+            case UFO_TASK_MODE_PROCESSOR:
+                active = process (tld->task, inputs, output, &requisition);
+                break;
 
-            gpu_node = UFO_GPU_NODE (ufo_task_node_get_proc_node (node));
+            case UFO_TASK_MODE_REDUCTOR:
+                do {
+                    process (tld->task, inputs, output, &requisition);
+                    release_inputs (tld, inputs);
+                    active = get_inputs (tld, inputs);
+                } while (active);
+                break;
 
-            switch (tld->mode) {
-                case UFO_TASK_MODE_SINGLE:
-                    active = ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
-                                                   inputs, output,
-                                                   &requisition, gpu_node);
-                    break;
-
-                case UFO_TASK_MODE_GENERATE:
-                case UFO_TASK_MODE_REDUCE:
-                    do {
-                        ufo_gpu_task_process (UFO_GPU_TASK (tld->task),
-                                              inputs, output,
-                                              &requisition, gpu_node);
-                        release_inputs (tld, inputs);
-                        active = get_inputs (tld, inputs);
-                    } while (active);
-                    break;
-            }
-
-            if (tld->mode == UFO_TASK_MODE_REDUCE)
-                ufo_gpu_task_reduce (UFO_GPU_TASK (tld->task),
-                                     output,
-                                     &requisition,
-                                     gpu_node);
+            case UFO_TASK_MODE_GENERATOR:
+                active = generate (tld->task, output, &requisition);
+                break;
         }
-        else if (UFO_IS_CPU_TASK (tld->task)) {
-            if (output != NULL)
-                ufo_buffer_discard_location (output);
 
-            switch (tld->mode) {
-                case UFO_TASK_MODE_SINGLE:
-                    active = ufo_cpu_task_process (UFO_CPU_TASK (tld->task), inputs, output, &requisition);
-                    break;
-
-                case UFO_TASK_MODE_GENERATE:
-                case UFO_TASK_MODE_REDUCE:
-                    do {
-                        ufo_cpu_task_process (UFO_CPU_TASK (tld->task),
-                                              inputs,
-                                              output,
-                                              &requisition);
-                        release_inputs (tld, inputs);
-                        active = get_inputs (tld, inputs);
-                    } while (active);
-                    break;
-            }
-
-            if (tld->mode == UFO_TASK_MODE_REDUCE)
-                ufo_cpu_task_reduce (UFO_CPU_TASK (tld->task), output, &requisition);
-        }
+        if (active && produces && (tld->mode != UFO_TASK_MODE_REDUCTOR))
+            ufo_group_push_output_buffer (group, output);
 
         /* Release buffers for further consumption */
         release_inputs (tld, inputs);
 
-        if (requisition.n_dims > 0) {
-            switch (tld->mode) {
-                case UFO_TASK_MODE_SINGLE:
-                    if (active)
-                        ufo_group_push_output_buffer (group, output);
-                    else
-                        ufo_group_finish (group);
-                    break;
+        if (tld->mode == UFO_TASK_MODE_REDUCTOR) {
+            active = TRUE;
 
-                case UFO_TASK_MODE_REDUCE:
+            do {
+                active = generate (tld->task, output, &requisition);
+
+                if (active)
                     ufo_group_push_output_buffer (group, output);
-                    ufo_group_finish (group);
-                    break;
-
-                case UFO_TASK_MODE_GENERATE:
-                    {
-                        do {
-                            if (UFO_IS_GPU_TASK (tld->task)) {
-                                UfoGpuNode *gpu_node;
-
-                                ufo_buffer_discard_location (output);
-                                gpu_node = UFO_GPU_NODE (ufo_task_node_get_proc_node (node));
-                                active = ufo_gpu_task_generate (UFO_GPU_TASK (tld->task),
-                                                                output,
-                                                                &requisition, gpu_node);
-                            }
-                            else {
-                                active = ufo_cpu_task_generate (UFO_CPU_TASK (tld->task),
-                                                                output,
-                                                                &requisition);
-                            }
-
-                            if (active) {
-                                ufo_group_push_output_buffer (group, output);
-                                output = ufo_group_pop_output_buffer (group, &requisition);
-                            }
-                        } while (active);
-
-                        ufo_group_finish (group);
-                    }
-                    break;
-            }
+            } while (active);
         }
+
+        if (!active)
+            ufo_group_finish (group);
     }
 
     g_message ("`%s' finished", G_OBJECT_TYPE_NAME (tld->task));
-
     return NULL;
 }
 
@@ -509,7 +455,7 @@ correct_connections (UfoTaskGraph *graph,
         ufo_task_get_structure (UFO_TASK (node), &n_inputs, &in_params, &mode);
         group = ufo_task_node_get_out_group (node);
 
-        if (((mode == UFO_TASK_MODE_GENERATE) || (mode == UFO_TASK_MODE_REDUCE)) &&
+        if (((mode == UFO_TASK_MODE_GENERATOR) || (mode == UFO_TASK_MODE_REDUCTOR)) &&
             ufo_group_get_num_targets (group) < 1) {
             g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
                          "No outgoing node for `%s'",

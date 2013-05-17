@@ -17,6 +17,7 @@ set(ufocore_SRCS
     ufo-node.c
     ufo-output-task.c
     ufo-plugin-manager.c
+    #    ufo-pool-scheduler.c
     ufo-profiler.c
     ufo-remote-node.c
     ufo-remote-task.c
@@ -43,6 +44,7 @@ set(ufocore_HDRS
     ufo-node.h
     ufo-output-task.h
     ufo-plugin-manager.h
+    #ufo-pool-scheduler.h
     ufo-profiler.h
     ufo-remote-node.h
     ufo-remote-task.h

@@ -33,14 +33,6 @@ ufo_cpu_task_process (UfoCpuTask *task,
     return UFO_CPU_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
 }
 
-void
-ufo_cpu_task_reduce (UfoCpuTask *task,
-                     UfoBuffer *output,
-                     UfoRequisition *requisition)
-{
-    UFO_CPU_TASK_GET_IFACE (task)->reduce (task, output, requisition);
-}
-
 gboolean
 ufo_cpu_task_generate (UfoCpuTask *task,
                        UfoBuffer *output,
@@ -59,14 +51,6 @@ ufo_cpu_task_process_real (UfoCpuTask *task,
     return FALSE;
 }
 
-static void
-ufo_cpu_task_reduce_real (UfoCpuTask *task,
-                          UfoBuffer *output,
-                          UfoRequisition *requisition)
-{
-    g_warning ("`reduce' of UfoCpuTaskInterface not implemented");
-}
-
 static gboolean
 ufo_cpu_task_generate_real (UfoCpuTask *task,
                             UfoBuffer *output,
@@ -80,6 +64,5 @@ static void
 ufo_cpu_task_default_init (UfoCpuTaskInterface *iface)
 {
     iface->process = ufo_cpu_task_process_real;
-    iface->reduce = ufo_cpu_task_reduce_real;
     iface->generate = ufo_cpu_task_generate_real;
 }

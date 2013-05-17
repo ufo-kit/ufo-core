@@ -48,17 +48,26 @@ typedef enum {
 
 /**
  * UfoTaskMode:
- * @UFO_TASK_MODE_SINGLE: one-by-one processing
- * @UFO_TASK_MODE_REDUCE: receive fininite stream and generate a reduced stream
- * @UFO_TASK_MODE_GENERATE: do not receive any data but produce a stream.
+ * @UFO_TASK_MODE_PROCESSOR: one-by-one processing
+ * @UFO_TASK_MODE_GENERATOR: do not receive any data but produce a stream.
+ * @UFO_TASK_MODE_REDUCTOR: receive fininite stream and generate a reduced stream
  *
  * Task modes describe how a task operates considering the input data.
  */
 typedef enum {
-    UFO_TASK_MODE_SINGLE,
-    UFO_TASK_MODE_REDUCE,
-    UFO_TASK_MODE_GENERATE
+    UFO_TASK_MODE_PROCESSOR,
+    UFO_TASK_MODE_GENERATOR,
+    UFO_TASK_MODE_REDUCTOR,
 } UfoTaskMode;
+
+typedef gboolean (*UfoTaskProcessFunc) (UfoTask *task,
+                                        UfoBuffer **inputs,
+                                        UfoBuffer *output,
+                                        UfoRequisition *requisition);
+
+typedef gboolean (*UfoTaskGenerateFunc) (UfoTask *task,
+                                         UfoBuffer *output,
+                                         UfoRequisition *requisition);
 
 /**
  * UfoInputParam:

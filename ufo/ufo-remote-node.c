@@ -152,7 +152,7 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
-    *mode = UFO_TASK_MODE_SINGLE;
+    *mode = UFO_TASK_MODE_PROCESSOR;
     request.type = UFO_MESSAGE_GET_STRUCTURE;
 
     g_mutex_lock (priv->mutex);

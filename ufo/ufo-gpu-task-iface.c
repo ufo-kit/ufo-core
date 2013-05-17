@@ -27,55 +27,33 @@ gboolean
 ufo_gpu_task_process (UfoGpuTask *task,
                       UfoBuffer **inputs,
                       UfoBuffer *output,
-                      UfoRequisition *requisition,
-                      UfoGpuNode *node)
+                      UfoRequisition *requisition)
 {
-    return UFO_GPU_TASK_GET_IFACE (task)->process (task, inputs, output, requisition, node);
-}
-
-void
-ufo_gpu_task_reduce (UfoGpuTask *task,
-                     UfoBuffer *output,
-                     UfoRequisition *requisition,
-                     UfoGpuNode *node)
-{
-    UFO_GPU_TASK_GET_IFACE (task)->reduce (task, output, requisition, node);
+    return UFO_GPU_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
 }
 
 gboolean
 ufo_gpu_task_generate (UfoGpuTask *task,
                        UfoBuffer *output,
-                       UfoRequisition *requisition,
-                       UfoGpuNode *node)
+                       UfoRequisition *requisition)
 {
-    return UFO_GPU_TASK_GET_IFACE (task)->generate (task, output, requisition, node);
+    return UFO_GPU_TASK_GET_IFACE (task)->generate (task, output, requisition);
 }
 
 static gboolean
 ufo_gpu_task_process_real (UfoGpuTask *task,
                            UfoBuffer **inputs,
                            UfoBuffer *output,
-                           UfoRequisition *requisition,
-                           UfoGpuNode *node)
+                           UfoRequisition *requisition)
 {
     g_warning ("`process' of UfoGpuTaskInterface not implemented");
     return FALSE;
 }
 
-static void
-ufo_gpu_task_reduce_real (UfoGpuTask *task,
-                          UfoBuffer *output,
-                          UfoRequisition *requisition,
-                          UfoGpuNode *node)
-{
-    g_warning ("`reduce' of UfoGpuTaskInterface not implemented");
-}
-
 static gboolean
 ufo_gpu_task_generate_real (UfoGpuTask *task,
                             UfoBuffer *output,
-                            UfoRequisition *requisition,
-                            UfoGpuNode *node)
+                            UfoRequisition *requisition)
 {
     g_warning ("`generate' of UfoGpuTaskInterface not implemented");
     return FALSE;
@@ -85,6 +63,5 @@ static void
 ufo_gpu_task_default_init (UfoGpuTaskInterface *iface)
 {
     iface->process = ufo_gpu_task_process_real;
-    iface->reduce = ufo_gpu_task_reduce_real;
     iface->generate = ufo_gpu_task_generate_real;
 }

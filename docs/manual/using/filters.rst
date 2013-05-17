@@ -71,7 +71,7 @@ processing mode your task runs ::
                                     UfoInputParam **in_params,
                                     UfoTaskMode *mode)
     {
-        *mode = UFO_TASK_MODE_SINGLE;
+        *mode = UFO_TASK_MODE_PROCESSOR;
         *n_inputs = 1;
         *in_params = g_new0 (UfoInputParam, 1);
         (*in_params)[0].n_dims = 2;
@@ -79,6 +79,20 @@ processing mode your task runs ::
 
 This task expects one two-dimensional input. Be aware, that the callee must
 allocate memory for the ``in_params`` data structure.
+
+The mode decides which functions of a task are called. Each task can provide a
+``process`` function that takes input data and optionally writes output data and
+a ``generate`` function that does not take input data but writes data. Both
+functions return a boolean value to signal if data was produced or not (e.g. end
+of stream):
+
+* ``UFO_TASK_MODE_PROCESSOR``: The task reads data and optionally writes data.
+  For that it must implement ``process``.
+* ``UFO_TASK_MODE_GENERATOR``: The task only produces data (e.g. file readers)
+  and must implement ``generate``.
+* ``UFO_TASK_MODE_REDUCTOR``: The tasks reads the input stream and produces
+  another output stream. Reading is accomplished by implementing ``process``
+  whereas production is done by ``generate``.
 
 ``setup`` can be used to initialize data that depends on run-time resources like
 OpenCL contexts etc. This method is called only *once* ::
@@ -113,21 +127,26 @@ specify ::
     }
 
 Finally, you have to override the ``process`` method. Note, that the function
-signatures differ for GPU and CPU tasks ::
+signatures is essentially the same for GPU and CPU tasks ::
 
     static gboolean
     ufo_awesome_task_process (UfoGpuTask *task,
                               UfoBuffer **inputs,
                               UfoBuffer *output,
-                              UfoRequisition *requisition,
-                              UfoGpuNode *node)
+                              UfoRequisition *requisition)
     {
-        /* Now we can request cl_mem or float arrays from in and outputs. */
+        UfoGpuNode *node;
         cl_command_queue cmd_queue;
         cl_mem host_in;
         cl_mem host_out;
 
+        /* We have to know to which GPU device we are assigned to */
+        node = UFO_GPU_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (task)));
+
+        /* Now, we can get the command queue */
         cmd_queue = ufo_gpu_node_get_cmd_queue (node);
+
+        /* ... and get hold of the data */
         host_in = ufo_buffer_get_device_array (inputs[0], cmd_queue);
         host_out = ufo_buffer_get_device_array (output, cmd_queue);
 

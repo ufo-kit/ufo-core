@@ -43,28 +43,22 @@ struct _UfoCpuTaskIface {
     /*< private >*/
     UfoTaskIface parent_iface;
 
-    gboolean (*process) (UfoCpuTask *task,
-                         UfoBuffer **inputs,
-                         UfoBuffer *output,
-                         UfoRequisition *requisition);
-    void     (*reduce)  (UfoCpuTask *task,
-                         UfoBuffer *output,
-                         UfoRequisition *requisition);
-    gboolean (*generate)(UfoCpuTask *task,
-                         UfoBuffer *output,
-                         UfoRequisition *requisition);
+    gboolean (*process)  (UfoCpuTask *task,
+                          UfoBuffer **inputs,
+                          UfoBuffer *output,
+                          UfoRequisition *requisition);
+    gboolean (*generate) (UfoCpuTask *task,
+                          UfoBuffer *output,
+                          UfoRequisition *requisition);
 };
 
-gboolean    ufo_cpu_task_process (UfoCpuTask     *task,
-                                  UfoBuffer     **inputs,
-                                  UfoBuffer      *output,
-                                  UfoRequisition *requisition);
-void        ufo_cpu_task_reduce  (UfoCpuTask     *task,
-                                  UfoBuffer      *output,
-                                  UfoRequisition *requisition);
-gboolean    ufo_cpu_task_generate(UfoCpuTask     *task,
-                                  UfoBuffer      *output,
-                                  UfoRequisition *requisition);
+gboolean    ufo_cpu_task_process    (UfoCpuTask     *task,
+                                     UfoBuffer     **inputs,
+                                     UfoBuffer      *output,
+                                     UfoRequisition *requisition);
+gboolean    ufo_cpu_task_generate   (UfoCpuTask     *task,
+                                     UfoBuffer      *output,
+                                     UfoRequisition *requisition);
 
 GType ufo_cpu_task_get_type (void);
 

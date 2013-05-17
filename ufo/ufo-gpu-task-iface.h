@@ -44,34 +44,22 @@ struct _UfoGpuTaskIface {
     /*< private >*/
     UfoTaskIface parent_iface;
 
-    gboolean (*process) (UfoGpuTask     *task,
-                         UfoBuffer     **inputs,
-                         UfoBuffer      *output,
-                         UfoRequisition *requisition,
-                         UfoGpuNode     *node);
-    void     (*reduce)  (UfoGpuTask     *task,
-                         UfoBuffer      *output,
-                         UfoRequisition *requisition,
-                         UfoGpuNode     *node);
-    gboolean (*generate)(UfoGpuTask     *task,
-                         UfoBuffer      *output,
-                         UfoRequisition *requisition,
-                         UfoGpuNode     *node);
+    gboolean (*process)  (UfoGpuTask     *task,
+                          UfoBuffer     **inputs,
+                          UfoBuffer      *output,
+                          UfoRequisition *requisition);
+    gboolean (*generate) (UfoGpuTask     *task,
+                          UfoBuffer      *output,
+                          UfoRequisition *requisition);
 };
 
-gboolean ufo_gpu_task_process (UfoGpuTask       *task,
-                               UfoBuffer       **inputs,
-                               UfoBuffer        *output,
-                               UfoRequisition   *requisition,
-                               UfoGpuNode       *node);
-void     ufo_gpu_task_reduce  (UfoGpuTask       *task,
-                               UfoBuffer        *output,
-                               UfoRequisition   *requisition,
-                               UfoGpuNode       *node);
-gboolean ufo_gpu_task_generate(UfoGpuTask       *task,
-                               UfoBuffer        *output,
-                               UfoRequisition   *requisition,
-                               UfoGpuNode       *node);
+gboolean ufo_gpu_task_process   (UfoGpuTask       *task,
+                                 UfoBuffer       **inputs,
+                                 UfoBuffer        *output,
+                                 UfoRequisition   *requisition);
+gboolean ufo_gpu_task_generate  (UfoGpuTask       *task,
+                                 UfoBuffer        *output,
+                                 UfoRequisition   *requisition);
 
 GType ufo_gpu_task_get_type (void);
 

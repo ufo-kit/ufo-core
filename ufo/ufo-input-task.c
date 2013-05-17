@@ -122,7 +122,7 @@ ufo_input_task_get_structure (UfoTask *task,
                               UfoTaskMode *mode)
 {
     *n_inputs = 0;
-    *mode = UFO_TASK_MODE_SINGLE;
+    *mode = UFO_TASK_MODE_GENERATOR;
 }
 
 static void

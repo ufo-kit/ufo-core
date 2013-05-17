@@ -127,7 +127,7 @@ ufo_output_task_get_structure (UfoTask *task,
 {
     UfoOutputTaskPrivate *priv = UFO_OUTPUT_TASK_GET_PRIVATE (task);
 
-    *mode = UFO_TASK_MODE_SINGLE;
+    *mode = UFO_TASK_MODE_PROCESSOR;
     *n_inputs = 1;
     *in_params = g_new0 (UfoInputParam, 1);
     (*in_params)[0].n_dims = priv->n_dims;
