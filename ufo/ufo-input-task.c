@@ -134,16 +134,15 @@ ufo_input_task_get_requisition (UfoTask *task,
 
     priv = UFO_INPUT_TASK_GET_PRIVATE (task);
 
-    /* Pop input here but release later in ufo_input_task_process */
+    /* Pop input here but release later in ufo_input_task_generate */
     priv->input = g_async_queue_pop (priv->in_queue);
     ufo_buffer_get_requisition (priv->input, requisition);
 }
 
 static gboolean
-ufo_input_task_process (UfoCpuTask *task,
-                        UfoBuffer **none,
-                        UfoBuffer *output,
-                        UfoRequisition *requisition)
+ufo_input_task_generate (UfoCpuTask *task,
+                         UfoBuffer *output,
+                         UfoRequisition *requisition)
 {
     UfoInputTaskPrivate *priv;
 
@@ -183,7 +182,7 @@ ufo_task_interface_init (UfoTaskIface *iface)
 static void
 ufo_cpu_task_interface_init (UfoCpuTaskIface *iface)
 {
-    iface->process = ufo_input_task_process;
+    iface->generate = ufo_input_task_generate;
 }
 
 static void
