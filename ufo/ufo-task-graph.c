@@ -496,7 +496,9 @@ map_proc_node (UfoGraph *graph,
 
     for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
         map_proc_node (graph, UFO_NODE (it->data), proc_index, gpu_nodes);
-        proc_index = (proc_index + 1) % n_gpus;
+
+        if (!UFO_IS_REMOTE_TASK (UFO_NODE (it->data)))
+            proc_index = (proc_index + 1) % n_gpus;
     }
 
     g_list_free (successors);
