@@ -66,28 +66,34 @@ ufo_node_get_label (UfoNode *node)
     return node->priv->label;
 }
 
-static UfoNode *
-ufo_node_copy_real (UfoNode *node,
-                    GError **error)
+static void
+copy_properties (GObject *dst,
+                 GObject *src)
 {
-    GObject *copy;
     GParamSpec **props;
     guint n_props;
 
-    copy = g_object_new (G_OBJECT_TYPE (node), NULL);
-    props = g_object_class_list_properties (G_OBJECT_GET_CLASS (node), &n_props);
+    props = g_object_class_list_properties (G_OBJECT_GET_CLASS (src), &n_props);
 
     for (guint i = 0; i < n_props; i++) {
         GValue value = {0};
 
         g_value_init (&value, props[i]->value_type);
-        g_object_get_property (G_OBJECT (node), props[i]->name, &value);
-        g_object_set_property (G_OBJECT (copy), props[i]->name, &value);
+        g_object_get_property (G_OBJECT (src), props[i]->name, &value);
+        g_object_set_property (G_OBJECT (dst), props[i]->name, &value);
     }
 
     g_free (props);
-    UFO_NODE (copy)->priv->label = node->priv->label;
+}
 
+static UfoNode *
+ufo_node_copy_real (UfoNode *node,
+                    GError **error)
+{
+    GObject *copy;
+
+    copy = g_object_new (G_OBJECT_TYPE (node), NULL);
+    copy_properties (copy, G_OBJECT (node));
     return UFO_NODE (copy);
 }
 
@@ -132,6 +138,7 @@ ufo_node_copy (UfoNode *node,
     UfoNode *offspring;
 
     offspring = UFO_NODE_GET_CLASS (node)->copy (node, error);
+    offspring->priv->label = node->priv->label;
     offspring->priv->copied_from = node;
     offspring->priv->index = node->priv->total;
     offspring->priv->total = offspring->priv->index + 1;

@@ -34,6 +34,7 @@ G_DEFINE_TYPE (UfoGraph, ufo_graph, G_TYPE_OBJECT)
 struct _UfoGraphPrivate {
     GList *nodes;
     GList *edges;
+    GList *copies;
 };
 
 enum {
@@ -647,6 +648,7 @@ ufo_graph_expand (UfoGraph *graph,
             copy = ufo_node_copy (next, &error);
             label = ufo_graph_get_edge_label (graph, orig, next);
             ufo_graph_connect_nodes (graph, current, copy, label);
+            graph->priv->copies = g_list_append (graph->priv->copies, copy);
             current = copy;
         }
         else {
@@ -858,6 +860,12 @@ ufo_graph_dispose (GObject *object)
         priv->nodes = NULL;
     }
 
+    if (priv->copies != NULL) {
+        g_list_foreach (priv->copies, (GFunc) g_object_unref, NULL);
+        g_list_free (priv->copies);
+        priv->copies = NULL;
+    }
+
     G_OBJECT_CLASS (ufo_graph_parent_class)->dispose (object);
 }
 
@@ -884,4 +892,5 @@ ufo_graph_init (UfoGraph *self)
     UfoGraphPrivate *priv;
     self->priv = priv = UFO_GRAPH_GET_PRIVATE (self);
     priv->nodes = NULL;
+    priv->copies = NULL;
 }

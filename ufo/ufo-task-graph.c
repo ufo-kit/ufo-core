@@ -781,7 +781,6 @@ json_object_from_ufo_node (UfoNode *node)
     return object;
 }
 
-
 static void
 ufo_task_graph_dispose (GObject *object)
 {
