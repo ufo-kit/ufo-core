@@ -233,7 +233,6 @@ run_remote_task (TaskLocalData *tld)
             }
             else {
                 alive[i] = FALSE;
-                break;
             }
         }
 
