@@ -88,6 +88,8 @@ endif()
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 
+add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
+
 add_subdirectory(ufo)
 add_subdirectory(docs)
 add_subdirectory(python)
@@ -110,7 +112,7 @@ set(VERSION ${PACKAGE_VERSION})
 
 set(CPACK_GENERATOR "DEB;RPM;")
 set(CPACK_SOURCE_GENERATOR "TGZ")
-set(CPACK_SOURCE_IGNORE_FILES "tags" ".bzr" ".swp" "~1~" ".git" ".xml")
+set(CPACK_SOURCE_IGNORE_FILES "/build/;.git/;tags;.swp;${CPACK_SOURCE_IGNORE_FILES}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_NAME}-${PACKAGE_VERSION}" CACHE INTERNAL "tarball basename")
 
 # --- Distro specific
