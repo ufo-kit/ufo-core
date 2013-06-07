@@ -136,8 +136,8 @@ ufo_scheduler_get_context (UfoScheduler *scheduler)
  * @scheduler: A #UfoScheduler
  * @split: %TRUE if task graph should be split
  *
- * Sets whether the task graph should be expanded before execution to increase
- * multi GPU performance.
+ * Sets whether the task graph should be expanded to accomodate for a multi GPU
+ * system. Each suitable branch will be run on another GPU.
  */
 void
 ufo_scheduler_set_task_expansion (UfoScheduler *scheduler,

@@ -70,17 +70,16 @@ struct _UfoSchedulerClass {
     GObjectClass parent_class;
 };
 
-UfoScheduler* ufo_scheduler_new             (UfoConfig     *config,
-                                             GList         *remotes);
-void          ufo_scheduler_run             (UfoScheduler  *scheduler,
-                                             UfoTaskGraph  *task_graph,
-                                             GError**       error);
-gpointer      ufo_scheduler_get_context     (UfoScheduler  *scheduler);
-void          ufo_scheduler_set_task_expansion
-                                            (UfoScheduler  *scheduler,
-                                             gboolean       split);
-GType         ufo_scheduler_get_type        (void);
-GQuark        ufo_scheduler_error_quark     (void);
+UfoScheduler* ufo_scheduler_new                 (UfoConfig     *config,
+                                                 GList         *remotes);
+void          ufo_scheduler_run                 (UfoScheduler  *scheduler,
+                                                 UfoTaskGraph  *task_graph,
+                                                 GError**       error);
+gpointer      ufo_scheduler_get_context         (UfoScheduler  *scheduler);
+void          ufo_scheduler_set_task_expansion  (UfoScheduler  *scheduler,
+                                                 gboolean       split);
+GType         ufo_scheduler_get_type            (void);
+GQuark        ufo_scheduler_error_quark         (void);
 
 G_END_DECLS
 

@@ -417,7 +417,7 @@ find_longest_path (GList *paths)
  */
 void
 ufo_task_graph_expand (UfoTaskGraph *task_graph,
-                      UfoArchGraph *arch_graph)
+                       UfoArchGraph *arch_graph)
 {
     GList *paths;
     GList *path;
