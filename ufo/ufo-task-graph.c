@@ -317,18 +317,11 @@ create_remote_tasks (UfoTaskGraph *task_graph,
 {
     UfoTaskGraphPrivate *priv;
     UfoTaskNode *task;
-    JsonNode *root;
-    JsonGenerator *generator;
     gchar *json;
-    gsize size;
-
-    root = get_json_representation (remote_graph, NULL);
-    generator = json_generator_new ();
-    json_generator_set_root (generator, root);
-    json = json_generator_to_data (generator, &size);
 
     priv = task_graph->priv;
-    ufo_remote_node_send_json (remote, json, size);
+    json = ufo_task_graph_get_json_data (remote_graph, NULL);
+    ufo_remote_node_send_json (remote, UFO_REMOTE_MODE_STREAM, json);
 
     task = UFO_TASK_NODE (ufo_remote_task_new ());
     priv->remote_tasks = g_list_append (priv->remote_tasks, task);
@@ -338,8 +331,6 @@ create_remote_tasks (UfoTaskGraph *task_graph,
     ufo_task_graph_connect_nodes (task_graph, task, last);
 
     g_free (json);
-    json_node_free (root);
-    g_object_unref (generator);
 }
 
 static void
@@ -440,6 +431,7 @@ find_longest_path (GList *paths)
  * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
  * @arch_graph: A #UfoArchGraph
+ * @expand_remote: %TRUE if remote nodes should be inserted
  *
  * Expands @task_graph in a way that most of the resources in @arch_graph can be
  * occupied. In the simple pipeline case, the longest possible GPU paths are
@@ -447,7 +439,8 @@ find_longest_path (GList *paths)
  */
 void
 ufo_task_graph_expand (UfoTaskGraph *task_graph,
-                       UfoArchGraph *arch_graph)
+                       UfoArchGraph *arch_graph,
+                       gboolean expand_remote)
 {
     GList *paths;
     GList *path;
@@ -461,16 +454,21 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     path = find_longest_path (paths);
 
     if (path != NULL) {
-        GList *remotes;
         guint n_gpus;
-        guint n_remotes;
 
-        remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
-        n_remotes = g_list_length (remotes);
+        if (expand_remote) {
+            GList *remotes;
+            guint n_remotes;
 
-        if (n_remotes > 0) {
-            g_debug ("Expand for %i remote nodes", n_remotes);
-            expand_remotes (task_graph, remotes, path);
+            remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
+            n_remotes = g_list_length (remotes);
+
+            if (n_remotes > 0) {
+                g_debug ("Expand for %i remote nodes", n_remotes);
+                expand_remotes (task_graph, remotes, path);
+            }
+
+            g_list_free (remotes);
         }
 
         n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
@@ -478,8 +476,6 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
         for (guint i = 1; i < n_gpus; i++)
             ufo_graph_expand (UFO_GRAPH (task_graph), path);
-
-        g_list_free (remotes);
     }
 
     g_list_foreach (paths, (GFunc) g_list_free, NULL);

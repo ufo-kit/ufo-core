@@ -63,6 +63,7 @@ struct _UfoSchedulerPrivate {
     UfoConfig       *config;
     UfoResources    *resources;
     GList           *remotes;
+    UfoRemoteMode    mode;
     gboolean         expand;
 };
 
@@ -145,6 +146,23 @@ ufo_scheduler_set_task_expansion (UfoScheduler *scheduler,
 {
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
     g_object_set (G_OBJECT (scheduler), "expand", expand, NULL);
+}
+
+/**
+ * ufo_scheduler_set_remote_mode:
+ * @scheduler: A #UfoScheduler
+ * @mode: Mode of remote execution.
+ *
+ * Sets the mode of remote execution.
+ *
+ * See: #UfoRemoteMode.
+ */
+void
+ufo_scheduler_set_remote_mode (UfoScheduler *scheduler,
+                               UfoRemoteMode mode)
+{
+    g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
+    scheduler->priv->mode = mode;
 }
 
 static gboolean
@@ -526,6 +544,27 @@ correct_connections (UfoTaskGraph *graph,
     return result;
 }
 
+static void
+replicate_task_graph (UfoTaskGraph *graph,
+                      UfoArchGraph *arch)
+{
+    GList *remotes;
+    gchar *json;
+
+    json = ufo_task_graph_get_json_data (graph, NULL);
+    remotes = ufo_arch_graph_get_remote_nodes (arch);
+
+    for (GList *it = g_list_first (remotes); it != NULL; it = g_list_next (it)) {
+        UfoRemoteNode *node;
+
+        node = UFO_REMOTE_NODE (it->data);
+        ufo_remote_node_send_json (node, UFO_REMOTE_MODE_REPLICATE, json);
+    }
+
+    g_list_free (remotes);
+    g_free (json);
+}
+
 void
 ufo_scheduler_run (UfoScheduler *scheduler,
                    UfoTaskGraph *task_graph,
@@ -545,8 +584,14 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources,
                                                      priv->remotes));
 
-    if (priv->expand)
-        ufo_task_graph_expand (task_graph, arch_graph);
+    if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
+        replicate_task_graph (task_graph, arch_graph);
+    }
+
+    if (priv->expand) {
+        gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
+        ufo_task_graph_expand (task_graph, arch_graph, expand_remote);
+    }
 
     ufo_task_graph_map (task_graph, arch_graph);
 
@@ -750,4 +795,5 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     priv->config = NULL;
     priv->resources = NULL;
     priv->remotes = NULL;
+    priv->mode = UFO_REMOTE_MODE_STREAM;
 }

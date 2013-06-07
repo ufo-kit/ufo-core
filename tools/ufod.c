@@ -106,17 +106,12 @@ remove_dummy_if_present (UfoGraph *graph,
     return real;
 }
 
-static void
-handle_json (ServerPrivate *priv)
+static gchar *
+read_json (ServerPrivate *priv)
 {
     zmq_msg_t json_msg;
     gsize size;
     gchar *json;
-    GList *roots;
-    GList *leaves;
-    UfoNode *first;
-    UfoNode *last;
-    GError *error = NULL;
 
     zmq_msg_init (&json_msg);
     size = (gsize) zmq_msg_recv (&json_msg, priv->socket, 0);
@@ -124,6 +119,52 @@ handle_json (ServerPrivate *priv)
     json = g_malloc0 (size + 1);
     memcpy (json, zmq_msg_data (&json_msg), size);
     zmq_msg_close (&json_msg);
+
+    return json;
+}
+
+static void
+handle_replicate_json (ServerPrivate *priv)
+{
+    gchar *json;
+    UfoTaskGraph *graph;
+    GError *error = NULL;
+
+    json = read_json (priv);
+    send_ack (priv->socket);
+
+    graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+    ufo_task_graph_read_from_data (graph, priv->manager, json, &error);
+
+    if (error != NULL) {
+        g_printerr ("%s\n", error->message);
+        goto replicate_json_free;
+    }
+
+    g_message ("Start scheduler");
+    ufo_scheduler_run (priv->scheduler, graph, NULL);
+
+    g_message ("Done");
+    g_object_unref (priv->scheduler);
+
+    priv->scheduler = ufo_scheduler_new (priv->config, NULL);
+
+replicate_json_free:
+    g_object_unref (graph);
+    g_free (json);
+}
+
+static void
+handle_stream_json (ServerPrivate *priv)
+{
+    gchar *json;
+    GList *roots;
+    GList *leaves;
+    UfoNode *first;
+    UfoNode *last;
+    GError *error = NULL;
+
+    json = read_json (priv);
 
     /* Setup local task graph */
     priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
@@ -425,8 +466,11 @@ main (int argc, char * argv[])
                 case UFO_MESSAGE_GET_NUM_DEVICES:
                     handle_get_num_devices (&priv);
                     break;
-                case UFO_MESSAGE_TASK_JSON:
-                    handle_json (&priv);
+                case UFO_MESSAGE_STREAM_JSON:
+                    handle_stream_json (&priv);
+                    break;
+                case UFO_MESSAGE_REPLICATE_JSON:
+                    handle_replicate_json (&priv);
                     break;
                 case UFO_MESSAGE_SETUP:
                     handle_setup (&priv);

@@ -110,22 +110,32 @@ ufo_remote_node_request_setup (UfoRemoteNode *node)
 
 void
 ufo_remote_node_send_json (UfoRemoteNode *node,
-                           const gchar *json,
-                           gsize size)
+                           UfoRemoteMode mode,
+                           const gchar *json)
 {
     UfoRemoteNodePrivate *priv;
     UfoMessage request;
+    gsize size;
     zmq_msg_t json_msg;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
-    request.type = UFO_MESSAGE_TASK_JSON;
+
+    switch (mode) {
+        case UFO_REMOTE_MODE_STREAM:
+            request.type = UFO_MESSAGE_STREAM_JSON;
+            break;
+        case UFO_REMOTE_MODE_REPLICATE:
+            request.type = UFO_MESSAGE_REPLICATE_JSON;
+            break;
+    }
 
     g_mutex_lock (priv->mutex);
 
     ufo_msg_send (&request, priv->socket, ZMQ_SNDMORE);
 
+    size = strlen (json);
     zmq_msg_init_size (&json_msg, size);
     memcpy (zmq_msg_data (&json_msg), json, size);
     zmq_msg_send (&json_msg, priv->socket, 0);

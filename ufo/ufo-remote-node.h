@@ -66,8 +66,22 @@ struct _UfoRemoteNodeClass {
 };
 
 /**
+ * UfoRemoteMode:
+ * @UFO_REMOTE_MODE_STREAM: Expand task graph and execute only sub-branches
+ *  remotely.
+ * @UFO_REMOTE_MODE_REPLICATE: Replicate the entire task graph and execute it
+ *  remotely.
+ */
+typedef enum {
+    UFO_REMOTE_MODE_STREAM,
+    UFO_REMOTE_MODE_REPLICATE
+} UfoRemoteMode;
+
+
+/**
  * UfoMessageType: (skip)
- * @UFO_MESSAGE_TASK_JSON: insert
+ * @UFO_MESSAGE_STREAM_JSON: insert
+ * @UFO_MESSAGE_REPLICATE_JSON: insert
  * @UFO_MESSAGE_GET_NUM_DEVICES: insert
  * @UFO_MESSAGE_SETUP: insert
  * @UFO_MESSAGE_GET_STRUCTURE: insert
@@ -81,7 +95,8 @@ struct _UfoRemoteNodeClass {
  * @UFO_MESSAGE_ACK: insert
  */
 typedef enum {
-    UFO_MESSAGE_TASK_JSON = 0,
+    UFO_MESSAGE_STREAM_JSON = 0,
+    UFO_MESSAGE_REPLICATE_JSON,
     UFO_MESSAGE_GET_NUM_DEVICES,
     UFO_MESSAGE_SETUP,
     UFO_MESSAGE_GET_STRUCTURE,
@@ -113,8 +128,8 @@ UfoNode  *ufo_remote_node_new               (gpointer     zmq_context,
 guint     ufo_remote_node_get_num_gpus      (UfoRemoteNode  *node);
 void      ufo_remote_node_request_setup     (UfoRemoteNode  *node);
 void      ufo_remote_node_send_json         (UfoRemoteNode  *node,
-                                             const gchar    *json,
-                                             gsize           size);
+                                             UfoRemoteMode   mode,
+                                             const gchar    *json);
 void      ufo_remote_node_get_structure     (UfoRemoteNode  *node,
                                              guint          *n_inputs,
                                              UfoInputParam **in_params,

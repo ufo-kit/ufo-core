@@ -89,7 +89,8 @@ gchar       *ufo_task_graph_get_json_data       (UfoTaskGraph       *graph,
 void         ufo_task_graph_map                 (UfoTaskGraph       *task_graph,
                                                  UfoArchGraph       *arch_graph);
 void         ufo_task_graph_expand              (UfoTaskGraph       *task_graph,
-                                                 UfoArchGraph       *arch_graph);
+                                                 UfoArchGraph       *arch_graph,
+                                                 gboolean            expand_remote);
 void         ufo_task_graph_connect_nodes       (UfoTaskGraph       *graph,
                                                  UfoTaskNode        *n1,
                                                  UfoTaskNode        *n2);

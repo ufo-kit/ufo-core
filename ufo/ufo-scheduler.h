@@ -78,6 +78,8 @@ void          ufo_scheduler_run                 (UfoScheduler  *scheduler,
 gpointer      ufo_scheduler_get_context         (UfoScheduler  *scheduler);
 void          ufo_scheduler_set_task_expansion  (UfoScheduler  *scheduler,
                                                  gboolean       split);
+void          ufo_scheduler_set_remote_mode     (UfoScheduler  *scheduler,
+                                                 UfoRemoteMode  mode);
 GType         ufo_scheduler_get_type            (void);
 GQuark        ufo_scheduler_error_quark         (void);
 
