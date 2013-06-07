@@ -223,6 +223,25 @@ get_json_representation (UfoTaskGraph *graph,
     return root_node;
 }
 
+static JsonGenerator *
+task_graph_to_generator (UfoTaskGraph *graph,
+                         GError **error)
+{
+    JsonNode *root_node;
+    JsonGenerator *generator;
+
+    root_node = get_json_representation (graph, error);
+
+    if (error != NULL && *error != NULL)
+        return NULL;
+
+    generator = json_generator_new ();
+    json_generator_set_root (generator, root_node);
+    json_node_free (root_node);
+
+    return generator;
+}
+
 /**
  * ufo_task_graph_save_to_json:
  * @graph: A #UfoTaskGraph.
@@ -236,20 +255,31 @@ ufo_task_graph_save_to_json (UfoTaskGraph *graph,
                              const gchar *filename,
                              GError **error)
 {
-    JsonNode *root_node;
     JsonGenerator *generator;
 
-    root_node = get_json_representation (graph, error);
+    generator = task_graph_to_generator (graph, error);
 
-    if (error != NULL && *error != NULL)
-        return;
+    if (generator != NULL) {
+        json_generator_to_file (generator, filename, error);
+        g_object_unref (generator);
+    }
+}
 
-    generator = json_generator_new ();
-    json_generator_set_root (generator, root_node);
-    json_generator_to_file (generator, filename, error);
+gchar *
+ufo_task_graph_get_json_data (UfoTaskGraph *graph,
+                              GError **error)
+{
+    JsonGenerator *generator;
+    gchar *json = NULL;
 
-    json_node_free (root_node);
-    g_object_unref (generator);
+    generator = task_graph_to_generator (graph, error);
+
+    if (generator != NULL) {
+        json = json_generator_to_data (generator, NULL);
+        g_object_unref (generator);
+    }
+
+    return json;
 }
 
 static gboolean
