@@ -21,3 +21,21 @@ In Python this would look like this::
     sched = Ufo.Scheduler(remotes=['tcp://foo.bar.org:5555'])
 
 Address are notated according to `ZeroMQ <http://api.zeromq.org/3-2:zmq-tcp>`_.
+
+
+Streaming vs. replication
+=========================
+
+Work can be executed in two ways: `streaming`, which means data is transferred
+from a master machine to all slaves and returned to the master after computation
+is finished and `replicated` in which each slaves works on its own subset of the
+initial input data. The former must be used if the length of the stream is
+unknown before execution, otherwise the stream could not be split up into equal
+partitions.
+
+Initially, the scheduler is set to streaming mode. To switch to replication
+mode, you have to prepare the scheduler::
+
+    sched = Ufo.Scheduler(remotes=remotes)
+    sched.set_remote_mode(Ufo.RemoteMode.REPLICATE)
+    sched.run(graph)

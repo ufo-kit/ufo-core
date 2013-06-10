@@ -89,6 +89,12 @@ void            ufo_task_node_switch_in_group       (UfoTaskNode    *node,
 void            ufo_task_node_set_proc_node         (UfoTaskNode    *task_node,
                                                      UfoNode        *proc_node);
 UfoNode        *ufo_task_node_get_proc_node         (UfoTaskNode    *node);
+void            ufo_task_node_set_partition         (UfoTaskNode    *node,
+                                                     guint           index,
+                                                     guint           total);
+void            ufo_task_node_get_partition         (UfoTaskNode    *node,
+                                                     guint          *index,
+                                                     guint          *total);
 GType           ufo_task_node_get_type              (void);
 
 G_END_DECLS

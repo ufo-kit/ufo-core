@@ -99,6 +99,12 @@ void         ufo_task_graph_connect_nodes_full  (UfoTaskGraph       *graph,
                                                  UfoTaskNode        *n2,
                                                  guint               input);
 void         ufo_task_graph_fuse                (UfoTaskGraph       *task_graph);
+void         ufo_task_graph_set_partition       (UfoTaskGraph       *task_graph,
+                                                 guint               index,
+                                                 guint               total);
+void         ufo_task_graph_get_partition       (UfoTaskGraph       *task_graph,
+                                                 guint              *index,
+                                                 guint              *total);
 GType        ufo_task_graph_get_type            (void);
 GQuark       ufo_task_graph_error_quark         (void);
 

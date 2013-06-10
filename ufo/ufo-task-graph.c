@@ -43,6 +43,8 @@ struct _UfoTaskGraphPrivate {
     GHashTable *prop_sets;
     GHashTable *json_nodes;
     GList *remote_tasks;
+    guint index;
+    guint total;
 };
 
 typedef enum {
@@ -59,7 +61,11 @@ static void add_task_node_to_json_array (UfoNode *, JsonArray *);
 static JsonObject *json_object_from_ufo_node (UfoNode *node);
 static JsonNode *get_json_representation (UfoTaskGraph *, GError **);
 
-static const gchar *JSON_API_VERSION = "1.0";
+/*
+ * ChangeLog:
+ * - 1.1: Add "index" and "total" keys to the root object
+ */
+static const gchar *JSON_API_VERSION = "1.1";
 
 /**
  * UfoTaskGraphError:
@@ -96,6 +102,8 @@ read_json (UfoTaskGraph *graph,
            GError **error)
 {
     JsonParser *json_parser;
+    JsonNode *json_root;
+    JsonObject *object;
     GError *tmp_error = NULL;
 
     json_parser = json_parser_new ();
@@ -124,7 +132,20 @@ read_json (UfoTaskGraph *graph,
     graph->priv->manager = manager;
     g_object_ref (manager);
 
-    add_nodes_from_json (graph, json_parser_get_root (json_parser), error);
+    json_root = json_parser_get_root (json_parser);
+    object = json_node_get_object (json_root);
+
+    if (json_object_has_member (object, "index") &&
+        json_object_has_member (object, "total")) {
+        guint index = (guint) json_object_get_int_member (object, "index");
+        guint total = (guint) json_object_get_int_member (object, "total");
+        ufo_task_graph_set_partition (graph, index, total);
+    }
+    else {
+        g_warning ("JSON does not define `index' and `total' keys");
+    }
+
+    add_nodes_from_json (graph, json_root, error);
     g_object_unref (json_parser);
 }
 
@@ -217,6 +238,9 @@ get_json_representation (UfoTaskGraph *graph,
     json_object_set_string_member (root_object, "version", JSON_API_VERSION);
     json_object_set_array_member (root_object, "nodes", nodes);
     json_object_set_array_member (root_object, "edges", edges);
+    json_object_set_int_member (root_object, "index", graph->priv->index);
+    json_object_set_int_member (root_object, "total", graph->priv->total);
+
     json_node_set_object (root_node, root_object);
     g_list_free (task_nodes);
 
@@ -591,6 +615,27 @@ ufo_task_graph_connect_nodes_full (UfoTaskGraph *graph,
     ufo_graph_connect_nodes (UFO_GRAPH (graph), UFO_NODE (n1), UFO_NODE (n2), GINT_TO_POINTER (input));
 }
 
+void
+ufo_task_graph_set_partition (UfoTaskGraph *graph,
+                              guint index,
+                              guint total)
+{
+    g_return_if_fail (UFO_IS_TASK_GRAPH (graph));
+    g_assert (index < total);
+    graph->priv->index = index;
+    graph->priv->total = total;
+}
+
+void
+ufo_task_graph_get_partition (UfoTaskGraph *graph,
+                              guint *index,
+                              guint *total)
+{
+    g_return_if_fail (UFO_IS_TASK_GRAPH (graph));
+    *index = graph->priv->index;
+    *total = graph->priv->total;
+}
+
 static void
 add_nodes_from_json (UfoTaskGraph *graph,
                      JsonNode *root,
@@ -869,4 +914,6 @@ ufo_task_graph_init (UfoTaskGraph *self)
 
     priv->prop_sets = g_hash_table_new_full (g_str_hash, g_str_equal,
                                              g_free, (GDestroyNotify) json_object_unref);
+    priv->index = 0;
+    priv->total = 1;
 }

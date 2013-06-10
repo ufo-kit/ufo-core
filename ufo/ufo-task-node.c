@@ -35,6 +35,8 @@ struct _UfoTaskNodePrivate {
     GList           *in_groups[16];
     GList           *current[16];
     gint             n_expected[16];
+    guint            index;
+    guint            total;
 };
 
 void
@@ -192,6 +194,27 @@ ufo_task_node_get_proc_node (UfoTaskNode *node)
     return node->priv->proc_node;
 }
 
+void
+ufo_task_node_set_partition (UfoTaskNode *node,
+                             guint index,
+                             guint total)
+{
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    g_assert (index < total);
+    node->priv->index = index;
+    node->priv->total = total;
+}
+
+void
+ufo_task_node_get_partition (UfoTaskNode *node,
+                             guint *index,
+                             guint *total)
+{
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    *index = node->priv->index;
+    *total = node->priv->total;
+}
+
 static UfoNode *
 ufo_task_node_copy (UfoNode *node,
                     GError **error)
@@ -255,6 +278,8 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv->pattern = UFO_SEND_SCATTER;
     self->priv->proc_node = NULL;
     self->priv->out_group = NULL;
+    self->priv->index = 0;
+    self->priv->total = 1;
 
     for (guint i = 0; i < 16; i++) {
         self->priv->in_groups[i] = NULL;

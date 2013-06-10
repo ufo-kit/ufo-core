@@ -549,20 +549,43 @@ replicate_task_graph (UfoTaskGraph *graph,
                       UfoArchGraph *arch)
 {
     GList *remotes;
-    gchar *json;
+    guint n_graphs;
+    guint index = 1;
 
-    json = ufo_task_graph_get_json_data (graph, NULL);
     remotes = ufo_arch_graph_get_remote_nodes (arch);
+    n_graphs = g_list_length (remotes) + 1;
 
     for (GList *it = g_list_first (remotes); it != NULL; it = g_list_next (it)) {
         UfoRemoteNode *node;
+        gchar *json;
 
+        /* Set partition index for the remote task graph */
+        ufo_task_graph_set_partition (graph, index++, n_graphs);
+        json = ufo_task_graph_get_json_data (graph, NULL);
         node = UFO_REMOTE_NODE (it->data);
         ufo_remote_node_send_json (node, UFO_REMOTE_MODE_REPLICATE, json);
+        g_free (json);
     }
 
+    /* Set partition index for the local task graph */
+    ufo_task_graph_set_partition (graph, 0, n_graphs);
     g_list_free (remotes);
-    g_free (json);
+}
+
+static void
+propagate_partition (UfoTaskGraph *graph)
+{
+    GList *nodes;
+    guint index;
+    guint total;
+
+    ufo_task_graph_get_partition (graph, &index, &total);
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
+
+    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it))
+        ufo_task_node_set_partition (UFO_TASK_NODE (it->data), index, total);
+
+    g_list_free (nodes);
 }
 
 void
@@ -593,6 +616,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         ufo_task_graph_expand (task_graph, arch_graph, expand_remote);
     }
 
+    propagate_partition (task_graph);
     ufo_task_graph_map (task_graph, arch_graph);
 
     /* Prepare task structures */
