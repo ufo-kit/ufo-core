@@ -25,6 +25,7 @@
 #include <CL/cl.h>
 #endif
 #include <zmq.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ufo/ufo.h>
@@ -38,12 +39,15 @@ typedef struct {
     UfoNode *input_task;
     UfoNode *output_task;
     UfoBuffer *input;
+    gpointer context;
 } ServerPrivate;
 
 typedef struct {
     gchar **paths;
     gchar *addr;
 } Options;
+
+ServerPrivate global_priv;
 
 #define CHECK_ZMQ(r) if (r == -1) g_warning ("%s:%i: zmq_error: %s\n", __FILE__, __LINE__, zmq_strerror (errno));
 
@@ -395,7 +399,7 @@ opts_parse (gint *argc, gchar ***argv)
 }
 
 static UfoConfig *
-opts_new_config (Options *opts)
+opts_new_config (const Options *opts)
 {
     UfoConfig *config;
     GList *paths = NULL;
@@ -404,7 +408,7 @@ opts_new_config (Options *opts)
 
     if (opts->paths != NULL) {
         for (guint i = 0; opts->paths[i] != NULL; i++)
-            paths = g_list_append (paths, opts->paths[i]);
+            paths = g_list_append (paths, g_strdup (opts->paths[i]));
 
         ufo_config_add_paths (config, paths);
         g_list_free (paths);
@@ -421,12 +425,28 @@ opts_free (Options *opts)
     g_free (opts);
 }
 
+static void
+terminate (int signum)
+{
+    g_print ("Received SIGTERM, exiting...\n");
+
+    if (global_priv.task_graph)
+        g_object_unref (global_priv.task_graph);
+
+    g_object_unref (global_priv.config);
+    g_object_unref (global_priv.manager);
+    g_object_unref (global_priv.scheduler);
+
+    zmq_close (global_priv.socket);
+    zmq_ctx_destroy (global_priv.context);
+
+    exit (EXIT_SUCCESS);
+}
+
 int
 main (int argc, char * argv[])
 {
-    gpointer context;
     Options *opts;
-    ServerPrivate priv;
 
     g_type_init ();
     g_thread_init (NULL);
@@ -434,16 +454,20 @@ main (int argc, char * argv[])
     if ((opts = opts_parse (&argc, &argv)) == NULL)
         return 1;
 
-    memset (&priv, 0, sizeof (ServerPrivate));
+    memset (&global_priv, 0, sizeof (ServerPrivate));
 
-    priv.config = opts_new_config (opts);
-    priv.manager = ufo_plugin_manager_new (priv.config);
-    priv.scheduler = ufo_scheduler_new (priv.config, NULL);
+    global_priv.config = opts_new_config (opts);
+    global_priv.manager = ufo_plugin_manager_new (global_priv.config);
+    global_priv.scheduler = ufo_scheduler_new (global_priv.config, NULL);
 
     /* start zmq service */
-    context = zmq_ctx_new ();
-    priv.socket = zmq_socket (context, ZMQ_REP);
-    zmq_bind (priv.socket, opts->addr);
+    global_priv.context = zmq_ctx_new ();
+    global_priv.socket = zmq_socket (global_priv.context, ZMQ_REP);
+    zmq_bind (global_priv.socket, opts->addr);
+
+    /* Now, install SIGTERM handler */
+    (void) signal (SIGTERM, terminate);
+    opts_free (opts);
 
     g_print ("ufod %s - waiting for requests ...\n", UFO_VERSION);
 
@@ -451,11 +475,11 @@ main (int argc, char * argv[])
         zmq_msg_t request;
 
         zmq_msg_init (&request);
-        zmq_msg_recv (&request, priv.socket, 0);
+        zmq_msg_recv (&request, global_priv.socket, 0);
 
         if (zmq_msg_size (&request) < sizeof (UfoMessage)) {
             g_warning ("Message is smaller than expected\n");
-            send_ack (priv.socket);
+            send_ack (global_priv.socket);
         }
         else {
             UfoMessage *msg;
@@ -464,31 +488,31 @@ main (int argc, char * argv[])
 
             switch (msg->type) {
                 case UFO_MESSAGE_GET_NUM_DEVICES:
-                    handle_get_num_devices (&priv);
+                    handle_get_num_devices (&global_priv);
                     break;
                 case UFO_MESSAGE_STREAM_JSON:
-                    handle_stream_json (&priv);
+                    handle_stream_json (&global_priv);
                     break;
                 case UFO_MESSAGE_REPLICATE_JSON:
-                    handle_replicate_json (&priv);
+                    handle_replicate_json (&global_priv);
                     break;
                 case UFO_MESSAGE_SETUP:
-                    handle_setup (&priv);
+                    handle_setup (&global_priv);
                     break;
                 case UFO_MESSAGE_GET_STRUCTURE:
-                    handle_get_structure (&priv);
+                    handle_get_structure (&global_priv);
                     break;
                 case UFO_MESSAGE_SEND_INPUTS:
-                    handle_send_inputs (&priv);
+                    handle_send_inputs (&global_priv);
                     break;
                 case UFO_MESSAGE_GET_REQUISITION:
-                    handle_get_requisition (&priv);
+                    handle_get_requisition (&global_priv);
                     break;
                 case UFO_MESSAGE_GET_RESULT:
-                    handle_get_result (&priv);
+                    handle_get_result (&global_priv);
                     break;
                 case UFO_MESSAGE_CLEANUP:
-                    handle_cleanup (&priv);
+                    handle_cleanup (&global_priv);
                     break;
                 default:
                     g_print ("unhandled case\n");
@@ -496,17 +520,7 @@ main (int argc, char * argv[])
         }
 
         zmq_msg_close (&request);
+
     }
-
-    g_object_unref (priv.task_graph);
-    g_object_unref (priv.config);
-    g_object_unref (priv.manager);
-    g_object_unref (priv.scheduler);
-
-    zmq_close (priv.socket);
-    zmq_ctx_destroy (context);
-
-    opts_free (opts);
-
     return 0;
 }
