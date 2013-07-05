@@ -32,6 +32,7 @@ struct _UfoTaskNodePrivate {
     UfoSendPattern   pattern;
     UfoNode         *proc_node;
     UfoGroup        *out_group;
+    UfoProfiler     *profiler;
     GList           *in_groups[16];
     GList           *current[16];
     gint             n_expected[16];
@@ -179,6 +180,26 @@ ufo_task_node_set_proc_node (UfoTaskNode *task_node,
     task_node->priv->proc_node = proc_node;
 }
 
+void
+ufo_task_node_set_profiler (UfoTaskNode *node,
+                            UfoProfiler *profiler)
+{
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+
+    if (node->priv->profiler)
+        g_object_unref (node->priv->profiler);
+
+    g_object_ref (profiler);
+    node->priv->profiler = profiler;
+}
+
+UfoProfiler *
+ufo_task_node_get_profiler (UfoTaskNode *node)
+{
+    g_return_val_if_fail (UFO_IS_TASK_NODE (node), NULL);
+    return node->priv->profiler;
+}
+
 /**
  * ufo_task_node_get_proc_node:
  * @node: A #UfoTaskNode
@@ -238,6 +259,15 @@ ufo_task_node_copy (UfoNode *node,
 static void
 ufo_task_node_dispose (GObject *object)
 {
+    UfoTaskNodePrivate *priv;
+
+    priv = UFO_TASK_NODE_GET_PRIVATE (object);
+
+    if (priv->profiler) {
+        g_object_unref (priv->profiler);
+        priv->profiler = NULL;
+    }
+
     G_OBJECT_CLASS (ufo_task_node_parent_class)->dispose (object);
 }
 
@@ -280,6 +310,7 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv->out_group = NULL;
     self->priv->index = 0;
     self->priv->total = 1;
+    self->priv->profiler = NULL;
 
     for (guint i = 0; i < 16; i++) {
         self->priv->in_groups[i] = NULL;

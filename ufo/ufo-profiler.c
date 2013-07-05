@@ -210,6 +210,39 @@ ufo_profiler_stop (UfoProfiler       *profiler,
         g_timer_stop (profiler->priv->timers[timer]);
 }
 
+static void
+get_time_stamps (cl_event event, gulong *queued, gulong *submitted, gulong *start, gulong *end)
+{
+    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_QUEUED, sizeof (cl_ulong), queued, NULL);
+    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_SUBMIT, sizeof (cl_ulong), submitted, NULL);
+    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_START, sizeof (cl_ulong), start, NULL);
+    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_END, sizeof (cl_ulong), end, NULL);
+}
+
+static gdouble
+gpu_elapsed (UfoProfilerPrivate *priv)
+{
+    struct EventRow *row;
+    gdouble elapsed = 0.0;
+    guint len = priv->event_array->len;
+
+    if (len == 0)
+        return 0.0;
+
+    for (guint i = 0; i < len; i++) {
+        cl_command_queue queue;
+        gulong start, end;
+
+        row = &g_array_index (priv->event_array, struct EventRow, i);
+        clGetEventInfo (row->event, CL_EVENT_COMMAND_QUEUE,
+                        sizeof (cl_command_queue), &queue, NULL);
+        get_time_stamps (row->event, NULL, NULL, &start, &end);
+        elapsed += ((gdouble) (end - start)) * 10e-9;
+    }
+
+    return elapsed / ((gdouble) len);
+}
+
 /**
  * ufo_profiler_elapsed:
  * @profiler: A #UfoProfiler object.
@@ -224,6 +257,10 @@ ufo_profiler_elapsed (UfoProfiler       *profiler,
                       UfoProfilerTimer   timer)
 {
     g_return_val_if_fail (UFO_IS_PROFILER (profiler), 0.0);
+
+    if (timer == UFO_PROFILER_TIMER_GPU)
+        return gpu_elapsed (profiler->priv);
+
     return g_timer_elapsed (profiler->priv->timers[timer], NULL);
 }
 
@@ -237,15 +274,6 @@ get_kernel_name (cl_kernel kernel)
     s = g_malloc0(size + 1);
     clGetKernelInfo (kernel, CL_KERNEL_FUNCTION_NAME, size, s, NULL);
     return s;
-}
-
-static void
-get_time_stamps (cl_event event, gulong *queued, gulong *submitted, gulong *start, gulong *end)
-{
-    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_QUEUED, sizeof (cl_ulong), queued, NULL);
-    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_SUBMIT, sizeof (cl_ulong), submitted, NULL);
-    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_START, sizeof (cl_ulong), start, NULL);
-    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_END, sizeof (cl_ulong), end, NULL);
 }
 
 /**
@@ -298,16 +326,21 @@ static void
 ufo_profiler_dispose (GObject *object)
 {
     G_OBJECT_CLASS (ufo_profiler_parent_class)->dispose (object);
-    g_message ("UfoProfiler: disposed");
 }
 
 static void
 ufo_profiler_finalize (GObject *object)
 {
     UfoProfilerPrivate *priv;
+    struct EventRow *row;
 
     G_OBJECT_CLASS (ufo_profiler_parent_class)->finalize (object);
     priv = UFO_PROFILER_GET_PRIVATE (object);
+
+    for (guint i = 0; i < priv->event_array->len; i++) {
+        row = &g_array_index (priv->event_array, struct EventRow, i);
+        clReleaseEvent (row->event);
+    }
 
     g_array_free (priv->event_array, TRUE);
 
@@ -315,8 +348,6 @@ ufo_profiler_finalize (GObject *object)
         g_timer_destroy (priv->timers[i]);
 
     g_free (priv->timers);
-
-    g_message ("UfoProfiler: finalized");
 }
 
 static void

@@ -318,6 +318,7 @@ run_task (TaskLocalData *tld)
     UfoBuffer *inputs[tld->n_inputs];
     UfoBuffer *output;
     UfoTaskNode *node;
+    UfoProfiler *profiler;
     UfoTaskProcessFunc process;
     UfoTaskGenerateFunc generate;
     UfoRequisition requisition;
@@ -343,6 +344,9 @@ run_task (TaskLocalData *tld)
 
     if (!is_correctly_implemented (node, tld->mode, process, generate))
         return NULL;
+
+    profiler = ufo_profiler_new (UFO_PROFILER_LEVEL_OPENCL);
+    ufo_task_node_set_profiler (node, profiler);
 
     while (active) {
         UfoGroup *group;
@@ -409,7 +413,12 @@ run_task (TaskLocalData *tld)
             ufo_group_finish (group);
     }
 
-    g_message ("`%s' finished", G_OBJECT_TYPE_NAME (tld->task));
+    g_message ("`%s' finished: CPU: %3.5fs GPU: %3.5fs",
+               G_OBJECT_TYPE_NAME (tld->task),
+               ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_CPU),
+               ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_GPU));
+
+    g_object_unref (profiler);
     return NULL;
 }
 
