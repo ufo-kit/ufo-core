@@ -57,8 +57,6 @@ struct EventRow {
 };
 
 struct _UfoProfilerPrivate {
-    UfoProfilerLevel level;
-
     GArray  *event_array;
     GTimer **timers;
 };
@@ -68,30 +66,6 @@ enum {
     N_PROPERTIES
 };
 
-/**
- * timer_level:
- *
- * Maps UfoProfilerTimer to a UfoProfilerLevel
- */
-static UfoProfilerLevel timer_level[] = {
-    UFO_PROFILER_LEVEL_IO,      /* TIMER_IO */
-    UFO_PROFILER_LEVEL_CPU,     /* TIMER_CPU */
-    UFO_PROFILER_LEVEL_SYNC,    /* TIMER_FETCH */
-    UFO_PROFILER_LEVEL_SYNC     /* TIMER_RELEASE */
-};
-
-/**
- * UfoProfilerLevel:
- * @UFO_PROFILER_LEVEL_NONE: Do not track any profiling information
- * @UFO_PROFILER_LEVEL_IO: Track I/O events
- * @UFO_PROFILER_LEVEL_OPENCL: Track OpenCL events
- * @UFO_PROFILER_LEVEL_CPU: Track general CPU time
- * @UFO_PROFILER_LEVEL_SYNC: Track synchronization wait time
- *
- * Profiling levels that the profiler supports. To set the global profiling
- * level use the #UfoConfiguration:profile-level: property on a
- * #UfoConfiguration object set to the #UfoScheduler.
- */
 
 /**
  * UfoProfilerTimer:
@@ -110,20 +84,15 @@ static UfoProfilerLevel timer_level[] = {
 
 /**
  * ufo_profiler_new:
- * @level: Amount of information that should be tracked by the profiler.
  *
  * Create a profiler object.
  *
  * Return value: A new profiler object.
  */
 UfoProfiler *
-ufo_profiler_new (UfoProfilerLevel level)
+ufo_profiler_new (void)
 {
-    UfoProfiler *profiler;
-
-    profiler = UFO_PROFILER (g_object_new (UFO_TYPE_PROFILER, NULL));
-    profiler->priv->level = level;
-    return profiler;
+    return UFO_PROFILER (g_object_new (UFO_TYPE_PROFILER, NULL));
 }
 
 /**
@@ -151,12 +120,10 @@ ufo_profiler_call (UfoProfiler    *profiler,
 {
     UfoProfilerPrivate *priv;
     cl_event            event;
-    cl_event           *event_loc;
     cl_int              cl_err;
     struct EventRow     row;
 
     priv = profiler->priv;
-    event_loc = priv->level & UFO_PROFILER_LEVEL_OPENCL ? &event : NULL;
 
     cl_err = clEnqueueNDRangeKernel (command_queue,
                                      kernel,
@@ -164,14 +131,12 @@ ufo_profiler_call (UfoProfiler    *profiler,
                                      NULL,
                                      global_work_size,
                                      local_work_size,
-                                     0, NULL, event_loc);
+                                     0, NULL, &event);
     UFO_RESOURCES_CHECK_CLERR (cl_err);
 
-    if (priv->level & UFO_PROFILER_LEVEL_OPENCL) {
-        row.event = event;
-        row.kernel = kernel;
-        g_array_append_val (priv->event_array, row);
-    }
+    row.event = event;
+    row.kernel = kernel;
+    g_array_append_val (priv->event_array, row);
 }
 
 /**
@@ -187,9 +152,7 @@ ufo_profiler_start (UfoProfiler      *profiler,
                     UfoProfilerTimer  timer)
 {
     g_return_if_fail (UFO_IS_PROFILER (profiler));
-
-    if (profiler->priv->level & timer_level[timer])
-        g_timer_continue (profiler->priv->timers[timer]);
+    g_timer_continue (profiler->priv->timers[timer]);
 }
 
 /**
@@ -205,9 +168,7 @@ ufo_profiler_stop (UfoProfiler       *profiler,
                    UfoProfilerTimer   timer)
 {
     g_return_if_fail (UFO_IS_PROFILER (profiler));
-
-    if (profiler->priv->level & timer_level[timer])
-        g_timer_stop (profiler->priv->timers[timer]);
+    g_timer_stop (profiler->priv->timers[timer]);
 }
 
 static void
@@ -296,9 +257,6 @@ ufo_profiler_foreach (UfoProfiler    *profiler,
 
     priv = profiler->priv;
 
-    if (priv->level == UFO_PROFILER_LEVEL_NONE)
-        return;
-
     for (guint i = 0; i < priv->event_array->len; i++) {
         cl_command_queue queue;
         gulong queued, submitted, start, end;
@@ -379,6 +337,4 @@ ufo_profiler_init (UfoProfiler *manager)
         g_timer_reset (timer);
         priv->timers[i] = timer;
     }
-
-    priv->level = UFO_PROFILER_LEVEL_NONE;
 }

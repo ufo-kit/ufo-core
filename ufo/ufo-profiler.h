@@ -88,7 +88,7 @@ typedef enum {
     UFO_PROFILER_LEVEL_SYNC     = 1 << 3
 } UfoProfilerLevel;
 
-UfoProfiler *ufo_profiler_new       (UfoProfilerLevel    level);
+UfoProfiler *ufo_profiler_new       (void);
 void         ufo_profiler_call      (UfoProfiler        *profiler,
                                      gpointer            command_queue,
                                      gpointer            kernel,

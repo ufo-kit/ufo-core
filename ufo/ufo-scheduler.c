@@ -345,7 +345,7 @@ run_task (TaskLocalData *tld)
     if (!is_correctly_implemented (node, tld->mode, process, generate))
         return NULL;
 
-    profiler = ufo_profiler_new (UFO_PROFILER_LEVEL_OPENCL);
+    profiler = ufo_profiler_new ();
     ufo_task_node_set_profiler (node, profiler);
 
     while (active) {
@@ -413,10 +413,11 @@ run_task (TaskLocalData *tld)
             ufo_group_finish (group);
     }
 
-    g_message ("`%s' finished: CPU: %3.5fs GPU: %3.5fs",
+    g_message ("`%s' finished: CPU: %3.5fs GPU: %3.5fs IO: %3.5fs",
                G_OBJECT_TYPE_NAME (tld->task),
                ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_CPU),
-               ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_GPU));
+               ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_GPU),
+               ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
 
     g_object_unref (profiler);
     return NULL;
