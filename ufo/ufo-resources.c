@@ -482,29 +482,55 @@ ufo_resources_get_kernel (UfoResources *resources,
     return create_kernel (priv, program, kernel, error);
 }
 
+static gchar *
+get_first_kernel_name (const gchar *source)
+{
+    GRegex *regex;
+    gchar *name = NULL;
+    GMatchInfo *match = NULL;
+    GError *error = NULL;
+
+    regex = g_regex_new ("__kernel\\svoid\\s([A-Za-z][A-Za-z0-9_]+)",
+                         G_REGEX_MULTILINE, 0, &error);
+
+    if (error != NULL) {
+        g_error ("%s", error->message);
+        g_error_free (error);
+        return NULL;
+    }
+
+    if (g_regex_match (regex, source, 0, &match))
+        name = g_match_info_fetch (match, 1);
+
+    g_match_info_free (match);
+    g_regex_unref (regex);
+    return name;
+}
+
 /**
  * ufo_resources_get_kernel_from_source:
  * @resources: A #UfoResources
  * @source: OpenCL source string
- * @kernel: Name of a kernel
+ * @kernel_name: Name of a kernel or %NULL
  * @error: Return location for a GError from #UfoResourcesError, or NULL
  *
- * Loads and builds a kernel from a string.
+ * Loads and builds a kernel from a string. If @kernel is %NULL, the first
+ * kernel defined in @source is used.
  *
  * Returns: (transfer none): a cl_kernel object that is load from @filename
  */
 gpointer
 ufo_resources_get_kernel_from_source (UfoResources *resources,
                                       const gchar *source,
-                                      const gchar *kernel,
+                                      const gchar *kernel_name,
                                       GError **error)
 {
     UfoResourcesPrivate *priv;
     cl_program program;
+    gchar *name = NULL;
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
-                          (source != NULL) &&
-                          (kernel != NULL), NULL);
+                          (source != NULL), NULL);
 
     priv = UFO_RESOURCES_GET_PRIVATE (resources);
     program = add_program_from_source (priv, source, NULL, error);
@@ -514,12 +540,22 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
      * (kernel name could be the same as a source filename) but it should work
      * in most cases.
      */
-    if (program != NULL)
-        g_hash_table_insert (priv->programs, g_strdup (kernel), program);
+    if (program != NULL) {
+        if (kernel_name != NULL) {
+            name = g_strdup (kernel_name);
+        }
+        else {
+            name = get_first_kernel_name (source);
+
+            if (name == NULL)
+                return NULL;
+        }
+    }
     else
         return NULL;
 
-    return create_kernel (priv, program, kernel, error);
+    g_hash_table_insert (priv->programs, name, program);
+    return create_kernel (priv, program, name, error);
 }
 
 /**
