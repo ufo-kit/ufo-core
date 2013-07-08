@@ -787,6 +787,12 @@ handle_json_task_edge (JsonArray *array,
     from_node = g_hash_table_lookup (priv->json_nodes, from_name);
     to_node = g_hash_table_lookup (priv->json_nodes, to_name);
 
+    if (from_node == NULL)
+        g_error ("No filter `%s' defined", from_name);
+
+    if (to_node == NULL)
+        g_error ("No filter `%s' defined", to_name);
+
     ufo_task_graph_connect_nodes_full (graph, from_node, to_node, to_port);
 
     if (error != NULL)
