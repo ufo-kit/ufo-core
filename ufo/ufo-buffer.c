@@ -751,7 +751,7 @@ convert_data (UfoBufferPrivate *priv,
  * Convert host data according to its @depth to the internal 32-bit floating
  * point representation.
  *
- * @Deprecated: 0.4: Use ufo_buffer_convert_from_data() instead.
+ * Deprecated: 0.4: Use ufo_buffer_convert_from_data() instead.
  */
 void
 ufo_buffer_convert (UfoBuffer *buffer,
@@ -775,7 +775,7 @@ ufo_buffer_convert (UfoBuffer *buffer,
  * Convert @data according from @depth to the internal 32-bit floating
  * point representation.
  *
- * @Note: @data must provide as many bytes as the buffer was initialized with.
+ * Note: @data must provide as many bytes as the buffer was initialized with.
  */
 void
 ufo_buffer_convert_from_data (UfoBuffer *buffer,

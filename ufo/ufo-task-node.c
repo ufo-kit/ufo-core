@@ -193,6 +193,14 @@ ufo_task_node_set_profiler (UfoTaskNode *node,
     node->priv->profiler = profiler;
 }
 
+/**
+ * ufo_task_node_get_profiler:
+ * @node: A #UfoTaskNode
+ *
+ * Get the associated profiler of @node.
+ *
+ * Return value: (transfer full): A #UfoProfiler object.
+ */
 UfoProfiler *
 ufo_task_node_get_profiler (UfoTaskNode *node)
 {

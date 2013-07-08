@@ -580,7 +580,7 @@ ufo_resources_get_context (UfoResources *resources)
  *
  * Get all command queues managed by @resources.
  *
- * Return value: (element-type gpointer) (transfer container): List with
+ * Returns: (element-type gpointer) (transfer container): List with
  * cl_command_queue objects. Free with g_list_free() but not its elements.
  */
 GList *
@@ -604,7 +604,7 @@ ufo_resources_get_cmd_queues (UfoResources *resources)
  *
  * Get all devices queues managed by @resources.
  *
- * Return value: (element-type gpointer) (transfer container): List with
+ * Returns: (element-type gpointer) (transfer container): List with
  * cl_device_id objects. Free with g_list_free() but not its elements.
  */
 GList *
@@ -628,7 +628,7 @@ ufo_resources_get_devices (UfoResources *resources)
  *
  * Get all devices queues managed by @resources.
  *
- * Return value: Hash table with cl_device_id objects as key and
+ * Return value: (transfer container): Hash table with cl_device_id objects as key and
  * cl_command_queue objects as value. Free with g_hash_table_destroy() but not
  * its elements.
  */

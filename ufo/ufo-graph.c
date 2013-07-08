@@ -169,7 +169,7 @@ ufo_graph_get_num_edges (UfoGraph *graph)
  *
  * Get all edges contained in @graph.
  *
- * Returns: (element-type UfoEdge): a list of #UfoEdge elements or %NULL on
+ * Returns: (transfer full) (element-type UfoEdge): a list of #UfoEdge elements or %NULL on
  * error. Release the list with g_list_free().
  */
 GList *
@@ -508,7 +508,7 @@ copy_and_connect_successors (UfoGraph *graph,
  * ufo_node_copy(). This means the nodes will not be the same but have the same
  * properties.
  *
- * Returns: A copy of @graph or %NULL on error.
+ * Returns: (transfer full): A copy of @graph or %NULL on error.
  */
 UfoGraph *
 ufo_graph_copy (UfoGraph *graph,
@@ -591,7 +591,7 @@ append_level (UfoGraph *graph,
  *
  * Flatten @graph to lists of lists.
  *
- * Returns: (element-type GList): a GList of GList, each containing nodes at the same height.
+ * Returns: (transfer full) (element-type GList): a GList of GList, each containing nodes at the same height.
  */
 GList *
 ufo_graph_flatten (UfoGraph *graph)
