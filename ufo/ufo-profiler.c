@@ -211,7 +211,7 @@ gpu_elapsed (UfoProfilerPrivate *priv)
             elapsed += ((gdouble) (end - start)) * 1e-9;
     }
 
-    return elapsed / ((gdouble) len);
+    return elapsed;
 }
 
 /**
