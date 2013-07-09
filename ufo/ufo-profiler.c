@@ -198,7 +198,11 @@ gpu_elapsed (UfoProfilerPrivate *priv)
         clGetEventInfo (row->event, CL_EVENT_COMMAND_QUEUE,
                         sizeof (cl_command_queue), &queue, NULL);
         get_time_stamps (row->event, NULL, NULL, &start, &end);
-        elapsed += ((gdouble) (end - start)) * 10e-9;
+
+        if (end < start)
+            elapsed += (gdouble) ((G_MAXULONG - start) + end) * 10e-9;
+        else
+            elapsed += ((gdouble) (end - start)) * 10e-9;
     }
 
     return elapsed / ((gdouble) len);
