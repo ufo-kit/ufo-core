@@ -123,6 +123,7 @@ ufo_profiler_call (UfoProfiler    *profiler,
     cl_int              cl_err;
     struct EventRow     row;
 
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
     priv = profiler->priv;
 
     cl_err = clEnqueueNDRangeKernel (command_queue,
