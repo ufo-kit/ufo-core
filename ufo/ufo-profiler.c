@@ -195,7 +195,6 @@ gpu_elapsed (UfoProfilerPrivate *priv)
         return 0.0;
 
     for (guint i = 0; i < len; i++) {
-        cl_command_queue queue;
         gulong start, end;
 
         row = &g_array_index (priv->event_array, struct EventRow, i);
@@ -207,9 +206,9 @@ gpu_elapsed (UfoProfilerPrivate *priv)
         get_time_stamps (row->event, NULL, NULL, &start, &end);
 
         if (end < start)
-            elapsed += (gdouble) ((G_MAXULONG - start) + end) * 10e-9;
+            elapsed += (gdouble) ((G_MAXULONG - start) + end) * 1e-9;
         else
-            elapsed += ((gdouble) (end - start)) * 10e-9;
+            elapsed += ((gdouble) (end - start)) * 1e-9;
     }
 
     return elapsed / ((gdouble) len);
