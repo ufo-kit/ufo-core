@@ -54,6 +54,7 @@ G_DEFINE_TYPE(UfoProfiler, ufo_profiler, G_TYPE_OBJECT)
 struct EventRow {
     cl_event    event;
     cl_kernel   kernel;
+    cl_command_queue queue;
 };
 
 struct _UfoProfilerPrivate {
@@ -137,6 +138,7 @@ ufo_profiler_call (UfoProfiler    *profiler,
 
     row.event = event;
     row.kernel = kernel;
+    row.queue = command_queue;
     g_array_append_val (priv->event_array, row);
 }
 
@@ -175,10 +177,11 @@ ufo_profiler_stop (UfoProfiler       *profiler,
 static void
 get_time_stamps (cl_event event, gulong *queued, gulong *submitted, gulong *start, gulong *end)
 {
-    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_QUEUED, sizeof (cl_ulong), queued, NULL);
-    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_SUBMIT, sizeof (cl_ulong), submitted, NULL);
-    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_START, sizeof (cl_ulong), start, NULL);
-    clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_END, sizeof (cl_ulong), end, NULL);
+    UFO_RESOURCES_CHECK_CLERR (clWaitForEvents (1, &event));
+    UFO_RESOURCES_CHECK_CLERR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_QUEUED, sizeof (cl_ulong), queued, NULL));
+    UFO_RESOURCES_CHECK_CLERR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_SUBMIT, sizeof (cl_ulong), submitted, NULL));
+    UFO_RESOURCES_CHECK_CLERR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_START, sizeof (cl_ulong), start, NULL));
+    UFO_RESOURCES_CHECK_CLERR (clGetEventProfilingInfo (event, CL_PROFILING_COMMAND_END, sizeof (cl_ulong), end, NULL));
 }
 
 static gdouble
@@ -196,8 +199,11 @@ gpu_elapsed (UfoProfilerPrivate *priv)
         gulong start, end;
 
         row = &g_array_index (priv->event_array, struct EventRow, i);
-        clGetEventInfo (row->event, CL_EVENT_COMMAND_QUEUE,
-                        sizeof (cl_command_queue), &queue, NULL);
+
+        UFO_RESOURCES_CHECK_CLERR (clGetEventInfo (row->event, CL_EVENT_COMMAND_QUEUE,
+                                                   sizeof (cl_command_queue), &row->queue,
+                                                   NULL));
+
         get_time_stamps (row->event, NULL, NULL, &start, &end);
 
         if (end < start)
