@@ -330,6 +330,7 @@ add_program_from_source (UfoResourcesPrivate *priv,
 {
     cl_program program;
     cl_int errcode = CL_SUCCESS;
+    gchar *build_options;
 
     program = clCreateProgramWithSource (priv->context,
                                          1, &source, NULL, &errcode);
@@ -342,24 +343,19 @@ add_program_from_source (UfoResourcesPrivate *priv,
         return NULL;
     }
 
+    build_options = get_device_build_options (priv, 0, options);
 
-    for (guint i = 0; i < priv->n_devices; i++) {
-        gchar *build_options;
+    errcode = clBuildProgram (program,
+                              priv->n_devices, priv->devices,
+                              build_options,
+                              NULL, NULL);
 
-        build_options = get_device_build_options (priv, i, options);
-
-        errcode = clBuildProgram (program,
-                                  1, &priv->devices[i],
-                                  build_options,
-                                  NULL, NULL);
-
-        if (errcode != CL_SUCCESS) {
-            handle_build_error (program, priv->devices[i], errcode, error);
-            return NULL;
-        }
-
-        g_free (build_options);
+    if (errcode != CL_SUCCESS) {
+        handle_build_error (program, priv->devices[0], errcode, error);
+        return NULL;
     }
+
+    g_free (build_options);
 
     return program;
 }
