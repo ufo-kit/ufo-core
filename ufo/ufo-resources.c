@@ -292,7 +292,7 @@ get_device_build_options (UfoResourcesPrivate *priv,
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index],
                                                 CL_DEVICE_NAME, size, name, NULL));
 
-    g_string_append_printf (opts, " -D=%s", escape_device_name (name));
+    g_string_append_printf (opts, " -DDEVICE=%s", escape_device_name (name));
     g_free (name);
 
     g_list_foreach (priv->include_paths, (GFunc) append_include_path, opts);
@@ -318,7 +318,7 @@ handle_build_error (cl_program program,
 
     UFO_RESOURCES_CHECK_CLERR (clGetProgramBuildInfo (program, device, CL_PROGRAM_BUILD_LOG,
                                                       LOG_SIZE, log, NULL));
-    g_print ("\n=== Build log for s===%s\n\n", log);
+    g_print ("\n=== Build log ===%s\n\n", log);
     g_free (log);
 }
 
@@ -347,13 +347,14 @@ add_program_from_source (UfoResourcesPrivate *priv,
         gchar *build_options;
 
         build_options = get_device_build_options (priv, i, options);
+
         errcode = clBuildProgram (program,
                                   1, &priv->devices[i],
                                   build_options,
                                   NULL, NULL);
 
         if (errcode != CL_SUCCESS) {
-            handle_build_error (program, priv->devices[0], errcode, error);
+            handle_build_error (program, priv->devices[i], errcode, error);
             return NULL;
         }
 
@@ -858,14 +859,14 @@ initialize_opencl (UfoResourcesPrivate *priv)
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
-                                               CL_DEVICE_TYPE_ALL,
+                                               CL_DEVICE_TYPE_GPU,
                                                0, NULL,
                                                &priv->n_devices));
 
     priv->devices = g_malloc0 (priv->n_devices * sizeof (cl_device_id));
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
-                                               CL_DEVICE_TYPE_ALL,
+                                               CL_DEVICE_TYPE_GPU,
                                                priv->n_devices, priv->devices,
                                                NULL));
 
