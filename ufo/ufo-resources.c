@@ -855,14 +855,14 @@ initialize_opencl (UfoResourcesPrivate *priv)
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
-                                               CL_DEVICE_TYPE_GPU,
+                                               CL_DEVICE_TYPE_ALL,
                                                0, NULL,
                                                &priv->n_devices));
 
     priv->devices = g_malloc0 (priv->n_devices * sizeof (cl_device_id));
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
-                                               CL_DEVICE_TYPE_GPU,
+                                               CL_DEVICE_TYPE_ALL,
                                                priv->n_devices, priv->devices,
                                                NULL));
 
@@ -898,6 +898,7 @@ ufo_resources_init (UfoResources *self)
 
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_PLUGIN_DIR));
+    priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup ("/usr/local/lib/ufo"));
 
     initialize_opencl (priv);
 }
