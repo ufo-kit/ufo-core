@@ -53,6 +53,7 @@ ELSE (APPLE)
               /usr/lib64/nvidia
               /opt/nvidia-current
               /opt/AMDAPP/lib
+              /opt/AMDAPP/lib/x86_64
             )
 
             GET_FILENAME_COMPONENT(OPENCL_LIB_DIR ${OPENCL_LIBRARIES} PATH)
