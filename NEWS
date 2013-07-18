@@ -1,0 +1,166 @@
+=========
+Changelog
+=========
+
+Here you can see the full list of changes between each ufo-core release.
+
+Version 0.4
+===========
+
+Released on July 18th 2013.
+
+Major changes
+-------------
+
+- Rewrote internal architecture for better scheduling.
+- Remove profiler levels and add more output
+- Implement input data partitioning: On clusters where distributed data access
+  is possible, we can achieve perfect linear scalability by partitioning the
+  input data set.
+- Install SIGTERM handler for cleanup of node server
+
+
+Features
+--------
+
+- Add ufo_task_graph_get_json_data
+- Streamline and simplify scheduling
+- Provide function to flatten graph
+- Provide graph copy functionality
+- Add node indices for copies
+- Add all paths as OpenCL include paths
+- Write out JSON version
+- Search in UFO_PLUGIN_PATH env var
+
+
+Bug fixes
+---------
+
+- Fix problems with AMD platforms
+- Fix timestamp readout
+- Fix potential single integer overflow
+- Exit when JSON tasks could not be found
+- Fix remote tasks getting stuck
+- Unref expanded nodes explicitly
+- Fix #189: don't copy nodes with more than one input
+- Fix #219: Warn instead of segfault
+- Fix annotation for older GI compiler
+- Fix problem with first remote data item
+- Fix platform selection
+- Fix problems with objects that are not unreffed
+- Refactor buffer and add support for #184
+- Refactor resources and fix #183
+- Fix buffer for broadcast operations
+
+
+Version 0.3
+===========
+
+Released on February 8th 2013.
+
+Major breakage
+--------------
+
+- A graph is now a simple data structure and not a specific graph of task nodes.
+  This is implemented by a TaskGraph.
+
+- Filters are now called TaskNodes and connected with
+  ``ufo_task_graph_connect_nodes`` and ``ufo_task_graph_connect_nodes_full``
+  respectively.
+
+
+Graph expansion
+---------------
+
+With 0.2, Using multiple GPUs was possible by manually splitting paths in the
+graph and assigning GPUs. Now, task graphs are automatically expanded depending
+on the number of available GPUs and remote processing slaves that are started
+with the newly added ``ufod`` server software.
+
+
+Minor improvements
+------------------
+
+- A ``deploy.sh`` script has been added for easier deployment of the software
+  stack. This is especially useful to install everything in the home directory
+  of the user, who only needs to setup ``LD_LIBRARY_PATH`` and
+  ``GI_TYPELIB_PATH`` correctly to run the software.
+
+
+Version 0.2
+===========
+
+Released on November 8th 2012.
+
+Major breakage
+--------------
+
+- Filters are now prefixed again with ``libfilter`` to allow introspected
+  documentation. Thus, any filter built for 0.1 cannot be used because they are
+  simply not found.
+
+- :c:func:`ufo_plugin_manager_get_filter` received a new third parameter
+  ``error`` that reports errors when opening and loading a UfoFilter from a
+  shared object.
+
+- :c:func:`ufo_resource_manager_add_program` is removed.
+
+- The kernel file name must be passed to :c:func:`ufo_resource_manager_get_kernel`.
+
+- The ``CHECK_ERROR`` macro defined in ``ufo-resource-manager.h`` was renamed to
+  ``CHECK_OPENCL_ERROR`` to better reflect its real purpose.
+
+- The old JSON specification has been changed to reflect the possibilities of
+  the current API. Thus, JSON files that worked under Ufo 0.1 cannot be read
+  with Ufo 0.2.
+
+- Removed the otherwise unused :c:func:`ufo_buffer_get_transfer_time` and
+  replaced this with the more flexible :c:func:`ufo_buffer_get_transfer_timer`.
+
+- Rename :c:func:`ufo_filter_initialize` to
+  :c:func:`ufo_filter_set_plugin_name` that reflects its true meaning.
+
+
+Scheduling
+~~~~~~~~~~
+
+A more scheduable way to run filters has been implemented with the virtual
+:c:func:`process_cpu` and :c:func:`process_gpu` methods. Contrary to the old
+way, they act on *one* working set at a time that is passed as an array of
+pointers to :c:type:`UfoBuffer`. Sometimes, a filter needs to setup data
+depending on the input size. For this reason, the virtual method
+:c:func:`initialize` takes a second parameter that is again a list of pointers
+to buffer objects.
+
+Moreover, the :c:type:`UfoScheduler` class has been added that is combining
+the work previously accomplished by :c:func:`ufo_filter_process` and
+:c:func:`ufo_graph_run`. The scheduler orchestrates the filters and
+assigns resources in a meaningful way.
+
+If written in the new kernel style, producer filters must return a boolean flag
+denoting if data was produced or not.
+
+
+General improvements
+--------------------
+
+- The manual was restructured considerably.
+
+- Saving graphs as JSON files has been added via
+  :c:func:`ufo_graph_save_to_json()`.
+
+- Filters can now wait until their properties satisfy a condition using
+  :c:func:`ufo_filter_wait_until`, see also :ref:`filters-block`.
+
+- A new method :c:func:`ufo_resource_manager_get_kernel_from_source` so that
+  filters can load kernels directly from source.
+
+- Streamlined error handling: Filters should not issue ``g_warnings`` or
+  ``g_errors`` on their own anymore but create an error with ``g_error_new`` and
+  return that.
+
+
+Version 0.1.1
+=============
+
+- Ticket #55: tests/test-channel blocks indefinitely

@@ -15,11 +15,7 @@ if(SPHINX)
         list(APPEND sphinx_source "${output_dir}/conf.py")
 
         set(sphinx_static
-            _static/ufo-logo.png
-            _templates/indexcontent.html
-            _templates/indexsidebar.html
-            _templates/layout.html
-            )
+            _static/ufo-logo.png)
 
         configure_file(${input_dir}/conf.py.in ${output_dir}/conf.py)
         
