@@ -420,65 +420,6 @@ create_and_build_program (UfoResources *resources,
     return program;
 }
 
-static cl_kernel
-create_kernel (UfoResourcesPrivate *priv,
-               cl_program program,
-               const gchar *kernel_name,
-               GError **error)
-{
-    cl_int errcode = CL_SUCCESS;
-    cl_kernel kernel = clCreateKernel (program, kernel_name, &errcode);
-
-    if (kernel == NULL || errcode != CL_SUCCESS) {
-        g_set_error (error,
-                     UFO_RESOURCES_ERROR,
-                     UFO_RESOURCES_ERROR_CREATE_KERNEL,
-                     "Failed to create kernel `%s`: %s", kernel_name, ufo_resources_clerr (errcode));
-        return NULL;
-    }
-
-    priv->kernels = g_list_append (priv->kernels, kernel);
-    return kernel;
-}
-
-/**
- * ufo_resources_get_kernel:
- * @resources: A #UfoResources object
- * @filename: Name of the .cl kernel file
- * @kernel: Name of a kernel
- * @error: Return location for a GError from #UfoResourcesError, or NULL
- *
- * Loads a and builds a kernel from a file. The file is searched in the current
- * working directory and all paths added through
- * ufo_resources_add_paths ().
- *
- * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
- */
-gpointer
-ufo_resources_get_kernel (UfoResources *resources,
-                          const gchar *filename,
-                          const gchar *kernel,
-                          GError **error)
-{
-    UfoResourcesPrivate *priv;
-    cl_program program;
-    GError *tmp_error = NULL;
-
-    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
-                          (filename != NULL) &&
-                          (kernel != NULL), NULL);
-
-    priv = resources->priv;
-    program = create_and_build_program (resources, filename, "", &tmp_error);
-
-    if (program == NULL) {
-        g_propagate_error (error, tmp_error);
-        return NULL;
-    }
-
-    return create_kernel (priv, program, kernel, error);
-}
-
 static gchar *
 get_first_kernel_name (const gchar *source)
 {
@@ -504,6 +445,83 @@ get_first_kernel_name (const gchar *source)
     return name;
 }
 
+static cl_kernel
+create_kernel (UfoResourcesPrivate *priv,
+               cl_program program,
+               const gchar *kernel_name,
+               GError **error)
+{
+    cl_kernel kernel;
+    gchar *name;
+    cl_int errcode = CL_SUCCESS;
+
+    if (kernel_name == NULL) {
+        gchar *source;
+        gsize size;
+
+        UFO_RESOURCES_CHECK_CLERR (clGetProgramInfo (program, CL_PROGRAM_SOURCE, 0, NULL, &size));
+        source = g_malloc0 (size);
+        UFO_RESOURCES_CHECK_CLERR (clGetProgramInfo (program, CL_PROGRAM_SOURCE, size, source, NULL));
+        name = get_first_kernel_name (source);
+        g_free (source);
+    }
+    else {
+        name = g_strdup (kernel_name);
+    }
+
+    kernel = clCreateKernel (program, name, &errcode);
+    g_free (name);
+
+    if (kernel == NULL || errcode != CL_SUCCESS) {
+        g_set_error (error,
+                     UFO_RESOURCES_ERROR,
+                     UFO_RESOURCES_ERROR_CREATE_KERNEL,
+                     "Failed to create kernel `%s`: %s", kernel_name, ufo_resources_clerr (errcode));
+        return NULL;
+    }
+
+    priv->kernels = g_list_append (priv->kernels, kernel);
+    return kernel;
+}
+
+/**
+ * ufo_resources_get_kernel:
+ * @resources: A #UfoResources object
+ * @filename: Name of the .cl kernel file
+ * @kernel: Name of a kernel, or %NULL
+ * @error: Return location for a GError from #UfoResourcesError, or %NULL
+ *
+ * Loads a and builds a kernel from a file. The file is searched in the current
+ * working directory and all paths added through
+ * ufo_resources_add_paths (). If @kernel is %NULL, the first encountered kernel
+ * is returned.
+ *
+ * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
+ */
+gpointer
+ufo_resources_get_kernel (UfoResources *resources,
+                          const gchar *filename,
+                          const gchar *kernel,
+                          GError **error)
+{
+    UfoResourcesPrivate *priv;
+    cl_program program;
+    GError *tmp_error = NULL;
+
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
+                          (filename != NULL), NULL);
+
+    priv = resources->priv;
+    program = create_and_build_program (resources, filename, "", &tmp_error);
+
+    if (program == NULL) {
+        g_propagate_error (error, tmp_error);
+        return NULL;
+    }
+
+    return create_kernel (priv, program, kernel, error);
+}
+
 /**
  * ufo_resources_get_kernel_from_source:
  * @resources: A #UfoResources
@@ -524,35 +542,13 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
 {
     UfoResourcesPrivate *priv;
     cl_program program;
-    gchar *name = NULL;
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
                           (source != NULL), NULL);
 
     priv = UFO_RESOURCES_GET_PRIVATE (resources);
     program = add_program_from_source (priv, source, NULL, error);
-
-    /*
-     * We add the program under a fake file name. This looks very brittle to me
-     * (kernel name could be the same as a source filename) but it should work
-     * in most cases.
-     */
-    if (program != NULL) {
-        if (kernel_name != NULL) {
-            name = g_strdup (kernel_name);
-        }
-        else {
-            name = get_first_kernel_name (source);
-
-            if (name == NULL)
-                return NULL;
-        }
-    }
-    else
-        return NULL;
-
-    g_hash_table_insert (priv->programs, name, program);
-    return create_kernel (priv, program, name, error);
+    return create_kernel (priv, program, kernel_name, error);
 }
 
 /**
