@@ -72,7 +72,7 @@ struct _UfoResourcesPrivate {
 
     GList       *include_paths;         /**< List of include paths for kernel includes >*/
     GList       *kernel_paths;          /**< Colon-separated string with paths to kernel files */
-    GHashTable  *programs;              /**< Map from filename to cl_program */
+    GList       *programs;
     GList       *kernels;
     GString     *build_opts;
 };
@@ -192,12 +192,14 @@ read_file (const gchar *filename)
 static void
 release_kernel (cl_kernel kernel)
 {
+    g_debug ("Release kernel=%p", (gpointer) kernel);
     UFO_RESOURCES_CHECK_CLERR (clReleaseKernel (kernel));
 }
 
 static void
 release_program (cl_program program)
 {
+    g_debug ("Release program=%p", (gpointer) program);
     UFO_RESOURCES_CHECK_CLERR (clReleaseProgram (program));
 }
 
@@ -355,68 +357,9 @@ add_program_from_source (UfoResourcesPrivate *priv,
         return NULL;
     }
 
+    priv->programs = g_list_append (priv->programs, program);
+
     g_free (build_options);
-
-    return program;
-}
-
-static cl_program
-create_and_build_program (UfoResources *resources,
-                          const gchar *filename,
-                          const gchar *options,
-                          GError **error)
-{
-    UfoResourcesPrivate *priv;
-    cl_program program;
-    gchar *path;
-    gchar *buffer;
-    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
-
-    g_return_val_if_fail (UFO_IS_RESOURCES (resources) || (filename != NULL), FALSE);
-    priv = resources->priv;
-
-    /* Programs might be added multiple times if this is not locked */
-    g_static_mutex_lock (&mutex);
-
-    /* Don't process the kernel file again, if already load */
-    program = g_hash_table_lookup (priv->programs, filename);
-
-    if (program != NULL) {
-        g_static_mutex_unlock (&mutex);
-        return program;
-    }
-
-    path = lookup_kernel_path (priv, filename);
-
-    if (path == NULL) {
-        g_set_error (error,
-                     UFO_RESOURCES_ERROR,
-                     UFO_RESOURCES_ERROR_LOAD_PROGRAM,
-                     "Could not find `%s'. Maybe you forgot to pass a configuration?", filename);
-        g_static_mutex_unlock (&mutex);
-        return NULL;
-    }
-
-    buffer = read_file (path);
-    g_free (path);
-
-    if (buffer == NULL) {
-        g_set_error (error,
-                     UFO_RESOURCES_ERROR,
-                     UFO_RESOURCES_ERROR_LOAD_PROGRAM,
-                     "Could not open `%s'", filename);
-        g_static_mutex_unlock (&mutex);
-        return NULL;
-    }
-
-    program = add_program_from_source (priv, buffer, options, error);
-    g_message ("Added program %p from `%s`", (gpointer) program, filename);
-
-    if (program != NULL)
-        g_hash_table_insert (priv->programs, g_strdup (filename), program);
-
-    g_static_mutex_unlock (&mutex);
-    g_free (buffer);
     return program;
 }
 
@@ -505,19 +448,34 @@ ufo_resources_get_kernel (UfoResources *resources,
                           GError **error)
 {
     UfoResourcesPrivate *priv;
+    gchar *path;
+    gchar *buffer;
     cl_program program;
-    GError *tmp_error = NULL;
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
                           (filename != NULL), NULL);
 
     priv = resources->priv;
-    program = create_and_build_program (resources, filename, "", &tmp_error);
+    path = lookup_kernel_path (priv, filename);
 
-    if (program == NULL) {
-        g_propagate_error (error, tmp_error);
+    if (path == NULL) {
+        g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
+                     "Could not find `%s'. Maybe you forgot to pass a configuration?", filename);
         return NULL;
     }
+
+    buffer = read_file (path);
+    g_free (path);
+
+    if (buffer == NULL) {
+        g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
+                     "Could not open `%s'", filename);
+        return NULL;
+    }
+
+    program = add_program_from_source (priv, buffer, "", error);
+    g_debug ("Added program %p from `%s`", (gpointer) program, filename);
+    g_free (buffer);
 
     return create_kernel (priv, program, kernel, error);
 }
@@ -548,6 +506,7 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
 
     priv = UFO_RESOURCES_GET_PRIVATE (resources);
     program = add_program_from_source (priv, source, NULL, error);
+    g_debug ("Added program %p from source", (gpointer) program);
     return create_kernel (priv, program, kernel_name, error);
 }
 
@@ -637,7 +596,7 @@ ufo_resources_get_mapped_cmd_queues (UfoResources *resources)
                                     NULL, (GDestroyNotify) release_program);
 
     for (guint i = 0; i < priv->n_devices; i++)
-        g_hash_table_insert(result, priv->devices[i], priv->command_queues[i]);
+        g_hash_table_insert (result, priv->devices[i], priv->command_queues[i]);
 
     return result;
 }
@@ -733,11 +692,10 @@ ufo_resources_finalize (GObject *object)
 {
     UfoResourcesPrivate *priv = UFO_RESOURCES_GET_PRIVATE (object);
 
-    g_hash_table_destroy (priv->programs);
-
     list_free_full (&priv->kernel_paths, (GFunc) g_free);
     list_free_full (&priv->include_paths, (GFunc) g_free);
     list_free_full (&priv->kernels, (GFunc) release_kernel);
+    list_free_full (&priv->programs, (GFunc) release_program);
 
     for (guint i = 0; i < priv->n_devices; i++)
         UFO_RESOURCES_CHECK_CLERR (clReleaseCommandQueue (priv->command_queues[i]));
@@ -886,8 +844,7 @@ ufo_resources_init (UfoResources *self)
     self->priv = priv = UFO_RESOURCES_GET_PRIVATE (self);
 
     priv->config = NULL;
-    priv->programs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                            g_free, (GDestroyNotify) release_program);
+    priv->programs = NULL;
     priv->kernels = NULL;
     priv->build_opts = g_string_new ("-cl-mad-enable ");
     priv->include_paths = g_list_append (NULL, g_strdup ("."));
