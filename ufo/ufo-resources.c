@@ -484,7 +484,7 @@ ufo_resources_get_kernel (UfoResources *resources,
  * ufo_resources_get_kernel_from_source:
  * @resources: A #UfoResources
  * @source: OpenCL source string
- * @kernel_name: Name of a kernel or %NULL
+ * @kernel: Name of a kernel or %NULL
  * @error: Return location for a GError from #UfoResourcesError, or NULL
  *
  * Loads and builds a kernel from a string. If @kernel is %NULL, the first
@@ -495,7 +495,7 @@ ufo_resources_get_kernel (UfoResources *resources,
 gpointer
 ufo_resources_get_kernel_from_source (UfoResources *resources,
                                       const gchar *source,
-                                      const gchar *kernel_name,
+                                      const gchar *kernel,
                                       GError **error)
 {
     UfoResourcesPrivate *priv;
@@ -507,7 +507,7 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
     priv = UFO_RESOURCES_GET_PRIVATE (resources);
     program = add_program_from_source (priv, source, NULL, error);
     g_debug ("Added program %p from source", (gpointer) program);
-    return create_kernel (priv, program, kernel_name, error);
+    return create_kernel (priv, program, kernel, error);
 }
 
 /**
