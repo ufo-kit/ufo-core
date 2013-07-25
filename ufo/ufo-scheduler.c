@@ -620,6 +620,12 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
     priv = scheduler->priv;
 
+    if (priv->construct_error != NULL) {
+        if (error)
+            *error = g_error_copy (priv->construct_error);
+        return;
+    }
+
     arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources,
                                                      priv->remotes));
 
