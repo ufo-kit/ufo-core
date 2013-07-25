@@ -22,6 +22,7 @@
 #else
 #include <CL/cl.h>
 #endif
+#include <gio/gio.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -46,8 +47,12 @@
  * on CPU and GPU hardware.
  */
 
+static void ufo_scheduler_initable_iface_init (GInitableIface *iface);
+
 G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
+                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL)
+                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
+                                                ufo_scheduler_initable_iface_init))
 
 #define UFO_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SCHEDULER, UfoSchedulerPrivate))
 
@@ -60,6 +65,7 @@ typedef struct {
 } TaskLocalData;
 
 struct _UfoSchedulerPrivate {
+    GError          *construct_error;
     UfoConfig       *config;
     UfoResources    *resources;
     GList           *remotes;
@@ -746,7 +752,8 @@ ufo_scheduler_constructed (GObject *object)
     UfoSchedulerPrivate *priv;
 
     priv = UFO_SCHEDULER_GET_PRIVATE (object);
-    priv->resources = ufo_resources_new (priv->config);
+    priv->resources = ufo_resources_new (priv->config,
+                                         &priv->construct_error);
 }
 
 static void
@@ -776,11 +783,47 @@ ufo_scheduler_finalize (GObject *object)
 
     priv = UFO_SCHEDULER_GET_PRIVATE (object);
 
+    g_clear_error (&priv->construct_error);
     g_list_foreach (priv->remotes, (GFunc) g_free, NULL);
     g_list_free (priv->remotes);
     priv->remotes = NULL;
 
     G_OBJECT_CLASS (ufo_scheduler_parent_class)->finalize (object);
+}
+
+static gboolean
+ufo_scheduler_initable_init (GInitable *initable,
+                             GCancellable *cancellable,
+                             GError **error)
+{
+    UfoScheduler *scheduler;
+    UfoSchedulerPrivate *priv;
+
+    g_return_val_if_fail (UFO_IS_SCHEDULER (initable), FALSE);
+
+    if (cancellable != NULL) {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                             "Cancellable initialization not supported");
+        return FALSE;
+    }
+
+    scheduler = UFO_SCHEDULER (initable);
+    priv = scheduler->priv;
+
+    if (priv->construct_error != NULL) {
+        if (error)
+            *error = g_error_copy (priv->construct_error);
+
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static void
+ufo_scheduler_initable_iface_init (GInitableIface *iface)
+{
+    iface->init = ufo_scheduler_initable_init;
 }
 
 static void
@@ -829,5 +872,6 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     priv->config = NULL;
     priv->resources = NULL;
     priv->remotes = NULL;
+    priv->construct_error = NULL;
     priv->mode = UFO_REMOTE_MODE_STREAM;
 }

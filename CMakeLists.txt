@@ -51,6 +51,7 @@ pkg_check_modules(GLIB2 glib-2.0>=2.22 REQUIRED)
 pkg_check_modules(GOBJECT2 gobject-2.0>=2.22 REQUIRED)
 pkg_check_modules(GMODULE2 gmodule-2.0>=2.22 REQUIRED)
 pkg_check_modules(GTHREAD2 gthread-2.0>=2.22 REQUIRED)
+pkg_check_modules(GIO2 gio-2.0>=2.22 REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
 pkg_check_modules(ZMQ libzmq>=3.2 REQUIRED)
 
@@ -60,6 +61,7 @@ set(UFOCORE_DEPS
     ${GOBJECT2_LIBRARIES}
     ${GMODULE2_LIBRARIES}
     ${GTHREAD2_LIBRARIES}
+    ${GIO2_LIBRARIES}
     ${JSON_GLIB_LIBRARIES}
     ${ZMQ_LIBRARIES})
 
@@ -68,6 +70,7 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/src
     ${GLIB2_INCLUDE_DIRS}
+    ${GIO2_INCLUDE_DIRS}
     ${OPENCL_INCLUDE_DIRS}
     ${JSON_GLIB_INCLUDE_DIRS}
     ${ZMQ_INCLUDE_DIRS})

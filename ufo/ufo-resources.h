@@ -44,6 +44,7 @@ typedef struct _UfoResourcesPrivate    UfoResourcesPrivate;
 
 
 typedef enum {
+    UFO_RESOURCES_ERROR_GENERAL,
     UFO_RESOURCES_ERROR_LOAD_PROGRAM,
     UFO_RESOURCES_ERROR_CREATE_PROGRAM,
     UFO_RESOURCES_ERROR_BUILD_PROGRAM,
@@ -59,6 +60,20 @@ typedef enum {
  */
 #define UFO_RESOURCES_CHECK_CLERR(error) { \
     if ((error) != CL_SUCCESS) g_log("ocl", G_LOG_LEVEL_CRITICAL, "Error <%s:%i>: %s", __FILE__, __LINE__, ufo_resources_clerr((error))); }
+
+/**
+ * UFO_RESOURCES_CHECK_AND_SET:
+ * @error: OpenCL error code
+ * @g_error_loc: Return location for a GError or %NULL
+ *
+ * Check @error and set @g_error_loc accordingly.
+ *
+ * Returns: %TRUE if no error occurred, %FALSE otherwise.
+ */
+#define UFO_RESOURCES_CHECK_AND_SET(error, g_error_loc) { \
+    if ((error) != CL_SUCCESS) \
+        g_set_error (g_error_loc, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_GENERAL, \
+                     "OpenCL Error: %s", ufo_resources_clerr((error))); }
 
 /**
  * UfoResources:
@@ -83,7 +98,8 @@ struct _UfoResourcesClass {
     GObjectClass parent_class;
 };
 
-UfoResources   * ufo_resources_new                      (UfoConfig      *config);
+UfoResources   * ufo_resources_new                      (UfoConfig      *config,
+                                                         GError        **error);
 gpointer         ufo_resources_get_kernel               (UfoResources   *resources,
                                                          const gchar    *filename,
                                                          const gchar    *kernel,

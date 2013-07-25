@@ -20,6 +20,7 @@
 #include "config.h"
 
 #include <glib.h>
+#include <gio/gio.h>
 #include <stdio.h>
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
@@ -39,8 +40,12 @@
  * kernels from text files.
  */
 
+static void ufo_resources_initable_iface_init (GInitableIface *iface);
+
 G_DEFINE_TYPE_WITH_CODE (UfoResources, ufo_resources, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
+                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL)
+                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
+                                                ufo_resources_initable_iface_init))
 
 #define UFO_RESOURCES_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_RESOURCES, UfoResourcesPrivate))
 
@@ -62,6 +67,7 @@ ufo_resources_error_quark (void)
 }
 
 struct _UfoResourcesPrivate {
+    GError          *construct_error;
     UfoConfig       *config;
 
     cl_platform_id   platform;
@@ -317,8 +323,9 @@ get_device_type (UfoResourcesPrivate *priv)
     return CL_DEVICE_TYPE_ALL;
 }
 
-static void
-initialize_opencl (UfoResourcesPrivate *priv)
+static gboolean
+initialize_opencl (UfoResourcesPrivate *priv,
+                   GError **error)
 {
     cl_int errcode = CL_SUCCESS;
     cl_device_type device_type;
@@ -328,23 +335,28 @@ initialize_opencl (UfoResourcesPrivate *priv)
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
     device_type = get_device_type (priv);
 
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
-                                               device_type,
-                                               0, NULL,
-                                               &priv->n_devices));
+    errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
+    UFO_RESOURCES_CHECK_AND_SET (errcode, error);
+
+    if (errcode != CL_SUCCESS)
+        return FALSE;
 
     priv->devices = g_malloc0 (priv->n_devices * sizeof (cl_device_id));
 
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
-                                               device_type,
-                                               priv->n_devices, priv->devices,
-                                               NULL));
+    errcode = clGetDeviceIDs (priv->platform, device_type, priv->n_devices, priv->devices, NULL);
+    UFO_RESOURCES_CHECK_AND_SET (errcode, error);
+
+    if (errcode != CL_SUCCESS)
+        return FALSE;
 
     priv->context = clCreateContext (NULL,
                                      priv->n_devices, priv->devices,
                                      NULL, NULL, &errcode);
 
-    UFO_RESOURCES_CHECK_CLERR (errcode);
+    UFO_RESOURCES_CHECK_AND_SET (errcode, error);
+
+    if (errcode != CL_SUCCESS)
+        return FALSE;
 
     priv->command_queues = g_malloc0 (priv->n_devices * sizeof (cl_command_queue));
 
@@ -352,8 +364,13 @@ initialize_opencl (UfoResourcesPrivate *priv)
         priv->command_queues[i] = clCreateCommandQueue (priv->context,
                                                         priv->devices[i],
                                                         queue_properties, &errcode);
-        UFO_RESOURCES_CHECK_CLERR (errcode);
+        UFO_RESOURCES_CHECK_AND_SET (errcode, error);
+
+        if (errcode != CL_SUCCESS)
+            return FALSE;
     }
+
+    return TRUE;
 }
 
 /**
@@ -365,15 +382,12 @@ initialize_opencl (UfoResourcesPrivate *priv)
  * Returns: (transfer none): A new #UfoResources
  */
 UfoResources *
-ufo_resources_new (UfoConfig *config)
+ufo_resources_new (UfoConfig *config,
+                   GError **error)
 {
-    UfoResources *resources;
-
-    resources = UFO_RESOURCES (g_object_new (UFO_TYPE_RESOURCES,
-                                             "config", config,
-                                             NULL));
-    initialize_opencl (resources->priv);
-    return resources;
+    return g_initable_new (UFO_TYPE_RESOURCES, NULL, error,
+                           "config", config,
+                           NULL);
 }
 
 static gchar *
@@ -821,7 +835,11 @@ list_free_full (GList **list,
 static void
 ufo_resources_finalize (GObject *object)
 {
-    UfoResourcesPrivate *priv = UFO_RESOURCES_GET_PRIVATE (object);
+    UfoResourcesPrivate *priv;
+
+    priv = UFO_RESOURCES_GET_PRIVATE (object);
+
+    g_clear_error (&priv->construct_error);
 
     list_free_full (&priv->kernel_paths, (GFunc) g_free);
     list_free_full (&priv->include_paths, (GFunc) g_free);
@@ -831,7 +849,8 @@ ufo_resources_finalize (GObject *object)
     for (guint i = 0; i < priv->n_devices; i++)
         UFO_RESOURCES_CHECK_CLERR (clReleaseCommandQueue (priv->command_queues[i]));
 
-    UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
+    if (priv->context)
+        UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
 
     g_string_free (priv->build_opts, TRUE);
 
@@ -843,6 +862,37 @@ ufo_resources_finalize (GObject *object)
 
     G_OBJECT_CLASS (ufo_resources_parent_class)->finalize (object);
     g_debug ("UfoResources: finalized");
+}
+
+static gboolean
+ufo_resources_initable_init (GInitable *initable,
+                             GCancellable *cancellable,
+                             GError **error)
+{
+    UfoResources *resources;
+    UfoResourcesPrivate *priv;
+
+    g_return_val_if_fail (UFO_IS_RESOURCES (initable), FALSE);
+
+    if (cancellable != NULL) {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                             "Cancellable initialization not supported");
+        return FALSE;
+    }
+
+    resources = UFO_RESOURCES (initable);
+    priv = resources->priv;
+
+    if (!initialize_opencl (priv, error))
+        return FALSE;
+
+    return TRUE;
+}
+
+static void
+ufo_resources_initable_iface_init (GInitableIface *iface)
+{
+    iface->init = ufo_resources_initable_init;
 }
 
 static void
