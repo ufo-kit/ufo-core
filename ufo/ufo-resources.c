@@ -229,6 +229,133 @@ lookup_kernel_path (UfoResourcesPrivate *priv,
     return NULL;
 }
 
+static gboolean
+platform_has_gpus (cl_platform_id platform)
+{
+    cl_uint n_devices = 0;
+    cl_int err;
+
+    err = clGetDeviceIDs (platform,
+                          CL_DEVICE_TYPE_GPU,
+                          0, NULL, &n_devices);
+
+    if (err != CL_DEVICE_NOT_FOUND)
+        UFO_RESOURCES_CHECK_CLERR (err);
+
+    return n_devices > 0;
+}
+
+static cl_platform_id
+get_preferably_gpu_based_platform (void)
+{
+    cl_platform_id *platforms;
+    cl_uint n_platforms;
+    cl_platform_id candidate;
+
+    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (0, NULL, &n_platforms));
+    platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
+    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
+
+    if (n_platforms > 0)
+        candidate = platforms[0];
+
+    for (guint i = 0; i < n_platforms; i++) {
+        if (platform_has_gpus (platforms[i])) {
+            candidate = platforms[i];
+            break;
+        }
+    }
+
+    g_free (platforms);
+    return candidate;
+}
+
+static gboolean
+platform_vendor_has_prefix (cl_platform_id platform,
+                            const gchar *prefix)
+{
+    gboolean has_prefix;
+    gchar *str;
+    gsize size;
+
+    UFO_RESOURCES_CHECK_CLERR (clGetPlatformInfo (platform, CL_PLATFORM_VENDOR, 0, NULL, &size));
+    str = g_malloc0 (size);
+
+    UFO_RESOURCES_CHECK_CLERR (clGetPlatformInfo (platform, CL_PLATFORM_VENDOR, size, str, NULL));
+    has_prefix = g_str_has_prefix (str, prefix);
+
+    g_free (str);
+    return has_prefix;
+}
+
+static void
+add_vendor_to_build_opts (GString *opts,
+                          cl_platform_id platform)
+{
+    if (platform_vendor_has_prefix (platform, "NVIDIA"))
+        g_string_append (opts, "-cl-nv-verbose -DVENDOR=NVIDIA");
+
+    if (platform_vendor_has_prefix (platform, "Advanced Micro Devices"))
+        g_string_append (opts, "-DVENDOR=AMD");
+}
+
+static cl_device_type
+get_device_type (UfoResourcesPrivate *priv)
+{
+    if (priv->config == NULL)
+        return CL_DEVICE_TYPE_ALL;
+
+    switch (ufo_config_get_device_type (priv->config)) {
+        case UFO_DEVICE_CPU:
+            return CL_DEVICE_TYPE_CPU;
+        case UFO_DEVICE_GPU:
+            return CL_DEVICE_TYPE_GPU;
+        case UFO_DEVICE_ALL:
+            return CL_DEVICE_TYPE_ALL;
+    }
+
+    return CL_DEVICE_TYPE_ALL;
+}
+
+static void
+initialize_opencl (UfoResourcesPrivate *priv)
+{
+    cl_int errcode = CL_SUCCESS;
+    cl_device_type device_type;
+    cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
+
+    priv->platform = get_preferably_gpu_based_platform ();
+    add_vendor_to_build_opts (priv->build_opts, priv->platform);
+    device_type = get_device_type (priv);
+
+    UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
+                                               device_type,
+                                               0, NULL,
+                                               &priv->n_devices));
+
+    priv->devices = g_malloc0 (priv->n_devices * sizeof (cl_device_id));
+
+    UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
+                                               device_type,
+                                               priv->n_devices, priv->devices,
+                                               NULL));
+
+    priv->context = clCreateContext (NULL,
+                                     priv->n_devices, priv->devices,
+                                     NULL, NULL, &errcode);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+
+    priv->command_queues = g_malloc0 (priv->n_devices * sizeof (cl_command_queue));
+
+    for (guint i = 0; i < priv->n_devices; i++) {
+        priv->command_queues[i] = clCreateCommandQueue (priv->context,
+                                                        priv->devices[i],
+                                                        queue_properties, &errcode);
+        UFO_RESOURCES_CHECK_CLERR (errcode);
+    }
+}
+
 /**
  * ufo_resources_new:
  * @config: A #UfoConfiguration object or %NULL
@@ -240,9 +367,13 @@ lookup_kernel_path (UfoResourcesPrivate *priv,
 UfoResources *
 ufo_resources_new (UfoConfig *config)
 {
-    return UFO_RESOURCES (g_object_new (UFO_TYPE_RESOURCES,
-                                        "config", config,
-                                        NULL));
+    UfoResources *resources;
+
+    resources = UFO_RESOURCES (g_object_new (UFO_TYPE_RESOURCES,
+                                             "config", config,
+                                             NULL));
+    initialize_opencl (resources->priv);
+    return resources;
 }
 
 static gchar *
@@ -729,113 +860,6 @@ ufo_resources_class_init (UfoResourcesClass *klass)
     g_type_class_add_private (klass, sizeof (UfoResourcesPrivate));
 }
 
-static gboolean
-platform_vendor_has_prefix (cl_platform_id platform,
-                            const gchar *prefix)
-{
-    gboolean has_prefix;
-    gchar *str;
-    gsize size;
-
-    UFO_RESOURCES_CHECK_CLERR (clGetPlatformInfo (platform, CL_PLATFORM_VENDOR, 0, NULL, &size));
-    str = g_malloc0 (size);
-
-    UFO_RESOURCES_CHECK_CLERR (clGetPlatformInfo (platform, CL_PLATFORM_VENDOR, size, str, NULL));
-    has_prefix = g_str_has_prefix (str, prefix);
-
-    g_free (str);
-    return has_prefix;
-}
-
-static void
-add_vendor_to_build_opts (GString *opts,
-                          cl_platform_id platform)
-{
-    if (platform_vendor_has_prefix (platform, "NVIDIA"))
-        g_string_append (opts, "-cl-nv-verbose -DVENDOR=NVIDIA");
-
-    if (platform_vendor_has_prefix (platform, "Advanced Micro Devices"))
-        g_string_append (opts, "-DVENDOR=AMD");
-}
-
-static gboolean
-platform_has_gpus (cl_platform_id platform)
-{
-    cl_uint n_devices = 0;
-    cl_int err;
-
-    err = clGetDeviceIDs (platform,
-                          CL_DEVICE_TYPE_GPU,
-                          0, NULL, &n_devices);
-
-    if (err != CL_DEVICE_NOT_FOUND)
-        UFO_RESOURCES_CHECK_CLERR (err);
-
-    return n_devices > 0;
-}
-
-static cl_platform_id
-get_preferably_gpu_based_platform (void)
-{
-    cl_platform_id *platforms;
-    cl_uint n_platforms;
-    cl_platform_id candidate;
-
-    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (0, NULL, &n_platforms));
-    platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
-    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
-
-    if (n_platforms > 0)
-        candidate = platforms[0];
-
-    for (guint i = 0; i < n_platforms; i++) {
-        if (platform_has_gpus (platforms[i])) {
-            candidate = platforms[i];
-            break;
-        }
-    }
-
-    g_free (platforms);
-    return candidate;
-}
-
-static void
-initialize_opencl (UfoResourcesPrivate *priv)
-{
-    cl_int errcode = CL_SUCCESS;
-    cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
-
-    priv->platform = get_preferably_gpu_based_platform ();
-    add_vendor_to_build_opts (priv->build_opts, priv->platform);
-
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
-                                               CL_DEVICE_TYPE_ALL,
-                                               0, NULL,
-                                               &priv->n_devices));
-
-    priv->devices = g_malloc0 (priv->n_devices * sizeof (cl_device_id));
-
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceIDs (priv->platform,
-                                               CL_DEVICE_TYPE_ALL,
-                                               priv->n_devices, priv->devices,
-                                               NULL));
-
-    priv->context = clCreateContext (NULL,
-                                     priv->n_devices, priv->devices,
-                                     NULL, NULL, &errcode);
-
-    UFO_RESOURCES_CHECK_CLERR (errcode);
-
-    priv->command_queues = g_malloc0 (priv->n_devices * sizeof (cl_command_queue));
-
-    for (guint i = 0; i < priv->n_devices; i++) {
-        priv->command_queues[i] = clCreateCommandQueue (priv->context,
-                                                        priv->devices[i],
-                                                        queue_properties, &errcode);
-        UFO_RESOURCES_CHECK_CLERR (errcode);
-    }
-}
-
 static void
 ufo_resources_init (UfoResources *self)
 {
@@ -852,6 +876,4 @@ ufo_resources_init (UfoResources *self)
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_PLUGIN_DIR));
     priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup ("/usr/local/lib/ufo"));
-
-    initialize_opencl (priv);
 }

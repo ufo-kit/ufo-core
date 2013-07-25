@@ -42,18 +42,16 @@ static void add_path (const gchar *path, UfoConfigPrivate *priv);
 enum {
     PROP_0,
     PROP_PATHS,
-    PROP_PROFILE_LEVEL,
-    PROP_PROFILE_OUTPUT_PREFIX,
+    PROP_DEVICE_TYPE,
     N_PROPERTIES
 };
 
 struct _UfoConfigPrivate {
-    GValueArray         *path_array;
-    UfoProfilerLevel     profile_level;
-    gchar               *profile_output_prefix;
+    GValueArray     *path_array;
+    UfoDeviceType    device_type;
 };
 
-static GParamSpec *config_properties[N_PROPERTIES] = { NULL, };
+static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 /**
  * ufo_config_new:
@@ -96,6 +94,13 @@ ufo_config_get_paths (UfoConfig *config)
     }
 
     return paths;
+}
+
+UfoDeviceType
+ufo_config_get_device_type (UfoConfig *config)
+{
+    g_return_val_if_fail (UFO_IS_CONFIG (config), 0);
+    return config->priv->device_type;
 }
 
 /**
@@ -148,13 +153,8 @@ ufo_config_set_property (GObject      *object,
             }
             break;
 
-        case PROP_PROFILE_LEVEL:
-            priv->profile_level = g_value_get_flags (value);
-            break;
-
-        case PROP_PROFILE_OUTPUT_PREFIX:
-            g_free (priv->profile_output_prefix);
-            priv->profile_output_prefix = g_strdup (g_value_get_string (value));
+        case PROP_DEVICE_TYPE:
+            priv->device_type = g_value_get_flags (value);
             break;
 
         default:
@@ -176,12 +176,8 @@ ufo_config_get_property (GObject      *object,
             g_value_set_boxed (value, priv->path_array);
             break;
 
-        case PROP_PROFILE_LEVEL:
-            g_value_set_flags (value, priv->profile_level);
-            break;
-
-        case PROP_PROFILE_OUTPUT_PREFIX:
-            g_value_set_string (value, priv->profile_output_prefix);
+        case PROP_DEVICE_TYPE:
+            g_value_set_flags (value, priv->device_type);
             break;
 
         default:
@@ -211,11 +207,11 @@ ufo_config_finalize (GObject *object)
 static void
 ufo_config_class_init (UfoConfigClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-    gobject_class->set_property = ufo_config_set_property;
-    gobject_class->get_property = ufo_config_get_property;
-    gobject_class->dispose      = ufo_config_dispose;
-    gobject_class->finalize     = ufo_config_finalize;
+    GObjectClass *oclass = G_OBJECT_CLASS (klass);
+    oclass->set_property = ufo_config_set_property;
+    oclass->get_property = ufo_config_get_property;
+    oclass->dispose      = ufo_config_dispose;
+    oclass->finalize     = ufo_config_finalize;
 
     /**
      * UfoConfig:paths:
@@ -223,7 +219,7 @@ ufo_config_class_init (UfoConfigClass *klass)
      * An array of strings with paths pointing to possible filter and kernel
      * file locations.
      */
-    config_properties[PROP_PATHS] =
+    properties[PROP_PATHS] =
         g_param_spec_value_array ("paths",
                                   "Array with paths",
                                   "Array with paths",
@@ -235,30 +231,24 @@ ufo_config_class_init (UfoConfigClass *klass)
                                   G_PARAM_READWRITE);
 
     /**
-     * UfoConfig:profile-level:
+     * UfoConfig:device-class:
      *
-     * Controls the amount of profiling.
+     * Let the user select which device class to use for execution.
      *
-     * See: #UfoProfilerLevel for different levels of profiling.
+     * See: #UfoDeviceType for the device classes.
      */
-    config_properties[PROP_PROFILE_LEVEL] =
-        g_param_spec_flags ("profile-level",
-                            "Profiling level",
-                            "Profiling level",
-                            UFO_TYPE_PROFILER_LEVEL,
-                            UFO_PROFILER_LEVEL_NONE,
+    properties[PROP_DEVICE_TYPE] =
+        g_param_spec_flags ("device-type",
+                            "Device type to use",
+                            "Device type to use",
+                            UFO_TYPE_DEVICE_TYPE,
+                            UFO_DEVICE_ALL,
                             G_PARAM_READWRITE);
 
-    config_properties[PROP_PROFILE_OUTPUT_PREFIX] =
-        g_param_spec_string ("profile-output-prefix",
-                             "Filename prefix for profiling output",
-                             "Filename prefix for profiling output. If NULL, information is output to stdout.",
-                             NULL,
-                             G_PARAM_READWRITE);
-
-    g_object_class_install_property (gobject_class, PROP_PATHS, config_properties[PROP_PATHS]);
-    g_object_class_install_property (gobject_class, PROP_PROFILE_LEVEL, config_properties[PROP_PROFILE_LEVEL]);
-    g_object_class_install_property (gobject_class, PROP_PROFILE_OUTPUT_PREFIX, config_properties[PROP_PROFILE_OUTPUT_PREFIX]);
+    g_object_class_install_property (oclass, PROP_PATHS,
+                                     properties[PROP_PATHS]);
+    g_object_class_install_property (oclass, PROP_DEVICE_TYPE,
+                                     properties[PROP_DEVICE_TYPE]);
 
     g_type_class_add_private(klass, sizeof (UfoConfigPrivate));
 }
@@ -270,8 +260,7 @@ ufo_config_init (UfoConfig *config)
 
     config->priv = priv = UFO_CONFIG_GET_PRIVATE (config);
     priv->path_array = g_value_array_new (0);
-    priv->profile_level = UFO_PROFILER_LEVEL_NONE;
-    priv->profile_output_prefix = NULL;
+    priv->device_type = UFO_DEVICE_ALL;
 
     add_path ("/usr/local/lib64/ufo", priv);
     add_path ("/usr/local/lib/ufo", priv);

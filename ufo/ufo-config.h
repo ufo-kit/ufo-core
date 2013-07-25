@@ -61,11 +61,19 @@ struct _UfoConfigClass {
     GObjectClass parent_class;
 };
 
-UfoConfig   * ufo_config_new        (void);
-void          ufo_config_add_paths  (UfoConfig  *config,
-                                     GList      *paths);
-GList       * ufo_config_get_paths  (UfoConfig  *config);
-GType         ufo_config_get_type   (void);
+typedef enum {
+    UFO_DEVICE_CPU = 1 << 0,
+    UFO_DEVICE_GPU = 1 << 1,
+    UFO_DEVICE_ALL = (1 << 1) | (1 << 0),
+} UfoDeviceType;
+
+
+UfoConfig   * ufo_config_new                (void);
+void          ufo_config_add_paths          (UfoConfig *config,
+                                             GList     *paths);
+GList       * ufo_config_get_paths          (UfoConfig *config);
+UfoDeviceType ufo_config_get_device_type    (UfoConfig *config);
+GType         ufo_config_get_type           (void);
 
 G_END_DECLS
 
