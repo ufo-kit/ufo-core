@@ -1,5 +1,4 @@
 #include <math.h>
-#include <ufo/ufoart.h>
 #include <ufo/ufo-basic-ops.h>
 #define OPS_FILENAME "ufo-basic-ops.cl"
 

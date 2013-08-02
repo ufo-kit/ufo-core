@@ -26,6 +26,7 @@ set(ufocore_SRCS
     ufo-task-iface.c
     ufo-task-graph.c
     ufo-task-node.c
+    ufo-basic-ops.c
     )
 
 set(ufocore_HDRS
@@ -53,7 +54,12 @@ set(ufocore_HDRS
     ufo-task-iface.h
     ufo-task-graph.h
     ufo-task-node.h
+    ufo-basic-ops.h
     )
+
+set(ufocore_KERNELS
+    ufo-basic-ops.cl
+)
 
 
 # --- Find packages and libraries ---------------------------------------------
@@ -123,6 +129,11 @@ install(FILES ${ufocore_HDRS}
               ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
         DESTINATION ${INCLUDEDIR})
 
+# copy kernels into ${LIBDIR}/ufo
+foreach(_kernel ${ufocore_KERNELS})
+    install(FILES ${_kernel}
+            DESTINATION ${LIBDIR}/ufo)
+endforeach()
 
 # --- pkg-config --------------------------------------------------------------
 set(UFO_PKG_PREFIX      "${CMAKE_INSTALL_PREFIX}")

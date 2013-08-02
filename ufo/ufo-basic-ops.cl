@@ -200,7 +200,6 @@ void operation_gradient_magnitude (__read_only image2d_t arg_r,
   float d4 = read_imagef(arg_r, imageSampler2, coord_r[4]).s0 - cell_value;
 
   float value = sqrt ( (pow (d1, 2) + pow (d2, 2) + pow (d3, 2) + pow (d4, 2)) / 2.0f);
-  //float value = d1;
   write_imagef(out, coord_w, value);
 }
 

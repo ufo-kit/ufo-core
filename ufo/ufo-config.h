@@ -64,7 +64,7 @@ struct _UfoConfigClass {
 typedef enum {
     UFO_DEVICE_CPU = 1 << 0,
     UFO_DEVICE_GPU = 1 << 1,
-    UFO_DEVICE_ALL = (1 << 1) | (1 << 0),
+    UFO_DEVICE_ALL = (1 << 1) | (1 << 0)
 } UfoDeviceType;
 
 
