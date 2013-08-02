@@ -78,6 +78,7 @@ struct _UfoResourcesPrivate {
 
     GList       *include_paths;         /**< List of include paths for kernel includes >*/
     GList       *kernel_paths;          /**< Colon-separated string with paths to kernel files */
+    GHashTable  *kernel_cache;
     GList       *programs;
     GList       *kernels;
     GString     *build_opts;
@@ -572,6 +573,13 @@ create_kernel (UfoResourcesPrivate *priv,
     return kernel;
 }
 
+static gchar *
+create_cache_key (const gchar *filename,
+                  const gchar *kernelname)
+{
+    return g_strdup_printf ("%s:%s", filename, kernelname);
+}
+
 /**
  * ufo_resources_get_kernel:
  * @resources: A #UfoResources object
@@ -589,18 +597,32 @@ create_kernel (UfoResourcesPrivate *priv,
 gpointer
 ufo_resources_get_kernel (UfoResources *resources,
                           const gchar *filename,
-                          const gchar *kernel,
+                          const gchar *kernelname,
                           GError **error)
 {
     UfoResourcesPrivate *priv;
     gchar *path;
     gchar *buffer;
     cl_program program;
+    cl_kernel kernel;
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
                           (filename != NULL), NULL);
 
     priv = resources->priv;
+
+    if (kernelname != NULL) {
+        gchar *cache_key;
+
+        cache_key = create_cache_key (filename, kernelname);
+        kernel = g_hash_table_lookup (priv->kernel_cache, cache_key);
+
+        if (kernel != NULL) {
+            g_free (cache_key);
+            return kernel;
+        }
+    }
+
     path = lookup_kernel_path (priv, filename);
 
     if (path == NULL) {
@@ -622,7 +644,16 @@ ufo_resources_get_kernel (UfoResources *resources,
     g_debug ("Added program %p from `%s`", (gpointer) program, filename);
     g_free (buffer);
 
-    return create_kernel (priv, program, kernel, error);
+    kernel = create_kernel (priv, program, kernelname, error);
+
+    if (kernelname != NULL) {
+        gchar *cache_key;
+
+        cache_key = create_cache_key (filename, kernelname);
+        g_hash_table_insert (priv->kernel_cache, cache_key, kernel);
+    }
+
+    return kernel;
 }
 
 /**
@@ -840,6 +871,7 @@ ufo_resources_finalize (GObject *object)
     priv = UFO_RESOURCES_GET_PRIVATE (object);
 
     g_clear_error (&priv->construct_error);
+    g_hash_table_destroy (priv->kernel_cache);
 
     list_free_full (&priv->kernel_paths, (GFunc) g_free);
     list_free_full (&priv->include_paths, (GFunc) g_free);
@@ -920,6 +952,7 @@ ufo_resources_init (UfoResources *self)
     priv->config = NULL;
     priv->programs = NULL;
     priv->kernels = NULL;
+    priv->kernel_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->build_opts = g_string_new ("-cl-mad-enable ");
     priv->include_paths = g_list_append (NULL, g_strdup ("."));
 
