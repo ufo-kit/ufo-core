@@ -37,15 +37,15 @@ op_set (UfoBuffer *arg,
     return NULL;
   }
   
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(gfloat), (void *) &value));
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          requisition.n_dims,
-                                          NULL,
-                                          requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(gfloat), (void *) &value));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    requisition.n_dims,
+                                                    NULL,
+                                                    requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
   return event;
 }
 
@@ -66,15 +66,15 @@ op_inv (UfoBuffer *arg,
     return NULL;
   }
 
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg));
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          requisition.n_dims,
-                                          NULL,
-                                          requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    requisition.n_dims,
+                                                    NULL,
+                                                    requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
   return event;
 }
 
@@ -164,21 +164,21 @@ op_mulRows (UfoBuffer *arg1,
   cl_mem d_out  = ufo_buffer_get_device_image (out, command_queue);
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "op_mulRows", &error);
 
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg1));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg2));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(void *), (void *) &d_out));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 3, sizeof(unsigned int), (void *) &offset));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg1));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg2));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(void *), (void *) &d_out));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 3, sizeof(unsigned int), (void *) &offset));
 
   UfoRequisition operation_requisition = out_requisition;
   operation_requisition.dims[1] = n;
 
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          operation_requisition.n_dims,
-                                          NULL,
-                                          operation_requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    operation_requisition.n_dims,
+                                                    NULL,
+                                                    operation_requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
 
   return event;
 }
@@ -215,17 +215,17 @@ operation (const gchar *kernel_name,
     return NULL;
   }
 
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg1));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg2));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(void *), (void *) &d_out));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg1));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg2));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(void *), (void *) &d_out));
 
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          arg1_requisition.n_dims,
-                                          NULL,
-                                          arg1_requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    arg1_requisition.n_dims,
+                                                    NULL,
+                                                    arg1_requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
   return event;
 }
 
@@ -262,18 +262,18 @@ operation2 (const gchar *kernel_name,
     return NULL;
   }
 
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg1));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg2));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(gfloat), (void *) &modifier));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 3, sizeof(void *), (void *) &d_out));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg1));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg2));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(gfloat), (void *) &modifier));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 3, sizeof(void *), (void *) &d_out));
 
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          arg1_requisition.n_dims,
-                                          NULL,
-                                          arg1_requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    arg1_requisition.n_dims,
+                                                    NULL,
+                                                    arg1_requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
   return event;
 }
 
@@ -300,16 +300,16 @@ op_gradient_magnitudes (UfoBuffer *arg,
     g_error (error->message);
   }
 
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_out));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_out));
 
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          arg_requisition.n_dims,
-                                          NULL,
-                                          arg_requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    arg_requisition.n_dims,
+                                                    NULL,
+                                                    arg_requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
 
   return event;
 }
@@ -337,17 +337,17 @@ op_gradient_directions (UfoBuffer *arg,
     g_error (error->message);
   }
 
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_magnitudes));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(void *), (void *) &d_out));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_magnitudes));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(void *), (void *) &d_out));
 
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          arg_requisition.n_dims,
-                                          NULL,
-                                          arg_requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    arg_requisition.n_dims,
+                                                    NULL,
+                                                    arg_requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
 
   return event;
 }
@@ -365,7 +365,7 @@ l1_norma (UfoBuffer *arg,
   guint i, j;
   for (i = 0; i < arg_requisition.dims[0]; ++i) {
     for (j = 0; j < arg_requisition.dims[1]; ++j) {
-      norm += fabs(values[i * arg_requisition.dims[0] + j]);
+      norm += (gfloat)fabs(values[i * arg_requisition.dims[0] + j]);
     }
   }
 
@@ -385,10 +385,10 @@ euclidean_distance (UfoBuffer *arg1,
 
   guint i;
   for (i = 0; i < arg1_requisition.n_dims; ++i) {
-    length1 += arg1_requisition.dims[i];
+    length1 += (guint)arg1_requisition.dims[i];
   }
   for (i = 0; i < arg1_requisition.n_dims; ++i) {
-    length2 += arg2_requisition.dims[i];
+    length2 += (guint)arg2_requisition.dims[i];
   }
 
   if (length2 != length1) {
@@ -402,15 +402,15 @@ euclidean_distance (UfoBuffer *arg1,
   
   for (i = 0; i < length; ++i) {
       diff = values1[i] - values2[i];
-      norm += pow (diff, 2);
+      norm += powf (diff, 2);
   }
   for (i = length; i < length2; ++i) {
-      norm += pow (values2[i], 2);
+      norm += powf (values2[i], 2);
   }
   for (i = length; i < length1; ++i) {
-      norm += pow (values1[i], 2);
+      norm += powf (values1[i], 2);
   }
-  norm = sqrt(norm);
+  norm = sqrtf(norm);
   return norm;
 }
 
@@ -443,16 +443,16 @@ POSC (UfoBuffer *arg,
     g_error (error->message);
   }
 
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_out));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_out));
 
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          arg_requisition.n_dims,
-                                          NULL,
-                                          arg_requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    arg_requisition.n_dims,
+                                                    NULL,
+                                                    arg_requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
   return event;
 }
 
@@ -477,15 +477,15 @@ gradient_descent (UfoBuffer *arg,
     g_error (error->message);
   }
 
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
-  UFO_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_out));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
+  UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_out));
 
-  UFO_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
-                                          kernel,
-                                          arg_requisition.n_dims,
-                                          NULL,
-                                          arg_requisition.dims,
-                                          NULL,  
-                                          0, NULL, &event));
+  UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue,
+                                                    kernel,
+                                                    arg_requisition.n_dims,
+                                                    NULL,
+                                                    arg_requisition.dims,
+                                                    NULL,  
+                                                    0, NULL, &event));
   return event;
 }

@@ -46,6 +46,7 @@
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-task-iface.h>
 #include <ufo/ufo-task-node.h>
+#include <ufo/ufo-basic-ops.h>
 
 #undef __UFO_H_INSIDE__
 

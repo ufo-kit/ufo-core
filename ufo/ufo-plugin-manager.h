@@ -75,11 +75,21 @@ struct _UfoPluginManagerClass {
 };
 
 UfoPluginManager  * ufo_plugin_manager_new                  (UfoConfig          *config);
+gpointer            ufo_plugin_manager_get_plugin           (UfoPluginManager *manager, 
+                                                             const gchar *func_name,
+                                                             const gchar *module_name,
+                                                             GError **error);
+GList             * ufo_plugin_get_all_plugin_names         (UfoPluginManager *manager,
+                                                             const GRegex *filename_regex,
+                                                             const gchar *filename_pattern);
+GType               ufo_plugin_manager_get_type             (void);
+
+
+
 UfoNode           * ufo_plugin_manager_get_task             (UfoPluginManager   *manager,
                                                              const gchar        *name,
                                                              GError            **error);
 GList             * ufo_plugin_manager_get_all_task_names   (UfoPluginManager   *manager);
-GType               ufo_plugin_manager_get_type             (void);
 
 G_END_DECLS
 

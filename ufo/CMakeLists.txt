@@ -155,7 +155,6 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc
 # --- Introspection files -----------------------------------------------------
 if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
     option(WITH_GIR "Build introspection files" ON)
-
     if (WITH_GIR)
         set(GIR_PREFIX "Ufo-${UFO_GIR_VERSION}")
         set(GIR_XML "${GIR_PREFIX}.gir")
@@ -195,7 +194,7 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
         add_dependencies(gir ufo)
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
-            DESTINATION share/gir-1.0)
+            DESTINATION /usr/share/gir-1.0)
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
             DESTINATION ${LIBDIR}/girepository-1.0)

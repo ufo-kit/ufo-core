@@ -127,59 +127,37 @@ ufo_plugin_manager_new (UfoConfig *config)
     return manager;
 }
 
-static gchar *
-transform_string (const gchar *pattern,
-                  const gchar *s,
-                  const gchar *separator)
-{
-    gchar **sv;
-    gchar *transformed;
-    gchar *result;
-
-    sv = g_strsplit_set (s, "-_ ", -1);
-    transformed = g_strjoinv (separator, sv);
-    result = g_strdup_printf (pattern, transformed);
-
-    g_strfreev (sv);
-    g_free (transformed);
-    return result;
-}
 
 /**
- * ufo_plugin_manager_get_task:
+ * ufo_plugin_manager_get_plugin:
  * @manager: A #UfoPluginManager
- * @name: Name of the plugin.
+ * @func_name: Name of the constructor function.
+ * @module_name: Filename of the shared object.
  * @error: return location for a GError or %NULL
  *
- * Load a #UfoFilter module and return an instance. The shared object name must
- * be * constructed as "libfilter@name.so".
+ * Load a module and return an instance.
  *
- * Since: 0.2, the error parameter is available
- *
- * Returns: (transfer full): (allow-none): #UfoFilter or %NULL if module cannot be found
+ * Returns: (transfer full): (allow-none): #gpointer or %NULL if module cannot be found
  */
-UfoNode *
-ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GError **error)
+gpointer
+ufo_plugin_manager_get_plugin (UfoPluginManager *manager, 
+                              const gchar *func_name,
+                              const gchar *module_name,
+                              GError **error)
 {
-    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && (name != NULL), NULL);
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) &&
+                          func_name != NULL &&
+                          module_name != NULL, NULL);
+
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
-    UfoNode *node;
-    NewFunc *func;
-    GModule *module;
-    gchar *func_name = NULL;
-    gchar *module_name = NULL;
+    gpointer plugin = NULL;
+    NewFunc *func = NULL;
+    GModule *module = NULL;
 
-    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && name != NULL, NULL);
-
-    if (!g_strcmp0 (name, "[dummy]"))
-        return ufo_dummy_task_new ();
-
-    func = g_hash_table_lookup (priv->new_funcs, name);
+    gchar *key = g_strjoin("@", func_name, module_name, NULL);
+    func = g_hash_table_lookup (priv->new_funcs, key);
 
     if (func == NULL) {
-        module_name = transform_string ("libufofilter%s.so", name, NULL);
-        func_name = transform_string ("ufo_%s_task_new", name, "_");
-
         gchar *path = plugin_manager_get_path (priv, module_name);
 
         if (path == NULL) {
@@ -211,54 +189,51 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
         }
 
         priv->modules = g_slist_append (priv->modules, module);
-        g_hash_table_insert (priv->new_funcs, g_strdup (name), func);
-
-        g_free (func_name);
-        g_free (module_name);
+        g_hash_table_insert (priv->new_funcs, g_strdup (key), func);
+        g_free (key);
     }
 
-    node = (*func) ();
-    ufo_task_node_set_plugin_name (UFO_TASK_NODE (node), name);
-    g_message ("UfoPluginManager: Created %s-%p", name, (gpointer) node);
-
-    return node;
+    plugin = (*func) ();
+    return plugin;
 
 handle_error:
-    g_free (module_name);
-    g_free (func_name);
+    g_free (key);
     return NULL;
 }
 
 /**
- * ufo_plugin_manager_get_all_task_names:
+ * ufo_plugin_get_all_plugin_names:
  * @manager: A #UfoPluginManager
+ * @filename_regex: Regex for filenames
+ * @filename_pattern: Pattern according with the files will be searched
  *
- * Return a list with potential filter names that match shared objects in all
+ * Return a list with potential plugin names that match shared objects in all
  * search paths.
  *
  * Return value: (element-type utf8) (transfer full): List of strings with filter names
  */
-GList *
-ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
+GList*
+ufo_plugin_get_all_plugin_names (UfoPluginManager *manager,
+                                 const GRegex *filename_regex,
+                                 const gchar *filename_pattern)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     GList *result = NULL;
 
-    GRegex *regex = g_regex_new ("libufofilter([A-Za-z]+).so", 0, 0, NULL);
     GMatchInfo *match_info = NULL;
 
     for (GList *path = g_list_first (priv->search_paths); path != NULL; path = g_list_next (path)) {
         glob_t glob_vector;
         gchar *pattern;
 
-        pattern = g_build_filename ((gchar *) path->data, "libufofilter*.so", NULL);
+        pattern = g_build_filename ((gchar *) path->data, filename_pattern, NULL);
         glob (pattern, GLOB_MARK | GLOB_TILDE, NULL, &glob_vector);
         g_free (pattern);
         gsize i = 0;
 
         while (i < glob_vector.gl_pathc) {
-            g_regex_match (regex, glob_vector.gl_pathv[i], 0, &match_info);
+            g_regex_match (filename_regex, glob_vector.gl_pathv[i], 0, &match_info);
 
             if (g_match_info_matches (match_info)) {
                 gchar *word = g_match_info_fetch (match_info, 1);
@@ -270,7 +245,6 @@ ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
     }
 
     g_match_info_free (match_info);
-    g_regex_unref (regex);
     return result;
 }
 
@@ -383,4 +357,81 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
         priv->search_paths = g_list_append (priv->search_paths,
                                             g_strdup (g_getenv (PATH_VAR)));
     }
+}
+
+
+
+static gchar *
+transform_string (const gchar *pattern,
+                  const gchar *s,
+                  const gchar *separator)
+{
+    gchar **sv;
+    gchar *transformed;
+    gchar *result;
+
+    sv = g_strsplit_set (s, "-_ ", -1);
+    transformed = g_strjoinv (separator, sv);
+    result = g_strdup_printf (pattern, transformed);
+
+    g_strfreev (sv);
+    g_free (transformed);
+    return result;
+}
+
+/**
+ * ufo_plugin_manager_get_task:
+ * @manager: A #UfoPluginManager
+ * @name: Name of the plugin.
+ * @error: return location for a GError or %NULL
+ *
+ * Load a #UfoFilter module and return an instance. The shared object name must
+ * be * constructed as "libfilter@name.so".
+ *
+ * Since: 0.2, the error parameter is available
+ *
+ * Returns: (transfer full): (allow-none): #UfoFilter or %NULL if module cannot be found
+ */
+UfoNode *
+ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GError **error)
+{
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && name != NULL, NULL);
+    gpointer node;
+    if (!g_strcmp0 (name, "[dummy]"))
+        return ufo_dummy_task_new ();
+
+    gchar *module_name = transform_string ("libufofilter%s.so", name, NULL);
+    gchar *func_name = transform_string ("ufo_%s_task_new", name, "_");
+    node = ufo_plugin_manager_get_plugin (manager,
+                                          func_name,
+                                          module_name,
+                                          error);
+    g_free (func_name);
+    g_free (module_name);
+
+    g_message ("UfoPluginManager: Created %s-%p", name, node);
+    return UFO_NODE(node);
+}
+
+/**
+ * ufo_plugin_manager_get_all_task_names:
+ * @manager: A #UfoPluginManager
+ *
+ * Return a list with potential filter names that match shared objects in all
+ * search paths.
+ *
+ * Return value: (element-type utf8) (transfer full): List of strings with filter names
+ */
+GList *
+ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
+{
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
+    GRegex *regex = g_regex_new ("libufofilter([A-Za-z]+).so", 0, 0, NULL);
+
+    GList *result = ufo_plugin_get_all_plugin_names(manager,
+                                                    regex,
+                                                    "libufofilter*.so");
+
+    g_regex_unref (regex);
+    return result;
 }

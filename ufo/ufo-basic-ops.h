@@ -11,9 +11,11 @@
 #include <CL/cl.h>
 #endif
 
-#include <glib.h>
+#include <glib-object.h>
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-resources.h>
+
+G_BEGIN_DECLS
 
 cl_event
 op_set (UfoBuffer *arg, 
@@ -115,5 +117,6 @@ gradient_descent (UfoBuffer *arg,
                   UfoResources *resources,
                   cl_command_queue command_queue);
 
+G_END_DECLS
 
 #endif
