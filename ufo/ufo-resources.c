@@ -850,7 +850,7 @@ ufo_resources_dispose (GObject *object)
         priv->config = NULL;
     }
 
-    G_OBJECT_CLASS (ufo_resources_parent_class)->finalize (object);
+    G_OBJECT_CLASS (ufo_resources_parent_class)->dispose (object);
 }
 
 static void
