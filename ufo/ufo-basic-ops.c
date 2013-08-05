@@ -2,7 +2,7 @@
 #include <ufo/ufo-basic-ops.h>
 #define OPS_FILENAME "ufo-basic-ops.cl"
 
-cl_event
+static cl_event
 operation (const gchar *kernel_name, 
            UfoBuffer *arg1,
            UfoBuffer *arg2,
@@ -10,7 +10,7 @@ operation (const gchar *kernel_name,
            UfoResources *resources,
            cl_command_queue command_queue);
 
-cl_event
+static cl_event
 operation2 (const gchar *kernel_name, 
             UfoBuffer *arg1,
             UfoBuffer *arg2,
@@ -32,8 +32,9 @@ op_set (UfoBuffer *arg,
   ufo_buffer_get_requisition (arg, &requisition);
   cl_mem d_arg = ufo_buffer_get_device_image (arg, command_queue);
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "operation_set", &error);
+
   if (error) {
-    g_error (error->message);
+    g_error ("%s\n", error->message);
     return NULL;
   }
   
@@ -61,8 +62,9 @@ op_inv (UfoBuffer *arg,
 
   cl_mem d_arg = ufo_buffer_get_device_image (arg, command_queue);
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "operation_inv", &error);
+
   if (error) {
-    g_error (error->message);
+    g_error ("%s\n", error->message);
     return NULL;
   }
 
@@ -183,7 +185,7 @@ op_mulRows (UfoBuffer *arg1,
   return event;
 }
 
-cl_event
+static cl_event
 operation (const gchar *kernel_name, 
            UfoBuffer *arg1,
            UfoBuffer *arg2,
@@ -210,8 +212,9 @@ operation (const gchar *kernel_name,
   cl_mem d_arg2 = ufo_buffer_get_device_image (arg2, command_queue);
   cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, kernel_name, &error);
+
   if (error) {
-    g_error (error->message);
+    g_error ("%s\n", error->message);
     return NULL;
   }
 
@@ -229,7 +232,7 @@ operation (const gchar *kernel_name,
   return event;
 }
 
-cl_event
+static cl_event
 operation2 (const gchar *kernel_name, 
             UfoBuffer *arg1,
             UfoBuffer *arg2,
@@ -257,8 +260,9 @@ operation2 (const gchar *kernel_name,
   cl_mem d_arg2 = ufo_buffer_get_device_image (arg2, command_queue);
   cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, kernel_name, &error);
+
   if (error) {
-    g_error (error->message);
+    g_error ("%s\n", error->message);
     return NULL;
   }
 
@@ -296,8 +300,9 @@ op_gradient_magnitudes (UfoBuffer *arg,
   cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
 
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "operation_gradient_magnitude", &error);
+
   if (error) {
-    g_error (error->message);
+    g_error ("%s\n", error->message);
   }
 
   UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
@@ -333,8 +338,9 @@ op_gradient_directions (UfoBuffer *arg,
   cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
 
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "operation_gradient_direction", &error);
+
   if (error) {
-    g_error (error->message);
+    g_error ("%s\n", error->message);
   }
 
   UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
@@ -439,8 +445,9 @@ POSC (UfoBuffer *arg,
   cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
 
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "POSC", &error);
+
   if (error) {
-    g_error (error->message);
+    g_error ("%s\n", error->message);
   }
 
   UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
@@ -473,8 +480,9 @@ gradient_descent (UfoBuffer *arg,
   cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
 
   cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "descent_grad", &error);
+
   if (error) {
-    g_error (error->message);
+    g_error ("%s\n", error->message);
   }
 
   UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
