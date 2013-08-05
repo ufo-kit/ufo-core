@@ -194,7 +194,7 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
         add_dependencies(gir ufo)
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
-            DESTINATION /usr/share/gir-1.0)
+            DESTINATION share/gir-1.0)
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
             DESTINATION ${LIBDIR}/girepository-1.0)
