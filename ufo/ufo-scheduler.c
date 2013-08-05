@@ -410,8 +410,10 @@ run_task (TaskLocalData *tld)
             do {
                 active = generate (tld->task, output, &requisition);
 
-                if (active)
+                if (active) {
                     ufo_group_push_output_buffer (group, output);
+                    output = ufo_group_pop_output_buffer (group, &requisition);
+                }
             } while (active);
         }
 
