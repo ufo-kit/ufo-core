@@ -163,7 +163,12 @@ ufo_op_mul_rows (UfoBuffer *arg1,
     cl_mem d_arg1 = ufo_buffer_get_device_image (arg1, command_queue);
     cl_mem d_arg2 = ufo_buffer_get_device_image (arg2, command_queue);
     cl_mem d_out  = ufo_buffer_get_device_image (out, command_queue);
-    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "ufo_op_mulRows", &error);
+    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "op_mulRows", &error);
+
+    if (error != NULL) {
+        g_error ("Error: %s\n", error->message);
+        return NULL;
+    }
 
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 0, sizeof(void *), (void *) &d_arg1));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 1, sizeof(void *), (void *) &d_arg2));
