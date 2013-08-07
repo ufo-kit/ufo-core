@@ -71,6 +71,13 @@ struct _UfoProfilerClass {
     GObjectClass parent_class;
 };
 
+typedef struct {
+    const gchar *name;
+    const gchar *type;
+    gpointer     thread_id;
+    gdouble      timestamp;
+} UfoTraceEvent;
+
 typedef enum {
     UFO_PROFILER_TIMER_IO = 0,
     UFO_PROFILER_TIMER_CPU,
@@ -88,23 +95,28 @@ typedef enum {
     UFO_PROFILER_LEVEL_SYNC     = 1 << 3
 } UfoProfilerLevel;
 
-UfoProfiler *ufo_profiler_new       (void);
-void         ufo_profiler_call      (UfoProfiler        *profiler,
-                                     gpointer            command_queue,
-                                     gpointer            kernel,
-                                     guint               work_dim,
-                                     const gsize        *global_work_size,
-                                     const gsize        *local_work_size);
-void         ufo_profiler_foreach   (UfoProfiler        *profiler,
-                                     UfoProfilerFunc     func,
-                                     gpointer            user_data);
-void         ufo_profiler_start     (UfoProfiler        *profiler,
-                                     UfoProfilerTimer    timer);
-void         ufo_profiler_stop      (UfoProfiler        *profiler,
-                                     UfoProfilerTimer    timer);
-gdouble      ufo_profiler_elapsed   (UfoProfiler        *profiler,
-                                     UfoProfilerTimer    timer);
-GType        ufo_profiler_get_type  (void);
+UfoProfiler *ufo_profiler_new           (void);
+void         ufo_profiler_call          (UfoProfiler        *profiler,
+                                         gpointer            command_queue,
+                                         gpointer            kernel,
+                                         guint               work_dim,
+                                         const gsize        *global_work_size,
+                                         const gsize        *local_work_size);
+void         ufo_profiler_foreach       (UfoProfiler        *profiler,
+                                         UfoProfilerFunc     func,
+                                         gpointer            user_data);
+void         ufo_profiler_start         (UfoProfiler        *profiler,
+                                         UfoProfilerTimer    timer);
+void         ufo_profiler_stop          (UfoProfiler        *profiler,
+                                         UfoProfilerTimer    timer);
+void         ufo_profiler_trace_event   (UfoProfiler        *profiler,
+                                         const gchar        *name,
+                                         const gchar        *type);
+GList       *ufo_profiler_get_trace_events
+                                        (UfoProfiler        *profiler);
+gdouble      ufo_profiler_elapsed       (UfoProfiler        *profiler,
+                                         UfoProfilerTimer    timer);
+GType        ufo_profiler_get_type      (void);
 
 G_END_DECLS
 

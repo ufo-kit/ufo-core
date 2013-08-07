@@ -60,12 +60,15 @@ struct EventRow {
 struct _UfoProfilerPrivate {
     GArray  *event_array;
     GTimer **timers;
+    GList   *trace_events;
 };
 
 enum {
     PROP_0,
     N_PROPERTIES
 };
+
+static GTimer *global_clock = NULL;
 
 
 /**
@@ -172,6 +175,32 @@ ufo_profiler_stop (UfoProfiler       *profiler,
 {
     g_return_if_fail (UFO_IS_PROFILER (profiler));
     g_timer_stop (profiler->priv->timers[timer]);
+}
+
+void
+ufo_profiler_trace_event (UfoProfiler *profiler,
+                          const gchar *name,
+                          const gchar *type)
+{
+    UfoTraceEvent *event;
+    gulong timestamp;
+
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    g_timer_elapsed (global_clock, &timestamp);
+
+    event = g_malloc0 (sizeof(UfoTraceEvent));
+    event->name = name;
+    event->type = type;
+    event->thread_id = g_thread_self ();
+    event->timestamp = (gdouble) timestamp;
+    profiler->priv->trace_events = g_list_append (profiler->priv->trace_events, event);
+}
+
+GList *
+ufo_profiler_get_trace_events (UfoProfiler *profiler)
+{
+    g_return_val_if_fail (UFO_IS_PROFILER (profiler), NULL);
+    return profiler->priv->trace_events;
 }
 
 static void
@@ -312,6 +341,9 @@ ufo_profiler_finalize (GObject *object)
 
     g_array_free (priv->event_array, TRUE);
 
+    g_list_foreach (priv->trace_events, (GFunc) g_free, NULL);
+    g_list_free (priv->trace_events);
+
     for (guint i = 0; i < UFO_PROFILER_TIMER_LAST; i++)
         g_timer_destroy (priv->timers[i]);
 
@@ -326,6 +358,9 @@ ufo_profiler_class_init (UfoProfilerClass *klass)
     gobject_class->finalize = ufo_profiler_finalize;
 
     g_type_class_add_private (klass, sizeof (UfoProfilerPrivate));
+
+    if (global_clock == NULL)
+        global_clock = g_timer_new ();
 }
 
 static void
@@ -335,6 +370,7 @@ ufo_profiler_init (UfoProfiler *manager)
 
     manager->priv = priv = UFO_PROFILER_GET_PRIVATE (manager);
     priv->event_array = g_array_sized_new (FALSE, TRUE, sizeof(struct EventRow), 2048);
+    priv->trace_events = NULL;
 
     /* Setup timers for all events */
     priv->timers = g_new0 (GTimer *, UFO_PROFILER_TIMER_LAST);

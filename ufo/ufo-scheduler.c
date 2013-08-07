@@ -334,6 +334,9 @@ run_task (TaskLocalData *tld)
     active = TRUE;
     output = NULL;
 
+    profiler = ufo_profiler_new ();
+    ufo_task_node_set_profiler (node, profiler);
+
     if (UFO_IS_REMOTE_TASK (tld->task)) {
         run_remote_task (tld);
         return NULL;
@@ -351,9 +354,6 @@ run_task (TaskLocalData *tld)
     if (!is_correctly_implemented (node, tld->mode, process, generate))
         return NULL;
 
-    profiler = ufo_profiler_new ();
-    ufo_task_node_set_profiler (node, profiler);
-
     while (active) {
         UfoGroup *group;
         gboolean produces;
@@ -361,7 +361,9 @@ run_task (TaskLocalData *tld)
         group = ufo_task_node_get_out_group (node);
 
         /* Get input buffers */
+        /* ufo_profiler_trace_event (profiler, "get_inputs", "B"); */
         active = get_inputs (tld, inputs);
+        /* ufo_profiler_trace_event (profiler, "get_inputs", "E"); */
 
         if (!active) {
             ufo_group_finish (group);
@@ -373,7 +375,9 @@ run_task (TaskLocalData *tld)
         produces = requisition.n_dims > 0;
 
         if (produces) {
+            /* ufo_profiler_trace_event (profiler, "get_output", "B"); */
             output = ufo_group_pop_output_buffer (group, &requisition);
+            /* ufo_profiler_trace_event (profiler, "get_output", "E"); */
             g_assert (output != NULL);
         }
 
@@ -382,19 +386,26 @@ run_task (TaskLocalData *tld)
 
         switch (tld->mode) {
             case UFO_TASK_MODE_PROCESSOR:
+                ufo_profiler_trace_event (profiler, "process", "B");
                 active = process (tld->task, inputs, output, &requisition);
+                ufo_profiler_trace_event (profiler, "process", "E");
                 break;
 
             case UFO_TASK_MODE_REDUCTOR:
                 do {
+                    ufo_profiler_trace_event (profiler, "process", "B");
                     process (tld->task, inputs, output, &requisition);
+                    ufo_profiler_trace_event (profiler, "process", "E");
+
                     release_inputs (tld, inputs);
                     active = get_inputs (tld, inputs);
                 } while (active);
                 break;
 
             case UFO_TASK_MODE_GENERATOR:
+                ufo_profiler_trace_event (profiler, "generate", "B");
                 active = generate (tld->task, output, &requisition);
+                ufo_profiler_trace_event (profiler, "generate", "E");
                 break;
         }
 
@@ -408,7 +419,9 @@ run_task (TaskLocalData *tld)
             active = TRUE;
 
             do {
+                ufo_profiler_trace_event (profiler, "generate", "B");
                 active = generate (tld->task, output, &requisition);
+                ufo_profiler_trace_event (profiler, "generate", "E");
 
                 if (active) {
                     ufo_group_push_output_buffer (group, output);
@@ -427,7 +440,7 @@ run_task (TaskLocalData *tld)
                ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_GPU),
                ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
 
-    g_object_unref (profiler);
+    /* g_object_unref (profiler); */
     return NULL;
 }
 
@@ -437,6 +450,9 @@ cleanup_task_local_data (TaskLocalData **tlds,
 {
     for (guint i = 0; i < n; i++) {
         TaskLocalData *tld = tlds[i];
+
+        g_object_unref (ufo_task_node_get_profiler (UFO_TASK_NODE (tld->task)));
+
         g_free (tld->in_params);
         g_free (tld->finished);
         g_free (tld);
@@ -606,6 +622,93 @@ propagate_partition (UfoTaskGraph *graph)
     g_list_free (nodes);
 }
 
+typedef struct {
+    UfoTraceEvent *event;
+    UfoTaskNode *node;
+    gdouble timestamp;
+} SortedEvent;
+
+
+static gint
+compare_event (const SortedEvent *a,
+               const SortedEvent *b,
+               gpointer user_data)
+{
+    return (gint) (a->timestamp - b->timestamp);
+}
+
+static GList *
+get_sorted_event_trace (TaskLocalData **tlds,
+                        guint n_nodes)
+{
+    GList *sorted = NULL;
+
+    for (guint i = 0; i < n_nodes; i++) {
+        UfoTaskNode *node;
+        UfoProfiler *profiler;
+        GList *events;
+
+        node = UFO_TASK_NODE (tlds[i]->task);
+        profiler = ufo_task_node_get_profiler (node);
+        events = ufo_profiler_get_trace_events (profiler);
+
+        for (GList *it = g_list_first (events); it != NULL; it = g_list_next (it)) {
+            UfoTraceEvent *event;
+            SortedEvent *new_event;
+
+            event = (UfoTraceEvent *) it->data;
+            new_event = g_new0 (SortedEvent, 1);
+            new_event->event = event;
+            new_event->timestamp = event->timestamp;
+            new_event->node = node;
+            sorted = g_list_insert_sorted_with_data (sorted, new_event,
+                                                     (GCompareDataFunc) compare_event, NULL);
+        }
+    }
+
+    return sorted;
+}
+
+static void
+write_traces (TaskLocalData **tlds,
+              guint n_nodes)
+{
+    FILE *fp;
+    gchar *filename;
+    guint pid;
+    GList *sorted;
+
+    sorted = get_sorted_event_trace (tlds, n_nodes);
+    pid = (guint) getpid ();
+    filename = g_strdup_printf (".trace.%i.json", pid);
+    fp = fopen (filename, "w");
+    fprintf (fp, "{ \"traceEvents\": [");
+
+    for (GList *it = g_list_first (sorted); it != NULL; it = g_list_next (it)) {
+        SortedEvent *sorted_event;
+        UfoTraceEvent *event;
+        gchar *name;
+
+        sorted_event = (SortedEvent *) it->data;
+        event = sorted_event->event;
+        name = g_strdup_printf ("%s-%p", G_OBJECT_TYPE_NAME (sorted_event->node),
+                                (gpointer) sorted_event->node);
+
+        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%s\", \"ts\": %.1f, \"pid\": %i, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}\n",
+                     event->type, event->timestamp, pid, name, event->name);
+        if (g_list_next (it) != NULL)
+            fprintf (fp, ",");
+
+        g_free (name);
+    }
+
+    fprintf (fp, "] }");
+    fclose (fp);
+
+    g_list_foreach (sorted, (GFunc) g_free, NULL);
+    g_list_free (sorted);
+}
+
 void
 ufo_scheduler_run (UfoScheduler *scheduler,
                    UfoTaskGraph *task_graph,
@@ -674,6 +777,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_timer_destroy (timer);
 
     /* Cleanup */
+    write_traces (tlds, n_nodes);
     cleanup_task_local_data (tlds, n_nodes);
     g_list_foreach (groups, (GFunc) g_object_unref, NULL);
     g_list_free (groups);
