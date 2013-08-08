@@ -61,6 +61,7 @@ struct _UfoProfilerPrivate {
     GArray  *event_array;
     GTimer **timers;
     GList   *trace_events;
+    gboolean trace;
 };
 
 enum {
@@ -186,6 +187,9 @@ ufo_profiler_trace_event (UfoProfiler *profiler,
     gulong timestamp;
 
     g_return_if_fail (UFO_IS_PROFILER (profiler));
+    if (!profiler->priv->trace)
+        return;
+
     g_timer_elapsed (global_clock, &timestamp);
 
     event = g_malloc0 (sizeof(UfoTraceEvent));
@@ -194,6 +198,15 @@ ufo_profiler_trace_event (UfoProfiler *profiler,
     event->thread_id = g_thread_self ();
     event->timestamp = (gdouble) timestamp;
     profiler->priv->trace_events = g_list_append (profiler->priv->trace_events, event);
+}
+
+
+void
+ufo_profiler_enable_tracing (UfoProfiler *profiler,
+                             gboolean enable)
+{
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    profiler->priv->trace = enable;
 }
 
 GList *
@@ -371,6 +384,7 @@ ufo_profiler_init (UfoProfiler *manager)
     manager->priv = priv = UFO_PROFILER_GET_PRIVATE (manager);
     priv->event_array = g_array_sized_new (FALSE, TRUE, sizeof(struct EventRow), 2048);
     priv->trace_events = NULL;
+    priv->trace = FALSE;
 
     /* Setup timers for all events */
     priv->timers = g_new0 (GTimer *, UFO_PROFILER_TIMER_LAST);

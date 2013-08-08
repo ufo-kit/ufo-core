@@ -112,6 +112,9 @@ void         ufo_profiler_stop          (UfoProfiler        *profiler,
 void         ufo_profiler_trace_event   (UfoProfiler        *profiler,
                                          const gchar        *name,
                                          const gchar        *type);
+void         ufo_profiler_enable_tracing
+                                        (UfoProfiler        *profiler,
+                                         gboolean            enable);
 GList       *ufo_profiler_get_trace_events
                                         (UfoProfiler        *profiler);
 gdouble      ufo_profiler_elapsed       (UfoProfiler        *profiler,
