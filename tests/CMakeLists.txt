@@ -7,6 +7,7 @@ set(TEST_SRCS
     test-config.c
     test-graph.c
     test-profiler.c
+    test-remote-node.c
     )
 
 set(SUITE_BIN "test-suite")

@@ -30,331 +30,12 @@
 #include <string.h>
 #include <ufo/ufo.h>
 
-typedef struct {
-    UfoConfig *config;
-    UfoPluginManager *manager;
-    UfoTaskGraph *task_graph;
-    UfoScheduler *scheduler;
-    gpointer socket;
-    UfoNode *input_task;
-    UfoNode *output_task;
-    UfoBuffer *input;
-    gpointer context;
-} ServerPrivate;
+static UfoDaemon *daemon;
 
 typedef struct {
     gchar **paths;
     gchar *addr;
 } Options;
-
-ServerPrivate global_priv;
-
-#define CHECK_ZMQ(r) if (r == -1) g_warning ("%s:%i: zmq_error: %s\n", __FILE__, __LINE__, zmq_strerror (errno));
-
-static gpointer run_scheduler (ServerPrivate *priv);
-
-static void
-ufo_msg_send (UfoMessage *msg, gpointer socket, gint flags)
-{
-    zmq_msg_t reply;
-
-    zmq_msg_init_size (&reply, sizeof (UfoMessage));
-    memcpy (zmq_msg_data (&reply), msg, sizeof (UfoMessage));
-    zmq_msg_send (&reply, socket, flags);
-    zmq_msg_close (&reply);
-}
-
-static void
-send_ack (gpointer socket)
-{
-    UfoMessage msg;
-    msg.type = UFO_MESSAGE_ACK;
-    ufo_msg_send (&msg, socket, 0);
-}
-
-static void
-handle_get_num_devices (ServerPrivate *priv)
-{
-    UfoMessage msg;
-    cl_context context;
-
-    context = ufo_scheduler_get_context (priv->scheduler);
-
-    UFO_RESOURCES_CHECK_CLERR (clGetContextInfo (context,
-                                                 CL_CONTEXT_NUM_DEVICES,
-                                                 sizeof (cl_uint),
-                                                 &msg.d.n_devices,
-                                                 NULL));
-
-    ufo_msg_send (&msg, priv->socket, 0);
-}
-
-static UfoNode *
-remove_dummy_if_present (UfoGraph *graph,
-                         UfoNode *first)
-{
-    UfoNode *real = first;
-
-    if (UFO_IS_DUMMY_TASK (first)) {
-        UfoNode *dummy;
-        GList *successors;
-
-        dummy = first;
-        successors = ufo_graph_get_successors (graph, dummy);
-        g_assert (g_list_length (successors) == 1);
-        real = UFO_NODE (successors->data);
-        g_list_free (successors);
-        ufo_graph_remove_edge (graph, dummy, real);
-    }
-
-    return real;
-}
-
-static gchar *
-read_json (ServerPrivate *priv)
-{
-    zmq_msg_t json_msg;
-    gsize size;
-    gchar *json;
-
-    zmq_msg_init (&json_msg);
-    size = (gsize) zmq_msg_recv (&json_msg, priv->socket, 0);
-
-    json = g_malloc0 (size + 1);
-    memcpy (json, zmq_msg_data (&json_msg), size);
-    zmq_msg_close (&json_msg);
-
-    return json;
-}
-
-static void
-handle_replicate_json (ServerPrivate *priv)
-{
-    gchar *json;
-    UfoTaskGraph *graph;
-    GError *error = NULL;
-
-    json = read_json (priv);
-    send_ack (priv->socket);
-
-    graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-    ufo_task_graph_read_from_data (graph, priv->manager, json, &error);
-
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-        goto replicate_json_free;
-    }
-
-    g_message ("Start scheduler");
-    ufo_scheduler_run (priv->scheduler, graph, NULL);
-
-    g_message ("Done");
-    g_object_unref (priv->scheduler);
-
-    priv->scheduler = ufo_scheduler_new (priv->config, NULL);
-
-replicate_json_free:
-    g_object_unref (graph);
-    g_free (json);
-}
-
-static void
-handle_stream_json (ServerPrivate *priv)
-{
-    gchar *json;
-    GList *roots;
-    GList *leaves;
-    UfoNode *first;
-    UfoNode *last;
-    GError *error = NULL;
-
-    json = read_json (priv);
-
-    /* Setup local task graph */
-    priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-    ufo_task_graph_read_from_data (priv->task_graph, priv->manager, json, &error);
-
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-        /* Send error to master */
-        return;
-    }
-
-    roots = ufo_graph_get_roots (UFO_GRAPH (priv->task_graph));
-    g_assert (g_list_length (roots) == 1);
-
-    leaves = ufo_graph_get_leaves (UFO_GRAPH (priv->task_graph));
-    g_assert (g_list_length (leaves) == 1);
-
-    first = UFO_NODE (g_list_nth_data (roots, 0));
-    last = UFO_NODE (g_list_nth_data (leaves, 0));
-
-    first = remove_dummy_if_present (UFO_GRAPH (priv->task_graph), first);
-
-    priv->input_task = ufo_input_task_new ();
-    priv->output_task = ufo_output_task_new (2);
-
-    ufo_graph_connect_nodes (UFO_GRAPH (priv->task_graph),
-                             priv->input_task, first,
-                             GINT_TO_POINTER (0));
-
-    ufo_graph_connect_nodes (UFO_GRAPH (priv->task_graph),
-                             last, priv->output_task,
-                             GINT_TO_POINTER (0));
-
-    g_thread_create ((GThreadFunc) run_scheduler, priv, FALSE, NULL);
-    g_free (json);
-    send_ack (priv->socket);
-}
-
-static void
-handle_setup (ServerPrivate *priv)
-{
-    g_message ("Setup requested");
-    send_ack (priv->socket);
-}
-
-static void
-handle_get_structure (ServerPrivate *priv)
-{
-    UfoMessage header;
-    UfoInputParam in_param;
-    zmq_msg_t data_msg;
-
-    g_message ("Structure requested");
-    header.type = UFO_MESSAGE_STRUCTURE;
-
-    /* TODO: do not hardcode these */
-    header.d.n_inputs = 1;
-    in_param.n_dims = 2;
-
-    zmq_msg_init_size (&data_msg, sizeof (UfoInputParam));
-    memcpy (zmq_msg_data (&data_msg), &in_param, sizeof (UfoInputParam));
-
-    ufo_msg_send (&header, priv->socket, ZMQ_SNDMORE);
-    zmq_msg_send (&data_msg, priv->socket, 0);
-    zmq_msg_close (&data_msg);
-}
-
-static void
-handle_send_inputs (ServerPrivate *priv)
-{
-    UfoRequisition *requisition;
-    zmq_msg_t requisition_msg;
-    zmq_msg_t data_msg;
-    gpointer context;
-
-    context = ufo_scheduler_get_context (priv->scheduler);
-
-    /* Receive buffer size */
-    zmq_msg_init (&requisition_msg);
-    zmq_msg_recv (&requisition_msg, priv->socket, 0);
-    g_assert (zmq_msg_size (&requisition_msg) >= sizeof (UfoRequisition));
-    requisition = zmq_msg_data (&requisition_msg);
-
-    if (priv->input == NULL) {
-        priv->input = ufo_buffer_new (requisition, context);
-    }
-    else {
-        if (ufo_buffer_cmp_dimensions (priv->input, requisition))
-            ufo_buffer_resize (priv->input, requisition);
-    }
-
-    zmq_msg_close (&requisition_msg);
-
-    /* Receive actual buffer */
-    zmq_msg_init (&data_msg);
-    zmq_msg_recv (&data_msg, priv->socket, 0);
-
-    memcpy (ufo_buffer_get_host_array (priv->input, NULL),
-            zmq_msg_data (&data_msg),
-            ufo_buffer_get_size (priv->input));
-
-    ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task), priv->input);
-    zmq_msg_close (&data_msg);
-
-    send_ack (priv->socket);
-}
-
-static void
-handle_get_requisition (ServerPrivate *priv)
-{
-    UfoRequisition requisition;
-    zmq_msg_t reply_msg;
-
-    /* We need to get the requisition from the last node */
-    g_message ("Requisition requested");
-    ufo_output_task_get_output_requisition (UFO_OUTPUT_TASK (priv->output_task),
-                                            &requisition);
-
-    zmq_msg_init_size (&reply_msg, sizeof (UfoRequisition));
-    memcpy (zmq_msg_data (&reply_msg), &requisition, sizeof (UfoRequisition));
-    zmq_msg_send (&reply_msg, priv->socket, 0);
-    zmq_msg_close (&reply_msg);
-}
-
-static
-void handle_get_result (ServerPrivate *priv)
-{
-    UfoBuffer *buffer;
-    zmq_msg_t reply_msg;
-    gsize size;
-
-    buffer = ufo_output_task_get_output_buffer (UFO_OUTPUT_TASK (priv->output_task));
-    size = ufo_buffer_get_size (buffer);
-
-    zmq_msg_init_size (&reply_msg, size);
-    memcpy (zmq_msg_data (&reply_msg), ufo_buffer_get_host_array (buffer, NULL), size);
-    zmq_msg_send (&reply_msg, priv->socket, 0);
-    zmq_msg_close (&reply_msg);
-    ufo_output_task_release_output_buffer (UFO_OUTPUT_TASK (priv->output_task), buffer);
-}
-
-static void
-unref_and_free (GObject **object)
-{
-    if (*object) {
-        g_object_unref (*object);
-        *object = NULL;
-    }
-}
-
-static
-void handle_cleanup (ServerPrivate *priv)
-{
-    /*
-     * We send the ACK early on, because we don't want to let the host wait for
-     * actually cleaning up (and waiting some time to unref the input task).
-     */
-    send_ack (priv->socket);
-
-    if (priv->input_task) {
-        ufo_input_task_stop (UFO_INPUT_TASK (priv->input_task));
-
-        ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task),
-                                             priv->input);
-
-        g_usleep (1.5 * G_USEC_PER_SEC);
-        unref_and_free ((GObject **) &priv->input_task);
-        unref_and_free ((GObject **) &priv->input);
-    }
-
-    unref_and_free ((GObject **) &priv->output_task);
-    unref_and_free ((GObject **) &priv->task_graph);
-}
-
-static gpointer
-run_scheduler (ServerPrivate *priv)
-{
-    g_message ("Start scheduler");
-    ufo_scheduler_run (priv->scheduler, priv->task_graph, NULL);
-
-    g_message ("Done");
-    g_object_unref (priv->scheduler);
-
-    priv->scheduler = ufo_scheduler_new (priv->config, NULL);
-    return NULL;
-}
 
 static Options *
 opts_parse (gint *argc, gchar ***argv)
@@ -428,18 +109,15 @@ opts_free (Options *opts)
 static void
 terminate (int signum)
 {
-    g_print ("Received SIGTERM, exiting...\n");
+    if (signum == SIGTERM)
+        g_print ("Received SIGTERM, exiting...\n");
+    if (signum == SIGINT)
+        g_print ("Received SIGINT, exiting...\n");
 
-    if (global_priv.task_graph)
-        g_object_unref (global_priv.task_graph);
-
-    g_object_unref (global_priv.config);
-    g_object_unref (global_priv.manager);
-    g_object_unref (global_priv.scheduler);
-
-    zmq_close (global_priv.socket);
-    zmq_ctx_destroy (global_priv.context);
-
+    if (daemon != NULL) {
+        ufo_daemon_stop(daemon);
+        g_object_unref (daemon);
+    }
     exit (EXIT_SUCCESS);
 }
 
@@ -454,73 +132,18 @@ main (int argc, char * argv[])
     if ((opts = opts_parse (&argc, &argv)) == NULL)
         return 1;
 
-    memset (&global_priv, 0, sizeof (ServerPrivate));
-
-    global_priv.config = opts_new_config (opts);
-    global_priv.manager = ufo_plugin_manager_new (global_priv.config);
-    global_priv.scheduler = ufo_scheduler_new (global_priv.config, NULL);
-
-    /* start zmq service */
-    global_priv.context = zmq_ctx_new ();
-    global_priv.socket = zmq_socket (global_priv.context, ZMQ_REP);
-    zmq_bind (global_priv.socket, opts->addr);
-
-    /* Now, install SIGTERM handler */
+    /* Now, install SIGTERM/SIGINT handler */
     (void) signal (SIGTERM, terminate);
+    (void) signal (SIGINT, terminate);
+
+    UfoConfig *config = opts_new_config (opts);
+
+    daemon = ufo_daemon_new (config, opts->addr);
+    GThread *daemon_thread = ufo_daemon_start(daemon);
+    g_print ("ufod %s - waiting for requests on %s ...\n", UFO_VERSION,
+                                                           opts->addr);
+    g_thread_join(daemon_thread);
     opts_free (opts);
 
-    g_print ("ufod %s - waiting for requests ...\n", UFO_VERSION);
-
-    while (1) {
-        zmq_msg_t request;
-
-        zmq_msg_init (&request);
-        zmq_msg_recv (&request, global_priv.socket, 0);
-
-        if (zmq_msg_size (&request) < sizeof (UfoMessage)) {
-            g_warning ("Message is smaller than expected\n");
-            send_ack (global_priv.socket);
-        }
-        else {
-            UfoMessage *msg;
-
-            msg = (UfoMessage *) zmq_msg_data (&request);
-
-            switch (msg->type) {
-                case UFO_MESSAGE_GET_NUM_DEVICES:
-                    handle_get_num_devices (&global_priv);
-                    break;
-                case UFO_MESSAGE_STREAM_JSON:
-                    handle_stream_json (&global_priv);
-                    break;
-                case UFO_MESSAGE_REPLICATE_JSON:
-                    handle_replicate_json (&global_priv);
-                    break;
-                case UFO_MESSAGE_SETUP:
-                    handle_setup (&global_priv);
-                    break;
-                case UFO_MESSAGE_GET_STRUCTURE:
-                    handle_get_structure (&global_priv);
-                    break;
-                case UFO_MESSAGE_SEND_INPUTS:
-                    handle_send_inputs (&global_priv);
-                    break;
-                case UFO_MESSAGE_GET_REQUISITION:
-                    handle_get_requisition (&global_priv);
-                    break;
-                case UFO_MESSAGE_GET_RESULT:
-                    handle_get_result (&global_priv);
-                    break;
-                case UFO_MESSAGE_CLEANUP:
-                    handle_cleanup (&global_priv);
-                    break;
-                default:
-                    g_print ("unhandled case\n");
-            }
-        }
-
-        zmq_msg_close (&request);
-
-    }
     return 0;
 }
