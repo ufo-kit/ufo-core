@@ -8,6 +8,7 @@ set(ufocore_SRCS
     ufo-config.c
     ufo-cpu-node.c
     ufo-cpu-task-iface.c
+    ufo-daemon.c
     ufo-dummy-task.c
     ufo-gpu-node.c
     ufo-gpu-task-iface.c
@@ -36,6 +37,7 @@ set(ufocore_HDRS
     ufo-config.h
     ufo-cpu-node.h
     ufo-cpu-task-iface.h
+    ufo-daemon.h
     ufo-dummy-task.h
     ufo-gpu-node.h
     ufo-gpu-task-iface.h

@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
     test_add_config ();
     test_add_graph ();
     test_add_profiler ();
+    test_add_remote_node ();
 
     g_test_run();
 

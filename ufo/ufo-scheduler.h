@@ -26,6 +26,7 @@
 
 #include <ufo/ufo-config.h>
 #include <ufo/ufo-task-graph.h>
+#include <ufo/ufo-remote-node.h>
 
 G_BEGIN_DECLS
 
