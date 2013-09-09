@@ -61,6 +61,14 @@ struct _UfoConfigClass {
     GObjectClass parent_class;
 };
 
+/**
+ * UfoDeviceType:
+ * @UFO_DEVICE_ALL: All devices
+ * @UFO_DEVICE_CPU: Only CPU devices
+ * @UFO_DEVICE_GPU: Only GPU devices
+ *
+ * Types of OpenCL devices to query for. See UfoConfig:"device-type".
+ */
 typedef enum {
     UFO_DEVICE_CPU = 1 << 0,
     UFO_DEVICE_GPU = 1 << 1,

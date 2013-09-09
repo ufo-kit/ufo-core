@@ -71,6 +71,13 @@ struct _UfoProfilerClass {
     GObjectClass parent_class;
 };
 
+/**
+ * UfoTraceEvent:
+ * @name: Name of the event
+ * @type: Type of the event
+ * @thread_id: ID of thread in which the event was issued
+ * @timestamp: Arbitrary timestamp of the event
+ */
 typedef struct {
     const gchar *name;
     const gchar *type;
@@ -86,14 +93,6 @@ typedef enum {
     UFO_PROFILER_TIMER_RELEASE,
     UFO_PROFILER_TIMER_LAST,
 } UfoProfilerTimer;
-
-typedef enum {
-    UFO_PROFILER_LEVEL_NONE     = 0,
-    UFO_PROFILER_LEVEL_CPU      = 1 << 0,
-    UFO_PROFILER_LEVEL_OPENCL   = 1 << 1,
-    UFO_PROFILER_LEVEL_IO       = 1 << 2,
-    UFO_PROFILER_LEVEL_SYNC     = 1 << 3
-} UfoProfilerLevel;
 
 UfoProfiler *ufo_profiler_new           (void);
 void         ufo_profiler_call          (UfoProfiler        *profiler,

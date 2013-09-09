@@ -34,9 +34,7 @@
  * @Title: UfoProfiler
  *
  * The #UfoProfiler provides a drop-in replacement for a manual
- * clEnqueueNDRangeKernel() call and tracks any associated events. The amount of
- * profiling can be controlled with an #UfoProfilerLevel when constructing the
- * profiler.
+ * clEnqueueNDRangeKernel() call and tracks any associated events.
  *
  * Each #UfoFilter is assigned a profiler with ufo_profiler_set_profiler() by
  * the managing #UfoBaseScheduler. Filter implementations should call
@@ -76,11 +74,11 @@ static GTimer *global_clock = NULL;
  * UfoProfilerTimer:
  * @UFO_PROFILER_TIMER_IO: Select I/O timer
  * @UFO_PROFILER_TIMER_CPU: Select CPU timer
+ * @UFO_PROFILER_TIMER_GPU: Select GPU timer
  * @UFO_PROFILER_TIMER_FETCH: Select timer that measures the synchronization
  *  time to fetch data from the queues.
  * @UFO_PROFILER_TIMER_RELEASE: Select timer that measures the synchronization
  *  time to push data to the queues.
- * @UFO_PROFILER_TIMER_CPU: Select CPU timer
  * @UFO_PROFILER_TIMER_LAST: Auxiliary value, do not use.
  *
  * Use these values to select a specific timer when calling
@@ -209,6 +207,14 @@ ufo_profiler_enable_tracing (UfoProfiler *profiler,
     profiler->priv->trace = enable;
 }
 
+/**
+ * ufo_profiler_get_trace_events:
+ * @profiler: A #UfoProfiler object.
+ *
+ * Get all events recorded with @profiler.
+ *
+ * Returns: (element-type UfoTraceEvent): A list with #UfoTraceEvent objects.
+ */
 GList *
 ufo_profiler_get_trace_events (UfoProfiler *profiler)
 {

@@ -51,6 +51,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoResources, ufo_resources, G_TYPE_OBJECT,
 
 /**
  * UfoResourcesError:
+ * @UFO_RESOURCES_ERROR_GENERAL: General resource problems
  * @UFO_RESOURCES_ERROR_LOAD_PROGRAM: Could not load the OpenCL file
  * @UFO_RESOURCES_ERROR_CREATE_PROGRAM: Could not create a program from
  *      the sources
@@ -377,6 +378,7 @@ initialize_opencl (UfoResourcesPrivate *priv,
 /**
  * ufo_resources_new:
  * @config: A #UfoConfiguration object or %NULL
+ * @error: Location of a #GError or %NULL
  *
  * Create a new #UfoResources instance.
  *
