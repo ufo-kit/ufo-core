@@ -694,7 +694,7 @@ handle_json_task_node (JsonNode *element,
 
     plugin_name = json_object_get_string_member (object, "plugin");
     plugin = ufo_plugin_manager_get_task (priv->manager, plugin_name, &tmp_error);
-    ufo_task_node_set_plugin_name (plugin, plugin_name);
+    ufo_task_node_set_plugin_name (UFO_TASK_NODE (plugin), plugin_name);
 
     if (tmp_error != NULL) {
         g_propagate_error (error, tmp_error);
