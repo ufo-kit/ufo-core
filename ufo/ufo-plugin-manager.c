@@ -409,7 +409,7 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     g_free (func_name);
     g_free (module_name);
 
-    g_message ("UfoPluginManager: Created %s-%p", name, node);
+    g_debug ("UfoPluginManager: Created %s-%p", name, node);
     return UFO_NODE(node);
 }
 
