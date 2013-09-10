@@ -770,7 +770,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     for (guint i = 0; i < n_nodes; i++)
         g_thread_join (threads[i]);
 
-    g_print ("Processing finished after %3.5fs\n", g_timer_elapsed (timer, NULL));
+    g_message ("Processing finished after %3.5fs\n", g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
 
     /* Cleanup */
