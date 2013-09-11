@@ -20,6 +20,27 @@
 #include <ufo.h>
 #include "test-suite.h"
 
+static gboolean
+path_in_array (const gchar *path,
+               GValueArray *array)
+{
+    gboolean found = FALSE;
+
+    for (guint i = 0; i < array->n_values; i++) {
+        if (!g_strcmp0 (path, g_value_get_string (g_value_array_get_nth (array, i))))
+            found = TRUE;
+    }
+
+    return found;
+}
+
+static gboolean
+path_in_list (const gchar *path,
+              GList *list)
+{
+    return g_list_find_custom (list, path, (GCompareFunc) g_strcmp0) != NULL;
+}
+
 static void
 test_path (void)
 {
@@ -50,11 +71,9 @@ test_path (void)
                   "paths", &array,
                   NULL);
 
-    g_assert (array->n_values == 2);
-
     /* Check that paths match the ones we added */
-    g_assert (g_strcmp0 (p1, g_value_get_string (g_value_array_get_nth (array, 0))) == 0);
-    g_assert (g_strcmp0 (p2, g_value_get_string (g_value_array_get_nth (array, 1))) == 0);
+    g_assert (path_in_array (p1, array));
+    g_assert (path_in_array (p2, array));
 
     g_value_array_free (array);
 
@@ -64,8 +83,8 @@ test_path (void)
 
     g_assert (paths != NULL);
     g_assert (g_list_length (paths) >= 2);
-    g_assert (g_strcmp0 (p1, g_list_nth_data (paths, 0)) == 0);
-    g_assert (g_strcmp0 (p2, g_list_nth_data (paths, 1)) == 0);
+    g_assert (path_in_list (p1, paths));
+    g_assert (path_in_list (p2, paths));
 
     g_list_free (paths);
     g_object_unref (object);
