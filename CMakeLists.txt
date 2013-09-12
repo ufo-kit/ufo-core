@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project(ufo CXX C)
+project(ufo C)
 
 set(TARNAME "libufo")
 set(UFO_VERSION_MAJOR "0")
