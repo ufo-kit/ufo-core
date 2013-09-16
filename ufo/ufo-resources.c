@@ -324,6 +324,38 @@ get_device_type (UfoResourcesPrivate *priv)
     return CL_DEVICE_TYPE_ALL;
 }
 
+/**
+ * restrict_to_gpu_subset:
+ * Selects a single GPU which can be set via the UFO_USE_GPU
+ * environment variable, even if more GPUs are available. The specifc GPU
+ * is selected via the integer value of UFO_USE_GPU (index starts at 1). Used
+ * for debugging and evaluation.
+ */
+static void
+restrict_to_gpu_subset (UfoResourcesPrivate *priv)
+{
+    const gchar* env_gpu = g_getenv ("UFO_USE_GPU");
+    if (env_gpu == NULL || g_strcmp0 (env_gpu, "") == 0)
+        return;
+
+    guint device_index = (guint) g_ascii_strtoull (env_gpu, NULL, 0);
+    if (device_index == 0) {
+        g_error ("Unrecognized format for env var UFO_USE_GPU");
+        return;
+    }
+    if (device_index > priv->n_devices) {
+        g_error ("Can't select UFO_USE_GPU=%d gpus as it exceeds number of available devices", device_index);
+        return;
+    }
+
+    // TODO allow restriction to real subset, like 1,3,5 etc.
+    cl_device_id *devices_subset = g_malloc0 (1 * sizeof (cl_device_id));
+    devices_subset[0] = priv->devices[device_index - 1];
+    g_free (priv->devices);
+    priv->devices = devices_subset;
+    priv->n_devices = 1;
+}
+
 static gboolean
 initialize_opencl (UfoResourcesPrivate *priv,
                    GError **error)
@@ -349,6 +381,8 @@ initialize_opencl (UfoResourcesPrivate *priv,
 
     if (errcode != CL_SUCCESS)
         return FALSE;
+
+    restrict_to_gpu_subset (priv);
 
     priv->context = clCreateContext (NULL,
                                      priv->n_devices, priv->devices,
