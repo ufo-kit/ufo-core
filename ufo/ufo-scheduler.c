@@ -71,12 +71,14 @@ struct _UfoSchedulerPrivate {
     GList           *remotes;
     UfoRemoteMode    mode;
     gboolean         expand;
+    gboolean         trace;
 };
 
 enum {
     PROP_0,
     PROP_EXPAND,
     PROP_REMOTES,
+    PROP_ENABLE_TRACING,
     N_PROPERTIES,
 
     /* Here come the overriden properties that we don't install ourselves. */
@@ -333,6 +335,7 @@ run_task (TaskLocalData *tld)
     node = UFO_TASK_NODE (tld->task);
     active = TRUE;
     output = NULL;
+    profiler = g_object_ref (ufo_task_node_get_profiler (node));
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
         run_remote_task (tld);
@@ -350,9 +353,6 @@ run_task (TaskLocalData *tld)
 
     if (!is_correctly_implemented (node, tld->mode, process, generate))
         return NULL;
-
-    profiler = ufo_profiler_new ();
-    ufo_task_node_set_profiler (node, profiler);
 
     while (active) {
         UfoGroup *group;
@@ -382,19 +382,26 @@ run_task (TaskLocalData *tld)
 
         switch (tld->mode) {
             case UFO_TASK_MODE_PROCESSOR:
+                ufo_profiler_trace_event (profiler, "process", "B");
                 active = process (tld->task, inputs, output, &requisition);
+                ufo_profiler_trace_event (profiler, "process", "E");
                 break;
 
             case UFO_TASK_MODE_REDUCTOR:
                 do {
+                    ufo_profiler_trace_event (profiler, "process", "B");
                     process (tld->task, inputs, output, &requisition);
+                    ufo_profiler_trace_event (profiler, "process", "E");
+
                     release_inputs (tld, inputs);
                     active = get_inputs (tld, inputs);
                 } while (active);
                 break;
 
             case UFO_TASK_MODE_GENERATOR:
+                ufo_profiler_trace_event (profiler, "generate", "B");
                 active = generate (tld->task, output, &requisition);
+                ufo_profiler_trace_event (profiler, "generate", "E");
                 break;
         }
 
@@ -408,7 +415,9 @@ run_task (TaskLocalData *tld)
             active = TRUE;
 
             do {
+                ufo_profiler_trace_event (profiler, "generate", "B");
                 active = generate (tld->task, output, &requisition);
+                ufo_profiler_trace_event (profiler, "generate", "E");
 
                 if (active) {
                     ufo_group_push_output_buffer (group, output);
@@ -437,6 +446,7 @@ cleanup_task_local_data (TaskLocalData **tlds,
 {
     for (guint i = 0; i < n; i++) {
         TaskLocalData *tld = tlds[i];
+
         g_free (tld->in_params);
         g_free (tld->finished);
         g_free (tld);
@@ -461,6 +471,7 @@ setup_tasks (UfoSchedulerPrivate *priv,
 
     for (guint i = 0; i < n_nodes; i++) {
         UfoNode *node;
+        UfoProfiler *profiler;
         TaskLocalData *tld;
 
         node = g_list_nth_data (nodes, i);
@@ -470,6 +481,9 @@ setup_tasks (UfoSchedulerPrivate *priv,
 
         ufo_task_setup (UFO_TASK (node), priv->resources, error);
         ufo_task_get_structure (UFO_TASK (node), &tld->n_inputs, &tld->in_params, &tld->mode);
+
+        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (node));
+        ufo_profiler_enable_tracing (profiler, priv->trace);
 
         tld->finished = g_new0 (gboolean, tld->n_inputs);
 
@@ -606,6 +620,92 @@ propagate_partition (UfoTaskGraph *graph)
     g_list_free (nodes);
 }
 
+typedef struct {
+    UfoTraceEvent *event;
+    UfoTaskNode *node;
+    gdouble timestamp;
+} SortedEvent;
+
+static gint
+compare_event (const SortedEvent *a,
+               const SortedEvent *b,
+               gpointer user_data)
+{
+    return (gint) (a->timestamp - b->timestamp);
+}
+
+static GList *
+get_sorted_event_trace (TaskLocalData **tlds,
+                        guint n_nodes)
+{
+    GList *sorted = NULL;
+
+    for (guint i = 0; i < n_nodes; i++) {
+        UfoTaskNode *node;
+        UfoProfiler *profiler;
+        GList *events;
+
+        node = UFO_TASK_NODE (tlds[i]->task);
+        profiler = ufo_task_node_get_profiler (node);
+        events = ufo_profiler_get_trace_events (profiler);
+
+        for (GList *it = g_list_first (events); it != NULL; it = g_list_next (it)) {
+            UfoTraceEvent *event;
+            SortedEvent *new_event;
+
+            event = (UfoTraceEvent *) it->data;
+            new_event = g_new0 (SortedEvent, 1);
+            new_event->event = event;
+            new_event->timestamp = event->timestamp;
+            new_event->node = node;
+            sorted = g_list_insert_sorted_with_data (sorted, new_event,
+                                                     (GCompareDataFunc) compare_event, NULL);
+        }
+    }
+
+    return sorted;
+}
+
+static void
+write_traces (TaskLocalData **tlds,
+              guint n_nodes)
+{
+    FILE *fp;
+    gchar *filename;
+    guint pid;
+    GList *sorted;
+
+    sorted = get_sorted_event_trace (tlds, n_nodes);
+    pid = (guint) getpid ();
+    filename = g_strdup_printf (".trace.%i.json", pid);
+    fp = fopen (filename, "w");
+    fprintf (fp, "{ \"traceEvents\": [");
+
+    for (GList *it = g_list_first (sorted); it != NULL; it = g_list_next (it)) {
+        SortedEvent *sorted_event;
+        UfoTraceEvent *event;
+        gchar *name;
+
+        sorted_event = (SortedEvent *) it->data;
+        event = sorted_event->event;
+        name = g_strdup_printf ("%s-%p", G_OBJECT_TYPE_NAME (sorted_event->node),
+                                (gpointer) sorted_event->node);
+
+        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%s\", \"ts\": %.1f, \"pid\": %i, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}\n",
+                     event->type, event->timestamp, pid, name, event->name);
+        if (g_list_next (it) != NULL)
+            fprintf (fp, ",");
+
+        g_free (name);
+    }
+
+    fprintf (fp, "] }");
+    fclose (fp);
+
+    g_list_foreach (sorted, (GFunc) g_free, NULL);
+    g_list_free (sorted);
+}
+
 void
 ufo_scheduler_run (UfoScheduler *scheduler,
                    UfoTaskGraph *task_graph,
@@ -670,10 +770,13 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     for (guint i = 0; i < n_nodes; i++)
         g_thread_join (threads[i]);
 
-    g_print ("Processing finished after %3.5fs\n", g_timer_elapsed (timer, NULL));
+    g_message ("Processing finished after %3.5fs", g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
 
     /* Cleanup */
+    if (priv->trace)
+        write_traces (tlds, n_nodes);
+
     cleanup_task_local_data (tlds, n_nodes);
     g_list_foreach (groups, (GFunc) g_object_unref, NULL);
     g_list_free (groups);
@@ -729,6 +832,10 @@ ufo_scheduler_set_property (GObject      *object,
             priv->expand = g_value_get_boolean (value);
             break;
 
+        case PROP_ENABLE_TRACING:
+            priv->trace = g_value_get_boolean (value);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -746,6 +853,10 @@ ufo_scheduler_get_property (GObject      *object,
     switch (property_id) {
         case PROP_EXPAND:
             g_value_set_boolean (value, priv->expand);
+            break;
+
+        case PROP_ENABLE_TRACING:
+            g_value_set_boolean (value, priv->trace);
             break;
 
         default:
@@ -851,6 +962,13 @@ ufo_scheduler_class_init (UfoSchedulerClass *klass)
                               TRUE,
                               G_PARAM_READWRITE);
 
+    properties[PROP_ENABLE_TRACING] =
+        g_param_spec_boolean ("enable-tracing",
+                              "Enable and write profile traces",
+                              "Enable and write profile traces",
+                              FALSE,
+                              G_PARAM_READWRITE);
+
     properties[PROP_REMOTES] =
         g_param_spec_value_array ("remotes",
                                   "List containing remote addresses",
@@ -877,6 +995,7 @@ ufo_scheduler_init (UfoScheduler *scheduler)
 
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
     priv->expand = TRUE;
+    priv->trace = FALSE;
     priv->config = NULL;
     priv->resources = NULL;
     priv->remotes = NULL;

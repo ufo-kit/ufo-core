@@ -31,21 +31,25 @@ ufo_op_set (UfoBuffer *arg,
     cl_mem d_arg;
     cl_event event;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg, &requisition);
     d_arg = ufo_buffer_get_device_image (arg, command_queue);
-    kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "operation_set", &error);
+    kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, "operation_set", &error);
 
     if (error) {
         g_error ("%s\n", error->message);
         return NULL;
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 0, sizeof(void *), (void *) &d_arg));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 1, sizeof(gfloat), (void *) &value));
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel (command_queue, kernel,
                                                        requisition.n_dims, NULL, requisition.dims,
                                                        NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
+
     return event;
 }
 
@@ -59,22 +63,26 @@ ufo_op_inv (UfoBuffer *arg,
     cl_kernel kernel;
     cl_mem d_arg;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg, &requisition);
 
     d_arg = ufo_buffer_get_device_image (arg, command_queue);
-    kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "operation_inv", &error);
+    kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, "operation_inv", &error);
 
     if (error) {
         g_error ("%s\n", error->message);
         return NULL;
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg));
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel(command_queue, kernel,
                                                       requisition.n_dims, NULL, requisition.dims,
                                                       NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
+
     return event;
 }
 
@@ -142,6 +150,7 @@ ufo_op_mul_rows (UfoBuffer *arg1,
     cl_event event;
     UfoRequisition arg1_requisition, arg2_requisition, out_requisition;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg1, &arg1_requisition);
     ufo_buffer_get_requisition (arg2, &arg2_requisition);
@@ -163,13 +172,14 @@ ufo_op_mul_rows (UfoBuffer *arg1,
     cl_mem d_arg1 = ufo_buffer_get_device_image (arg1, command_queue);
     cl_mem d_arg2 = ufo_buffer_get_device_image (arg2, command_queue);
     cl_mem d_out  = ufo_buffer_get_device_image (out, command_queue);
-    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "op_mulRows", &error);
+    cl_kernel kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, "op_mulRows", &error);
 
     if (error != NULL) {
         g_error ("Error: %s\n", error->message);
         return NULL;
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 0, sizeof(void *), (void *) &d_arg1));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 1, sizeof(void *), (void *) &d_arg2));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 2, sizeof(void *), (void *) &d_out));
@@ -181,6 +191,7 @@ ufo_op_mul_rows (UfoBuffer *arg1,
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel (command_queue, kernel,
                                                        operation_requisition.n_dims, NULL, operation_requisition.dims,
                                                        NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
 
     return event;
 }
@@ -196,6 +207,7 @@ operation (const gchar *kernel_name,
     UfoRequisition arg1_requisition, arg2_requisition, out_requisition;
     cl_event event;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg1, &arg1_requisition);
     ufo_buffer_get_requisition (arg2, &arg2_requisition);
@@ -212,13 +224,14 @@ operation (const gchar *kernel_name,
     cl_mem d_arg1 = ufo_buffer_get_device_image (arg1, command_queue);
     cl_mem d_arg2 = ufo_buffer_get_device_image (arg2, command_queue);
     cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
-    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, kernel_name, &error);
+    cl_kernel kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, kernel_name, &error);
 
     if (error) {
         g_error ("%s\n", error->message);
         return NULL;
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 0, sizeof(void *), (void *) &d_arg1));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 1, sizeof(void *), (void *) &d_arg2));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 2, sizeof(void *), (void *) &d_out));
@@ -226,6 +239,8 @@ operation (const gchar *kernel_name,
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel (command_queue, kernel,
                                                        arg1_requisition.n_dims, NULL, arg1_requisition.dims,
                                                        NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
+
     return event;
 }
 
@@ -241,6 +256,7 @@ operation2 (const gchar *kernel_name,
     UfoRequisition arg1_requisition, arg2_requisition, out_requisition;
     cl_event event;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg1, &arg1_requisition);
     ufo_buffer_get_requisition (arg2, &arg2_requisition);
@@ -257,13 +273,14 @@ operation2 (const gchar *kernel_name,
     cl_mem d_arg1 = ufo_buffer_get_device_image (arg1, command_queue);
     cl_mem d_arg2 = ufo_buffer_get_device_image (arg2, command_queue);
     cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
-    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, kernel_name, &error);
+    cl_kernel kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, kernel_name, &error);
 
     if (error) {
         g_error ("%s\n", error->message);
         return NULL;
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg1));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_arg2));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 2, sizeof(gfloat), (void *) &modifier));
@@ -272,6 +289,8 @@ operation2 (const gchar *kernel_name,
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel (command_queue, kernel,
                                                        arg1_requisition.n_dims, NULL, arg1_requisition.dims,
                                                        NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
+
     return event;
 }
 
@@ -284,6 +303,7 @@ ufo_op_gradient_magnitudes (UfoBuffer *arg,
     UfoRequisition arg_requisition;
     cl_event event;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg, &arg_requisition);
     ufo_buffer_resize (out, &arg_requisition);
@@ -291,18 +311,20 @@ ufo_op_gradient_magnitudes (UfoBuffer *arg,
     cl_mem d_arg = ufo_buffer_get_device_image (arg, command_queue);
     cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
 
-    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "operation_gradient_magnitude", &error);
+    cl_kernel kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, "operation_gradient_magnitude", &error);
 
     if (error) {
         g_error ("%s\n", error->message);
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 0, sizeof(void *), (void *) &d_arg));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 1, sizeof(void *), (void *) &d_out));
 
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel (command_queue, kernel,
                                                        arg_requisition.n_dims, NULL, arg_requisition.dims,
                                                        NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
 
     return event;
 }
@@ -317,6 +339,7 @@ ufo_op_gradient_directions (UfoBuffer *arg,
     UfoRequisition arg_requisition;
     cl_event event;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg, &arg_requisition);
     ufo_buffer_resize (out, &arg_requisition);
@@ -325,12 +348,13 @@ ufo_op_gradient_directions (UfoBuffer *arg,
     cl_mem d_magnitudes = ufo_buffer_get_device_image (magnitudes, command_queue);
     cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
 
-    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "operation_gradient_direction", &error);
+    cl_kernel kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, "operation_gradient_direction", &error);
 
     if (error) {
         g_error ("%s\n", error->message);
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 0, sizeof(void *), (void *) &d_arg));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 1, sizeof(void *), (void *) &d_magnitudes));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 2, sizeof(void *), (void *) &d_out));
@@ -338,6 +362,7 @@ ufo_op_gradient_directions (UfoBuffer *arg,
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel (command_queue, kernel,
                                                        arg_requisition.n_dims, NULL, arg_requisition.dims,
                                                        NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
 
     return event;
 }
@@ -426,6 +451,7 @@ ufo_op_POSC (UfoBuffer *arg,
     UfoRequisition arg_requisition;
     cl_event event;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg, &arg_requisition);
     ufo_buffer_resize (out, &arg_requisition);
@@ -433,18 +459,21 @@ ufo_op_POSC (UfoBuffer *arg,
     cl_mem d_arg = ufo_buffer_get_device_image (arg, command_queue);
     cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
 
-    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "POSC", &error);
+    cl_kernel kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, "POSC", &error);
 
     if (error) {
         g_error ("%s\n", error->message);
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 0, sizeof(void *), (void *) &d_arg));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg (kernel, 1, sizeof(void *), (void *) &d_out));
 
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel (command_queue, kernel,
                                                        arg_requisition.n_dims, NULL, arg_requisition.dims,
                                                        NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
+
     return event;
 }
 
@@ -457,6 +486,7 @@ ufo_op_gradient_descent (UfoBuffer *arg,
     UfoRequisition arg_requisition;
     cl_event event;
     GError *error = NULL;
+    static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
 
     ufo_buffer_get_requisition (arg, &arg_requisition);
     ufo_buffer_resize (out, &arg_requisition);
@@ -464,17 +494,20 @@ ufo_op_gradient_descent (UfoBuffer *arg,
     cl_mem d_arg = ufo_buffer_get_device_image (arg, command_queue);
     cl_mem d_out = ufo_buffer_get_device_image (out, command_queue);
 
-    cl_kernel kernel = ufo_resources_get_kernel (resources, OPS_FILENAME, "descent_grad", &error);
+    cl_kernel kernel = ufo_resources_get_cached_kernel (resources, OPS_FILENAME, "descent_grad", &error);
 
     if (error) {
         g_error ("%s\n", error->message);
     }
 
+    g_static_mutex_lock (&mutex);
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 0, sizeof(void *), (void *) &d_arg));
     UFO_RESOURCES_CHECK_CLERR (clSetKernelArg(kernel, 1, sizeof(void *), (void *) &d_out));
 
     UFO_RESOURCES_CHECK_CLERR (clEnqueueNDRangeKernel (command_queue, kernel,
                                                        arg_requisition.n_dims, NULL, arg_requisition.dims,
                                                        NULL, 0, NULL, &event));
+    g_static_mutex_unlock (&mutex);
+
     return event;
 }

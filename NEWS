@@ -4,6 +4,19 @@ Changelog
 
 Here you can see the full list of changes between each ufo-core release.
 
+Version 0.5
+===========
+
+- Added basic math operations for use with filters.
+- Added ufo_resource_manager_get_cached_kernel that always returns the same
+  kernel object when given the same file and kernel name. Note, that you have to
+  guard it properly and do not call ``clSetKernelArg`` from multiple threads at
+  the same time.
+- Add profile tracing to produce a JSON trace event file, that can be read and
+  visualized with Google's Chrome browser. It can be enabled with
+  UfoScheduler::enable-tracing set to TRUE.
+
+
 Version 0.4
 ===========
 

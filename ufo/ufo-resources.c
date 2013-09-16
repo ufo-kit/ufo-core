@@ -51,6 +51,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoResources, ufo_resources, G_TYPE_OBJECT,
 
 /**
  * UfoResourcesError:
+ * @UFO_RESOURCES_ERROR_GENERAL: General resource problems
  * @UFO_RESOURCES_ERROR_LOAD_PROGRAM: Could not load the OpenCL file
  * @UFO_RESOURCES_ERROR_CREATE_PROGRAM: Could not create a program from
  *      the sources
@@ -411,6 +412,7 @@ initialize_opencl (UfoResourcesPrivate *priv,
 /**
  * ufo_resources_new:
  * @config: A #UfoConfiguration object or %NULL
+ * @error: Location of a #GError or %NULL
  *
  * Create a new #UfoResources instance.
  *
@@ -622,9 +624,8 @@ create_cache_key (const gchar *filename,
  * @error: Return location for a GError from #UfoResourcesError, or %NULL
  *
  * Loads a and builds a kernel from a file. The file is searched in the current
- * working directory and all paths added through
- * ufo_resources_add_paths (). If @kernel is %NULL, the first encountered kernel
- * is returned.
+ * working directory and all paths added through ufo_resources_add_paths (). If
+ * @kernel is %NULL, the first encountered kernel is returned.
  *
  * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
  */
@@ -638,25 +639,11 @@ ufo_resources_get_kernel (UfoResources *resources,
     gchar *path;
     gchar *buffer;
     cl_program program;
-    cl_kernel kernel;
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
                           (filename != NULL), NULL);
 
     priv = resources->priv;
-
-    if (kernelname != NULL) {
-        gchar *cache_key;
-
-        cache_key = create_cache_key (filename, kernelname);
-        kernel = g_hash_table_lookup (priv->kernel_cache, cache_key);
-
-        if (kernel != NULL) {
-            g_free (cache_key);
-            return kernel;
-        }
-    }
-
     path = lookup_kernel_path (priv, filename);
 
     if (path == NULL) {
@@ -678,9 +665,52 @@ ufo_resources_get_kernel (UfoResources *resources,
     g_debug ("Added program %p from `%s`", (gpointer) program, filename);
     g_free (buffer);
 
-    kernel = create_kernel (priv, program, kernelname, error);
+    return create_kernel (priv, program, kernelname, error);
+}
+
+/**
+ * ufo_resources_get_cached_kernel:
+ * @resources: A #UfoResources object
+ * @filename: Name of the .cl kernel file
+ * @kernel: Name of a kernel, or %NULL
+ * @error: Return location for a GError from #UfoResourcesError, or %NULL
+ *
+ * Loads a and builds a kernel from a file. The file is searched in the current
+ * working directory and all paths added through ufo_resources_add_paths (). If
+ * @kernel is %NULL, the first encountered kernel is returned. The kernel object
+ * is cached and should not be used by two threads concurrently.
+ *
+ * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
+ */
+gpointer
+ufo_resources_get_cached_kernel (UfoResources *resources,
+                                 const gchar *filename,
+                                 const gchar *kernelname,
+                                 GError **error)
+{
+    UfoResourcesPrivate *priv;
+    cl_kernel kernel;
+
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
+                          (filename != NULL), NULL);
+
+    priv = resources->priv;
 
     if (kernelname != NULL) {
+        gchar *cache_key;
+
+        cache_key = create_cache_key (filename, kernelname);
+        kernel = g_hash_table_lookup (priv->kernel_cache, cache_key);
+
+        if (kernel != NULL) {
+            g_free (cache_key);
+            return kernel;
+        }
+    }
+
+    kernel = ufo_resources_get_kernel (resources, filename, kernelname, error);
+
+    if (kernel != NULL && kernelname != NULL) {
         gchar *cache_key;
 
         cache_key = create_cache_key (filename, kernelname);

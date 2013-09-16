@@ -104,6 +104,10 @@ gpointer         ufo_resources_get_kernel               (UfoResources   *resourc
                                                          const gchar    *filename,
                                                          const gchar    *kernel,
                                                          GError        **error);
+gpointer         ufo_resources_get_cached_kernel        (UfoResources   *resources,
+                                                         const gchar    *filename,
+                                                         const gchar    *kernel,
+                                                         GError        **error);
 gpointer         ufo_resources_get_kernel_from_source   (UfoResources   *resources,
                                                          const gchar    *source,
                                                          const gchar    *kernel,

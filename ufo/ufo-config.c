@@ -141,15 +141,16 @@ ufo_config_set_property (GObject      *object,
     switch (property_id) {
         case PROP_PATHS:
             {
-                GValueArray *array;
+                GValueArray *more_paths;
 
-                if (priv->path_array != NULL)
-                    g_value_array_free (priv->path_array);
+                more_paths = g_value_get_boxed (value);
 
-                array = g_value_get_boxed (value);
-
-                if (array != NULL)
-                    priv->path_array = g_value_array_copy (array);
+                if (more_paths != NULL) {
+                    for (guint i = 0; i < more_paths->n_values; i++) {
+                        g_value_array_append (priv->path_array,
+                                              g_value_array_get_nth (more_paths, i));
+                    }
+                }
             }
             break;
 

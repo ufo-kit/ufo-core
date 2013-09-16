@@ -34,9 +34,7 @@
  * @Title: UfoProfiler
  *
  * The #UfoProfiler provides a drop-in replacement for a manual
- * clEnqueueNDRangeKernel() call and tracks any associated events. The amount of
- * profiling can be controlled with an #UfoProfilerLevel when constructing the
- * profiler.
+ * clEnqueueNDRangeKernel() call and tracks any associated events.
  *
  * Each #UfoFilter is assigned a profiler with ufo_profiler_set_profiler() by
  * the managing #UfoBaseScheduler. Filter implementations should call
@@ -60,6 +58,8 @@ struct EventRow {
 struct _UfoProfilerPrivate {
     GArray  *event_array;
     GTimer **timers;
+    GList   *trace_events;
+    gboolean trace;
 };
 
 enum {
@@ -67,16 +67,18 @@ enum {
     N_PROPERTIES
 };
 
+static GTimer *global_clock = NULL;
+
 
 /**
  * UfoProfilerTimer:
  * @UFO_PROFILER_TIMER_IO: Select I/O timer
  * @UFO_PROFILER_TIMER_CPU: Select CPU timer
+ * @UFO_PROFILER_TIMER_GPU: Select GPU timer
  * @UFO_PROFILER_TIMER_FETCH: Select timer that measures the synchronization
  *  time to fetch data from the queues.
  * @UFO_PROFILER_TIMER_RELEASE: Select timer that measures the synchronization
  *  time to push data to the queues.
- * @UFO_PROFILER_TIMER_CPU: Select CPU timer
  * @UFO_PROFILER_TIMER_LAST: Auxiliary value, do not use.
  *
  * Use these values to select a specific timer when calling
@@ -172,6 +174,52 @@ ufo_profiler_stop (UfoProfiler       *profiler,
 {
     g_return_if_fail (UFO_IS_PROFILER (profiler));
     g_timer_stop (profiler->priv->timers[timer]);
+}
+
+void
+ufo_profiler_trace_event (UfoProfiler *profiler,
+                          const gchar *name,
+                          const gchar *type)
+{
+    UfoTraceEvent *event;
+    gulong timestamp;
+
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    if (!profiler->priv->trace)
+        return;
+
+    g_timer_elapsed (global_clock, &timestamp);
+
+    event = g_malloc0 (sizeof(UfoTraceEvent));
+    event->name = name;
+    event->type = type;
+    event->thread_id = g_thread_self ();
+    event->timestamp = (gdouble) timestamp;
+    profiler->priv->trace_events = g_list_append (profiler->priv->trace_events, event);
+}
+
+
+void
+ufo_profiler_enable_tracing (UfoProfiler *profiler,
+                             gboolean enable)
+{
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    profiler->priv->trace = enable;
+}
+
+/**
+ * ufo_profiler_get_trace_events:
+ * @profiler: A #UfoProfiler object.
+ *
+ * Get all events recorded with @profiler.
+ *
+ * Returns: (element-type UfoTraceEvent): A list with #UfoTraceEvent objects.
+ */
+GList *
+ufo_profiler_get_trace_events (UfoProfiler *profiler)
+{
+    g_return_val_if_fail (UFO_IS_PROFILER (profiler), NULL);
+    return profiler->priv->trace_events;
 }
 
 static void
@@ -312,6 +360,9 @@ ufo_profiler_finalize (GObject *object)
 
     g_array_free (priv->event_array, TRUE);
 
+    g_list_foreach (priv->trace_events, (GFunc) g_free, NULL);
+    g_list_free (priv->trace_events);
+
     for (guint i = 0; i < UFO_PROFILER_TIMER_LAST; i++)
         g_timer_destroy (priv->timers[i]);
 
@@ -326,6 +377,9 @@ ufo_profiler_class_init (UfoProfilerClass *klass)
     gobject_class->finalize = ufo_profiler_finalize;
 
     g_type_class_add_private (klass, sizeof (UfoProfilerPrivate));
+
+    if (global_clock == NULL)
+        global_clock = g_timer_new ();
 }
 
 static void
@@ -335,6 +389,8 @@ ufo_profiler_init (UfoProfiler *manager)
 
     manager->priv = priv = UFO_PROFILER_GET_PRIVATE (manager);
     priv->event_array = g_array_sized_new (FALSE, TRUE, sizeof(struct EventRow), 2048);
+    priv->trace_events = NULL;
+    priv->trace = FALSE;
 
     /* Setup timers for all events */
     priv->timers = g_new0 (GTimer *, UFO_PROFILER_TIMER_LAST);

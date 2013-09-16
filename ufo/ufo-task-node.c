@@ -318,7 +318,7 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv->out_group = NULL;
     self->priv->index = 0;
     self->priv->total = 1;
-    self->priv->profiler = NULL;
+    self->priv->profiler = ufo_profiler_new ();
 
     for (guint i = 0; i < 16; i++) {
         self->priv->in_groups[i] = NULL;
