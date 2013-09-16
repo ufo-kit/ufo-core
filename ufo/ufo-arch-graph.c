@@ -40,7 +40,6 @@ G_DEFINE_TYPE (UfoArchGraph, ufo_arch_graph, UFO_TYPE_GRAPH)
 struct _UfoArchGraphPrivate {
     UfoResources *resources;
     gpointer zmq_context;
-    gpointer ocl_context;
     UfoNode **cpu_nodes;
     UfoNode **gpu_nodes;
     UfoNode **remote_nodes;
@@ -71,7 +70,6 @@ ufo_arch_graph_new (UfoResources *resources,
 
     g_object_ref (resources);
     priv->resources = resources;
-    priv->ocl_context = ufo_resources_get_context (resources);
 
     /* Create CPU nodes */
     priv->n_cpus = (guint) get_nprocs ();
