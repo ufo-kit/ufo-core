@@ -481,7 +481,7 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
     }
 }
 
-GThread *
+void
 ufo_daemon_start (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
@@ -493,14 +493,9 @@ ufo_daemon_start (UfoDaemon *daemon)
     priv->thread = g_thread_create ((GThreadFunc)ufo_daemon_start_impl, daemon, TRUE, NULL);
     g_return_val_if_fail (priv->thread != NULL, NULL);
 
-    // increase the ref so that we can call g_thread_join on it
-    g_thread_ref (priv->thread);
-
     // wait for the thread to start listening by re-acquiring the lock
     g_mutex_lock (priv->started);
     g_mutex_unlock (priv->started);
-
-    return priv->thread;
 }
 
 void
@@ -517,7 +512,7 @@ ufo_daemon_stop (UfoDaemon *daemon)
         g_assert (priv->context == NULL);
     }
 
-    g_thread_unref(priv->thread);
+    g_thread_join (priv->thread);
 }
 
 static void
