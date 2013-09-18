@@ -36,17 +36,15 @@ struct _UfoRemoteNodePrivate {
 };
 
 UfoNode *
-ufo_remote_node_new (gpointer zmq_context,
-                     const gchar *address)
+ufo_remote_node_new (const gchar *address)
 {
     UfoRemoteNode *node;
     UfoRemoteNodePrivate *priv;
 
-    g_return_val_if_fail (zmq_context != NULL && address != NULL, NULL);
+    g_return_val_if_fail (address != NULL, NULL);
     node = UFO_REMOTE_NODE (g_object_new (UFO_TYPE_REMOTE_NODE, NULL));
     priv = node->priv;
-    priv->context = zmq_context;
-    priv->socket = zmq_socket (zmq_context, ZMQ_REQ);
+    priv->socket = zmq_socket (priv->context, ZMQ_REQ);
 
     if (zmq_connect (priv->socket, address) == 0) {
         g_message ("Connected remote node to `%s' via socket=%p",
@@ -356,6 +354,12 @@ ufo_remote_node_finalize (GObject *object)
 
     priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
     g_mutex_free (priv->mutex);
+    
+    if (priv->context != NULL) {
+        g_debug ("Destroy zmq_context=%p", priv->context);
+        zmq_ctx_destroy (priv->context);
+        priv->context = NULL;
+    }
 
     G_OBJECT_CLASS (ufo_remote_node_parent_class)->finalize (object);
 }
@@ -377,7 +381,7 @@ ufo_remote_node_init (UfoRemoteNode *self)
 {
     UfoRemoteNodePrivate *priv;
     self->priv = priv = UFO_REMOTE_NODE_GET_PRIVATE (self);
-    priv->context = NULL;
+    priv->context = zmq_ctx_new ();
     priv->socket = NULL;
     priv->n_inputs = 0;
     priv->mutex = g_mutex_new ();

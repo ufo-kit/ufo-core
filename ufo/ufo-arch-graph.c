@@ -39,7 +39,6 @@ G_DEFINE_TYPE (UfoArchGraph, ufo_arch_graph, UFO_TYPE_GRAPH)
 
 struct _UfoArchGraphPrivate {
     UfoResources *resources;
-    gpointer zmq_context;
     UfoNode **cpu_nodes;
     UfoNode **gpu_nodes;
     UfoNode **remote_nodes;
@@ -94,12 +93,10 @@ ufo_arch_graph_new (UfoResources *resources,
     priv->n_remotes = g_list_length (remote_addresses);
 
     if (priv->n_remotes > 0) {
-        priv->zmq_context = zmq_ctx_new ();
         priv->remote_nodes = g_new0 (UfoNode *, priv->n_remotes);
 
         for (guint i = 0; i < priv->n_remotes; i++) {
-            priv->remote_nodes[i] = ufo_remote_node_new (priv->zmq_context,
-                                                         (gchar *) g_list_nth_data (remote_addresses, i));
+            priv->remote_nodes[i] = ufo_remote_node_new ((gchar *) g_list_nth_data (remote_addresses, i));
         }
     }
 
@@ -245,12 +242,6 @@ ufo_arch_graph_finalize (GObject *object)
     UfoArchGraphPrivate *priv;
 
     priv = UFO_ARCH_GRAPH_GET_PRIVATE (object);
-
-    if (priv->zmq_context != NULL) {
-        g_debug ("Destroy zmq_context=%p", priv->zmq_context);
-        zmq_ctx_destroy (priv->zmq_context);
-        priv->zmq_context = NULL;
-    }
 
     g_free (priv->cpu_nodes);
     g_free (priv->gpu_nodes);

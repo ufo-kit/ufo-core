@@ -25,7 +25,6 @@
 typedef struct {
     UfoDaemon *daemon;
     UfoConfig *config;
-    gpointer zmq_context;
     UfoRemoteNode *remote_node;
 } Fixture;
 
@@ -38,9 +37,7 @@ setup (Fixture *fixture, gconstpointer data)
     fixture->daemon = ufo_daemon_new (fixture->config, addr);
     ufo_daemon_start (fixture->daemon);
 
-    fixture->zmq_context = zmq_ctx_new ();
-    fixture->remote_node = (UfoRemoteNode *) ufo_remote_node_new (fixture->zmq_context,
-                                                                  addr);
+    fixture->remote_node = (UfoRemoteNode *) ufo_remote_node_new (addr);
 }
 
 static void
@@ -50,8 +47,6 @@ teardown (Fixture *fixture, gconstpointer data)
 
     ufo_daemon_stop (fixture->daemon);
     g_object_unref (fixture->daemon);
-
-    zmq_ctx_destroy (fixture->zmq_context);
 }
 
 static void
