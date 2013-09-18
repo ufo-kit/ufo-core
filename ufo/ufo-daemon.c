@@ -491,7 +491,7 @@ ufo_daemon_start (UfoDaemon *daemon)
     priv->run = TRUE;
 
     priv->thread = g_thread_create ((GThreadFunc)ufo_daemon_start_impl, daemon, TRUE, NULL);
-    g_return_val_if_fail (priv->thread != NULL, NULL);
+    g_return_if_fail (priv->thread != NULL);
 
     // wait for the thread to start listening by re-acquiring the lock
     g_mutex_lock (priv->started);
