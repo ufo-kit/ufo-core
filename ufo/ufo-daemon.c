@@ -391,7 +391,8 @@ void handle_cleanup (UfoDaemon *daemon)
      */
     send_ack (priv->socket);
 
-    if (priv->input_task) {
+    // TODO check that we don't need to execture this branch wen priv->input is null
+    if (priv->input_task && priv->input) {
         ufo_input_task_stop (UFO_INPUT_TASK (priv->input_task));
 
         ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task),
