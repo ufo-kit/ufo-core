@@ -821,8 +821,10 @@ handle_json_single_prop (JsonObject *object,
                          gpointer user)
 {
     GValue val = {0,};
-    json_node_get_value (node, &val);
-    g_object_set_property (G_OBJECT(user), name, &val);
+    if (!JSON_NODE_HOLDS_NULL (node)) {
+        json_node_get_value (node, &val);
+        g_object_set_property (G_OBJECT(user), name, &val);
+    }
 }
 
 static void
