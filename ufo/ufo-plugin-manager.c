@@ -392,25 +392,28 @@ transform_string (const gchar *pattern,
  *
  * Returns: (transfer full): (allow-none): #UfoFilter or %NULL if module cannot be found
  */
-UfoNode *
+UfoTaskNode *
 ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GError **error)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && name != NULL, NULL);
-    gpointer node;
+    UfoTaskNode *node;
     if (!g_strcmp0 (name, "[dummy]"))
         return ufo_dummy_task_new ();
 
     gchar *module_name = transform_string ("libufofilter%s.so", name, NULL);
     gchar *func_name = transform_string ("ufo_%s_task_new", name, "_");
-    node = ufo_plugin_manager_get_plugin (manager,
+    node = UFO_TASK_NODE (ufo_plugin_manager_get_plugin (manager,
                                           func_name,
                                           module_name,
-                                          error);
+                                          error));
+
+    ufo_task_node_set_plugin_name (node, name);
+
     g_free (func_name);
     g_free (module_name);
 
     g_debug ("UfoPluginManager: Created %s-%p", name, node);
-    return UFO_NODE(node);
+    return node;
 }
 
 /**

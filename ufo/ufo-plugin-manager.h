@@ -26,7 +26,7 @@
 
 #include <ufo/ufo-configurable.h>
 #include <ufo/ufo-config.h>
-#include <ufo/ufo-node.h>
+#include <ufo/ufo-task-node.h>
 
 G_BEGIN_DECLS
 
@@ -86,7 +86,7 @@ GType               ufo_plugin_manager_get_type             (void);
 
 
 
-UfoNode           * ufo_plugin_manager_get_task             (UfoPluginManager   *manager,
+UfoTaskNode       * ufo_plugin_manager_get_task             (UfoPluginManager   *manager,
                                                              const gchar        *name,
                                                              GError            **error);
 GList             * ufo_plugin_manager_get_all_task_names   (UfoPluginManager   *manager);
