@@ -79,7 +79,7 @@ link_directories(
     ${ZMQ_LIBRARY_DIRS}
     ${JSON_GLIB_LIBRARY_DIRS})
 
-add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
+add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
 
 if (CMAKE_COMPILER_IS_GNUCC)
     add_definitions("-Wmissing-prototypes -Wmissing-declarations -Wshadow
