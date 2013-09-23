@@ -54,7 +54,9 @@ struct _UfoDaemonPrivate {
     gchar *listen_address;
     GThread *thread;
     gboolean run;
-    GMutex *started;
+    gboolean has_started;
+    GMutex *started_lock;
+    GCond *started_cond;
 };
 
 static gpointer run_scheduler (UfoDaemon *daemon);
@@ -425,12 +427,17 @@ static void
 ufo_daemon_start_impl (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+
     while (priv->run) {
         zmq_msg_t request;
 
         zmq_msg_init (&request);
 
-        g_mutex_unlock (priv->started);
+        g_mutex_lock (priv->started_lock);
+        priv->has_started = TRUE;
+        g_cond_signal (priv->started_cond);
+        g_mutex_unlock (priv->started_lock);
+
         gint err = zmq_msg_recv (&request, priv->socket, 0);
         /* if daemon is stopped, socket will be closed and msg_recv
          * will yield an error - we simply want to return
@@ -487,16 +494,16 @@ ufo_daemon_start (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
 
-    // acquire lock that is released after thread started
-    g_mutex_lock (priv->started);
     priv->run = TRUE;
-
     priv->thread = g_thread_create ((GThreadFunc)ufo_daemon_start_impl, daemon, TRUE, NULL);
     g_return_if_fail (priv->thread != NULL);
 
-    // wait for the thread to start listening by re-acquiring the lock
-    g_mutex_lock (priv->started);
-    g_mutex_unlock (priv->started);
+    g_mutex_lock (priv->started_lock);
+
+    while (!priv->has_started)
+        g_cond_wait (priv->started_cond, priv->started_lock);
+
+    g_mutex_unlock (priv->started_lock);
 }
 
 void
@@ -545,7 +552,8 @@ static void
 ufo_daemon_finalize (GObject *object)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (object);
-    g_mutex_free (priv->started);
+    g_mutex_free (priv->started_lock);
+    g_cond_free (priv->started_cond);
 
     G_OBJECT_CLASS (ufo_daemon_parent_class)->finalize (object);
 }
@@ -567,5 +575,7 @@ ufo_daemon_init (UfoDaemon *self)
 {
     UfoDaemonPrivate *priv;
     self->priv = priv = UFO_DAEMON_GET_PRIVATE (self);
-    priv->started = g_mutex_new ();
+    priv->started_lock = g_mutex_new ();
+    priv->started_cond = g_cond_new ();
+    priv->has_started = FALSE;
 }
