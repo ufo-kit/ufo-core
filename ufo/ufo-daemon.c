@@ -22,7 +22,6 @@
 #else
 #include <CL/cl.h>
 #endif
-#include <zmq.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,6 +33,8 @@
 #include <ufo/ufo-plugin-manager.h>
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-graph.h>
+
+#include "zmq-shim.h"
 
 G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)
 
@@ -391,7 +392,8 @@ void handle_cleanup (UfoDaemon *daemon)
      */
     send_ack (priv->socket);
 
-    if (priv->input_task) {
+    // TODO check that we don't need to execture this branch wen priv->input is null
+    if (priv->input_task && priv->input) {
         ufo_input_task_stop (UFO_INPUT_TASK (priv->input_task));
 
         ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task),
@@ -481,7 +483,7 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
     }
 }
 
-GThread *
+void
 ufo_daemon_start (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
@@ -491,16 +493,11 @@ ufo_daemon_start (UfoDaemon *daemon)
     priv->run = TRUE;
 
     priv->thread = g_thread_create ((GThreadFunc)ufo_daemon_start_impl, daemon, TRUE, NULL);
-    g_return_val_if_fail (priv->thread != NULL, NULL);
-
-    // increase the ref so that we can call g_thread_join on it
-    g_thread_ref (priv->thread);
+    g_return_if_fail (priv->thread != NULL);
 
     // wait for the thread to start listening by re-acquiring the lock
     g_mutex_lock (priv->started);
     g_mutex_unlock (priv->started);
-
-    return priv->thread;
 }
 
 void
@@ -517,7 +514,7 @@ ufo_daemon_stop (UfoDaemon *daemon)
         g_assert (priv->context == NULL);
     }
 
-    g_thread_unref(priv->thread);
+    g_thread_join (priv->thread);
 }
 
 static void

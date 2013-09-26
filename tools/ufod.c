@@ -139,10 +139,14 @@ main (int argc, char * argv[])
     UfoConfig *config = opts_new_config (opts);
 
     daemon = ufo_daemon_new (config, opts->addr);
-    GThread *daemon_thread = ufo_daemon_start(daemon);
+    ufo_daemon_start(daemon);
     g_print ("ufod %s - waiting for requests on %s ...\n", UFO_VERSION,
                                                            opts->addr);
-    g_thread_join(daemon_thread);
+
+    while (TRUE) {
+        g_usleep (G_MAXULONG);
+    }
+
     opts_free (opts);
 
     return 0;

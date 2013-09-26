@@ -57,7 +57,7 @@ static void handle_json_prop_set    (JsonObject *, const gchar *, JsonNode *, gp
 static void handle_json_single_prop (JsonObject *, const gchar *, JsonNode *, gpointer user);
 static void handle_json_task_edge   (JsonArray *, guint, JsonNode *, gpointer);
 static gboolean handle_json_task_node (JsonNode *, UfoTaskGraphPrivate *priv, GError **error);
-static void add_task_node_to_json_array (UfoNode *, JsonArray *);
+static void add_task_node_to_json_array (UfoTaskNode *, JsonArray *);
 static JsonObject *json_object_from_ufo_node (UfoNode *node);
 static JsonNode *get_json_representation (UfoTaskGraph *, GError **);
 
@@ -677,7 +677,7 @@ handle_json_task_node (JsonNode *element,
                        UfoTaskGraphPrivate *priv,
                        GError **error)
 {
-    UfoNode *plugin;
+    UfoTaskNode *plugin;
     JsonObject *object;
     GError *tmp_error = NULL;
     const gchar *name;
@@ -694,7 +694,6 @@ handle_json_task_node (JsonNode *element,
 
     plugin_name = json_object_get_string_member (object, "plugin");
     plugin = ufo_plugin_manager_get_task (priv->manager, plugin_name, &tmp_error);
-    ufo_task_node_set_plugin_name (plugin, plugin_name);
 
     if (tmp_error != NULL) {
         g_propagate_error (error, tmp_error);
@@ -822,25 +821,26 @@ handle_json_single_prop (JsonObject *object,
                          gpointer user)
 {
     GValue val = {0,};
-    json_node_get_value (node, &val);
-    g_object_set_property (G_OBJECT(user), name, &val);
+    if (!JSON_NODE_HOLDS_NULL (node)) {
+        json_node_get_value (node, &val);
+        g_object_set_property (G_OBJECT(user), name, &val);
+    }
 }
 
 static void
-add_task_node_to_json_array (UfoNode *node, JsonArray *array)
+add_task_node_to_json_array (UfoTaskNode *node, JsonArray *array)
 {
     JsonObject *node_object;
     JsonNode *prop_node;
 
     node_object = json_object_new ();
-
-    json_object_set_string_member (node_object,
-                                   "plugin",
-                                   ufo_task_node_get_plugin_name (UFO_TASK_NODE (node)));
-
-    json_object_set_string_member (node_object,
-                                   "name",
-                                   ufo_task_node_get_unique_name (UFO_TASK_NODE (node)));
+    const gchar *plugin_name = ufo_task_node_get_plugin_name (node);
+    g_assert (plugin_name != NULL);
+    json_object_set_string_member (node_object, "plugin", plugin_name);
+                                   
+    const gchar *name = ufo_task_node_get_unique_name (node);
+    g_assert (name != NULL);
+    json_object_set_string_member (node_object, "name", name);
 
     prop_node = json_gobject_serialize (G_OBJECT (node));
     json_object_set_member (node_object, "properties", prop_node);
@@ -853,9 +853,8 @@ json_object_from_ufo_node (UfoNode *node)
     JsonObject *object;
 
     object = json_object_new ();
-    json_object_set_string_member (object,
-                                   "name",
-                                   ufo_task_node_get_unique_name (UFO_TASK_NODE (node)));
+    const gchar *unique_name = ufo_task_node_get_unique_name (UFO_TASK_NODE (node));
+    json_object_set_string_member (object, "name", unique_name);
     return object;
 }
 
