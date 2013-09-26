@@ -137,5 +137,10 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS
      libzmq1 (>= ${PKG_ZMQ_MIN_REQUIRED})")
 #}}}
 
+#{{{ RPM
+set(CPACK_RPM_PACKAGE_AUTOREQPROV " no")
+set(CPACK_RPM_PACKAGE_REQUIRES "libjson-glib-1_0-0, libzmq1")
+#}}}
+
 include(CPack)
 #}}}
