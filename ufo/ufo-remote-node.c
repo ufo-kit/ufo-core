@@ -17,9 +17,10 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <zmq.h>
 #include <string.h>
 #include <ufo/ufo-remote-node.h>
+
+#include "zmq-shim.h"
 
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 

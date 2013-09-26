@@ -22,7 +22,6 @@
 #else
 #include <CL/cl.h>
 #endif
-#include <zmq.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,6 +33,8 @@
 #include <ufo/ufo-plugin-manager.h>
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-graph.h>
+
+#include "zmq-shim.h"
 
 G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)
 
