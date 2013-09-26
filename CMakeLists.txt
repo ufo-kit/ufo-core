@@ -133,8 +133,8 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_NAME}-${PACKAGE_VERSION}" CACHE IN
 #{{{ Debian
 set(CPACK_DEBIAN_PACKAGE_DEPENDS
     "libglib2.0-0 (>= ${PKG_GLIB2_MIN_REQUIRED}),
-     libjson-glib-1.0-0 (>= ${PKG_JSON_GLIB_MIN_REQUIRED})
-     libzmq1 (>= ${PKG_ZMQ_MIN_REQUIRED}")
+     libjson-glib-1.0-0 (>= ${PKG_JSON_GLIB_MIN_REQUIRED}),
+     libzmq1 (>= ${PKG_ZMQ_MIN_REQUIRED})")
 #}}}
 
 include(CPack)
