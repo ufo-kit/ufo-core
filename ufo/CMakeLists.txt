@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-# --- Set sources -------------------------------------------------------------
+#{{{ Sources
 set(ufocore_SRCS
     ufo-arch-graph.c
     ufo-buffer.c
@@ -18,7 +18,6 @@ set(ufocore_SRCS
     ufo-node.c
     ufo-output-task.c
     ufo-plugin-manager.c
-    #    ufo-pool-scheduler.c
     ufo-profiler.c
     ufo-remote-node.c
     ufo-remote-task.c
@@ -29,7 +28,9 @@ set(ufocore_SRCS
     ufo-task-node.c
     ufo-basic-ops.c
     )
+#}}}
 
+#{{{ Public headers
 set(ufocore_HDRS
     ufo-arch-graph.h
     ufo-buffer.h
@@ -47,7 +48,6 @@ set(ufocore_HDRS
     ufo-node.h
     ufo-output-task.h
     ufo-plugin-manager.h
-    #ufo-pool-scheduler.h
     ufo-profiler.h
     ufo-remote-node.h
     ufo-remote-task.h
@@ -58,19 +58,48 @@ set(ufocore_HDRS
     ufo-task-node.h
     ufo-basic-ops.h
     )
+#}}}
 
-set(ufocore_KERNELS
-    ufo-basic-ops.cl
-)
+#{{{ libufo target
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
 
-# --- Find packages and libraries ---------------------------------------------
-find_program(INTROSPECTION_SCANNER "g-ir-scanner")
-find_program(INTROSPECTION_COMPILER "g-ir-compiler")
+set(LIBDIR      "lib${LIB_SUFFIX}")
+set(INCLUDEDIR  "include/ufo")
+
+add_definitions(-DUFO_COMPILATION)
+
+add_library(ufo SHARED
+            ${ufocore_SRCS}
+            ${ufocore_NODOC_SRCS}
+            ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
+
+set_target_properties(ufo PROPERTIES
+    VERSION ${PACKAGE_VERSION}
+    SOVERSION ${UFO_SO_VERSION})
+
+target_link_libraries(ufo ${UFOCORE_DEPS})
+
+#{{{ install target
+install(TARGETS ufo
+        ARCHIVE DESTINATION ${LIBDIR}
+        LIBRARY DESTINATION ${LIBDIR})
+
+install(FILES ${ufocore_HDRS}
+              ${CMAKE_CURRENT_SOURCE_DIR}/ufo.h
+              ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
+        DESTINATION ${INCLUDEDIR})
+
+install(FILES ufo-basic-ops.cl
+        DESTINATION ${LIBDIR}/ufo)
+#}}}
+#}}}
+
+#{{{ glib-mkenums targets
 find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
 
-
-# --- Add enum generation targets ---------------------------------------------
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
     COMMAND ${GLIB2_MKENUMS}
@@ -92,64 +121,12 @@ add_custom_command(
     DEPENDS ${ufocore_HDRS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
             ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.c.template
 )
+#}}}
 
-# --- Target ------------------------------------------------------------------
-get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
+#{{{ g-ir-scanner and g-ir-compiler targets
+find_program(INTROSPECTION_SCANNER "g-ir-scanner")
+find_program(INTROSPECTION_COMPILER "g-ir-compiler")
 
-set(LIBDIR      "lib${LIB_SUFFIX}")
-set(INCLUDEDIR  "include/ufo")
-
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-add_definitions(-DUFO_COMPILATION)
-
-if(CMAKE_BUILD_TYPE MATCHES "Release")
-    add_definitions(-DG_DISABLE_ASSERT)
-endif()
-
-add_library(ufo SHARED
-            ${ufocore_SRCS}
-            ${ufocore_NODOC_SRCS}
-            ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
-
-set_target_properties(ufo PROPERTIES
-    VERSION ${PACKAGE_VERSION}
-    SOVERSION ${UFO_SO_VERSION})
-
-target_link_libraries(ufo ${UFOCORE_DEPS})
-
-install(TARGETS ufo
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR})
-
-install(FILES ${ufocore_HDRS}
-              ${CMAKE_CURRENT_SOURCE_DIR}/ufo.h
-              ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
-        DESTINATION ${INCLUDEDIR})
-
-# copy kernels into ${LIBDIR}/ufo
-foreach(_kernel ${ufocore_KERNELS})
-    install(FILES ${_kernel}
-            DESTINATION ${LIBDIR}/ufo)
-endforeach()
-
-# --- pkg-config --------------------------------------------------------------
-set(UFO_PKG_PREFIX      "${CMAKE_INSTALL_PREFIX}")
-set(UFO_PKG_EXEC_PREFIX "${UFO_PKG_PREFIX}/bin")
-set(UFO_PKG_INCLUDEDIR  "${UFO_PKG_PREFIX}/include")
-set(UFO_PKG_GIRDIR      "${UFO_PKG_PREFIX}/share/gir-1.0")
-set(UFO_PKG_LIBDIR      "${UFO_PKG_PREFIX}/${LIBDIR}")
-set(UFO_PKG_TYPELIBDIR  "${UFO_PKG_PREFIX}/${LIBDIR}/girepository-1.0")
-
-# FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
-# hard coded values
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
-               "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc
-        DESTINATION ${LIBDIR}/pkgconfig)
-
-
-# --- Introspection files -----------------------------------------------------
 if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
     option(WITH_GIR "Build introspection files" ON)
     if (WITH_GIR)
@@ -197,13 +174,9 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
             DESTINATION ${LIBDIR}/girepository-1.0)
     endif()
 endif()
+#}}}
 
-
-# --- Generate config.h -------------------------------------------------------
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-
-# --- Build API reference -----------------------------------------------------
+#{{{ gtk-doc targets
 pkg_check_modules(GTK_DOC gtk-doc)
 if(GTK_DOC_FOUND)
     option(WITH_GTK_DOC "Build API reference" ON)
@@ -289,3 +262,21 @@ if(GTK_DOC_FOUND)
         install(FILES ${reference_files} DESTINATION share/gtk-doc/html/Ufo)
     endif()
 endif(GTK_DOC_FOUND)
+#}}}
+
+#{{{ pkg-config
+set(UFO_PKG_PREFIX      "${CMAKE_INSTALL_PREFIX}")
+set(UFO_PKG_EXEC_PREFIX "${UFO_PKG_PREFIX}/bin")
+set(UFO_PKG_INCLUDEDIR  "${UFO_PKG_PREFIX}/include")
+set(UFO_PKG_GIRDIR      "${UFO_PKG_PREFIX}/share/gir-1.0")
+set(UFO_PKG_LIBDIR      "${UFO_PKG_PREFIX}/${LIBDIR}")
+set(UFO_PKG_TYPELIBDIR  "${UFO_PKG_PREFIX}/${LIBDIR}/girepository-1.0")
+
+# FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
+# hard coded values
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
+               "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc
+        DESTINATION ${LIBDIR}/pkgconfig)
+#}}}
