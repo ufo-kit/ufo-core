@@ -19,7 +19,17 @@ operation2 (const gchar *kernel_name,
             UfoResources *resources,
             gpointer command_queue);
 
-
+/**
+ * ufo_op_set:
+ * @arg: A #UfoBuffer
+ * @value: Value to fill @arg with
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Fill a buffer with a value using OpenCL.
+ *
+ * Returns: (transfer full): Event of the set operation
+ */
 gpointer
 ufo_op_set (UfoBuffer *arg,
             gfloat value,
@@ -53,6 +63,16 @@ ufo_op_set (UfoBuffer *arg,
     return event;
 }
 
+/**
+ * ufo_op_inv:
+ * @arg: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Invert @arg.
+ *
+ * Returns: (transfer full): Event of the invert operation
+ */
 gpointer
 ufo_op_inv (UfoBuffer *arg,
             UfoResources *resources,
@@ -86,6 +106,18 @@ ufo_op_inv (UfoBuffer *arg,
     return event;
 }
 
+/**
+ * ufo_op_mul:
+ * @arg1: A #UfoBuffer
+ * @arg2: A #UfoBuffer
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * out = arg1 * arg2
+ *
+ * Returns: (transfer full): Event of the mul operation
+ */
 gpointer
 ufo_op_mul (UfoBuffer *arg1,
             UfoBuffer *arg2,
@@ -96,6 +128,18 @@ ufo_op_mul (UfoBuffer *arg1,
     return operation ("operation_mul", arg1, arg2, out, resources, command_queue);
 }
 
+/**
+ * ufo_op_add:
+ * @arg1: A #UfoBuffer
+ * @arg2: A #UfoBuffer
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * out = arg1 + arg2
+ *
+ * Returns: (transfer full): Event of the add operation
+ */
 gpointer
 ufo_op_add (UfoBuffer *arg1,
             UfoBuffer *arg2,
@@ -106,6 +150,19 @@ ufo_op_add (UfoBuffer *arg1,
     return operation ("operation_add", arg1, arg2, out, resources, command_queue);
 }
 
+/**
+ * ufo_op_add2:
+ * @arg1: A #UfoBuffer
+ * @arg2: A #UfoBuffer
+ * @modifier: Scalar value
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * @out = @arg1 + @modifier * @arg2
+ *
+ * Returns: (transfer full): Event of the add operation
+ */
 gpointer
 ufo_op_add2 (UfoBuffer *arg1,
              UfoBuffer *arg2,
@@ -117,6 +174,18 @@ ufo_op_add2 (UfoBuffer *arg1,
     return operation2 ("operation_add2", arg1, arg2, modifier, out, resources, command_queue);
 }
 
+/**
+ * ufo_op_deduction:
+ * @arg1: A #UfoBuffer
+ * @arg2: A #UfoBuffer
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * @out = @arg1 - @arg2
+ *
+ * Returns: (transfer full): Event of the add operation
+ */
 gpointer
 ufo_op_deduction (UfoBuffer *arg1,
                   UfoBuffer *arg2,
@@ -127,6 +196,19 @@ ufo_op_deduction (UfoBuffer *arg1,
     return operation ("operation_deduction", arg1, arg2, out, resources, command_queue);
 }
 
+/**
+ * ufo_op_deduction2:
+ * @arg1: A #UfoBuffer
+ * @arg2: A #UfoBuffer
+ * @modifier: Scalar value
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * @out = @arg1 - @modifier * @arg2
+ *
+ * Returns: (transfer full): Event of the add operation
+ */
 gpointer
 ufo_op_deduction2 (UfoBuffer *arg1,
                    UfoBuffer *arg2,
@@ -138,6 +220,20 @@ ufo_op_deduction2 (UfoBuffer *arg1,
     return operation2 ("operation_deduction2", arg1, arg2, modifier, out, resources, command_queue);
 }
 
+/**
+ * ufo_op_mul_rows:
+ * @arg1: A #UfoBuffer
+ * @arg2: A #UfoBuffer
+ * @offset: Offset
+ * @n: n ?
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * @out = @arg1 - @modifier * @arg2
+ *
+ * Returns: (transfer full): Event of the add operation
+ */
 gpointer
 ufo_op_mul_rows (UfoBuffer *arg1,
                  UfoBuffer *arg2,
@@ -294,6 +390,17 @@ operation2 (const gchar *kernel_name,
     return event;
 }
 
+/**
+ * ufo_op_gradient_magnitudes:
+ * @arg: A #UfoBuffer
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Compute magnitude of gradients
+ *
+ * Returns: (transfer full): Event of the add operation
+ */
 gpointer
 ufo_op_gradient_magnitudes (UfoBuffer *arg,
                             UfoBuffer *out,
@@ -329,6 +436,18 @@ ufo_op_gradient_magnitudes (UfoBuffer *arg,
     return event;
 }
 
+/**
+ * ufo_op_gradient_directions:
+ * @arg: A #UfoBuffer
+ * @magnitudes: A #UfoBuffer
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Compute magnitude of gradients
+ *
+ * Returns: (transfer full): Event of the add operation
+ */
 gpointer
 ufo_op_gradient_directions (UfoBuffer *arg,
                             UfoBuffer *magnitudes,
@@ -367,6 +486,14 @@ ufo_op_gradient_directions (UfoBuffer *arg,
     return event;
 }
 
+/**
+ * ufo_op_l1_norm:
+ * @arg: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Returns: L1 norm.
+ */
 gfloat
 ufo_op_l1_norm (UfoBuffer *arg,
                 UfoResources *resources,
@@ -388,6 +515,15 @@ ufo_op_l1_norm (UfoBuffer *arg,
     return norm;
 }
 
+/**
+ * ufo_op_euclidean_distance:
+ * @arg1: A #UfoBuffer
+ * @arg2: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Returns: Euclidean distance between @arg1 and @arg2.
+ */
 gfloat
 ufo_op_euclidean_distance (UfoBuffer *arg1,
                            UfoBuffer *arg2,
@@ -434,6 +570,14 @@ ufo_op_euclidean_distance (UfoBuffer *arg1,
     return norm;
 }
 
+/**
+ * ufo_op_l2_norm:
+ * @arg: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Returns: L2 norm.
+ */
 gfloat
 ufo_op_l2_norm (UfoBuffer *arg,
                 UfoResources *resources,
@@ -442,6 +586,15 @@ ufo_op_l2_norm (UfoBuffer *arg,
     return ufo_op_euclidean_distance (arg, arg, resources, command_queue);
 }
 
+/**
+ * ufo_op_POSC:
+ * @arg: A #UfoBuffer
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Returns: (transfer full): Event of the POSC operation
+ */
 gpointer
 ufo_op_POSC (UfoBuffer *arg,
              UfoBuffer *out,
@@ -477,6 +630,15 @@ ufo_op_POSC (UfoBuffer *arg,
     return event;
 }
 
+/**
+ * ufo_op_gradient_descent:
+ * @arg: A #UfoBuffer
+ * @out: A #UfoBuffer
+ * @resources: #UfoResources object
+ * @command_queue: A valid cl_command_queue
+ *
+ * Returns: (transfer full): Event of the POSC operation
+ */
 gpointer
 ufo_op_gradient_descent (UfoBuffer *arg,
                          UfoBuffer *out,
