@@ -95,10 +95,6 @@ if (CMAKE_COMPILER_IS_GNUCC)
 endif()
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
-
-if(CMAKE_BUILD_TYPE MATCHES "Release")
-    add_definitions(-DG_DISABLE_ASSERT)
-endif()
 #}}}
 
 #{{{ Subdirectories

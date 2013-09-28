@@ -258,7 +258,7 @@ get_preferably_gpu_based_platform (void)
 {
     cl_platform_id *platforms;
     cl_uint n_platforms;
-    cl_platform_id candidate;
+    cl_platform_id candidate = 0;
 
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (0, NULL, &n_platforms));
     platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));

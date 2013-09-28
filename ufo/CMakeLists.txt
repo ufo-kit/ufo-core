@@ -71,6 +71,10 @@ set(INCLUDEDIR  "include/ufo")
 
 add_definitions(-DUFO_COMPILATION)
 
+if(CMAKE_BUILD_TYPE MATCHES "Release")
+    add_definitions(-DG_DISABLE_ASSERT)
+endif()
+
 add_library(ufo SHARED
             ${ufocore_SRCS}
             ${ufocore_NODOC_SRCS}

@@ -163,9 +163,9 @@ alloc_device_image (UfoBufferPrivate *priv)
 {
     cl_image_format format;
     cl_mem_flags flags;
-    cl_mem mem;
     cl_int err;
     gsize width, height, depth;
+    cl_mem mem = NULL;
 
     g_assert ((priv->requisition.n_dims == 2) ||
               (priv->requisition.n_dims == 3));
@@ -195,6 +195,7 @@ alloc_device_image (UfoBufferPrivate *priv)
     }
 
     UFO_RESOURCES_CHECK_CLERR (err);
+    g_assert (mem != NULL);
     priv->device_image = mem;
 }
 #endif
