@@ -87,11 +87,20 @@ include_directories(
 add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
 
 if (CMAKE_COMPILER_IS_GNUCC)
-    add_definitions("-Wmissing-prototypes -Wmissing-declarations -Wshadow
-    -Wpointer-arith -Wcast-align -Wwrite-strings -Wredundant-decls -Wcast-qual
-    -Wnested-externs -Winline -Wno-long-long -Wconversion -Wstrict-prototypes")
-
-    add_definitions("-Wno-unused-parameter -Wno-missing-field-initializers")
+    add_definitions("-Wcast-align
+                     -Wcast-qual
+                     -Winline
+                     -Wmissing-declarations
+                     -Wmissing-prototypes
+                     -Wnested-externs
+                     -Wno-long-long
+                     -Wno-missing-field-initializers
+                     -Wno-unused-parameter
+                     -Wpointer-arith
+                     -Wredundant-decls
+                     -Wshadow
+                     -Wstrict-prototypes
+                     -Wwrite-strings")
 endif()
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
