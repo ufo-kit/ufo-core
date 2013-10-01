@@ -229,6 +229,30 @@ ufo_buffer_new (UfoRequisition *requisition,
 }
 
 /**
+ * ufo_buffer_new_with_size:
+ * @dims: (element-type guint64): size requisition
+ * @context: (allow-none): cl_context to use for creating the device array
+ *
+ * Create a new #UfoBuffer with a list of dimensions.
+ *
+ * Return value: A new #UfoBuffer with the given dimensions.
+ */
+UfoBuffer *
+ufo_buffer_new_with_size (GList *dims,
+                          gpointer context)
+{
+    UfoRequisition req;
+
+    req.n_dims = g_list_length (dims);
+    g_assert (req.n_dims < 16);
+
+    for (guint i = 0; i < req.n_dims; i++)
+        req.dims[i] = (gsize) g_list_nth_data (dims, i);
+
+    return ufo_buffer_new (&req, context);
+}
+
+/**
  * ufo_buffer_get_size:
  * @buffer: A #UfoBuffer
  *
