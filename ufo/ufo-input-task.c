@@ -61,18 +61,7 @@ enum {
 UfoNode *
 ufo_input_task_new (void)
 {
-    UfoInputTask *task;
-    UfoInputTaskPrivate *priv;
-
-    task = UFO_INPUT_TASK (g_object_new (UFO_TYPE_INPUT_TASK, NULL));
-    priv = task->priv;
-
-    /* TODO: free in_params and queues */
-    priv->in_queue = g_async_queue_new ();
-    priv->out_queue = g_async_queue_new ();
-    priv->active = TRUE;
-
-    return UFO_NODE (task);
+    return UFO_NODE (g_object_new (UFO_TYPE_INPUT_TASK, NULL));
 }
 
 void
@@ -198,4 +187,8 @@ ufo_input_task_init (UfoInputTask *task)
 {
     task->priv = UFO_INPUT_TASK_GET_PRIVATE (task);
     ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "input-task");
+
+    task->priv->in_queue = g_async_queue_new ();
+    task->priv->out_queue = g_async_queue_new ();
+    task->priv->active = TRUE;
 }
