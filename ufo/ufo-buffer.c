@@ -470,6 +470,11 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
     dpriv = dst->priv;
     queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
 
+    if (spriv->location == UFO_LOCATION_INVALID) {
+        alloc_host_mem (spriv);
+        spriv->location = UFO_LOCATION_HOST;
+    }
+
     if (dpriv->location == UFO_LOCATION_INVALID) {
         alloc[spriv->location](dpriv);
         dpriv->location = spriv->location;
