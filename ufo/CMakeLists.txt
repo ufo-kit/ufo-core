@@ -60,6 +60,14 @@ set(ufocore_HDRS
     )
 #}}}
 
+#{{{ Optional dependencies
+pkg_check_modules(PYTHON python)
+
+if(PYTHON_FOUND)
+    set(HAVE_PYTHON "1")
+endif()
+#}}}
+
 #{{{ libufo target
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
@@ -79,6 +87,11 @@ add_library(ufo SHARED
             ${ufocore_SRCS}
             ${ufocore_NODOC_SRCS}
             ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
+
+if(PYTHON_FOUND)
+    include_directories(${PYTHON_INCLUDE_DIRS})
+    target_link_libraries(ufo ${PYTHON_LIBRARIES})
+endif()
 
 set_target_properties(ufo PROPERTIES
     VERSION ${PACKAGE_VERSION}
