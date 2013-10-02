@@ -50,6 +50,8 @@ if __name__ == '__main__':
         inc_dirs.append(get_include())
         inc_dirs.append('${PROJECT_SOURCE_DIR}')
         inc_dirs.append('${PROJECT_BINARY_DIR}')
+        libs.append('ufo')
+        lib_dirs.append('${PROJECT_BINARY_DIR}/ufo')
         extra.append('-std=c99')
 
         setup(name='ufotools',
