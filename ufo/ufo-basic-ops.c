@@ -1,3 +1,9 @@
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
+#include <CL/cl.h>
+#endif
+
 #include <math.h>
 #include <ufo/ufo-basic-ops.h>
 #define OPS_FILENAME "ufo-basic-ops.cl"

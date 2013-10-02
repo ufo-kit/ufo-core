@@ -5,12 +5,6 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#ifdef __APPLE__
-#include <OpenCL/cl.h>
-#else
-#include <CL/cl.h>
-#endif
-
 #include <glib-object.h>
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-resources.h>
