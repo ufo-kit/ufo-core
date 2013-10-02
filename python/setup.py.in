@@ -43,11 +43,13 @@ def parse_pkg_config(pkg_names):
 
 
 if __name__ == '__main__':
-    packages = ['gobject-2.0', 'pygobject-2.0', 'ufo']
+    packages = ['gobject-2.0', 'pygobject-2.0']
 
     try:
         inc_dirs, lib_dirs, libs, extra = parse_pkg_config(packages)
         inc_dirs.append(get_include())
+        inc_dirs.append('${PROJECT_SOURCE_DIR}')
+        inc_dirs.append('${PROJECT_BINARY_DIR}')
         extra.append('-std=c99')
 
         setup(name='ufotools',
