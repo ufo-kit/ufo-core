@@ -6,5 +6,6 @@ void test_add_config (void);
 void test_add_graph (void);
 void test_add_profiler (void);
 void test_add_remote_node (void);
+void test_add_zmq_messenger (void);
 
 #endif

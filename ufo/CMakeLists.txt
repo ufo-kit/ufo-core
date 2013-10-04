@@ -15,6 +15,7 @@ set(ufocore_SRCS
     ufo-graph.c
     ufo-group.c
     ufo-input-task.c
+    ufo-messenger-iface.c
     ufo-node.c
     ufo-output-task.c
     ufo-plugin-manager.c
@@ -27,6 +28,7 @@ set(ufocore_SRCS
     ufo-task-graph.c
     ufo-task-node.c
     ufo-basic-ops.c
+    ufo-zmq-messenger.c
     )
 #}}}
 
@@ -45,6 +47,7 @@ set(ufocore_HDRS
     ufo-graph.h
     ufo-group.h
     ufo-input-task.h
+    ufo-messenger-iface.h
     ufo-node.h
     ufo-output-task.h
     ufo-plugin-manager.h
@@ -57,6 +60,7 @@ set(ufocore_HDRS
     ufo-task-graph.h
     ufo-task-node.h
     ufo-basic-ops.h
+    ufo-zmq-messenger.h
     )
 #}}}
 

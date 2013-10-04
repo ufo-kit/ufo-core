@@ -7,6 +7,7 @@ set(TEST_SRCS
     test-graph.c
     test-profiler.c
     test-remote-node.c
+    test-zmq-messenger.c
     )
 
 set(SUITE_BIN "test-suite")
