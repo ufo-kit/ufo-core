@@ -317,7 +317,7 @@ build_remote_graph (UfoTaskGraph *remote_graph,
                     GList *first,
                     GList *last)
 {
-    UfoTaskNode *node;
+    UfoTaskNode *node = NULL;
     UfoTaskNode *predecessor = NULL;
 
     for (GList *it = g_list_next (first); it != last; it = g_list_next (it)) {
@@ -329,6 +329,7 @@ build_remote_graph (UfoTaskGraph *remote_graph,
         predecessor = node;
     }
 
+    g_assert (node != NULL);
     return node;
 }
 
@@ -834,11 +835,11 @@ add_task_node_to_json_array (UfoTaskNode *node, JsonArray *array)
     JsonNode *prop_node;
 
     node_object = json_object_new ();
-    gchar *plugin_name = ufo_task_node_get_plugin_name (node);
+    const gchar *plugin_name = ufo_task_node_get_plugin_name (node);
     g_assert (plugin_name != NULL);
     json_object_set_string_member (node_object, "plugin", plugin_name);
                                    
-    gchar *name = ufo_task_node_get_unique_name (node);
+    const gchar *name = ufo_task_node_get_unique_name (node);
     g_assert (name != NULL);
     json_object_set_string_member (node_object, "name", name);
 
@@ -853,7 +854,7 @@ json_object_from_ufo_node (UfoNode *node)
     JsonObject *object;
 
     object = json_object_new ();
-    gchar *unique_name = ufo_task_node_get_unique_name (UFO_TASK_NODE (node));
+    const gchar *unique_name = ufo_task_node_get_unique_name (UFO_TASK_NODE (node));
     json_object_set_string_member (object, "name", unique_name);
     return object;
 }

@@ -258,7 +258,7 @@ get_preferably_gpu_based_platform (void)
 {
     cl_platform_id *platforms;
     cl_uint n_platforms;
-    cl_platform_id candidate;
+    cl_platform_id candidate = 0;
 
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (0, NULL, &n_platforms));
     platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
@@ -325,16 +325,16 @@ get_device_type (UfoResourcesPrivate *priv)
     return CL_DEVICE_TYPE_ALL;
 }
 
-/**
- * restrict_to_gpu_subset:
- * Selects a single GPU which can be set via the UFO_USE_GPU
- * environment variable, even if more GPUs are available. The specifc GPU
- * is selected via the integer value of UFO_USE_GPU (index starts at 1). Used
- * for debugging and evaluation.
- */
 static void
 restrict_to_gpu_subset (UfoResourcesPrivate *priv)
 {
+    /*
+     * Selects a single GPU which can be set via the UFO_USE_GPU
+     * environment variable, even if more GPUs are available. The specifc GPU
+     * is selected via the integer value of UFO_USE_GPU (index starts at 1).
+     * Used for debugging and evaluation.
+     */
+
     const gchar* env_gpu = g_getenv ("UFO_USE_GPU");
     if (env_gpu == NULL || g_strcmp0 (env_gpu, "") == 0)
         return;
@@ -767,12 +767,12 @@ ufo_resources_get_context (UfoResources *resources)
 }
 
 /**
- * ufo_resources_get_cmd_queues:
+ * ufo_resources_get_cmd_queues: (skip)
  * @resources: A #UfoResources
  *
  * Get all command queues managed by @resources.
  *
- * Returns: (element-type gpointer) (transfer container): List with
+ * Returns: (transfer container) (element-type gpointer): List with
  * cl_command_queue objects. Free with g_list_free() but not its elements.
  */
 GList *
@@ -791,7 +791,7 @@ ufo_resources_get_cmd_queues (UfoResources *resources)
 }
 
 /**
- * ufo_resources_get_devices:
+ * ufo_resources_get_devices: (skip)
  * @resources: A #UfoResources
  *
  * Get all devices queues managed by @resources.
@@ -1022,5 +1022,6 @@ ufo_resources_init (UfoResources *self)
 
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_PLUGIN_DIR));
+    priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup ("/usr/lib/ufo"));
     priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup ("/usr/local/lib/ufo"));
 }

@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "config.h"
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
@@ -25,6 +26,10 @@
 #include <gio/gio.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef HAVE_PYTHON
+#include <Python.h>
+#endif
 
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-config.h>
@@ -766,9 +771,17 @@ ufo_scheduler_run (UfoScheduler *scheduler,
             return;
     }
 
+#ifdef HAVE_PYTHON
+    Py_BEGIN_ALLOW_THREADS
+#endif
+
     /* Wait for threads to finish */
     for (guint i = 0; i < n_nodes; i++)
         g_thread_join (threads[i]);
+
+#ifdef HAVE_PYTHON
+    Py_END_ALLOW_THREADS
+#endif
 
     g_message ("Processing finished after %3.5fs", g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);

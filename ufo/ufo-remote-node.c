@@ -17,11 +17,12 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <zmq.h>
 #include <string.h>
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-messenger-iface.h>
 #include <ufo/ufo-zmq-messenger.h>
+
+#include "zmq-shim.h"
 
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 
@@ -184,7 +185,7 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
     }
     gpointer buffer = g_malloc (priv->n_inputs * sizeof (struct _Header) + size);
 
-    gpointer base = buffer;
+    char *base = buffer;
 
     for (guint i = 0; i < priv->n_inputs; i++) {
         struct _Header *header = g_new0 (struct _Header, 1);
@@ -252,14 +253,6 @@ static void
 cleanup_remote (UfoRemoteNodePrivate *priv)
 {
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_CLEANUP, 0);
-    ufo_messenger_send_blocking (priv->msger, request, NULL);
-    ufo_message_free (request);
-}
-
-static void
-terminate_remote (UfoRemoteNodePrivate *priv)
-{
-    UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
     ufo_messenger_send_blocking (priv->msger, request, NULL);
     ufo_message_free (request);
 }

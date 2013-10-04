@@ -208,7 +208,7 @@ ufo_profiler_enable_tracing (UfoProfiler *profiler,
 }
 
 /**
- * ufo_profiler_get_trace_events:
+ * ufo_profiler_get_trace_events: (skip)
  * @profiler: A #UfoProfiler object.
  *
  * Get all events recorded with @profiler.

@@ -36,6 +36,8 @@
 #include <ufo/ufo-zmq-messenger.h>
 #include <ufo/ufo-messenger-iface.h>
 
+#include "zmq-shim.h"
+
 G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)
 
 #define UFO_DAEMON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_DAEMON, UfoDaemonPrivate))
@@ -258,7 +260,7 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
         guint64 buffer_size;
     };
 
-    gpointer base = request->data;
+    char *base = request->data;
     struct _Header *header = (struct _Header *) base;
 
     /* Receive buffer size */

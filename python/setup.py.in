@@ -1,13 +1,71 @@
+import os
+import subprocess
+from numpy import get_include
 from distutils.core import setup, Extension
 
+
+def parse_pkg_config(pkg_names):
+    """Call `pkg-config` with each package in pkg_name and return a tuple with
+    stripped (include_dirs, library_dirs, libraries, extra_cflags)
+    """
+    include_dirs = []
+    libraries = []
+    lib_dirs = []
+    extra_cflags = []
+
+    for pkg_name in pkg_names:
+        try:
+            proc = subprocess.Popen(['pkg-config', '--libs', pkg_name],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            proc.wait()
+
+            if proc.returncode != 0:
+                raise Exception('package `%s\' not found' % pkg_name)
+
+            r = proc.stdout.read()
+
+            libraries.extend([l.replace('-l', '') for l in r.split() if
+                l.startswith('-l')])
+
+            extra_cflags.extend([l for l in r.split() if not
+                l.startswith('-l')])
+
+            proc = subprocess.Popen(['pkg-config', '--cflags', pkg_name],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            r = proc.stdout.read()
+
+            include_dirs.extend([i.replace('-I', '') for i in r.split() if
+                i.startswith('-I')])
+        except OSError:
+            raise Exception('`pkg-config\' is not installed')
+
+    return (include_dirs, lib_dirs, libraries, extra_cflags)
+
+
 if __name__ == '__main__':
-    setup(name='ufotools',
-          version='${PACKAGE_VERSION}',
-          author='Matthias Vogelgesang',
-          author_email='matthias.vogelgesang@kit.edu',
-          url='http://ufo.kit.edu',
-          license='GPL v3',
-          description='ufo extension module',
-          long_description='ufo extension module',
-          package_dir={ '': '${CMAKE_CURRENT_SOURCE_DIR}' },
-          packages=['ufotools'])
+    packages = ['gobject-2.0', 'pygobject-2.0']
+
+    try:
+        inc_dirs, lib_dirs, libs, extra = parse_pkg_config(packages)
+        inc_dirs.append(get_include())
+        inc_dirs.append('${PROJECT_SOURCE_DIR}')
+        inc_dirs.append('${PROJECT_BINARY_DIR}')
+        libs.append('ufo')
+        lib_dirs.append('${PROJECT_BINARY_DIR}/ufo')
+        extra.append('-std=c99')
+
+        setup(name='ufotools',
+              version='${PACKAGE_VERSION}',
+              author='Matthias Vogelgesang',
+              author_email='matthias.vogelgesang@kit.edu',
+              url='http://ufo.kit.edu',
+              license='GPL v3',
+              description='ufo extension module',
+              long_description='ufo extension module',
+              ext_modules=[Extension('ufonp', ['${CMAKE_CURRENT_SOURCE_DIR}/ufonp.c'],
+                include_dirs=inc_dirs,
+                library_dirs=lib_dirs,
+                libraries=libs,
+                extra_compile_args=extra)])
+    except Exception as e:
+        print 'Configure error:', e

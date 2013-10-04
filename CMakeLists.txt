@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 2.6)
 project(ufo C)
 
 set(TARNAME "libufo")
+
+set(UFO_DESCRIPTION "UFO high-speed image processing core library")
+set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
+
+#{{{ Library version
 set(UFO_VERSION_MAJOR "0")
 set(UFO_VERSION_MINOR "5")
 set(UFO_VERSION_PATCH "0")
@@ -9,10 +14,9 @@ set(UFO_GIR_VERSION "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}")
 
 # increase UFO_SO_VERSION on each version that breaks ABI compatibility
 set(UFO_SO_VERSION "4")
+#}}}
 
-set(UFO_DESCRIPTION "UFO high-speed image processing core library")
-set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
-
+#{{{ Package version
 set(PACKAGE_VERSION_MAJOR ${UFO_VERSION_MAJOR})
 set(PACKAGE_VERSION_MINOR ${UFO_VERSION_MINOR})
 set(PACKAGE_VERSION_PATCH ${UFO_VERSION_PATCH})
@@ -21,39 +25,39 @@ set(PACKAGE_NAME ${TARNAME})
 set(PACKAGE_TARNAME ${TARNAME})
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_BUGREPORT "http://ufo.kit.edu/ufo/newticket")
+#}}}
 
+#{{{ CMake
 enable_testing()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
+#}}}
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ufo")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/ufo")
-
-
-# --- Options -----------------------------------------------------------------
+#{{{ Options
 option(WITH_PROFILING "Enable profiling" OFF)
+option(WITH_TESTS "Build test suite" ON)
+
 if (WITH_PROFILING)
     add_definitions("-pg")
     set(CMAKE_C_FLAGS "-pg")
 endif ()
+#}}}
 
-
-# --- Find packages and libraries ---------------------------------------------
-
-# These packages are required in all sub-directories because Glib and GObject is
-# part of the API/ABI.
+#{{{ Dependencies
+set(PKG_GLIB2_MIN_REQUIRED "2.22")
+set(PKG_JSON_GLIB_MIN_REQUIRED "0.7.6")
+set(PKG_ZMQ_MIN_REQUIRED "2.1")
 
 find_package(OpenCL REQUIRED)
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(GLIB2 glib-2.0>=2.22 REQUIRED)
-pkg_check_modules(GOBJECT2 gobject-2.0>=2.22 REQUIRED)
-pkg_check_modules(GMODULE2 gmodule-2.0>=2.22 REQUIRED)
-pkg_check_modules(GTHREAD2 gthread-2.0>=2.22 REQUIRED)
-pkg_check_modules(GIO2 gio-2.0>=2.22 REQUIRED)
-pkg_check_modules(JSON_GLIB json-glib-1.0 REQUIRED)
-pkg_check_modules(ZMQ libzmq>=3.2 REQUIRED)
+pkg_check_modules(GLIB2 glib-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
+pkg_check_modules(GOBJECT2 gobject-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
+pkg_check_modules(GMODULE2 gmodule-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
+pkg_check_modules(GTHREAD2 gthread-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
+pkg_check_modules(GIO2 gio-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
+pkg_check_modules(JSON_GLIB json-glib-1.0>=${PKG_JSON_GLIB_MIN_REQUIRED} REQUIRED)
+pkg_check_modules(ZMQ libzmq>=${PKG_ZMQ_MIN_REQUIRED} REQUIRED)
 
 set(UFOCORE_DEPS
     ${OPENCL_LIBRARIES}
@@ -65,42 +69,55 @@ set(UFOCORE_DEPS
     ${JSON_GLIB_LIBRARIES}
     ${ZMQ_LIBRARIES})
 
-
+#{{{ Add include directories
 include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/ufo
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}/ufo
     ${GLIB2_INCLUDE_DIRS}
     ${GIO2_INCLUDE_DIRS}
     ${OPENCL_INCLUDE_DIRS}
     ${JSON_GLIB_INCLUDE_DIRS}
     ${ZMQ_INCLUDE_DIRS})
+#}}}
+#}}}
 
-link_directories(
-    ${ZMQ_LIBRARY_DIRS}
-    ${JSON_GLIB_LIBRARY_DIRS})
-
-add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
+#{{{ Definitions
+add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
 
 if (CMAKE_COMPILER_IS_GNUCC)
-    add_definitions("-Wmissing-prototypes -Wmissing-declarations -Wshadow
-    -Wpointer-arith -Wcast-align -Wwrite-strings -Wredundant-decls -Wcast-qual
-    -Wnested-externs -Winline -Wno-long-long -Wconversion -Wstrict-prototypes")
-
-    add_definitions("-Wno-unused-parameter -Wno-missing-field-initializers")
+    add_definitions("-Wcast-align
+                     -Wcast-qual
+                     -Winline
+                     -Wmissing-declarations
+                     -Wmissing-prototypes
+                     -Wnested-externs
+                     -Wno-long-long
+                     -Wno-missing-field-initializers
+                     -Wno-unused-parameter
+                     -Wpointer-arith
+                     -Wredundant-decls
+                     -Wshadow
+                     -Wstrict-prototypes
+                     -Wwrite-strings")
 endif()
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
+#}}}
 
-add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
-
+#{{{ Subdirectories
 add_subdirectory(ufo)
 add_subdirectory(docs)
 add_subdirectory(python)
-add_subdirectory(tests)
 add_subdirectory(tools)
 
+if (WITH_TESTS)
+    add_subdirectory(tests)
+endif()
+#}}}
 
-# --- Package generation ------------------------------------------------------
+#{{{ CPack
 set(CPACK_PACKAGE_DESCRIPTION ${UFO_DESCRIPTION})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${UFO_DESCRIPTION_SUMMARY})
 set(CPACK_PACKAGE_NAME ${TARNAME})
@@ -118,7 +135,17 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;.git/;tags;.swp;${CPACK_SOURCE_IGNORE_FILES}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_NAME}-${PACKAGE_VERSION}" CACHE INTERNAL "tarball basename")
 
-# --- Distro specific
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.3.6), libgcc1 (>= 1:4.1)")
+#{{{ Debian
+set(CPACK_DEBIAN_PACKAGE_DEPENDS
+    "libglib2.0-0 (>= ${PKG_GLIB2_MIN_REQUIRED}),
+     libjson-glib-1.0-0 (>= ${PKG_JSON_GLIB_MIN_REQUIRED}),
+     libzmq1 (>= ${PKG_ZMQ_MIN_REQUIRED})")
+#}}}
+
+#{{{ RPM
+set(CPACK_RPM_PACKAGE_AUTOREQPROV " no")
+set(CPACK_RPM_PACKAGE_REQUIRES "libjson-glib-1_0-0, libzmq1")
+#}}}
 
 include(CPack)
+#}}}

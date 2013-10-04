@@ -397,8 +397,9 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && name != NULL, NULL);
     UfoTaskNode *node;
+
     if (!g_strcmp0 (name, "[dummy]"))
-        return ufo_dummy_task_new ();
+        return UFO_TASK_NODE (ufo_dummy_task_new ());
 
     gchar *module_name = transform_string ("libufofilter%s.so", name, NULL);
     gchar *func_name = transform_string ("ufo_%s_task_new", name, "_");
@@ -412,7 +413,7 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     g_free (func_name);
     g_free (module_name);
 
-    g_debug ("UfoPluginManager: Created %s-%p", name, node);
+    g_debug ("UfoPluginManager: Created %s-%p", name, (gpointer) node);
     return node;
 }
 

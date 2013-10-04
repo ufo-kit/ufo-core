@@ -163,9 +163,9 @@ alloc_device_image (UfoBufferPrivate *priv)
 {
     cl_image_format format;
     cl_mem_flags flags;
-    cl_mem mem;
     cl_int err;
     gsize width, height, depth;
+    cl_mem mem = NULL;
 
     g_assert ((priv->requisition.n_dims == 2) ||
               (priv->requisition.n_dims == 3));
@@ -195,6 +195,7 @@ alloc_device_image (UfoBufferPrivate *priv)
     }
 
     UFO_RESOURCES_CHECK_CLERR (err);
+    g_assert (mem != NULL);
     priv->device_image = mem;
 }
 #endif
@@ -225,6 +226,30 @@ ufo_buffer_new (UfoRequisition *requisition,
     copy_requisition (requisition, &priv->requisition);
 
     return buffer;
+}
+
+/**
+ * ufo_buffer_new_with_size:
+ * @dims: (element-type guint64): size requisition
+ * @context: (allow-none): cl_context to use for creating the device array
+ *
+ * Create a new #UfoBuffer with a list of dimensions.
+ *
+ * Return value: A new #UfoBuffer with the given dimensions.
+ */
+UfoBuffer *
+ufo_buffer_new_with_size (GList *dims,
+                          gpointer context)
+{
+    UfoRequisition req;
+
+    req.n_dims = g_list_length (dims);
+    g_assert (req.n_dims < 16);
+
+    for (guint i = 0; i < req.n_dims; i++)
+        req.dims[i] = (gsize) g_list_nth_data (dims, i);
+
+    return ufo_buffer_new (&req, context);
 }
 
 /**
@@ -468,6 +493,11 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
     spriv = src->priv;
     dpriv = dst->priv;
     queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
+
+    if (spriv->location == UFO_LOCATION_INVALID) {
+        alloc_host_mem (spriv);
+        spriv->location = UFO_LOCATION_HOST;
+    }
 
     if (dpriv->location == UFO_LOCATION_INVALID) {
         alloc[spriv->location](dpriv);
