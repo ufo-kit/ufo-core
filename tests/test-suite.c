@@ -26,6 +26,7 @@ ignore_log (const gchar     *domain,
             const gchar     *message,
             gpointer         data)
 {
+    // g_print ("%s\n",message);
 }
 
 int main(int argc, char *argv[])
@@ -41,8 +42,8 @@ int main(int argc, char *argv[])
     test_add_config ();
     test_add_graph ();
     test_add_profiler ();
+    test_add_zmq_messenger ();
     test_add_remote_node ();
-
     g_test_run();
 
     return 0;

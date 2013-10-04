@@ -48,6 +48,8 @@
 #include <ufo/ufo-task-iface.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-basic-ops.h>
+#include <ufo/ufo-messenger-iface.h>
+#include <ufo/ufo-zmq-messenger.h>
 
 #undef __UFO_H_INSIDE__
 
