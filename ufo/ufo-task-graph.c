@@ -317,7 +317,7 @@ build_remote_graph (UfoTaskGraph *remote_graph,
                     GList *first,
                     GList *last)
 {
-    UfoTaskNode *node;
+    UfoTaskNode *node = NULL;
     UfoTaskNode *predecessor = NULL;
 
     for (GList *it = g_list_next (first); it != last; it = g_list_next (it)) {
@@ -329,6 +329,7 @@ build_remote_graph (UfoTaskGraph *remote_graph,
         predecessor = node;
     }
 
+    g_assert (node != NULL);
     return node;
 }
 

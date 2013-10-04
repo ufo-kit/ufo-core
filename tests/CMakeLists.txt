@@ -1,6 +1,5 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
-# configure unit tests
 set(TEST_SRCS
     test-suite.c
     test-buffer.c
@@ -12,20 +11,12 @@ set(TEST_SRCS
 
 set(SUITE_BIN "test-suite")
 
-option(WITH_TESTS "Build test suite" ON)
+add_executable(${SUITE_BIN} ${TEST_SRCS})
 
-if (WITH_TESTS)
-    include_directories(
-        {CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(${SUITE_BIN} ufo ${UFOCORE_DEPS})
 
-    add_executable(${SUITE_BIN} ${TEST_SRCS})
+add_test(${SUITE_BIN} ${SUITE_BIN})
 
-    target_link_libraries(${SUITE_BIN}
-        ufo
-        ${UFOCORE_DEPS})
-
-    add_test(${SUITE_BIN} ${SUITE_BIN})
-
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gtester.xsl"
-        "${CMAKE_CURRENT_BINARY_DIR}/gtester.xsl" @ONLY IMMEDIATE)
-endif()
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gtester.xsl"
+               "${CMAKE_CURRENT_BINARY_DIR}/gtester.xsl"
+               @ONLY IMMEDIATE)

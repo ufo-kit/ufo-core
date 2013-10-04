@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "config.h"
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
@@ -25,6 +26,10 @@
 #include <gmodule.h>
 #include <ufo/ufo-input-task.h>
 #include <ufo/ufo-cpu-task-iface.h>
+
+#ifdef HAVE_PYTHON
+#include <Python.h>
+#endif
 
 /**
  * SECTION:ufo-input-task
@@ -61,18 +66,7 @@ enum {
 UfoNode *
 ufo_input_task_new (void)
 {
-    UfoInputTask *task;
-    UfoInputTaskPrivate *priv;
-
-    task = UFO_INPUT_TASK (g_object_new (UFO_TYPE_INPUT_TASK, NULL));
-    priv = task->priv;
-
-    /* TODO: free in_params and queues */
-    priv->in_queue = g_async_queue_new ();
-    priv->out_queue = g_async_queue_new ();
-    priv->active = TRUE;
-
-    return UFO_NODE (task);
+    return UFO_NODE (g_object_new (UFO_TYPE_INPUT_TASK, NULL));
 }
 
 void
@@ -97,13 +91,29 @@ ufo_input_task_release_input_buffer (UfoInputTask *task,
  * Get the input buffer to which we write the data received from the master
  * remote node.
  *
- * Return value: (transfer full): A #UfoBuffer for writing input data.
+ * Return value: (transfer none): A #UfoBuffer for writing input data.
  */
 UfoBuffer *
 ufo_input_task_get_input_buffer (UfoInputTask *task)
 {
+    UfoBuffer *buffer;
     g_return_val_if_fail (UFO_IS_INPUT_TASK (task), NULL);
-    return g_async_queue_pop (task->priv->out_queue);
+
+#ifdef HAVE_PYTHON
+    /*
+     * We have to let the Python interpreter run its threads, because this
+     * function here might block before Python code can insert any buffer.
+     */
+    Py_BEGIN_ALLOW_THREADS
+#endif
+
+    buffer = g_async_queue_pop (task->priv->out_queue);
+
+#ifdef HAVE_PYTHON
+    Py_END_ALLOW_THREADS
+#endif
+
+    return buffer;
 }
 
 static void
@@ -133,8 +143,10 @@ ufo_input_task_get_requisition (UfoTask *task,
     priv = UFO_INPUT_TASK_GET_PRIVATE (task);
 
     /* Pop input here but release later in ufo_input_task_generate */
-    priv->input = g_async_queue_pop (priv->in_queue);
-    ufo_buffer_get_requisition (priv->input, requisition);
+    if (priv->active) {
+        priv->input = g_async_queue_pop (priv->in_queue);
+        ufo_buffer_get_requisition (priv->input, requisition);
+    }
 }
 
 static gboolean
@@ -147,7 +159,7 @@ ufo_input_task_generate (UfoCpuTask *task,
     g_return_val_if_fail (UFO_IS_INPUT_TASK (task), FALSE);
     priv = UFO_INPUT_TASK_GET_PRIVATE (task);
 
-    if (!priv->active)
+    if (!priv->active && priv->input == NULL)
         return FALSE;
 
     ufo_buffer_discard_location (output);
@@ -155,8 +167,9 @@ ufo_input_task_generate (UfoCpuTask *task,
 
     /* input was popped in ufo_input_task_get_requisition */
     g_async_queue_push (priv->out_queue, priv->input);
+    priv->input = NULL;
 
-    return priv->active;
+    return TRUE;
 }
 
 static void
@@ -198,4 +211,8 @@ ufo_input_task_init (UfoInputTask *task)
 {
     task->priv = UFO_INPUT_TASK_GET_PRIVATE (task);
     ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "input-task");
+
+    task->priv->in_queue = g_async_queue_new ();
+    task->priv->out_queue = g_async_queue_new ();
+    task->priv->active = TRUE;
 }
