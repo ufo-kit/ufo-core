@@ -3,8 +3,8 @@
 UFO is a multi-threaded, GPU-enabled and distributed data processing
 *framework*. It provides base classes, scheduler implementations and run-time
 management to describe a workflow as a graph of processing nodes. The nodes are
-implemented as [plugins](https://github.com/ufo-kit/ufo-filters) in the
-ufo-filters sister project.
+implemented as plugins in the
+[ufo-filters](https://github.com/ufo-kit/ufo-filters) sister project.
 
 
 ## Further information
