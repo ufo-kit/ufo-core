@@ -32,6 +32,12 @@ set(ufocore_SRCS
     )
 #}}}
 
+if (ENABLE_MPI)
+    set(ufocore_SRCS ${ufocore_SRCS}
+    ufo-mpi-messenger.c
+    )
+endif ()
+
 #{{{ Public headers
 set(ufocore_HDRS
     ufo-arch-graph.h
@@ -63,6 +69,12 @@ set(ufocore_HDRS
     ufo-zmq-messenger.h
     )
 #}}}
+
+if (ENABLE_MPI)
+    set(ufocore_HDRS ${ufocore_HDRS}
+    ufo-mpi-messenger.h
+    )
+endif ()
 
 #{{{ Optional dependencies
 pkg_check_modules(PYTHON python)

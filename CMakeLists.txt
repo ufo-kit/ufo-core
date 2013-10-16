@@ -3,6 +3,10 @@ project(ufo C)
 
 set(TARNAME "libufo")
 
+if (ENABLE_MPI)
+    set(CMAKE_C_COMPILER "mpicc")
+endif ()
+
 set(UFO_DESCRIPTION "UFO high-speed image processing core library")
 set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
 
@@ -84,7 +88,7 @@ include_directories(
 #}}}
 
 #{{{ Definitions
-add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
+add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
 
 if (CMAKE_COMPILER_IS_GNUCC)
     add_definitions("-Wcast-align

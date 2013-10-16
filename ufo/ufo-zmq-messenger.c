@@ -155,6 +155,7 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
 
     frame->data_size = request_msg->data_size;
     frame->type = request_msg->type;
+    //TODO eliminate extra copying
     memcpy (frame->data, request_msg->data, request_msg->data_size);
 
     gint err = zmq_msg_send (&request, priv->zmq_socket, 0);
@@ -220,7 +221,7 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
 
     g_mutex_lock (priv->mutex);
 
-    UfoMessage *result;
+    UfoMessage *result = NULL;
     zmq_msg_t reply;
     zmq_msg_init (&reply);
     gint size = zmq_msg_recv (&reply, priv->zmq_socket, 0);

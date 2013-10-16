@@ -21,8 +21,7 @@
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-messenger-iface.h>
 #include <ufo/ufo-zmq-messenger.h>
-
-#include "zmq-shim.h"
+#include <ufo/ufo-mpi-messenger.h>
 
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 
@@ -30,7 +29,6 @@ G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 
 struct _UfoRemoteNodePrivate {
     gpointer context;
-    gpointer socket;
     guint n_inputs;
     GMutex *mutex;
     UfoMessenger *msger;
@@ -46,7 +44,7 @@ ufo_remote_node_new (const gchar *address)
     node = UFO_REMOTE_NODE (g_object_new (UFO_TYPE_REMOTE_NODE, NULL));
     priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
-    priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
 
     gchar *addr = g_strdup (address);
     ufo_messenger_connect (priv->msger, addr, UFO_MESSENGER_CLIENT);
@@ -277,12 +275,6 @@ ufo_remote_node_finalize (GObject *object)
     priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
     g_mutex_free (priv->mutex);
 
-    if (priv->context != NULL) {
-        g_debug ("RemoteNode destroying zmq_context=%p", priv->context);
-        zmq_ctx_destroy (priv->context);
-        priv->context = NULL;
-    }
-
     G_OBJECT_CLASS (ufo_remote_node_parent_class)->finalize (object);
 }
 
@@ -303,8 +295,6 @@ ufo_remote_node_init (UfoRemoteNode *self)
 {
     UfoRemoteNodePrivate *priv;
     self->priv = priv = UFO_REMOTE_NODE_GET_PRIVATE (self);
-    priv->context = zmq_ctx_new ();
-    priv->socket = NULL;
     priv->n_inputs = 0;
     priv->mutex = g_mutex_new ();
 }

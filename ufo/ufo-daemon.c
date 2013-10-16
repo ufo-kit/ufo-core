@@ -34,6 +34,7 @@
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-zmq-messenger.h>
+#include <ufo/ufo-mpi-messenger.h>
 #include <ufo/ufo-messenger-iface.h>
 
 #include "zmq-shim.h"
@@ -78,7 +79,7 @@ ufo_daemon_new (UfoConfig *config, gchar *listen_address)
     priv->listen_address = listen_address;
     priv->manager = ufo_plugin_manager_new (priv->config);
     priv->scheduler = ufo_scheduler_new (priv->config, NULL);
-    priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
 
     return daemon;
 }
@@ -384,16 +385,12 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
 
     while (priv->run) {
-        // zmq_msg_t request;
-
-        // zmq_msg_init (&request);
 
         g_mutex_lock (priv->started_lock);
         priv->has_started = TRUE;
         g_cond_signal (priv->started_cond);
         g_mutex_unlock (priv->started_lock);
 
-        // gint err = zmq_msg_recv (&request, priv->socket, 0);
         /* if daemon is stopped, socket will be closed and msg_recv
          * will yield an error - we simply want to return
          */
@@ -445,7 +442,6 @@ ufo_daemon_start (UfoDaemon *daemon)
 
     /* TODO handle error if unable to connect/bind */
     ufo_messenger_connect (priv->msger, priv->listen_address, UFO_MESSENGER_SERVER);
-
     priv->run = TRUE;
     priv->thread = g_thread_create ((GThreadFunc)ufo_daemon_start_impl, daemon, TRUE, NULL);
     g_return_if_fail (priv->thread != NULL);
@@ -462,15 +458,16 @@ void
 ufo_daemon_stop (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
-
     /* HACK we can't call _disconnect() as this has to be run from the
      * thread running the daemon - we thus send a TERMINATE message to
      * that thread
      */
-    UfoMessenger *tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+    g_message ("trying to stop daemon");
+    UfoMessenger *tmp_msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
     ufo_messenger_connect (tmp_msger, priv->listen_address, UFO_MESSENGER_CLIENT);
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
     ufo_messenger_send_blocking (tmp_msger, request, NULL);
+    g_message ("tryed to stop daemon");
 
     g_thread_join (priv->thread);
 }
