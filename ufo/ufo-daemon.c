@@ -22,6 +22,12 @@
 #else
 #include <CL/cl.h>
 #endif
+
+#ifdef MPI
+#include <mpi.h>
+#include <ufo/ufo-mpi-messenger.h>
+#endif
+
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,8 +42,6 @@
 #include <ufo/ufo-zmq-messenger.h>
 #include <ufo/ufo-messenger-iface.h>
 
-#include "zmq-shim.h"
-
 G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)
 
 #define UFO_DAEMON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_DAEMON, UfoDaemonPrivate))
@@ -47,6 +51,7 @@ struct _UfoDaemonPrivate {
     UfoPluginManager *manager;
     UfoTaskGraph *task_graph;
     UfoScheduler *scheduler;
+    GThread *scheduler_thread;
     gpointer socket;
     UfoNode *input_task;
     UfoNode *output_task;
@@ -54,10 +59,13 @@ struct _UfoDaemonPrivate {
     gpointer context;
     gchar *listen_address;
     GThread *thread;
-    gboolean run;
-    gboolean has_started;
+    GMutex *startstop_lock;
     GMutex *started_lock;
+    GMutex *stopped_lock;
+    gboolean has_started;
+    gboolean has_stopped;
     GCond *started_cond;
+    GCond *stopped_cond;
     UfoMessenger *msger;
 };
 
@@ -78,8 +86,11 @@ ufo_daemon_new (UfoConfig *config, gchar *listen_address)
     priv->listen_address = listen_address;
     priv->manager = ufo_plugin_manager_new (priv->config);
     priv->scheduler = ufo_scheduler_new (priv->config, NULL);
+#ifdef MPI
+    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
+#else
     priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
-
+#endif
     return daemon;
 }
 
@@ -219,7 +230,7 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *msg)
                              last, priv->output_task,
                              GINT_TO_POINTER (0));
 
-    g_thread_create ((GThreadFunc) run_scheduler, daemon, FALSE, NULL);
+    priv->scheduler_thread = g_thread_create ((GThreadFunc) run_scheduler, daemon, TRUE, NULL);
     g_free (json);
 }
 
@@ -260,7 +271,7 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
         guint64 buffer_size;
     };
 
-    gpointer base = request->data;
+    char *base = request->data;
     struct _Header *header = (struct _Header *) base;
 
     /* Receive buffer size */
@@ -350,6 +361,7 @@ void handle_cleanup (UfoDaemon *daemon)
 
     unref_and_free ((GObject **) &priv->output_task);
     unref_and_free ((GObject **) &priv->task_graph);
+
 }
 
 static void
@@ -360,7 +372,12 @@ handle_terminate (UfoDaemon *daemon)
     ufo_messenger_send_blocking (priv->msger, response, NULL);
     ufo_message_free (response);
 
-    priv->run = FALSE;
+    if(priv->scheduler_thread != NULL) {
+        g_message ("waiting for scheduler to finish");
+        g_thread_join (priv->scheduler_thread);
+        g_message ("scheduler finished!");
+    }
+
     ufo_messenger_disconnect (priv->msger);
 }
 
@@ -382,25 +399,24 @@ static void
 ufo_daemon_start_impl (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    g_debug ("UfoDaemon started on address %s", priv->listen_address);
 
-    while (priv->run) {
-        // zmq_msg_t request;
+    // tell the calling thread that we have started 
+    g_mutex_lock (priv->started_lock);
+    priv->has_started = TRUE;
+    g_cond_signal (priv->started_cond);
+    g_mutex_unlock (priv->started_lock);
 
-        // zmq_msg_init (&request);
-
-        g_mutex_lock (priv->started_lock);
-        priv->has_started = TRUE;
-        g_cond_signal (priv->started_cond);
-        g_mutex_unlock (priv->started_lock);
-
-        // gint err = zmq_msg_recv (&request, priv->socket, 0);
-        /* if daemon is stopped, socket will be closed and msg_recv
-         * will yield an error - we simply want to return
-         */
+    gboolean wait_for_messages = TRUE;
+    while (wait_for_messages) {
 
         GError *err = NULL;
         UfoMessage *msg = ufo_messenger_recv_blocking (priv->msger, &err);
         if (err != NULL) {
+            /* if daemon is stopped, socket will be closed and msg_recv
+            * will yield an error - we stop
+            */
+            wait_for_messages = FALSE;
         } else {
             switch (msg->type) {
                 case UFO_MESSAGE_GET_NUM_DEVICES:
@@ -429,6 +445,7 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
                     break;
                 case UFO_MESSAGE_TERMINATE:
                     handle_terminate (daemon);
+                    wait_for_messages = FALSE;
                     break;
                 default:
                     g_message ("Unknown message received\n");
@@ -436,6 +453,12 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
         }
         ufo_message_free (msg);
     }
+
+    // tell calling thread we have stopped
+    g_mutex_lock (priv->stopped_lock);
+    priv->has_stopped = TRUE;
+    g_cond_signal (priv->stopped_cond);
+    g_mutex_unlock (priv->stopped_lock);
 }
 
 void
@@ -443,36 +466,67 @@ ufo_daemon_start (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
 
+    g_mutex_lock (priv->startstop_lock);
+    if (priv->has_started) {
+        g_mutex_unlock (priv->startstop_lock);
+        return;
+    }
+
     /* TODO handle error if unable to connect/bind */
     ufo_messenger_connect (priv->msger, priv->listen_address, UFO_MESSENGER_SERVER);
 
-    priv->run = TRUE;
     priv->thread = g_thread_create ((GThreadFunc)ufo_daemon_start_impl, daemon, TRUE, NULL);
     g_return_if_fail (priv->thread != NULL);
 
     g_mutex_lock (priv->started_lock);
-
     while (!priv->has_started)
         g_cond_wait (priv->started_cond, priv->started_lock);
-
     g_mutex_unlock (priv->started_lock);
+
+
+    g_mutex_unlock (priv->startstop_lock);
 }
 
 void
 ufo_daemon_stop (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    g_mutex_lock (priv->startstop_lock);
 
     /* HACK we can't call _disconnect() as this has to be run from the
-     * thread running the daemon - we thus send a TERMINATE message to
-     * that thread
+     * thread running the daemon which might be blocking on recv
+     * - we thus send a TERMINATE message to that thread
      */
-    UfoMessenger *tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+
+    UfoMessenger *tmp_msger;
+#ifdef MPI
+    tmp_msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
+#else
+    tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+#endif
+
     ufo_messenger_connect (tmp_msger, priv->listen_address, UFO_MESSENGER_CLIENT);
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
     ufo_messenger_send_blocking (tmp_msger, request, NULL);
 
     g_thread_join (priv->thread);
+
+    g_mutex_lock (priv->stopped_lock);
+    priv->has_stopped = TRUE;
+    g_cond_signal (priv->stopped_cond);
+    g_mutex_unlock (priv->stopped_lock);
+
+    g_mutex_unlock (priv->startstop_lock);
+}
+
+void ufo_daemon_wait_finish (UfoDaemon *daemon)
+{
+    UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+
+    g_mutex_lock (priv->stopped_lock);
+    while (!priv->has_stopped)
+        g_cond_wait (priv->stopped_cond, priv->stopped_lock);
+    g_mutex_unlock (priv->stopped_lock);
 }
 
 static void
@@ -499,7 +553,7 @@ static void
 ufo_daemon_finalize (GObject *object)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (object);
-    g_mutex_free (priv->started_lock);
+    g_mutex_free (priv->startstop_lock);
     g_cond_free (priv->started_cond);
 
     G_OBJECT_CLASS (ufo_daemon_parent_class)->finalize (object);
@@ -522,7 +576,11 @@ ufo_daemon_init (UfoDaemon *self)
 {
     UfoDaemonPrivate *priv;
     self->priv = priv = UFO_DAEMON_GET_PRIVATE (self);
+    priv->startstop_lock = g_mutex_new ();
     priv->started_lock = g_mutex_new ();
+    priv->stopped_lock = g_mutex_new ();
     priv->started_cond = g_cond_new ();
+    priv->stopped_cond = g_cond_new ();
     priv->has_started = FALSE;
+    priv->has_stopped = FALSE;
 }

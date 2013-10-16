@@ -18,6 +18,7 @@
  */
 
 #include <ufo/ufo.h>
+#include <ufo/ufo-zmq-messenger.h>
 #include "test-suite.h"
 
 typedef struct {

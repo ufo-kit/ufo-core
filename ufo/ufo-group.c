@@ -237,6 +237,9 @@ ufo_group_push_input_buffer (UfoGroup *group,
     UfoGroupPrivate *priv;
     gint pos;
 
+    if (group == NULL) {
+        // G_BREAKPOINT();
+    }
     priv = group->priv;
     pos = g_list_index (priv->targets, target);
 

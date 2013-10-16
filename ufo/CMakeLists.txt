@@ -64,11 +64,20 @@ set(ufocore_HDRS
     )
 #}}}
 
+if(WITH_MPI)
+    set(ufocore_HDRS ${ufocore_HDRS}
+        ufo-mpi-messenger.h
+    )
+    set(ufocore_SRCS ${ufocore_SRCS}
+        ufo-mpi-messenger.c
+    )
+endif ()
+
 #{{{ Optional dependencies
 pkg_check_modules(PYTHON python)
 
 if(PYTHON_FOUND)
-    set(HAVE_PYTHON "1")
+#    set(HAVE_PYTHON "1")
 endif()
 #}}}
 
@@ -255,6 +264,7 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
+                    --ignore-headers=ufo-mpi-messenger.h
                     DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 
