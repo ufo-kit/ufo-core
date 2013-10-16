@@ -3,6 +3,10 @@ project(ufo C)
 
 set(TARNAME "libufo")
 
+if (ENABLE_DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
+endif ()
+
 if (ENABLE_MPI)
     set(CMAKE_C_COMPILER "mpicc")
 endif ()
