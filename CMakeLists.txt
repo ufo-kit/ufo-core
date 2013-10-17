@@ -9,6 +9,7 @@ endif ()
 
 if (ENABLE_MPI)
     set(CMAKE_C_COMPILER "mpicc")
+    add_definitions ("-DMPI")
 endif ()
 
 set(UFO_DESCRIPTION "UFO high-speed image processing core library")

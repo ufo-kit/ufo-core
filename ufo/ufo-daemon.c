@@ -79,8 +79,11 @@ ufo_daemon_new (UfoConfig *config, gchar *listen_address)
     priv->listen_address = listen_address;
     priv->manager = ufo_plugin_manager_new (priv->config);
     priv->scheduler = ufo_scheduler_new (priv->config, NULL);
+#ifdef MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-
+#else
+    priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+#endif
     return daemon;
 }
 
@@ -383,6 +386,7 @@ static void
 ufo_daemon_start_impl (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    g_debug ("UfoDaemon started on address %s", priv->listen_address);
 
     while (priv->run) {
 
@@ -462,8 +466,13 @@ ufo_daemon_stop (UfoDaemon *daemon)
      * thread running the daemon - we thus send a TERMINATE message to
      * that thread
      */
-    g_message ("trying to stop daemon");
+
+#ifdef MPI
     UfoMessenger *tmp_msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
+#else
+    UfoMessenger *tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+#endif
+
     ufo_messenger_connect (tmp_msger, priv->listen_address, UFO_MESSENGER_CLIENT);
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
     ufo_messenger_send_blocking (tmp_msger, request, NULL);

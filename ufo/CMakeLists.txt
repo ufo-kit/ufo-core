@@ -16,6 +16,7 @@ set(ufocore_SRCS
     ufo-group.c
     ufo-input-task.c
     ufo-messenger-iface.c
+    ufo-mpi-messenger.c
     ufo-node.c
     ufo-output-task.c
     ufo-plugin-manager.c
@@ -31,12 +32,6 @@ set(ufocore_SRCS
     ufo-zmq-messenger.c
     )
 #}}}
-
-if (ENABLE_MPI)
-    set(ufocore_SRCS ${ufocore_SRCS}
-    ufo-mpi-messenger.c
-    )
-endif ()
 
 #{{{ Public headers
 set(ufocore_HDRS
@@ -54,6 +49,7 @@ set(ufocore_HDRS
     ufo-group.h
     ufo-input-task.h
     ufo-messenger-iface.h
+    ufo-mpi-messenger.h
     ufo-node.h
     ufo-output-task.h
     ufo-plugin-manager.h
@@ -70,11 +66,6 @@ set(ufocore_HDRS
     )
 #}}}
 
-if (ENABLE_MPI)
-    set(ufocore_HDRS ${ufocore_HDRS}
-    ufo-mpi-messenger.h
-    )
-endif ()
 
 #{{{ Optional dependencies
 pkg_check_modules(PYTHON python)

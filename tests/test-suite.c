@@ -26,7 +26,7 @@ ignore_log (const gchar     *domain,
             const gchar     *message,
             gpointer         data)
 {
-    g_print ("%s\n",message);
+    // g_print ("%s\n",message);
 }
 
 int main(int argc, char *argv[])
@@ -38,16 +38,20 @@ int main(int argc, char *argv[])
     g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
     g_log_set_handler ("ocl", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
 
-    test_add_remote_node ();
+#ifdef MPI
+    test_add_mpi_remote_node ();
     g_test_run();
     return 0;
-
+#endif
     test_add_buffer ();
     test_add_config ();
     test_add_graph ();
     test_add_profiler ();
     test_add_zmq_messenger ();
     test_add_remote_node ();
+
+
+    g_test_run();
 
     return 0;
 }

@@ -44,7 +44,11 @@ ufo_remote_node_new (const gchar *address)
     node = UFO_REMOTE_NODE (g_object_new (UFO_TYPE_REMOTE_NODE, NULL));
     priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
+#ifdef MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
+#else
+    priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+#endif
 
     gchar *addr = g_strdup (address);
     ufo_messenger_connect (priv->msger, addr, UFO_MESSENGER_CLIENT);

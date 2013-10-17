@@ -21,6 +21,11 @@
 #include <stdlib.h>
 #include <ufo/ufo.h>
 
+#ifdef MPI
+#include <mpi.h>
+#include <unistd.h>
+#endif
+
 static void
 handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
 {
@@ -45,24 +50,30 @@ string_array_to_list (gchar **array)
     return result;
 }
 
+static UfoConfig *
+get_config (gchar **paths)
+{
+    GList *path_list = NULL;
+    UfoConfig *config;
+
+    config = ufo_config_new ();
+    path_list = string_array_to_list (paths);
+    ufo_config_add_paths (config, path_list);
+
+    g_list_free (path_list);
+    return config;
+}
+
 static void
 execute_json (const gchar *filename,
-              gchar **paths,
+              UfoConfig *config,
               gchar **addresses)
 {
-    UfoConfig       *config;
     UfoTaskGraph    *task_graph;
     UfoScheduler    *scheduler;
     UfoPluginManager *manager;
-    GList *path_list = NULL;
     GList *address_list = NULL;
     GError *error = NULL;
-
-    config = ufo_config_new ();
-
-    path_list = string_array_to_list (paths);
-    ufo_config_add_paths (config, path_list);
-    g_list_free (path_list);
 
     manager = ufo_plugin_manager_new (config);
 
@@ -80,7 +91,6 @@ execute_json (const gchar *filename,
     g_object_unref (task_graph);
     g_object_unref (scheduler);
     g_object_unref (manager);
-    g_object_unref (config);
 }
 
 int main(int argc, char *argv[])
@@ -90,12 +100,15 @@ int main(int argc, char *argv[])
     gchar **paths = NULL;
     gchar **addresses = NULL;
     gboolean show_version = FALSE;
+    UfoConfig *config = NULL;
 
     GOptionEntry entries[] = {
         { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths,
           "Path to node plugins or OpenCL kernels", NULL },
+#ifndef MPI
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
           "Address of remote server running `ufod'", NULL },
+#endif
         { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
           "Show version information", NULL },
         { NULL }
@@ -125,11 +138,41 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    execute_json (argv[argc-1], paths, addresses);
+    config = get_config (paths);
+
+#ifdef MPI
+    int rank, size;
+    MPI_Init (&argc, &argv);
+    MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+    MPI_Comm_size (MPI_COMM_WORLD, &size);
+
+    g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
+             rank, size - 1, getpid());
+
+    if (rank > 0) {
+        gchar *addr = g_strdup_printf("%d", rank);
+        UfoDaemon *daemon = ufo_daemon_new (config, addr);
+        ufo_daemon_start (daemon);
+        while (TRUE) {
+            g_usleep (G_MAXULONG);
+        }
+        exit(EXIT_SUCCESS);
+    }
+
+    // build addresses by MPI_COMM_WORLD size, exclude rank 0
+    addresses = g_malloc (sizeof (char*) * size);
+    for (int i = 1; i < size; i++) {
+        addresses[i-1] = g_strdup_printf ("%d", i);
+    }
+    addresses[size-1] = NULL;
+#endif
+
+    execute_json (argv[argc-1], config, addresses);
 
     g_strfreev (paths);
     g_strfreev (addresses);
     g_option_context_free (context);
+    g_object_unref (config);
 
     return 0;
 }
