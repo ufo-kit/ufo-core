@@ -46,10 +46,10 @@ setup (Fixture *fixture, gconstpointer data)
     MPI_Comm_size (MPI_COMM_WORLD, &size);
     fixture->global_size = size;
     fixture->rank = rank;
-    g_debug ("Number of mpi processes: %d", fixture->global_size);
 
     if (fixture->rank == 0) {
-        g_debug ("Number of remote_nodes: %d", fixture->global_size - 1);
+        g_message ("Number of mpi processes: %d", fixture->global_size);
+        g_message ("Number of remote_nodes: %d", fixture->global_size - 1);
         fixture->remote_nodes = g_malloc0 (fixture->global_size - 1);
         // create remote nodes
         for (int i = 0; i < fixture->global_size - 1; i++) {
@@ -85,7 +85,7 @@ test_remote_node_get_num_cpus (Fixture *fixture,
     if (fixture->rank == 0) {
         for (int i = 1; i <= fixture->global_size - 1; i++) {
             guint n_gpus = ufo_remote_node_get_num_gpus (fixture->remote_nodes[i-1]);
-            g_debug ("Found %d number of GPUs at remotenode %d", n_gpus, i);
+            g_message ("Found %d number of GPUs at remotenode %d", n_gpus, i);
             g_assert (n_gpus > 0);
         }
     }
