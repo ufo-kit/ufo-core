@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     MPI_Comm_size (MPI_COMM_WORLD, &size);
 
     g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
-             rank, size - 1, getpid());
+             getpid(), rank, size - 1);
 
     if (rank > 0) {
         gchar *addr = g_strdup_printf("%d", rank);
