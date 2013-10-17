@@ -17,6 +17,9 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* needed to avoid emty translation unit warning */
+void __unused_ufo_mpi_messenger_voidfn (void);
+
 #ifdef MPI
 
 #include <ufo/ufo-mpi-messenger.h>
