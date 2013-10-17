@@ -132,7 +132,7 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
     if (priv->own_rank == 2)
     G_BREAKPOINT();
     MPI_Recv (response_frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
-    g_debug ("[%d:%d] SEND response preflight received from: %d SIZE:%d", priv->pid, priv->own_rank, priv->remote_rank, response_frame->data_size);
+    g_debug ("[%d:%d] SEND response preflight received from: %d SIZE:%lu", priv->pid, priv->own_rank, priv->remote_rank, response_frame->data_size);
  
     response->type = response_frame->type;
     response->data_size = response_frame->data_size;
@@ -165,7 +165,7 @@ ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
     
     g_debug ("[%d:%d] RECV waiting for preflight from %d", priv->pid, priv->own_rank, priv->remote_rank);
     MPI_Recv (frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
-    g_debug ("[%d:%d] RECV preflight received from %d, size: %d", priv->pid, priv->own_rank, priv->remote_rank, frame->data_size);
+    g_debug ("[%d:%d] RECV preflight received from %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, frame->data_size);
     response->type = frame->type;
     response->data_size = frame->data_size;
 
