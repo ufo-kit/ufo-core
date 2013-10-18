@@ -96,6 +96,7 @@ void      ufo_remote_node_get_result        (UfoRemoteNode  *node,
 void      ufo_remote_node_get_requisition   (UfoRemoteNode  *node,
                                              UfoRequisition *requisition);
 void      ufo_remote_node_cleanup           (UfoRemoteNode  *node);
+void      ufo_remote_node_terminate         (UfoRemoteNode  *node);
 GType     ufo_remote_node_get_type          (void);
 
 G_END_DECLS

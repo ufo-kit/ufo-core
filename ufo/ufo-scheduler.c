@@ -244,6 +244,9 @@ run_remote_task (TaskLocalData *tld)
     gboolean active = TRUE;
 
     g_assert (tld->n_inputs == 1);
+    if (!UFO_IS_TASK_NODE (tld->task) || tld->task == NULL)
+        G_BREAKPOINT();
+
     remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
     n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
     alive = g_new0 (gboolean, n_remote_gpus);
@@ -414,7 +417,8 @@ run_task (TaskLocalData *tld)
             ufo_group_push_output_buffer (group, output);
 
         /* Release buffers for further consumption */
-        release_inputs (tld, inputs);
+        if (active)
+            release_inputs (tld, inputs);
 
         if (tld->mode == UFO_TASK_MODE_REDUCTOR) {
             active = TRUE;
@@ -435,11 +439,11 @@ run_task (TaskLocalData *tld)
             ufo_group_finish (group);
     }
 
-    g_message ("`%s' finished: CPU: %3.5fs GPU: %3.5fs IO: %3.5fs",
-               G_OBJECT_TYPE_NAME (tld->task),
-               ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_CPU),
-               ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_GPU),
-               ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
+    // g_message ("`%s' finished: CPU: %3.5fs GPU: %3.5fs IO: %3.5fs",
+    //            G_OBJECT_TYPE_NAME (tld->task),
+    //            ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_CPU),
+    //            ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_GPU),
+    //            ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
 
     g_object_unref (profiler);
     return NULL;
@@ -776,8 +780,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 #endif
 
     /* Wait for threads to finish */
-    for (guint i = 0; i < n_nodes; i++)
+    for (guint i = 0; i < n_nodes; i++) {
         g_thread_join (threads[i]);
+    }
+    g_message("all threads in ufo-scheduler joined");
 
 #ifdef HAVE_PYTHON
     Py_END_ALLOW_THREADS

@@ -71,7 +71,7 @@ set(ufocore_HDRS
 pkg_check_modules(PYTHON python)
 
 if(PYTHON_FOUND)
-    set(HAVE_PYTHON "1")
+#    set(HAVE_PYTHON "1")
 endif()
 #}}}
 

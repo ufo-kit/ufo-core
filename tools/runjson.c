@@ -23,6 +23,7 @@
 
 #ifdef MPI
 #include <mpi.h>
+#include <ufo/ufo-mpi-messenger.h>
 #include <unistd.h>
 #endif
 
@@ -93,6 +94,15 @@ execute_json (const gchar *filename,
     g_object_unref (manager);
 }
 
+static void
+ignore_log (const gchar     *domain,
+            GLogLevelFlags   flags,
+            const gchar     *message,
+            gpointer         data)
+{
+    g_print ("%s\n",message);
+}
+
 int main(int argc, char *argv[])
 {
     GOptionContext *context;
@@ -115,6 +125,8 @@ int main(int argc, char *argv[])
     };
 
     g_type_init();
+
+    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
 
     context = g_option_context_new ("FILE");
     g_option_context_add_main_entries (context, entries, NULL);
@@ -142,20 +154,29 @@ int main(int argc, char *argv[])
 
 #ifdef MPI
     int rank, size;
-    MPI_Init (&argc, &argv);
+    int provided;
+    MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+    if (! (provided >= MPI_THREAD_MULTIPLE)) {
+        g_critical ("The MPI implementation does not supprt MPI_THREAD_MULTIPLE");
+    }
     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
     MPI_Comm_size (MPI_COMM_WORLD, &size);
+
+    if (size == 1) {
+        g_critical ("Warning: running MPI instance but found only single process");
+        exit (0);
+    }
 
     g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
              getpid(), rank, size - 1);
 
+    sleep (3);
     if (rank > 0) {
         gchar *addr = g_strdup_printf("%d", rank);
         UfoDaemon *daemon = ufo_daemon_new (config, addr);
         ufo_daemon_start (daemon);
-        while (TRUE) {
-            g_usleep (G_MAXULONG);
-        }
+        ufo_daemon_wait_finish (daemon);
+        MPI_Finalize ();
         exit(EXIT_SUCCESS);
     }
 
@@ -168,6 +189,22 @@ int main(int argc, char *argv[])
 #endif
 
     execute_json (argv[argc-1], config, addresses);
+
+#ifdef MPI
+    for (int i = 1; i < size; i++) {
+        gchar *addr = g_strdup_printf ("%d", i);
+        UfoMessage *poisonpill = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
+        UfoMessenger *msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
+        ufo_mpi_messenger_connect (msger, addr, UFO_MESSENGER_CLIENT);
+        g_message("sending poisonpill to %s", addr);
+        ufo_messenger_send_blocking (msger, poisonpill, NULL);
+        ufo_message_free (poisonpill);
+        ufo_messenger_disconnect (msger);
+    }
+    addresses[size-1] = NULL;
+    sleep(120);
+    MPI_Finalize ();
+#endif
 
     g_strfreev (paths);
     g_strfreev (addresses);

@@ -30,7 +30,7 @@ G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 struct _UfoRemoteNodePrivate {
     gpointer context;
     guint n_inputs;
-    GMutex *mutex;
+    gboolean terminated;
     UfoMessenger *msger;
 };
 
@@ -259,14 +259,35 @@ cleanup_remote (UfoRemoteNodePrivate *priv)
     ufo_message_free (request);
 }
 
+void
+ufo_remote_node_terminate (UfoRemoteNode *node)
+{
+    UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
+
+    priv->terminated = TRUE;
+    cleanup_remote (priv);
+
+    UfoMessage *request;
+
+    g_return_if_fail (UFO_IS_REMOTE_NODE (node));
+
+    priv = node->priv;
+    request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
+    ufo_messenger_send_blocking (priv->msger, request, NULL);
+
+    ufo_messenger_disconnect (priv->msger);
+    return; 
+}
+
 static void
 ufo_remote_node_dispose (GObject *object)
 {
-    UfoRemoteNodePrivate *priv;
-    priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
+    UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
 
-    cleanup_remote (priv);
-    ufo_messenger_disconnect (priv->msger);
+    if (!priv->terminated) {
+        cleanup_remote (priv);
+        ufo_messenger_disconnect (priv->msger);
+    }
 
     G_OBJECT_CLASS (ufo_remote_node_parent_class)->dispose (object);
 }
@@ -274,11 +295,6 @@ ufo_remote_node_dispose (GObject *object)
 static void
 ufo_remote_node_finalize (GObject *object)
 {
-    UfoRemoteNodePrivate *priv;
-
-    priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
-    g_mutex_free (priv->mutex);
-
     G_OBJECT_CLASS (ufo_remote_node_parent_class)->finalize (object);
 }
 
@@ -300,5 +316,5 @@ ufo_remote_node_init (UfoRemoteNode *self)
     UfoRemoteNodePrivate *priv;
     self->priv = priv = UFO_REMOTE_NODE_GET_PRIVATE (self);
     priv->n_inputs = 0;
-    priv->mutex = g_mutex_new ();
+    priv->terminated = FALSE;
 }

@@ -19,6 +19,9 @@
 
 #include <glib-object.h>
 #include "test-suite.h"
+#ifdef MPI
+#include <mpi.h>
+#endif
 
 static void
 ignore_log (const gchar     *domain,
@@ -26,7 +29,7 @@ ignore_log (const gchar     *domain,
             const gchar     *message,
             gpointer         data)
 {
-    // g_print ("%s\n",message);
+    g_print ("%s\n",message);
 }
 
 int main(int argc, char *argv[])
@@ -35,12 +38,18 @@ int main(int argc, char *argv[])
     g_test_init(&argc, &argv, NULL);
     g_test_bug_base("http://ufo.kit.edu/ufo/ticket");
 
-    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
+    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO, ignore_log, NULL);
+    // g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
     g_log_set_handler ("ocl", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
 
 #ifdef MPI
+    int provided;
+    MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+    g_assert (provided >= MPI_THREAD_MULTIPLE);
+
     test_add_mpi_remote_node ();
     g_test_run();
+    MPI_Finalize ();
     return 0;
 #endif
     test_add_buffer ();

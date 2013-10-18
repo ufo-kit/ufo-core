@@ -60,21 +60,24 @@ setup (Fixture *fixture, gconstpointer data)
         gchar *addr = g_strdup_printf("%d", rank);
         fixture->daemon = ufo_daemon_new (fixture->config, addr);
         ufo_daemon_start (fixture->daemon);
-        while (TRUE) {
-            sleep (5);
-        }
     }
 }
 
 static void
 teardown (Fixture *fixture, gconstpointer data)
 {
+    g_message ("teardown");
     if (fixture->rank == 0) {
-        for (int i = 1; i <= fixture->global_size - 1; i++)
-            g_object_unref (fixture->remote_nodes[i-1]);
+        for (int i = 1; i <= fixture->global_size - 1; i++) {
+            UfoRemoteNode *node = fixture->remote_nodes[i-1];
+            ufo_remote_node_terminate (node);
+            g_object_unref (node);
+            g_message ("teardown node %d done", i-1);
+        }
     } else {
-        ufo_daemon_stop (fixture->daemon);
+        ufo_daemon_wait_finish (fixture->daemon);
         g_object_unref (fixture->daemon);
+        g_message ("teardown done");
     }
 }
 
@@ -112,7 +115,6 @@ test_remote_node_get_structure (Fixture *fixture,
 void
 test_add_mpi_remote_node (void)
 {
-    MPI_Init (0, NULL);
     g_test_add ("/remotenode/get_structure",
                 Fixture, NULL,
                 setup, test_remote_node_get_structure, teardown);

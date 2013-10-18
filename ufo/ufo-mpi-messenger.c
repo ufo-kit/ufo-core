@@ -41,6 +41,7 @@ struct _UfoMpiMessengerPrivate {
     gint remote_rank;
     gint pid;
     gint global_size;
+    gboolean connected;
     GMutex *mutex;
     UfoMessengerRole role;
 };
@@ -75,6 +76,7 @@ void
 ufo_mpi_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole role)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
+    g_mutex_lock (priv->mutex);
 
     if (role == UFO_MESSENGER_CLIENT) {
         int remote_rank = g_ascii_strtoll (addr, NULL, 0);
@@ -84,11 +86,17 @@ ufo_mpi_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole ro
         priv->remote_rank = 0;
         g_debug ("[%d:%d]: SERVER connected to: %d", priv->pid, priv->own_rank, priv->remote_rank);
     }
+    priv->connected = TRUE;
+    g_mutex_unlock (priv->mutex);
 }
 
 void
 ufo_mpi_messenger_disconnect (UfoMessenger *msger)
 {
+    UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
+    g_mutex_lock (priv->mutex);
+    priv->connected = FALSE; 
+    g_mutex_unlock (priv->mutex);
 }
 
 UfoMessage *
@@ -99,6 +107,7 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
 
     g_mutex_lock (priv->mutex);
+    g_assert (priv->connected == TRUE);
 
     // we send in two phaess: first send the data frame of fixed size
     // then the receiver knows how much bytes will follow in the second send
@@ -107,14 +116,17 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
     request_frame->data_size = request_msg->data_size;
 
     // send preflight
-    g_debug ("[%d:%d] SEND sending preflight to: %d", priv->pid, priv->own_rank, priv->remote_rank);
-    MPI_Send (request_frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD);
-    g_debug ("[%d:%d] SEND preflight done to: %d", priv->pid, priv->own_rank, priv->remote_rank);
+    // g_debug ("[%d:%d] SEND sending preflight to: %d", priv->pid, priv->own_rank, priv->remote_rank);
+    MPI_Ssend (request_frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD);
+    // g_debug ("[%d:%d] SEND preflight done to: %d", priv->pid, priv->own_rank, priv->remote_rank);
 
     // send payload
     if (request_msg->data_size > 0) {
-        g_debug ("[%d:%d] SEND sending payload to: %d", priv->pid, priv->own_rank, priv->remote_rank);
-        MPI_Send (request_msg->data, request_msg->data_size, MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD);
+        g_debug ("[%d:%d] SEND sending payload to: %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, request_msg->data_size);
+        int err = MPI_Ssend (request_msg->data, request_msg->data_size, MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD);
+        if (err != MPI_SUCCESS) {
+            g_critical ("error on MPI_Ssend: %d", err);
+        } 
         g_debug ("[%d:%d] SEND payload done to: %d", priv->pid, priv->own_rank, priv->remote_rank);
     }
 
@@ -128,11 +140,11 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
 
     // reuse the memory buffer
     DataFrame *response_frame = request_frame;
-    g_debug ("[%d:%d] SEND waiting for response preflight from: %d", priv->pid, priv->own_rank, priv->remote_rank);
-    if (priv->own_rank == 2)
-    G_BREAKPOINT();
+    // g_debug ("[%d:%d] SEND waiting for response preflight from: %d", priv->pid, priv->own_rank, priv->remote_rank);
+    // if (priv->own_rank == 2)
+    // G_BREAKPOINT();
     MPI_Recv (response_frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
-    g_debug ("[%d:%d] SEND response preflight received from: %d SIZE:%lu", priv->pid, priv->own_rank, priv->remote_rank, response_frame->data_size);
+    // g_debug ("[%d:%d] SEND response preflight received from: %d SIZE:%lu", priv->pid, priv->own_rank, priv->remote_rank, response_frame->data_size);
  
     response->type = response_frame->type;
     response->data_size = response_frame->data_size;
@@ -159,21 +171,27 @@ ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
 
     g_mutex_lock (priv->mutex);
+    g_assert (priv->connected == TRUE);
+
     UfoMessage *response = g_malloc0 (sizeof (DataFrame));
     DataFrame *frame = g_malloc0 (sizeof (DataFrame));
     MPI_Status status;
     
     g_debug ("[%d:%d] RECV waiting for preflight from %d", priv->pid, priv->own_rank, priv->remote_rank);
-    MPI_Recv (frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
+    int ret = MPI_Recv (frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
+
+    if (ret != MPI_SUCCESS)
+        g_critical ("error on recv: %d", ret);
+
     g_debug ("[%d:%d] RECV preflight received from %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, frame->data_size);
     response->type = frame->type;
     response->data_size = frame->data_size;
 
     if (frame->data_size > 0) {
         gpointer buff = g_malloc0 (frame->data_size);
-        g_debug ("[%d:%d] RECV waiting for payload from %d", priv->pid, priv->own_rank, priv->remote_rank);
+        g_debug ("[%d:%d] RECV waiting for payload with size %lu from %d", priv->pid, priv->own_rank, frame->data_size, priv->remote_rank);
         MPI_Recv (buff, frame->data_size, MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
-        g_debug ("[%d:%d] RECV payload received from %d", priv->pid, priv->own_rank, priv->remote_rank);
+        g_debug ("[%d:%d] RECV payload received from %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, frame->data_size);
         response->data = buff;
     }
     g_mutex_unlock (priv->mutex);
@@ -219,6 +237,7 @@ ufo_mpi_messenger_init (UfoMpiMessenger *msger)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
     priv->mutex = g_mutex_new ();
+    priv->connected = FALSE;
 }
 
 #endif /* #ifdef MPI */
