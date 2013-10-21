@@ -55,6 +55,16 @@ ufo_messenger_error_quark ()
     return g_quark_from_static_string ("ufo-messenger-error-quark");
 }
 
+/**
+ * ufo_messenger_connect:
+ *
+ * Connects a messenger to and endpoint.
+ *
+ * @addr: (transfer none) The address to connect. This is implementation specific.
+ * @role: The role of the local endpoint (client or server).
+ *
+ * Returns: (transfer full) (skip) A response to the sent message. May be NULL.
+ */
 void
 ufo_messenger_connect (UfoMessenger *msger,
                        gchar *addr,
@@ -69,6 +79,14 @@ ufo_messenger_disconnect (UfoMessenger *msger)
     UFO_MESSENGER_GET_IFACE (msger)->disconnect (msger);
 }
 
+/**
+ * ufo_messenger_send_blocking: (skip)
+ *
+ * Sends a #UfoMessage to the connected endpoint and blocks until the message
+ * want fully sent.
+ *
+ * Returns: (transfer full) A response to the sent message. May be NULL.
+ */
 UfoMessage *
 ufo_messenger_send_blocking (UfoMessenger *msger,
                              UfoMessage *request,
@@ -77,6 +95,14 @@ ufo_messenger_send_blocking (UfoMessenger *msger,
     return UFO_MESSENGER_GET_IFACE (msger)->send_blocking (msger, request, error);
 }
 
+/**
+ * ufo_messenger_recv_blocking: (skip)
+ *
+ * Receives a #UfoMessage from the connected endpoint and blocks until the message
+ * was fully received.
+ *
+ * Returns: (transfer full) The received #UfoMessage.
+ */
 UfoMessage *
 ufo_messenger_recv_blocking (UfoMessenger *msger,
                             GError **error)
