@@ -3,15 +3,6 @@ project(ufo C)
 
 set(TARNAME "libufo")
 
-if (ENABLE_DEBUG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
-endif ()
-
-if (ENABLE_MPI)
-    set(CMAKE_C_COMPILER "mpicc")
-    add_definitions ("-DMPI")
-endif ()
-
 set(UFO_DESCRIPTION "UFO high-speed image processing core library")
 set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
 
@@ -45,12 +36,25 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 #{{{ Options
 option(WITH_PROFILING "Enable profiling" OFF)
 option(WITH_TESTS "Build test suite" ON)
+option(WITH_MPI "Build with MPI support" OFF)
+option(WITH_DEBUG "Build with MPI support" OFF)
 
 if (WITH_PROFILING)
     add_definitions("-pg")
     set(CMAKE_C_FLAGS "-pg")
 endif ()
+
+if (WITH_DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
+endif ()
+
+if (WITH_MPI)
+    set(CMAKE_C_COMPILER "mpicc")
+    add_definitions ("-DMPI")
+endif ()
+
 #}}}
+
 
 #{{{ Dependencies
 set(PKG_GLIB2_MIN_REQUIRED "2.22")
