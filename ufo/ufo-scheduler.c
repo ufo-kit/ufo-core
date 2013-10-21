@@ -711,6 +711,13 @@ write_traces (TaskLocalData **tlds,
     g_list_free (sorted);
 }
 
+static void
+join_threads (GThread **threads, guint n_threads)
+{
+    for (guint i = 0; i < n_threads; i++)
+        g_thread_join (threads[i]);
+}
+
 void
 ufo_scheduler_run (UfoScheduler *scheduler,
                    UfoTaskGraph *task_graph,
@@ -772,15 +779,23 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     }
 
 #ifdef HAVE_PYTHON
-    Py_BEGIN_ALLOW_THREADS
+    if (Py_IsInitialized ()) {
+        Py_BEGIN_ALLOW_THREADS
+
+        join_threads (threads, n_nodes);
+
+        Py_END_ALLOW_THREADS
+    }
+    else {
+        join_threads (threads, n_nodes);
+    }
+#else
+    join_threads (threads, n_nodes);
 #endif
 
-    /* Wait for threads to finish */
-    for (guint i = 0; i < n_nodes; i++)
-        g_thread_join (threads[i]);
 
 #ifdef HAVE_PYTHON
-    Py_END_ALLOW_THREADS
+    if (Py_IsInitialized ())
 #endif
 
     g_message ("Processing finished after %3.5fs", g_timer_elapsed (timer, NULL));
