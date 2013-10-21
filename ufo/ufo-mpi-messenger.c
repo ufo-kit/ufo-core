@@ -43,6 +43,7 @@ struct _UfoMpiMessengerPrivate {
     gint global_size;
     gboolean connected;
     GMutex *mutex;
+    GMutex *global_mutex;
     UfoMessengerRole role;
 };
 
@@ -58,9 +59,16 @@ typedef struct _DataFrame {
     char data[];
 } DataFrame;
 
-
+/*
+ * In most MPI implementations, calls to MPI_Send/Recv are not thread safe.
+ * If a global_mutex != NULL is specified, we use this global lock to serialize
+ * the Send/Recv. If global_mutex is NULL, we don't synchronize (i.e. when
+ * calling from ufo-daemon since it only holds a single messaging thread).
+ * If MPI_THREADS_MULTIPLE is supported, we wouldn't need a global lock - however,
+ * on most InfiniBand systems, this is not the case.
+ */
 UfoMpiMessenger *
-ufo_mpi_messenger_new (void)
+ufo_mpi_messenger_new (GMutex *global_mutex)
 {
     UfoMpiMessenger *msger;
     msger = UFO_MPI_MESSENGER (g_object_new (UFO_TYPE_MPI_MESSENGER, NULL));
@@ -69,7 +77,18 @@ ufo_mpi_messenger_new (void)
     MPI_Comm_rank (MPI_COMM_WORLD, &priv->own_rank);
     MPI_Comm_size (MPI_COMM_WORLD, &priv->global_size);
     priv->pid = getpid ();
-    return msger;   
+
+    if (global_mutex == NULL) {
+        priv->mutex = g_mutex_new ();
+        priv->global_mutex = NULL;
+    }
+    else {
+        priv->mutex = global_mutex;
+        priv->global_mutex = global_mutex;
+    }
+
+    g_assert (priv->mutex != NULL);
+    return msger;
 }
 
 void
@@ -219,7 +238,8 @@ ufo_mpi_messenger_finalize (GObject *object)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (object);
 
-    g_mutex_free (priv->mutex);
+    if (priv->global_mutex == NULL)
+        g_mutex_free (priv->mutex);
 }
 
 static void
@@ -236,7 +256,6 @@ static void
 ufo_mpi_messenger_init (UfoMpiMessenger *msger)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
-    priv->mutex = g_mutex_new ();
     priv->connected = FALSE;
 }
 

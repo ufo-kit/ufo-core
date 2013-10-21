@@ -35,7 +35,7 @@ struct _UfoRemoteNodePrivate {
 };
 
 UfoNode *
-ufo_remote_node_new (const gchar *address)
+ufo_remote_node_new (const gchar *address, GMutex *global_lock)
 {
     UfoRemoteNode *node;
     UfoRemoteNodePrivate *priv;
@@ -45,7 +45,8 @@ ufo_remote_node_new (const gchar *address)
     priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
 #ifdef MPI
-    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
+    g_assert (global_lock != NULL);
+    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new (global_lock));
 #else
     priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
 #endif

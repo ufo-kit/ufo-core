@@ -36,7 +36,7 @@ setup (Fixture *fixture, gconstpointer data)
     fixture->daemon = ufo_daemon_new (fixture->config, addr);
     ufo_daemon_start (fixture->daemon);
 
-    fixture->remote_node = (UfoRemoteNode *) ufo_remote_node_new (addr);
+    fixture->remote_node = (UfoRemoteNode *) ufo_remote_node_new (addr, NULL);
 }
 
 static void

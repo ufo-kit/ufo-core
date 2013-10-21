@@ -33,6 +33,7 @@ typedef struct {
     UfoConfig *config;
     UfoRemoteNode **remote_nodes;
     gint global_size;
+    GMutex *global_lock;
     gint rank;
 } Fixture;
 
@@ -50,11 +51,12 @@ setup (Fixture *fixture, gconstpointer data)
     if (fixture->rank == 0) {
         g_message ("Number of mpi processes: %d", fixture->global_size);
         g_message ("Number of remote_nodes: %d", fixture->global_size - 1);
+        fixture->global_lock = g_mutex_new ();
         fixture->remote_nodes = g_malloc0 (fixture->global_size - 1);
         // create remote nodes
         for (int i = 0; i < fixture->global_size - 1; i++) {
             gchar *addr = g_strdup_printf("%d", i+1);
-            fixture->remote_nodes[i] = (UfoRemoteNode *) ufo_remote_node_new (addr);
+            fixture->remote_nodes[i] = (UfoRemoteNode *) ufo_remote_node_new (addr, fixture->global_lock);
         }
     } else {
         gchar *addr = g_strdup_printf("%d", rank);
@@ -71,6 +73,7 @@ teardown (Fixture *fixture, gconstpointer data)
         for (int i = 1; i <= fixture->global_size - 1; i++) {
             UfoRemoteNode *node = fixture->remote_nodes[i-1];
             ufo_remote_node_terminate (node);
+            // g_mutex_free (fixture->global_lock);
             g_object_unref (node);
             g_message ("teardown node %d done", i-1);
         }

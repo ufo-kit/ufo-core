@@ -94,6 +94,72 @@ execute_json (const gchar *filename,
     g_object_unref (manager);
 }
 
+#ifdef MPI
+
+static void
+mpi_terminate_processes (gint global_size)
+{
+    for (int i = 1; i < global_size; i++) {
+        gchar *addr = g_strdup_printf ("%d", i);
+        UfoMessage *poisonpill = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
+        UfoMessenger *msger = UFO_MESSENGER (ufo_mpi_messenger_new (NULL));
+        ufo_mpi_messenger_connect (msger, addr, UFO_MESSENGER_CLIENT);
+        g_debug ("sending poisonpill to %s", addr);
+        ufo_messenger_send_blocking (msger, poisonpill, NULL);
+        ufo_message_free (poisonpill);
+        ufo_messenger_disconnect (msger);
+    }
+}
+
+static gchar**
+mpi_build_addresses (gint global_size)
+{
+    /* build addresses by MPI_COMM_WORLD size, exclude rank 0 but
+       have room for NULL termination */
+    gchar **addresses = g_malloc (sizeof (gchar *) * global_size);
+    for (int i = 1; i < global_size; i++) {
+        addresses[i - 1] = g_strdup_printf ("%d", i);
+    }
+    addresses[global_size - 1] = NULL;
+
+    return addresses;
+}
+
+static void
+mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
+{
+    gint provided;
+    MPI_Init_thread (argc, &argv, MPI_THREAD_SERIALIZED, &provided);
+    
+    if (! (provided >= MPI_THREAD_MULTIPLE)) {
+        g_warning ("The MPI implementation does not support MPI_THREAD_MULTIPLE");
+        g_warning ("Using global lock for MPI communication, performance may be degraded.");
+    }
+    else if (! (provided >= MPI_THREAD_SERIALIZED)) {
+        g_critical ("The MPI implementation does not provide the MPI_THREAD_SERIALIZED level, can't proceed");
+        exit (0);
+    }
+
+    MPI_Comm_rank (MPI_COMM_WORLD, rank);
+    MPI_Comm_size (MPI_COMM_WORLD, global_size);
+
+    if (*global_size == 1) {
+        g_critical ("Warning: running MPI instance but found only single process");
+        exit (0);
+    }
+
+#ifdef DEBUG
+    // get us some time to attach a gdb session to the pids
+    g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
+             getpid(), rank, *global_size - 1);
+
+    sleep (3);
+#endif
+
+}
+
+#endif
+
 static void
 ignore_log (const gchar     *domain,
             GLogLevelFlags   flags,
@@ -126,7 +192,9 @@ int main(int argc, char *argv[])
 
     g_type_init();
 
+#ifdef DEBUG
     g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
+#endif DEBUG
 
     context = g_option_context_new ("FILE");
     g_option_context_add_main_entries (context, entries, NULL);
@@ -153,25 +221,12 @@ int main(int argc, char *argv[])
     config = get_config (paths);
 
 #ifdef MPI
-    int rank, size;
-    int provided;
-    MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-    if (! (provided >= MPI_THREAD_MULTIPLE)) {
-        g_critical ("The MPI implementation does not supprt MPI_THREAD_MULTIPLE");
-    }
-    MPI_Comm_rank (MPI_COMM_WORLD, &rank);
-    MPI_Comm_size (MPI_COMM_WORLD, &size);
+    gint rank, size;
+    mpi_init (&argc, argv, &rank, &size);
 
-    if (size == 1) {
-        g_critical ("Warning: running MPI instance but found only single process");
-        exit (0);
-    }
-
-    g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
-             getpid(), rank, size - 1);
-
-    sleep (3);
-    if (rank > 0) {
+    if (rank == 0) {
+        addresses = mpi_build_addresses (size);
+    } else {
         gchar *addr = g_strdup_printf("%d", rank);
         UfoDaemon *daemon = ufo_daemon_new (config, addr);
         ufo_daemon_start (daemon);
@@ -179,31 +234,15 @@ int main(int argc, char *argv[])
         MPI_Finalize ();
         exit(EXIT_SUCCESS);
     }
-
-    // build addresses by MPI_COMM_WORLD size, exclude rank 0
-    addresses = g_malloc (sizeof (char*) * size);
-    for (int i = 1; i < size; i++) {
-        addresses[i-1] = g_strdup_printf ("%d", i);
-    }
-    addresses[size-1] = NULL;
 #endif
 
     execute_json (argv[argc-1], config, addresses);
 
 #ifdef MPI
-    for (int i = 1; i < size; i++) {
-        gchar *addr = g_strdup_printf ("%d", i);
-        UfoMessage *poisonpill = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
-        UfoMessenger *msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-        ufo_mpi_messenger_connect (msger, addr, UFO_MESSENGER_CLIENT);
-        g_message("sending poisonpill to %s", addr);
-        ufo_messenger_send_blocking (msger, poisonpill, NULL);
-        ufo_message_free (poisonpill);
-        ufo_messenger_disconnect (msger);
+    if (rank == 0) {
+        mpi_terminate_processes (size);
+        MPI_Finalize ();
     }
-    addresses[size-1] = NULL;
-    sleep(120);
-    MPI_Finalize ();
 #endif
 
     g_strfreev (paths);
