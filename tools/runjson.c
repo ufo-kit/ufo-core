@@ -160,6 +160,7 @@ mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
 
 #endif
 
+#ifdef DEBUG
 static void
 ignore_log (const gchar     *domain,
             GLogLevelFlags   flags,
@@ -168,6 +169,7 @@ ignore_log (const gchar     *domain,
 {
     g_print ("%s\n",message);
 }
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -194,7 +196,7 @@ int main(int argc, char *argv[])
 
 #ifdef DEBUG
     g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
-#endif DEBUG
+#endif
 
     context = g_option_context_new ("FILE");
     g_option_context_add_main_entries (context, entries, NULL);
