@@ -27,6 +27,7 @@
 #include <ufo/ufo-node.h>
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-task-iface.h>
+#include <ufo/ufo-messenger-iface.h>
 
 G_BEGIN_DECLS
 
@@ -40,7 +41,6 @@ G_BEGIN_DECLS
 typedef struct _UfoRemoteNode           UfoRemoteNode;
 typedef struct _UfoRemoteNodeClass      UfoRemoteNodeClass;
 typedef struct _UfoRemoteNodePrivate    UfoRemoteNodePrivate;
-typedef struct _UfoMessage              UfoMessage;
 
 /**
  * UfoRemoteNode:
@@ -78,52 +78,8 @@ typedef enum {
 } UfoRemoteMode;
 
 
-/**
- * UfoMessageType: (skip)
- * @UFO_MESSAGE_STREAM_JSON: insert
- * @UFO_MESSAGE_REPLICATE_JSON: insert
- * @UFO_MESSAGE_GET_NUM_DEVICES: insert
- * @UFO_MESSAGE_SETUP: insert
- * @UFO_MESSAGE_GET_STRUCTURE: insert
- * @UFO_MESSAGE_STRUCTURE: insert
- * @UFO_MESSAGE_GET_REQUISITION: insert
- * @UFO_MESSAGE_REQUISITION: insert
- * @UFO_MESSAGE_SEND_INPUTS: insert
- * @UFO_MESSAGE_GET_RESULT: insert
- * @UFO_MESSAGE_RESULT: insert
- * @UFO_MESSAGE_CLEANUP: insert
- * @UFO_MESSAGE_ACK: insert
- */
-typedef enum {
-    UFO_MESSAGE_STREAM_JSON = 0,
-    UFO_MESSAGE_REPLICATE_JSON,
-    UFO_MESSAGE_GET_NUM_DEVICES,
-    UFO_MESSAGE_SETUP,
-    UFO_MESSAGE_GET_STRUCTURE,
-    UFO_MESSAGE_STRUCTURE,
-    UFO_MESSAGE_GET_REQUISITION,
-    UFO_MESSAGE_REQUISITION,
-    UFO_MESSAGE_SEND_INPUTS,
-    UFO_MESSAGE_GET_RESULT,
-    UFO_MESSAGE_RESULT,
-    UFO_MESSAGE_CLEANUP,
-    UFO_MESSAGE_ACK
-} UfoMessageType;
 
-/**
- * UfoMessage: (skip)
- * @type: Type of the wire message
- */
-struct _UfoMessage {
-    UfoMessageType  type;
-
-    union {
-        guint16 n_inputs;
-        guint16 n_devices;
-    } d;
-};
-
-UfoNode  *ufo_remote_node_new               (const gchar    *address);
+UfoNode  *ufo_remote_node_new               (const gchar    *address, GMutex *lock);
 guint     ufo_remote_node_get_num_gpus      (UfoRemoteNode  *node);
 void      ufo_remote_node_request_setup     (UfoRemoteNode  *node);
 void      ufo_remote_node_send_json         (UfoRemoteNode  *node,
@@ -140,6 +96,7 @@ void      ufo_remote_node_get_result        (UfoRemoteNode  *node,
 void      ufo_remote_node_get_requisition   (UfoRemoteNode  *node,
                                              UfoRequisition *requisition);
 void      ufo_remote_node_cleanup           (UfoRemoteNode  *node);
+void      ufo_remote_node_terminate         (UfoRemoteNode  *node);
 GType     ufo_remote_node_get_type          (void);
 
 G_END_DECLS

@@ -24,7 +24,6 @@
 #else
 #include <CL/cl.h>
 #endif
-#include <zmq.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>

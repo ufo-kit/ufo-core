@@ -19,92 +19,78 @@
 
 #include <string.h>
 #include <ufo/ufo-remote-node.h>
-
-#include "zmq-shim.h"
+#include <ufo/ufo-messenger-iface.h>
+#include <ufo/ufo-zmq-messenger.h>
+#include <ufo/ufo-mpi-messenger.h>
 
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 
 #define UFO_REMOTE_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_REMOTE_NODE, UfoRemoteNodePrivate))
 
-static void ufo_msg_send (UfoMessage *msg, gpointer socket, gint flags);
-static void receive_ack (gpointer socket);
-
 struct _UfoRemoteNodePrivate {
     gpointer context;
-    gpointer socket;
     guint n_inputs;
-    GMutex *mutex;
+    gboolean terminated;
+    UfoMessenger *msger;
 };
 
 UfoNode *
-ufo_remote_node_new (const gchar *address)
+ufo_remote_node_new (const gchar *address, GMutex *global_lock)
 {
     UfoRemoteNode *node;
     UfoRemoteNodePrivate *priv;
 
     g_return_val_if_fail (address != NULL, NULL);
     node = UFO_REMOTE_NODE (g_object_new (UFO_TYPE_REMOTE_NODE, NULL));
-    priv = node->priv;
-    priv->socket = zmq_socket (priv->context, ZMQ_REQ);
+    priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
-    if (zmq_connect (priv->socket, address) == 0) {
-        g_message ("Connected remote node to `%s' via socket=%p",
-                   address,
-                   priv->socket);
-        return UFO_NODE (node);
-    }
-    else {
-        g_warning ("Could not connect to `%s': %s",
-                   address,
-                   zmq_strerror (errno));
-        g_object_unref (node);
-        return NULL;
-    }
+#ifdef MPI
+    g_assert (global_lock != NULL);
+    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new (global_lock));
+#else
+    priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+#endif
+
+    gchar *addr = g_strdup (address);
+    ufo_messenger_connect (priv->msger, addr, UFO_MESSENGER_CLIENT);
+    g_free(addr);
+
+    return UFO_NODE (node);
 }
 
 guint
 ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
 {
-    UfoRemoteNodePrivate *priv;
-    UfoMessage request;
-    UfoMessage result;
-    zmq_msg_t reply;
-
     g_return_val_if_fail (UFO_IS_REMOTE_NODE (node), 0);
+
+    UfoRemoteNodePrivate *priv;
+    UfoMessage *request = ufo_message_new (UFO_MESSAGE_GET_NUM_DEVICES, 0);
+
     priv = node->priv;
 
-    g_mutex_lock (priv->mutex);
+    UfoMessage *result;
+    result = ufo_messenger_send_blocking (priv->msger, request, NULL);
+    guint n_devices = * (guint16 *) result->data;
 
-    request.type = UFO_MESSAGE_GET_NUM_DEVICES;
-    ufo_msg_send (&request, priv->socket, 0);
-
-    zmq_msg_init (&reply);
-    zmq_msg_recv (&reply, priv->socket, 0);
-    memcpy (&result, zmq_msg_data (&reply), sizeof (UfoMessage));
-    zmq_msg_close (&reply);
-
-    g_mutex_unlock (priv->mutex);
-
-    return result.d.n_devices;
+    ufo_message_free (request);
+    ufo_message_free (result);
+    g_assert (n_devices < 32);
+    return n_devices;
 }
 
 void
 ufo_remote_node_request_setup (UfoRemoteNode *node)
 {
-    UfoRemoteNodePrivate *priv;
-    UfoMessage request;
+    // TODO setup isn't in use, remove it
+    //g_assert (FALSE);
 
-    g_return_if_fail (UFO_IS_REMOTE_NODE (node));
+    // g_return_if_fail (UFO_IS_REMOTE_NODE (node));
+    // UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
-    priv = node->priv;
-    request.type = UFO_MESSAGE_SETUP;
-
-    g_mutex_lock (priv->mutex);
-
-    ufo_msg_send (&request, priv->socket, 0);
-    receive_ack (priv->socket);
-
-    g_mutex_unlock (priv->mutex);
+    // UfoMessage *request;
+    // request = ufo_message_new (UFO_MESSAGE_SETUP, 0);
+    // ufo_message_send_blocking (request);
+    // ufo_message_free (request);
 }
 
 void
@@ -113,36 +99,28 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
                            const gchar *json)
 {
     UfoRemoteNodePrivate *priv;
-    UfoMessage request;
-    gsize size;
-    zmq_msg_t json_msg;
+    UfoMessage *request;
+    guint64 size;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
 
+    UfoMessageType type;
     switch (mode) {
         case UFO_REMOTE_MODE_STREAM:
-            request.type = UFO_MESSAGE_STREAM_JSON;
+            type = UFO_MESSAGE_STREAM_JSON;
             break;
         case UFO_REMOTE_MODE_REPLICATE:
-            request.type = UFO_MESSAGE_REPLICATE_JSON;
+            type = UFO_MESSAGE_REPLICATE_JSON;
             break;
     }
 
-    g_mutex_lock (priv->mutex);
+    size = (guint64) strlen (json);
+    request = ufo_message_new (type, size);
 
-    ufo_msg_send (&request, priv->socket, ZMQ_SNDMORE);
-
-    size = strlen (json);
-    zmq_msg_init_size (&json_msg, size);
-    memcpy (zmq_msg_data (&json_msg), json, size);
-    zmq_msg_send (&json_msg, priv->socket, 0);
-    zmq_msg_close (&json_msg);
-
-    receive_ack (priv->socket);
-
-    g_mutex_unlock (priv->mutex);
+    memcpy (request->data, json, size);
+    ufo_messenger_send_blocking (priv->msger, request, NULL);
 }
 
 void
@@ -152,41 +130,33 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
                                UfoTaskMode *mode)
 {
     UfoRemoteNodePrivate *priv;
-    UfoMessage request;
-    UfoMessage *header;
-    zmq_msg_t header_msg;
-    zmq_msg_t payload_msg;
-    UfoInputParam *in_param;
-
-    g_return_if_fail (UFO_IS_REMOTE_NODE (node));
+    UfoMessage *request, *response;
 
     priv = node->priv;
+
+    struct _Structure {
+        guint16 n_inputs;
+        guint16 n_dims;
+    } msg_data;
+
+    g_return_if_fail (UFO_IS_REMOTE_NODE (node));
     *mode = UFO_TASK_MODE_PROCESSOR;
-    request.type = UFO_MESSAGE_GET_STRUCTURE;
 
-    g_mutex_lock (priv->mutex);
 
-    ufo_msg_send (&request, priv->socket, 0);
+    request = ufo_message_new (UFO_MESSAGE_GET_STRUCTURE, 0);
+    response = ufo_messenger_send_blocking (priv->msger, request, NULL);
+    g_assert (response->data_size == sizeof (struct _Structure));
 
-    /* Receive header */
-    zmq_msg_init (&header_msg);
-    zmq_msg_recv (&header_msg, priv->socket, 0);
-    header = (UfoMessage *) zmq_msg_data (&header_msg);
+    msg_data = *(struct _Structure *) response->data;
 
-    /* Receive payload */
-    zmq_msg_init (&payload_msg);
-    zmq_msg_recv (&payload_msg, priv->socket, 0);
-    in_param = (UfoInputParam *) zmq_msg_data (&payload_msg);
+    priv->n_inputs = msg_data.n_inputs;
+    *n_inputs = msg_data.n_inputs;
 
-    priv->n_inputs = header->d.n_inputs;
-    *n_inputs = header->d.n_inputs;
     *in_params = g_new0 (UfoInputParam, 1);
-    (*in_params)[0].n_dims = in_param->n_dims;
+    (*in_params)[0].n_dims = msg_data.n_dims;
 
-    zmq_msg_close (&header_msg);
-    zmq_msg_close (&payload_msg);
-
-    g_mutex_unlock (priv->mutex);
+    ufo_message_free (request);
+    ufo_message_free (response);
 }
 
 void
@@ -194,48 +164,48 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
                              UfoBuffer **inputs)
 {
     UfoRemoteNodePrivate *priv;
-    UfoMessage request;
+    UfoMessage *request;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
-    request.type = UFO_MESSAGE_SEND_INPUTS;
-
-    g_mutex_lock (priv->mutex);
-
-    ufo_msg_send (&request, priv->socket, ZMQ_SNDMORE);
 
     /*
      * For each of the input data items send two frames: the first one contains
      * the size as an UfoRequisition struct and the second one the raw byte
      * data.
      */
-    for (guint i = 0; i < priv->n_inputs; i++) {
+    struct _Header {
         UfoRequisition requisition;
-        zmq_msg_t requisition_msg;
-        zmq_msg_t data_msg;
-        gsize size;
-        gint flags;
+        guint64 buffer_size;
+    };
 
-        ufo_buffer_get_requisition (inputs[i], &requisition);
-        size = ufo_buffer_get_size (inputs[i]);
-
-        zmq_msg_init_size (&requisition_msg, sizeof (UfoRequisition));
-        zmq_msg_init_size (&data_msg, size);
-
-        memcpy (zmq_msg_data (&requisition_msg), &requisition, sizeof (UfoRequisition));
-        memcpy (zmq_msg_data (&data_msg), ufo_buffer_get_host_array (inputs[i], NULL), size);
-
-        flags = i == priv->n_inputs - 1 ? 0 : ZMQ_SNDMORE;
-        zmq_msg_send (&requisition_msg, priv->socket, ZMQ_SNDMORE);
-        zmq_msg_send (&data_msg, priv->socket, flags);
-
-        zmq_msg_close (&requisition_msg);
-        zmq_msg_close (&data_msg);
+    // determine our total message size
+    guint64 size;
+    for (guint i = 0; i < priv->n_inputs; i++) {
+        guint64 buffer_size = ufo_buffer_get_size (inputs[i]);
+        size += buffer_size;
     }
+    gpointer buffer = g_malloc (priv->n_inputs * sizeof (struct _Header) + size);
 
-    receive_ack (priv->socket);
-    g_mutex_unlock (priv->mutex);
+    char *base = buffer;
+
+    for (guint i = 0; i < priv->n_inputs; i++) {
+        struct _Header *header = g_new0 (struct _Header, 1);
+        ufo_buffer_get_requisition (inputs[i], &header->requisition);
+        header->buffer_size = (guint64) ufo_buffer_get_size (inputs[i]);
+
+        memcpy (base, header, sizeof (struct _Header));
+        base += sizeof (struct _Header);
+        memcpy (base, ufo_buffer_get_host_array (inputs[i], NULL), header->buffer_size);
+        base += header->buffer_size;
+    }
+    request = ufo_message_new (UFO_MESSAGE_SEND_INPUTS, size);
+    g_free (request->data);
+    request->data = buffer;
+    // send as a single message
+    ufo_messenger_send_blocking (priv->msger, request, NULL);
+
 }
 
 void
@@ -243,31 +213,23 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
                             UfoBuffer *buffer)
 {
     UfoRemoteNodePrivate *priv;
-    UfoMessage request;
-    zmq_msg_t reply_msg;
+    UfoMessage *request, *response;
     gpointer host_array;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
-    request.type = UFO_MESSAGE_GET_RESULT;
-
-    g_mutex_lock (priv->mutex);
-
-    ufo_msg_send (&request, priv->socket, 0);
-
-    /* Get the remote data and put it into our buffer */
-    zmq_msg_init (&reply_msg);
-    zmq_msg_recv (&reply_msg, priv->socket, 0);
+    request = ufo_message_new (UFO_MESSAGE_GET_RESULT, 0);
+    response = ufo_messenger_send_blocking (priv->msger, request, NULL);
 
     ufo_buffer_discard_location (buffer);
     host_array = ufo_buffer_get_host_array (buffer, NULL);
-    g_assert (ufo_buffer_get_size (buffer) == zmq_msg_size (&reply_msg));
-    memcpy (host_array, zmq_msg_data (&reply_msg), ufo_buffer_get_size (buffer));
+    g_assert (ufo_buffer_get_size (buffer) == response->data_size);
 
-    zmq_msg_close (&reply_msg);
+    memcpy (host_array, response->data, ufo_buffer_get_size (buffer));
 
-    g_mutex_unlock (priv->mutex);
+    ufo_message_free (request);
+    ufo_message_free (response);
 }
 
 void
@@ -275,74 +237,57 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
                                  UfoRequisition *requisition)
 {
     UfoRemoteNodePrivate *priv;
-    UfoMessage request;
-    zmq_msg_t reply_msg;
+    UfoMessage *request, *response;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
-    request.type = UFO_MESSAGE_GET_REQUISITION;
+    request = ufo_message_new (UFO_MESSAGE_GET_REQUISITION, 0);
+    response = ufo_messenger_send_blocking (priv->msger, request, NULL);
 
-    g_mutex_lock (priv->mutex);
+    g_assert (response->data_size == sizeof (UfoRequisition));
+    memcpy (requisition, response->data, sizeof (UfoRequisition));
 
-    ufo_msg_send (&request, priv->socket, 0);
-
-    zmq_msg_init (&reply_msg);
-    zmq_msg_recv (&reply_msg, priv->socket, 0);
-    g_assert (zmq_msg_size (&reply_msg) >= sizeof (UfoRequisition));
-    memcpy (requisition, zmq_msg_data (&reply_msg), sizeof (UfoRequisition));
-    zmq_msg_close (&reply_msg);
-
-    g_mutex_unlock (priv->mutex);
+    ufo_message_free(request);
+    ufo_message_free(response);
 }
 
 static void
-cleanup_remote (gpointer socket)
+cleanup_remote (UfoRemoteNodePrivate *priv)
 {
-    UfoMessage request;
-
-    request.type = UFO_MESSAGE_CLEANUP;
-
-    ufo_msg_send (&request, socket, 0);
-    receive_ack (socket);
+    UfoMessage *request = ufo_message_new (UFO_MESSAGE_CLEANUP, 0);
+    ufo_messenger_send_blocking (priv->msger, request, NULL);
+    ufo_message_free (request);
 }
 
-static void
-ufo_msg_send (UfoMessage *msg,
-              gpointer socket,
-              gint flags)
+void
+ufo_remote_node_terminate (UfoRemoteNode *node)
 {
-    zmq_msg_t request;
+    UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
-    zmq_msg_init_size (&request, sizeof (UfoMessage));
-    memcpy (zmq_msg_data (&request), msg, sizeof (UfoMessage));
-    zmq_msg_send (&request, socket, flags);
-    zmq_msg_close (&request);
-}
+    priv->terminated = TRUE;
+    cleanup_remote (priv);
 
-static void
-receive_ack (gpointer socket)
-{
-    zmq_msg_t reply_msg;
+    UfoMessage *request;
 
-    zmq_msg_init (&reply_msg);
-    zmq_msg_recv (&reply_msg, socket, 0);
-    zmq_msg_close (&reply_msg);
+    g_return_if_fail (UFO_IS_REMOTE_NODE (node));
+
+    priv = node->priv;
+    request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
+    ufo_messenger_send_blocking (priv->msger, request, NULL);
+
+    ufo_messenger_disconnect (priv->msger);
+    return; 
 }
 
 static void
 ufo_remote_node_dispose (GObject *object)
 {
-    UfoRemoteNodePrivate *priv;
+    UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
 
-    priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
-
-    if (priv->socket != NULL) {
-        cleanup_remote (priv->socket);
-
-        g_debug ("Close socket=%p", priv->socket);
-        zmq_close (priv->socket);
-        priv->socket = NULL;
+    if (!priv->terminated) {
+        cleanup_remote (priv);
+        ufo_messenger_disconnect (priv->msger);
     }
 
     G_OBJECT_CLASS (ufo_remote_node_parent_class)->dispose (object);
@@ -351,17 +296,6 @@ ufo_remote_node_dispose (GObject *object)
 static void
 ufo_remote_node_finalize (GObject *object)
 {
-    UfoRemoteNodePrivate *priv;
-
-    priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
-    g_mutex_free (priv->mutex);
-    
-    if (priv->context != NULL) {
-        g_debug ("Destroy zmq_context=%p", priv->context);
-        zmq_ctx_destroy (priv->context);
-        priv->context = NULL;
-    }
-
     G_OBJECT_CLASS (ufo_remote_node_parent_class)->finalize (object);
 }
 
@@ -382,8 +316,6 @@ ufo_remote_node_init (UfoRemoteNode *self)
 {
     UfoRemoteNodePrivate *priv;
     self->priv = priv = UFO_REMOTE_NODE_GET_PRIVATE (self);
-    priv->context = zmq_ctx_new ();
-    priv->socket = NULL;
     priv->n_inputs = 0;
-    priv->mutex = g_mutex_new ();
+    priv->terminated = FALSE;
 }
