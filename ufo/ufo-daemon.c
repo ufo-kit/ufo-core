@@ -25,7 +25,7 @@
 
 #ifdef MPI
 #include <mpi.h>
-#include <ufo/ufo-messenger-mpi.h>
+#include <ufo/ufo-mpi-messenger.h>
 #endif
 
 #include <signal.h>
