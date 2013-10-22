@@ -74,10 +74,6 @@ typedef enum {
     UFO_MESSAGE_ACK
 } UfoMessageType;
 
-/**
- * UfoMessage: (skip)
- * @type: Type of the wire message
- */
 struct _UfoMessage {
     UfoMessageType  type;
     guint64 data_size;
