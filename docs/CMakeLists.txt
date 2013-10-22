@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
 find_program(SPHINX sphinx-build PATHS /usr/local/bin /usr/bin)
 mark_as_advanced(SPHINX)
