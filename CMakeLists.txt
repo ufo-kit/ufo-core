@@ -34,7 +34,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 #}}}
 
 find_program (MPICC "mpicc")
-find_path(MPI_INCLUDE_DIRS "mpi.h")
 
 #{{{ Options
 option(WITH_PROFILING "Enable profiling" OFF)
@@ -56,12 +55,9 @@ if (WITH_MPI)
     
     if (NOT MPICC)
         message (FATAL_ERROR "No mpicc compiler be found but MPI was explicitly enabled")
-    elseif (NOT MPI_INCLUDE_DIRS)
-        message (FATAL_ERROR "No mpi.h could be found but MPI was explicitly enabled")
     endif ()
 
     set(CMAKE_C_COMPILER ${MPICC})
-    include_directories (${MPI_INCLUDE_DIRS})
 endif ()
 
 #}}}
