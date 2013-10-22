@@ -49,8 +49,18 @@ if (WITH_DEBUG)
 endif ()
 
 if (WITH_MPI)
-    set(CMAKE_C_COMPILER "mpicc")
     add_definitions ("-DMPI")
+    find_program (MPICC "mpicc")
+    find_path(MPI_INCLUDE_DIRS "mpi.h")
+    
+    if (NOT MPICC)
+        message (FATAL_ERROR "No mpicc compiler be found but MPI was explicitly enabled")
+    elseif (NOT MPI_INCLUDE_DIRS)
+        message (FATAL_ERROR "No mpi.h could be found but MPI was explicitly enabled")
+    endif ()
+
+    set(CMAKE_C_COMPILER ${MPICC})
+    include_directories (${MPI_INCLUDE_DIRS})
 endif ()
 
 #}}}
