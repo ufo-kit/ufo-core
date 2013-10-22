@@ -86,9 +86,12 @@ include_directories(
 #{{{ Definitions
 add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
 
+add_definitions ("-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_30")
+
 if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
     add_definitions("-Wcast-align
                      -Wcast-qual
+                     -Wdeprecated-declarations
                      -Winline
                      -Wmissing-declarations
                      -Wmissing-prototypes
