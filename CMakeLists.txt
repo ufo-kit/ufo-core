@@ -57,7 +57,7 @@ endif ()
 
 
 #{{{ Dependencies
-set(PKG_GLIB2_MIN_REQUIRED "2.22")
+set(PKG_GLIB2_MIN_REQUIRED "2.26")
 set(PKG_JSON_GLIB_MIN_REQUIRED "0.7.6")
 set(PKG_ZMQ_MIN_REQUIRED "2.1")
 
@@ -99,9 +99,13 @@ include_directories(
 #{{{ Definitions
 add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
 
+add_definitions ("-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_26")
+add_definitions ("-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_30")
+
 if (CMAKE_COMPILER_IS_GNUCC)
     add_definitions("-Wcast-align
                      -Wcast-qual
+                     -Wdeprecated-declarations
                      -Winline
                      -Wmissing-declarations
                      -Wmissing-prototypes
