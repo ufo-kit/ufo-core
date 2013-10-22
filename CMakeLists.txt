@@ -86,7 +86,7 @@ include_directories(
 #{{{ Definitions
 add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
 
-if (CMAKE_COMPILER_IS_GNUCC)
+if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
     add_definitions("-Wcast-align
                      -Wcast-qual
                      -Winline

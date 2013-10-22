@@ -139,7 +139,7 @@ ufo_group_pop_output_buffer (UfoGroup *group,
     guint pos;
 
     priv = group->priv;
-    pos = priv->pattern == UFO_SEND_SCATTER || UFO_SEND_SEQUENTIAL ? priv->current : 0;
+    pos = priv->pattern == (UFO_SEND_SCATTER | UFO_SEND_SEQUENTIAL) ? priv->current : 0;
 
     return pop_or_alloc_buffer (priv, pos, requisition);
 }
