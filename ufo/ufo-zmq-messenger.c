@@ -182,8 +182,9 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
     zmq_msg_t reply;
     zmq_msg_init (&reply);
 
-    gint size = zmq_msg_recv (&reply, priv->zmq_socket, 0);
-    if (size < 0) {
+    err = zmq_msg_recv (&reply, priv->zmq_socket, 0);
+    gint size = zmq_msg_size (&reply);
+    if (err < 0) {
         g_set_error (error, ufo_messenger_error_quark (), zmq_errno(),
                      "Could not receive from %s: %s ", priv->remote_addr,
                      zmq_strerror (zmq_errno ()));
@@ -225,9 +226,10 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
     UfoMessage *result = NULL;
     zmq_msg_t reply;
     zmq_msg_init (&reply);
-    gint size = zmq_msg_recv (&reply, priv->zmq_socket, 0);
+    gint err = zmq_msg_recv (&reply, priv->zmq_socket, 0);
+    gint size = zmq_msg_size (&reply);
 
-    if (size < 0) {
+    if (err < 0) {
         zmq_msg_close (&reply);
         g_set_error (error, ufo_messenger_error_quark(), zmq_errno(),
                      "Could not receive from %s: %s ", priv->remote_addr,
