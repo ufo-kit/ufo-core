@@ -33,11 +33,14 @@ enable_testing()
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 #}}}
 
+find_program (MPICC "mpicc")
+find_path(MPI_INCLUDE_DIRS "mpi.h")
+
 #{{{ Options
 option(WITH_PROFILING "Enable profiling" OFF)
 option(WITH_TESTS "Build test suite" ON)
 option(WITH_MPI "Build with MPI support" OFF)
-option(WITH_DEBUG "Build with MPI support" OFF)
+option(WITH_DEBUG "Build with DEBUG support" OFF)
 
 if (WITH_PROFILING)
     add_definitions("-pg")
@@ -50,8 +53,6 @@ endif ()
 
 if (WITH_MPI)
     add_definitions ("-DMPI")
-    find_program (MPICC "mpicc")
-    find_path(MPI_INCLUDE_DIRS "mpi.h")
     
     if (NOT MPICC)
         message (FATAL_ERROR "No mpicc compiler be found but MPI was explicitly enabled")
