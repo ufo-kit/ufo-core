@@ -23,8 +23,6 @@
 #include <ufo/ufo-zmq-messenger.h>
 #include <ufo/ufo-mpi-messenger.h>
 
-#include "zmq-shim.h"
-
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 
 #define UFO_REMOTE_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_REMOTE_NODE, UfoRemoteNodePrivate))

@@ -21,6 +21,7 @@
 #include <zmq.h>
 #include <string.h>
 
+#include "zmq-shim.h"
 
 static void ufo_messenger_interface_init (UfoMessengerIface *iface);
 
