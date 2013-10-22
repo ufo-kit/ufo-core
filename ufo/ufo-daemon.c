@@ -22,9 +22,12 @@
 #else
 #include <CL/cl.h>
 #endif
+
 #ifdef MPI
 #include <mpi.h>
+#include <ufo/ufo-messenger-mpi.h>
 #endif
+
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +40,6 @@
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-zmq-messenger.h>
-#include <ufo/ufo-mpi-messenger.h>
 #include <ufo/ufo-messenger-iface.h>
 
 G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)

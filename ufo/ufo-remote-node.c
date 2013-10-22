@@ -21,7 +21,10 @@
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-messenger-iface.h>
 #include <ufo/ufo-zmq-messenger.h>
+
+#ifdef MPI
 #include <ufo/ufo-mpi-messenger.h>
+#endif
 
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 

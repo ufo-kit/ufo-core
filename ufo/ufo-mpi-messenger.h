@@ -20,8 +20,6 @@
 #ifndef __UFO_MPI_MESSENGER_H
 #define __UFO_MPI_MESSENGER_H
 
-#ifdef MPI
-
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-messenger-iface.h>
 #include <glib-object.h>
@@ -68,7 +66,5 @@ UfoMessage         *ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
                                                      GError **error);
 
 G_END_DECLS
-
-#endif /* #ifdef MPI */
 
 #endif

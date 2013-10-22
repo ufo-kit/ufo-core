@@ -17,11 +17,6 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* needed to avoid emty translation unit warning */
-void __unused_ufo_mpi_messenger_voidfn (void);
-
-#ifdef MPI
-
 #include <ufo/ufo-mpi-messenger.h>
 #include <mpi.h>
 #include <string.h>
@@ -258,5 +253,3 @@ ufo_mpi_messenger_init (UfoMpiMessenger *msger)
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
     priv->connected = FALSE;
 }
-
-#endif /* #ifdef MPI */
