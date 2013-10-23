@@ -244,8 +244,6 @@ run_remote_task (TaskLocalData *tld)
     gboolean active = TRUE;
 
     g_assert (tld->n_inputs == 1);
-    if (!UFO_IS_TASK_NODE (tld->task) || tld->task == NULL)
-        G_BREAKPOINT();
 
     remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
     n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
