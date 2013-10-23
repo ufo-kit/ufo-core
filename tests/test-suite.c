@@ -29,7 +29,9 @@ ignore_log (const gchar     *domain,
             const gchar     *message,
             gpointer         data)
 {
+#ifdef DEBUG
     g_print ("%s\n",message);
+#endif
 }
 
 int main(int argc, char *argv[])
