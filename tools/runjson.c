@@ -129,17 +129,8 @@ static void
 mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
 {
     gint provided;
-    MPI_Init_thread (argc, &argv, MPI_THREAD_SERIALIZED, &provided);
-    
-    if (! (provided >= MPI_THREAD_MULTIPLE)) {
-        g_warning ("The MPI implementation does not support MPI_THREAD_MULTIPLE");
-        g_warning ("Using global lock for MPI communication, performance may be degraded.");
-    }
-    else if (! (provided >= MPI_THREAD_SERIALIZED)) {
-        g_critical ("The MPI implementation does not provide the MPI_THREAD_SERIALIZED level, can't proceed");
-        exit (0);
-    }
-
+    MPI_Init_thread (argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+   
     MPI_Comm_rank (MPI_COMM_WORLD, rank);
     MPI_Comm_size (MPI_COMM_WORLD, global_size);
 

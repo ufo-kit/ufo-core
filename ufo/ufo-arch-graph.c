@@ -92,18 +92,11 @@ ufo_arch_graph_new (UfoResources *resources,
     /* Create remote nodes */
     priv->n_remotes = g_list_length (remote_addresses);
 
-#ifdef MPI
-    //TODO cleanup this mutex somewhere
-    GMutex *global_lock = g_mutex_new ();
-#else
-    GMutex *global_lock = NULL;
-#endif
-
     if (priv->n_remotes > 0) {
         priv->remote_nodes = g_new0 (UfoNode *, priv->n_remotes);
 
         for (guint i = 0; i < priv->n_remotes; i++) {
-            priv->remote_nodes[i] = ufo_remote_node_new ((gchar *) g_list_nth_data (remote_addresses, i), global_lock);
+            priv->remote_nodes[i] = ufo_remote_node_new ((gchar *) g_list_nth_data (remote_addresses, i));
         }
     }
 

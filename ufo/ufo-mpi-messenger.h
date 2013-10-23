@@ -49,7 +49,7 @@ struct _UfoMpiMessengerClass {
     GObjectClass parent_class;
 };
 
-UfoMpiMessenger    *ufo_mpi_messenger_new           (GMutex *global_lock);
+UfoMpiMessenger    *ufo_mpi_messenger_new           (void);
 GType               ufo_mpi_messenger_get_type      (void);
 
 void                ufo_mpi_messenger_connect       (UfoMessenger *msger,

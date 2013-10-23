@@ -38,7 +38,7 @@ struct _UfoMpiMessengerPrivate {
     gint global_size;
     gboolean connected;
     GMutex *mutex;
-    GMutex *global_mutex;
+    gboolean free_mutex;
     UfoMessengerRole role;
 };
 
@@ -63,7 +63,7 @@ typedef struct _DataFrame {
  * on most InfiniBand systems, this is not the case.
  */
 UfoMpiMessenger *
-ufo_mpi_messenger_new (GMutex *global_mutex)
+ufo_mpi_messenger_new ()
 {
     UfoMpiMessenger *msger;
     msger = UFO_MPI_MESSENGER (g_object_new (UFO_TYPE_MPI_MESSENGER, NULL));
@@ -71,18 +71,24 @@ ufo_mpi_messenger_new (GMutex *global_mutex)
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
     MPI_Comm_rank (MPI_COMM_WORLD, &priv->own_rank);
     MPI_Comm_size (MPI_COMM_WORLD, &priv->global_size);
-    priv->pid = getpid ();
 
-    if (global_mutex == NULL) {
+    gint provided_thread_level;
+    MPI_Query_thread (&provided_thread_level);
+    if (provided_thread_level >= MPI_THREAD_MULTIPLE) {
+        /* don't use global mutex, we rely on the MPI implementation to be thread
+         * safe. TODO: don't even use a per-thread lock in this case.
+         */
         priv->mutex = g_mutex_new ();
-        priv->global_mutex = NULL;
-    }
-    else {
-        priv->mutex = global_mutex;
-        priv->global_mutex = global_mutex;
+        priv->free_mutex = TRUE;
+    } else if (provided_thread_level == MPI_THREAD_SERIALIZED) {
+        g_message ("The MPI implementation does not support MPI_THREAD_MULTIPLE");
+        g_message ("Using global lock for MPI communication, performance may be degraded.");
+        static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
+        priv->mutex = g_static_mutex_get_mutex (&static_mutex);
+    } else {
+        g_critical ("Required thread level MPI_THREAD_SERIALIZED not available in used MPI implementation");
     }
 
-    g_assert (priv->mutex != NULL);
     return msger;
 }
 
@@ -233,7 +239,7 @@ ufo_mpi_messenger_finalize (GObject *object)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (object);
 
-    if (priv->global_mutex == NULL)
+    if (priv->free_mutex)
         g_mutex_free (priv->mutex);
 }
 

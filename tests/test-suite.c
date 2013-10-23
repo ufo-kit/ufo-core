@@ -29,9 +29,7 @@ ignore_log (const gchar     *domain,
             const gchar     *message,
             gpointer         data)
 {
-#ifdef DEBUG
     g_print ("%s\n",message);
-#endif
 }
 
 int main(int argc, char *argv[])
@@ -40,27 +38,27 @@ int main(int argc, char *argv[])
     g_test_init(&argc, &argv, NULL);
     g_test_bug_base("http://ufo.kit.edu/ufo/ticket");
 
-    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO, ignore_log, NULL);
-    // g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
+    // g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO, ignore_log, NULL);
+    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
     g_log_set_handler ("ocl", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
 
-#ifdef MPI
-    int provided;
-    MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-    test_add_mpi_remote_node ();
-    g_test_run();
-    MPI_Finalize ();
-    return 0;
-#endif
     test_add_buffer ();
     test_add_config ();
     test_add_graph ();
     test_add_profiler ();
+#ifdef MPI
+    int provided;
+    MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+    test_add_mpi_remote_node ();
+#else
     test_add_zmq_messenger ();
     test_add_remote_node ();
-
-
+#endif
     g_test_run();
+
+#ifdef MPI
+    MPI_Finalize ();
+#endif
 
     return 0;
 }

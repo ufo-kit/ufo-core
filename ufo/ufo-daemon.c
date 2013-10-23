@@ -87,7 +87,7 @@ ufo_daemon_new (UfoConfig *config, gchar *listen_address)
     priv->manager = ufo_plugin_manager_new (priv->config);
     priv->scheduler = ufo_scheduler_new (priv->config, NULL);
 #ifdef MPI
-    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new (NULL));
+    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
 #else
     priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
 #endif
@@ -500,7 +500,7 @@ ufo_daemon_stop (UfoDaemon *daemon)
 
     UfoMessenger *tmp_msger;
 #ifdef MPI
-    tmp_msger = UFO_MESSENGER (ufo_mpi_messenger_new (NULL));
+    tmp_msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
 #else
     tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
 #endif
