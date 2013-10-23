@@ -15,6 +15,7 @@ set(ufocore_SRCS
     ufo-graph.c
     ufo-group.c
     ufo-input-task.c
+    ufo-messenger-iface.c
     ufo-node.c
     ufo-output-task.c
     ufo-plugin-manager.c
@@ -27,6 +28,7 @@ set(ufocore_SRCS
     ufo-task-graph.c
     ufo-task-node.c
     ufo-basic-ops.c
+    ufo-zmq-messenger.c
     )
 #}}}
 
@@ -45,6 +47,7 @@ set(ufocore_HDRS
     ufo-graph.h
     ufo-group.h
     ufo-input-task.h
+    ufo-messenger-iface.h
     ufo-node.h
     ufo-output-task.h
     ufo-plugin-manager.h
@@ -57,14 +60,24 @@ set(ufocore_HDRS
     ufo-task-graph.h
     ufo-task-node.h
     ufo-basic-ops.h
+    ufo-zmq-messenger.h
     )
 #}}}
+
+if(WITH_MPI)
+    set(ufocore_HDRS ${ufocore_HDRS}
+        ufo-mpi-messenger.h
+    )
+    set(ufocore_SRCS ${ufocore_SRCS}
+        ufo-mpi-messenger.c
+    )
+endif ()
 
 #{{{ Optional dependencies
 pkg_check_modules(PYTHON python)
 
 if(PYTHON_FOUND)
-    set(HAVE_PYTHON "1")
+#    set(HAVE_PYTHON "1")
 endif()
 #}}}
 
@@ -251,6 +264,7 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
+                    --ignore-headers=ufo-mpi-messenger.h
                     DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${docs_out})
 

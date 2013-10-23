@@ -33,15 +33,35 @@ enable_testing()
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 #}}}
 
+find_program (MPICC "mpicc")
+
 #{{{ Options
 option(WITH_PROFILING "Enable profiling" OFF)
 option(WITH_TESTS "Build test suite" ON)
+option(WITH_MPI "Build with MPI support" OFF)
+option(WITH_DEBUG "Build with DEBUG support" OFF)
 
 if (WITH_PROFILING)
     add_definitions("-pg")
     set(CMAKE_C_FLAGS "-pg")
 endif ()
+
+if (WITH_DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
+endif ()
+
+if (WITH_MPI)
+    add_definitions ("-DMPI")
+    
+    if (NOT MPICC)
+        message (FATAL_ERROR "No mpicc compiler be found but MPI was explicitly enabled")
+    endif ()
+
+    set(CMAKE_C_COMPILER ${MPICC})
+endif ()
+
 #}}}
+
 
 #{{{ Dependencies
 set(PKG_GLIB2_MIN_REQUIRED "2.22")
@@ -86,9 +106,12 @@ include_directories(
 #{{{ Definitions
 add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
 
+add_definitions ("-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_30")
+
 if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
     add_definitions("-Wcast-align
                      -Wcast-qual
+                     -Wdeprecated-declarations
                      -Winline
                      -Wmissing-declarations
                      -Wmissing-prototypes

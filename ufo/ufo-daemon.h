@@ -64,6 +64,7 @@ struct _UfoDaemonClass {
 UfoDaemon *  ufo_daemon_new               (UfoConfig *config, gchar *listen_addr);
 void         ufo_daemon_start             (UfoDaemon *daemon);
 void         ufo_daemon_stop              (UfoDaemon *daemon);
+void         ufo_daemon_wait_finish       (UfoDaemon *daemon);
 GType        ufo_daemon_get_type          (void);
 
 G_END_DECLS
