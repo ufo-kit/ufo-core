@@ -45,8 +45,6 @@ int main(int argc, char *argv[])
 #ifdef MPI
     int provided;
     MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-    g_assert (provided >= MPI_THREAD_MULTIPLE);
-
     test_add_mpi_remote_node ();
     g_test_run();
     MPI_Finalize ();
