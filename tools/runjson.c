@@ -102,7 +102,7 @@ mpi_terminate_processes (gint global_size)
     for (int i = 1; i < global_size; i++) {
         gchar *addr = g_strdup_printf ("%d", i);
         UfoMessage *poisonpill = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
-        UfoMessenger *msger = UFO_MESSENGER (ufo_mpi_messenger_new (NULL));
+        UfoMessenger *msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
         ufo_mpi_messenger_connect (msger, addr, UFO_MESSENGER_CLIENT);
         g_debug ("sending poisonpill to %s", addr);
         ufo_messenger_send_blocking (msger, poisonpill, NULL);
