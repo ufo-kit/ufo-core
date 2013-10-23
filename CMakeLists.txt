@@ -47,6 +47,7 @@ if (WITH_PROFILING)
 endif ()
 
 if (WITH_DEBUG)
+    add_definitions ("-DDEBUG")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
 endif ()
 
