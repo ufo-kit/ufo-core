@@ -136,10 +136,12 @@ ufo_group_pop_output_buffer (UfoGroup *group,
                              UfoRequisition *requisition)
 {
     UfoGroupPrivate *priv;
-    guint pos;
+    guint pos = 0;
 
     priv = group->priv;
-    pos = priv->pattern == (UFO_SEND_SCATTER | UFO_SEND_SEQUENTIAL) ? priv->current : 0;
+
+    if ((priv->pattern == UFO_SEND_SCATTER) || (priv->pattern == UFO_SEND_SEQUENTIAL))
+        pos = priv->current;
 
     return pop_or_alloc_buffer (priv, pos, requisition);
 }
