@@ -86,11 +86,14 @@ ufo_graph_is_connected (UfoGraph *graph,
 }
 
 static void
-add_node_if_not_found (UfoGraphPrivate *priv,
+add_node_if_not_found (UfoGraph *graph,
                        UfoNode *node)
 {
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
+
     if (!g_list_find (priv->nodes, node)) {
         priv->nodes = g_list_append (priv->nodes, node);
+        g_object_set (G_OBJECT (node), "graph", graph, NULL);
         g_object_ref (node);
     }
 }
@@ -129,8 +132,8 @@ ufo_graph_connect_nodes (UfoGraph *graph,
 
     priv->edges = g_list_append (priv->edges, edge);
 
-    add_node_if_not_found (priv, source);
-    add_node_if_not_found (priv, target);
+    add_node_if_not_found (graph, source);
+    add_node_if_not_found (graph, target);
 }
 
 /**
