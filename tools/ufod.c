@@ -120,12 +120,28 @@ terminate (int signum)
     exit (EXIT_SUCCESS);
 }
 
+#ifdef DEBUG
+static void
+log_handler (const gchar     *domain,
+             GLogLevelFlags   flags,
+             const gchar     *message,
+             gpointer         data)
+{
+    g_print ("%s\n",message);
+}
+#endif
+
 int
 main (int argc, char * argv[])
 {
     Options *opts;
 
     g_type_init ();
+
+#ifdef DEBUG
+    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, log_handler, NULL);
+#endif
+    
     g_thread_init (NULL);
 
     if ((opts = opts_parse (&argc, &argv)) == NULL)

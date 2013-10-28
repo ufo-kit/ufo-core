@@ -43,6 +43,33 @@ ufo_message_new (UfoMessageType type, guint64 data_size)
     return msg;
 }
 
+gchar * ufo_message_type_to_char (UfoMessageType type)
+{
+    switch (type) {
+        case UFO_MESSAGE_GET_NUM_DEVICES:
+            return g_strdup ("UFO_MESSAGE_GET_NUM_DEVICES");
+        case UFO_MESSAGE_STREAM_JSON:
+            return g_strdup ("UFO_MESSAGE_STREAM_JSON");
+        case UFO_MESSAGE_REPLICATE_JSON:
+            return g_strdup ("UFO_MESSAGE_REPLICATE_JSON");
+        case UFO_MESSAGE_GET_STRUCTURE:
+            return g_strdup ("UFO_MESSAGE_GET_STRUCTURE");
+        case UFO_MESSAGE_SEND_INPUTS:
+            return g_strdup ("UFO_MESSAGE_SEND_INPUTS");
+        case UFO_MESSAGE_GET_REQUISITION:
+            return g_strdup ("UFO_MESSAGE_GET_REQUISITION");
+        case UFO_MESSAGE_GET_RESULT:
+            return g_strdup ("UFO_MESSAGE_GET_RESULT");
+        case UFO_MESSAGE_CLEANUP:
+            return g_strdup ("UFO_MESSAGE_CLEANUP");
+        case UFO_MESSAGE_TERMINATE:
+            return g_strdup ("UFO_MESSAGE_TERMINATE");
+        case UFO_MESSAGE_ACK:
+            return g_strdup ("UFO_MESSAGE_ACK");
+        default:
+            return g_strdup ("UNKNOWN - NOT MAPPED");
+    }
+}
 G_DEFINE_INTERFACE (UfoMessenger, ufo_messenger, G_TYPE_OBJECT)
 
 /**

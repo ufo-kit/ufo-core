@@ -142,7 +142,7 @@ mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
 #ifdef DEBUG
     // get us some time to attach a gdb session to the pids
     g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
-             getpid(), rank, *global_size - 1);
+             getpid(), *rank, *global_size - 1);
 
     sleep (3);
 #endif
@@ -153,7 +153,7 @@ mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
 
 #ifdef DEBUG
 static void
-ignore_log (const gchar     *domain,
+log_handler (const gchar     *domain,
             GLogLevelFlags   flags,
             const gchar     *message,
             gpointer         data)
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
     g_type_init();
 
 #ifdef DEBUG
-    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
+    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, log_handler, NULL);
 #endif
 
     context = g_option_context_new ("FILE");

@@ -112,6 +112,8 @@ typedef enum {
     UFO_MESSENGER_SERVER
 } UfoMessengerRole;
 
+gchar * ufo_message_type_to_char (UfoMessageType);
+
 struct _UfoMessengerIface {
     /*< private >*/
     GTypeInterface parent_iface;

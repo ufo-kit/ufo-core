@@ -29,6 +29,7 @@
 #endif
 
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ufo/ufo-config.h>
@@ -418,6 +419,7 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
             */
             wait_for_messages = FALSE;
         } else {
+            g_debug ("handling %s", ufo_message_type_to_char (msg->type));
             switch (msg->type) {
                 case UFO_MESSAGE_GET_NUM_DEVICES:
                     handle_get_num_devices (daemon);
