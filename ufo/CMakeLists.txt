@@ -115,7 +115,7 @@ install(TARGETS ufo
 install(FILES ${ufocore_HDRS}
               ${CMAKE_CURRENT_SOURCE_DIR}/ufo.h
               ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
-        DESTINATION ${UFO_INCLUDEDIR})
+        DESTINATION ${UFO_INCLUDEDIR}/ufo)
 
 install(FILES ufo-basic-ops.cl
         DESTINATION ${UFO_LIBDIR}/ufo)
