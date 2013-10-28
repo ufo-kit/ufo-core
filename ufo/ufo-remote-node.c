@@ -102,13 +102,13 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
 {
     UfoRemoteNodePrivate *priv;
     UfoMessage *request;
+    UfoMessageType type;
     guint64 size;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
 
-    UfoMessageType type;
     switch (mode) {
         case UFO_REMOTE_MODE_STREAM:
             type = UFO_MESSAGE_STREAM_JSON;
@@ -116,6 +116,9 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
         case UFO_REMOTE_MODE_REPLICATE:
             type = UFO_MESSAGE_REPLICATE_JSON;
             break;
+        default:
+            g_warning ("Don't understand UfoRemoteMode");
+            type = 0;
     }
 
     size = (guint64) strlen (json);
@@ -183,11 +186,13 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
     };
 
     // determine our total message size
-    guint64 size;
+    guint64 size = 0;
+
     for (guint i = 0; i < priv->n_inputs; i++) {
         guint64 buffer_size = ufo_buffer_get_size (inputs[i]);
         size += buffer_size;
     }
+
     gpointer buffer = g_malloc (priv->n_inputs * sizeof (struct _Header) + size);
 
     char *base = buffer;
@@ -202,6 +207,7 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
         memcpy (base, ufo_buffer_get_host_array (inputs[i], NULL), header->buffer_size);
         base += header->buffer_size;
     }
+
     request = ufo_message_new (UFO_MESSAGE_SEND_INPUTS, size);
     g_free (request->data);
     request->data = buffer;
