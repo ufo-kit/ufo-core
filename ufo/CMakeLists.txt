@@ -85,11 +85,6 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
-
-set(LIBDIR      "lib${LIB_SUFFIX}")
-set(INCLUDEDIR  "include/ufo")
-
 add_definitions(-DUFO_COMPILATION)
 
 if(CMAKE_BUILD_TYPE MATCHES "Release")
@@ -114,16 +109,16 @@ target_link_libraries(ufo ${UFOCORE_DEPS})
 
 #{{{ install target
 install(TARGETS ufo
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR})
+        ARCHIVE DESTINATION ${UFO_LIBDIR}
+        LIBRARY DESTINATION ${UFO_LIBDIR})
 
 install(FILES ${ufocore_HDRS}
               ${CMAKE_CURRENT_SOURCE_DIR}/ufo.h
               ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
-        DESTINATION ${INCLUDEDIR})
+        DESTINATION ${UFO_INCLUDEDIR})
 
 install(FILES ufo-basic-ops.cl
-        DESTINATION ${LIBDIR}/ufo)
+        DESTINATION ${UFO_LIBDIR}/ufo)
 #}}}
 #}}}
 
@@ -199,10 +194,10 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
         add_dependencies(gir ufo)
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
-            DESTINATION share/gir-1.0)
+                DESTINATION ${UFO_GIRDIR})
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
-            DESTINATION ${LIBDIR}/girepository-1.0)
+                DESTINATION ${UFO_TYPELIBDIR})
     endif()
 endif()
 #}}}
@@ -297,18 +292,11 @@ endif(GTK_DOC_FOUND)
 #}}}
 
 #{{{ pkg-config
-set(UFO_PKG_PREFIX      "${CMAKE_INSTALL_PREFIX}")
-set(UFO_PKG_EXEC_PREFIX "${UFO_PKG_PREFIX}/bin")
-set(UFO_PKG_INCLUDEDIR  "${UFO_PKG_PREFIX}/include")
-set(UFO_PKG_GIRDIR      "${UFO_PKG_PREFIX}/share/gir-1.0")
-set(UFO_PKG_LIBDIR      "${UFO_PKG_PREFIX}/${LIBDIR}")
-set(UFO_PKG_TYPELIBDIR  "${UFO_PKG_PREFIX}/${LIBDIR}/girepository-1.0")
-
 # FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
 # hard coded values
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
                "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc
-        DESTINATION ${LIBDIR}/pkgconfig)
+        DESTINATION ${UFO_PKGCONFIGDIR})
 #}}}

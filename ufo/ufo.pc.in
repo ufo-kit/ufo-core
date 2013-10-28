@@ -1,9 +1,9 @@
-prefix=@UFO_PKG_PREFIX@
-exec_prefix=@UFO_PKG_EXEC_PREFIX@
-libdir=@UFO_PKG_LIBDIR@
-includedir=@UFO_PKG_INCLUDEDIR@
-girdir=@UFO_PKG_GIRDIR@
-typelibdir=@UFO_PKG_TYPELIBDIR@
+prefix=@UFO_PREFIX@
+exec_prefix=@UFO_EPREFIX@
+libdir=@UFO_LIBDIR@
+includedir=@UFO_INCLUDEDIR@
+girdir=@UFO_GIRDIR@
+typelibdir=@UFO_TYPELIBDIR@
 
 Name: @TARNAME@
 Description: @UFO_DESCRIPTION_SUMMARY@
