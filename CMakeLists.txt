@@ -3,7 +3,7 @@ project(ufo C)
 
 set(TARNAME "libufo")
 
-set(UFO_DESCRIPTION "UFO high-speed image processing core library")
+set(UFO_DESCRIPTION         "UFO high-speed image processing core library")
 set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
 
 #{{{ Library version
@@ -15,7 +15,6 @@ set(UFO_GIR_VERSION "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}")
 # increase UFO_SO_VERSION on each version that breaks ABI compatibility
 set(UFO_SO_VERSION "4")
 #}}}
-
 #{{{ Package version
 set(PACKAGE_VERSION_MAJOR ${UFO_VERSION_MAJOR})
 set(PACKAGE_VERSION_MINOR ${UFO_VERSION_MINOR})
@@ -26,7 +25,6 @@ set(PACKAGE_TARNAME ${TARNAME})
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_BUGREPORT "http://ufo.kit.edu/ufo/newticket")
 #}}}
-
 #{{{ CMake
 enable_testing()
 
@@ -36,10 +34,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 include(ConfigurePaths)
 configure_paths(UFO)
 #}}}
-
+#{{{ Options
 find_program (MPICC "mpicc")
 
-#{{{ Options
 option(WITH_PROFILING "Enable profiling" OFF)
 option(WITH_TESTS "Build test suite" ON)
 option(WITH_MPI "Build with MPI support" OFF)
@@ -65,7 +62,6 @@ if (WITH_MPI)
     set(CMAKE_C_COMPILER ${MPICC})
 endif ()
 #}}}
-
 #{{{ Dependencies
 set(PKG_GLIB2_MIN_REQUIRED "2.22")
 set(PKG_JSON_GLIB_MIN_REQUIRED "0.7.6")
@@ -105,7 +101,6 @@ include_directories(
     ${ZMQ_INCLUDE_DIRS})
 #}}}
 #}}}
-
 #{{{ Definitions
 add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
 
@@ -129,7 +124,6 @@ endif()
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 #}}}
-
 #{{{ Subdirectories
 add_subdirectory(ufo)
 add_subdirectory(docs)
@@ -140,7 +134,6 @@ if (WITH_TESTS)
     add_subdirectory(tests)
 endif()
 #}}}
-
 #{{{ CPack
 set(CPACK_PACKAGE_DESCRIPTION ${UFO_DESCRIPTION})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${UFO_DESCRIPTION_SUMMARY})
@@ -165,7 +158,6 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS
      libjson-glib-1.0-0 (>= ${PKG_JSON_GLIB_MIN_REQUIRED}),
      libzmq1 (>= ${PKG_ZMQ_MIN_REQUIRED})")
 #}}}
-
 #{{{ RPM
 set(CPACK_RPM_PACKAGE_AUTOREQPROV " no")
 set(CPACK_RPM_PACKAGE_REQUIRES "libjson-glib-1_0-0, libzmq1")

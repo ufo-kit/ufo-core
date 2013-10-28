@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-#{{{ Sources
+#{{{ sources
 set(ufocore_SRCS
     ufo-arch-graph.c
     ufo-buffer.c
@@ -31,8 +31,7 @@ set(ufocore_SRCS
     ufo-zmq-messenger.c
     )
 #}}}
-
-#{{{ Public headers
+#{{{ headers
 set(ufocore_HDRS
     ufo-arch-graph.h
     ufo-buffer.h
@@ -63,6 +62,12 @@ set(ufocore_HDRS
     ufo-zmq-messenger.h
     )
 #}}}
+#{{{ optional dependencies
+pkg_check_modules(PYTHON python)
+
+if(PYTHON_FOUND)
+    set(HAVE_PYTHON "1")
+endif()
 
 if(WITH_MPI)
     set(ufocore_HDRS ${ufocore_HDRS}
@@ -72,16 +77,8 @@ if(WITH_MPI)
         ufo-mpi-messenger.c
     )
 endif ()
-
-#{{{ Optional dependencies
-pkg_check_modules(PYTHON python)
-
-if(PYTHON_FOUND)
-    set(HAVE_PYTHON "1")
-endif()
 #}}}
-
-#{{{ libufo target
+#{{{ libufo
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
@@ -121,8 +118,7 @@ install(FILES ufo-basic-ops.cl
         DESTINATION ${UFO_LIBDIR}/ufo)
 #}}}
 #}}}
-
-#{{{ glib-mkenums targets
+#{{{ glib-mkenums
 find_program(GLIB2_MKENUMS glib-mkenums REQUIRED)
 
 add_custom_command(
@@ -147,8 +143,7 @@ add_custom_command(
             ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.c.template
 )
 #}}}
-
-#{{{ g-ir-scanner and g-ir-compiler targets
+#{{{ g-ir-scanner and g-ir-compiler
 find_program(INTROSPECTION_SCANNER "g-ir-scanner")
 find_program(INTROSPECTION_COMPILER "g-ir-compiler")
 
@@ -201,9 +196,9 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
     endif()
 endif()
 #}}}
-
-#{{{ gtk-doc targets
+#{{{ gtk-doc
 pkg_check_modules(GTK_DOC gtk-doc)
+
 if(GTK_DOC_FOUND)
     option(WITH_GTK_DOC "Build API reference" ON)
     if (WITH_GTK_DOC)
@@ -290,7 +285,6 @@ if(GTK_DOC_FOUND)
     endif()
 endif(GTK_DOC_FOUND)
 #}}}
-
 #{{{ pkg-config
 # FIXME: inside the ufo.pc.in we should set the lib names that we found out, not
 # hard coded values
