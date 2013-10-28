@@ -60,9 +60,63 @@ if (WITH_MPI)
 
     set(CMAKE_C_COMPILER ${MPICC})
 endif ()
-
 #}}}
 
+#{{{ Installation directories
+
+# Set what the user passed
+set(UFO_PREFIX "${PREFIX}")
+set(UFO_EPREFIX "${EXEC_PREFIX}")
+set(UFO_INCLUDEDIR "${INCLUDEDIR}")
+set(UFO_BINDIR "${BINDIR}")
+set(UFO_LIBDIR "${LIBDIR}")
+set(UFO_DATAROOTDIR "${DATAROOTDIR}")
+set(UFO_DATADIR "${DATAROOTDIR}")
+set(UFO_PKGCONFIGDIR "${PKGCONFIGDIR}")
+set(UFO_GIRDIR "${GIRDIR}")
+set(UFO_TYPELIBDIR "${TYPELIBDIR}")
+
+# Fix in the same way configure does
+if(UFO_PREFIX STREQUAL "")
+    set(UFO_PREFIX "${CMAKE_INSTALL_PREFIX}")
+endif()
+
+if(UFO_EPREFIX STREQUAL "")
+    set(UFO_EPREFIX "${UFO_PREFIX}")
+endif()
+
+if(UFO_INCLUDEDIR STREQUAL "")
+    set(UFO_INCLUDEDIR "${UFO_PREFIX}/include")
+endif()
+
+if(UFO_BINDIR STREQUAL "")
+    set(UFO_BINDIR "${UFO_EPREFIX}/bin")
+endif()
+
+if(UFO_LIBDIR STREQUAL "")
+    set(UFO_LIBDIR "${UFO_EPREFIX}/lib")
+endif()
+
+if(UFO_DATAROOTDIR STREQUAL "")
+    set(UFO_DATAROOTDIR "${UFO_PREFIX}/share")
+endif()
+
+if(UFO_DATADIR STREQUAL "")
+    set(UFO_DATADIR "${UFO_DATAROOTDIR}")
+endif()
+
+if(UFO_PKGCONFIGDIR STREQUAL "")
+    set(UFO_PKGCONFIGDIR "${UFO_LIBDIR}/pkgconfig")
+endif()
+
+if(UFO_GIRDIR STREQUAL "")
+    set(UFO_GIRDIR "${UFO_DATADIR}/gir-1.0")
+endif()
+
+if(UFO_TYPELIBDIR STREQUAL "")
+    set(UFO_TYPELIBDIR "${UFO_LIBDIR}/girepository-1.0")
+endif()
+#}}}
 
 #{{{ Dependencies
 set(PKG_GLIB2_MIN_REQUIRED "2.22")

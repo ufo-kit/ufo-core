@@ -7,7 +7,7 @@ target_link_libraries(runjson ufo ${UFOCORE_DEPS})
 target_link_libraries(ufod ufo ${UFOCORE_DEPS})
 
 install(TARGETS ufod runjson
-        RUNTIME DESTINATION bin)
+        RUNTIME DESTINATION ${UFO_BINDIR})
 
 install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/clprof
-        DESTINATION bin)
+        DESTINATION ${UFO_BINDIR})
