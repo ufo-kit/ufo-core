@@ -114,6 +114,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
                      -Wmissing-declarations
                      -Wmissing-prototypes
                      -Wnested-externs
+                     -Wno-deprecated-declarations
                      -Wno-long-long
                      -Wno-missing-field-initializers
                      -Wno-unused-parameter
