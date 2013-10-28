@@ -4,10 +4,27 @@ Changelog
 
 Here you can see the full list of changes between each ufo-core release.
 
+
 Version 0.5
 ===========
 
+Released on October 28th 2013.
+
+- Added MPI support as an alternative to ZMQ.
 - Added basic math operations for use with filters.
+- UFO can now be used reliably in a multithreaded Python context. That means,
+  calling ``ufo_scheduler_run`` in a Python thread will "just work". This change
+  allows run-time injection of NumPy buffers into the task graph.
+
+Developers
+----------
+- Add ``-DDEBUG`` when debug is enabled so we can #ifdef it
+- Add GLib version guards
+- ufo-core compiles with Clang
+- CMake 2.6 is used solely throughout the sources
+- Add convenience function ufo_buffer_new_with_size
+- Add a shim macros to support both zmq 2 and 3
+- Add ``UFO_USE_GPU`` env var to restrict to single GPU
 - Added ufo_resource_manager_get_cached_kernel that always returns the same
   kernel object when given the same file and kernel name. Note, that you have to
   guard it properly and do not call ``clSetKernelArg`` from multiple threads at
@@ -15,6 +32,14 @@ Version 0.5
 - Add profile tracing to produce a JSON trace event file, that can be read and
   visualized with Google's Chrome browser. It can be enabled with
   UfoScheduler::enable-tracing set to TRUE.
+
+Bug fixes
+---------
+- Fix #6: Don't use enum values as bit flags
+- Fix bug: no plugin name is sent to remote nodes
+- Fix copy segfault in when source has not alloc'd
+- Removed dependency on a C++ compiler
+- Fix reduction problem
 
 
 Version 0.4
