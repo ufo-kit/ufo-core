@@ -95,21 +95,15 @@ like this::
 How can I use Numpy output?
 ---------------------------
 
-Install the Python extension module from ``vogelgesang/ufonp`` with ``setup.py``
-like this::
-
-    $ cd <path-to-ufonp>
-    $ python setup.py build
-    $ sudo python setup.py install
-
-You can then use the BufferInput filter to process Numpy arrays data::
+Install the ``ufo-python-tools``.  You can then use the BufferInput filter to
+process Numpy arrays data::
 
     from gi.repository import Ufo
-    import ufotools
+    import ufo.numpy
     import numpy as np
 
     arrays = [ i*np.eye(100, dtype=np.float32) for i in range(1, 10) ]
-    buffers = [ ufotools.fromarray(a) for a in arrays ]
+    buffers = [ ufo.numpy.fromarray(a) for a in arrays ]
 
     g = Ufo.Graph()
     numpy_input = g.get_filter('bufferinput')

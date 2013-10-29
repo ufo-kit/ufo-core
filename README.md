@@ -6,6 +6,9 @@ management to describe a workflow as a graph of processing nodes. The nodes are
 implemented as plugins in the
 [ufo-filters](https://github.com/ufo-kit/ufo-filters) sister project.
 
+The [ufo-python-tools](https://github.com/ufo-kit/ufo-python-tools) suite
+provides functions for better integration within Python-based projects.
+
 
 ## Further information
 
