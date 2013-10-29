@@ -82,6 +82,7 @@ ufo_messenger_error_quark ()
     return g_quark_from_static_string ("ufo-messenger-error-quark");
 }
 
+static UfoMessenger *messenger_to_profile;
 /**
  * ufo_messenger_connect:
  * @msger: The messenger object
@@ -95,13 +96,46 @@ ufo_messenger_connect (UfoMessenger *msger,
                        gchar *addr,
                        UfoMessengerRole role)
 {
+    /* iface members are not thread safe, but the daemon uses 2 messsengers
+     * (one for termination that we are not interested in that is created last)
+     * we use a static lock for connect/disconnect which should not affect performance
+     * and only profile the first messenger that is created
+    */
+    static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
+    GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
+    g_mutex_lock (mutex);
+
+    UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
+    if (profiler == NULL) {
+        profiler = ufo_profiler_new ();
+        messenger_to_profile = msger;
+        ufo_profiler_enable_tracing (profiler, TRUE);
+        UFO_MESSENGER_GET_IFACE (msger)->profiler = profiler;
+    }
+
     UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role);
+
+    g_mutex_unlock (mutex);
 }
 
 void
 ufo_messenger_disconnect (UfoMessenger *msger)
 {
+    static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
+    GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
+    g_mutex_lock (mutex);
+
+    UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
+    if (profiler != NULL && msger == messenger_to_profile) {
+        gchar *filename = g_strdup_printf (".trace.messenger-%p.csv",
+                                           (void *) g_thread_self ());
+        ufo_profiler_write_events_csv (profiler, filename);
+        g_object_unref (UFO_MESSENGER_GET_IFACE (msger)->profiler);
+        UFO_MESSENGER_GET_IFACE (msger)->profiler = NULL;
+    }
     UFO_MESSENGER_GET_IFACE (msger)->disconnect (msger);
+
+    g_mutex_unlock (mutex);
 }
 
 /**
@@ -112,14 +146,26 @@ ufo_messenger_disconnect (UfoMessenger *msger)
  * Returns: (allow-none) : A #UfoMessage response to the sent request.
  *
  * Sends a #UfoMessage request to the connected
- * endpoint and blocks until the message want fully sent.
+ * endpoint and blocks until the message was fully sent.
  */
 UfoMessage *
 ufo_messenger_send_blocking (UfoMessenger *msger,
                              UfoMessage *request,
                              GError **error)
 {
-    return UFO_MESSENGER_GET_IFACE (msger)->send_blocking (msger, request, error);
+    UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
+    gchar *name;
+    if (msger == messenger_to_profile) {
+        name= g_strdup_printf ("SEND %s", ufo_message_type_to_char (request->type));
+        ufo_profiler_trace_event (profiler, name, "B");
+
+    }
+
+    UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->send_blocking (msger, request, error);
+
+    if (UFO_IS_PROFILER (profiler) && msger == messenger_to_profile)
+        ufo_profiler_trace_event (profiler, name, "E");
+    return msg;
 }
 
 /**
@@ -137,7 +183,25 @@ UfoMessage *
 ufo_messenger_recv_blocking (UfoMessenger *msger,
                             GError **error)
 {
-    return UFO_MESSENGER_GET_IFACE (msger)->recv_blocking (msger, error);
+    UfoTraceEvent *ev;
+    UfoProfiler *profiler;
+    if (msger == messenger_to_profile) {
+        profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
+        ev = ufo_profiler_trace_event (profiler, "RECV", "B");
+    }
+
+    UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->recv_blocking (msger, error);
+   
+    if (msger == messenger_to_profile) {
+        gchar *name = g_strdup_printf ("RECV %s", ufo_message_type_to_char (msg->type));
+        if (UFO_IS_PROFILER (profiler)) {
+            // know that we know the name, update the previously traced event
+            ev->name = name;
+            ufo_profiler_trace_event (profiler, name, "E");
+        }
+    }
+
+    return msg;
 }
 
 static void

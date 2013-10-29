@@ -24,6 +24,7 @@
 #endif
 #include <gmodule.h>
 #include <glob.h>
+#include <stdio.h>
 
 #include <ufo/ufo-profiler.h>
 #include <ufo/ufo-resources.h>
@@ -68,7 +69,6 @@ enum {
 };
 
 static GTimer *global_clock = NULL;
-
 
 /**
  * UfoProfilerTimer:
@@ -222,6 +222,31 @@ ufo_profiler_get_trace_events (UfoProfiler *profiler)
     return profiler->priv->trace_events;
 }
 
+static gint
+compare_event (const UfoTraceEvent *a,
+               const UfoTraceEvent *b,
+               gpointer user_data)
+{
+    return (gint) (a->timestamp - b->timestamp);
+}
+
+GList *
+ufo_profiler_get_trace_events_sorted (UfoProfiler *profiler)
+{
+    GList *events = g_list_copy (ufo_profiler_get_trace_events (profiler));
+    GList *sorted_events = g_list_sort (events, (GCompareFunc) compare_event);
+
+    /* set relative timestamps based on the occurence of the first event */
+    GList *first = g_list_first (sorted_events);
+    gdouble base = ((UfoTraceEvent *) first->data)->timestamp;
+    for (GList *it = g_list_first (sorted_events); it != NULL; it = g_list_next (it)) {
+        UfoTraceEvent *event = (UfoTraceEvent *) it->data;
+        event->timestamp_relative = event->timestamp - base;
+    }
+
+    return sorted_events;
+}
+
 static void
 get_time_stamps (cl_event event, gulong *queued, gulong *submitted, gulong *start, gulong *end)
 {
@@ -336,6 +361,23 @@ ufo_profiler_foreach (UfoProfiler    *profiler,
         g_free (row_string);
         g_free (kernel_name);
     }
+}
+
+void ufo_profiler_write_events_csv (UfoProfiler *profiler,
+                                    gchar *filename)
+{
+    UfoProfilerPrivate *priv = UFO_PROFILER_GET_PRIVATE (profiler);
+    FILE *fp = fopen (filename, "w");
+
+    GList *events = ufo_profiler_get_trace_events_sorted (profiler);
+   
+    for (GList *it = g_list_first (events); it != NULL; it = g_list_next (it)) {
+        UfoTraceEvent *event = (UfoTraceEvent *) it->data;
+        g_debug ("[%f] %s %s", event->timestamp, event->name, event->type);
+        fprintf (fp, "%.2f\t%.2f\t%s\t%s\n", event->timestamp, event->timestamp_relative,
+                                    event->name, event->type);
+    }
+    fclose (fp);
 }
 
 static void

@@ -83,6 +83,7 @@ typedef struct {
     const gchar *type;
     gpointer     thread_id;
     gdouble      timestamp;
+    gdouble      timestamp_relative;
 } UfoTraceEvent;
 
 typedef enum {
@@ -116,8 +117,12 @@ void         ufo_profiler_enable_tracing
                                          gboolean            enable);
 GList       *ufo_profiler_get_trace_events
                                         (UfoProfiler        *profiler);
+GList       *ufo_profiler_get_trace_events_sorted
+                                        (UfoProfiler        *profiler);
 gdouble      ufo_profiler_elapsed       (UfoProfiler        *profiler,
                                          UfoProfilerTimer    timer);
+void         ufo_profiler_write_events_csv (UfoProfiler *profiler,
+                                    gchar *filename);
 GType        ufo_profiler_get_type      (void);
 
 G_END_DECLS

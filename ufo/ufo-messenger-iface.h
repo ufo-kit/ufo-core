@@ -25,6 +25,7 @@
 #endif
 
 #include <ufo/ufo-remote-node.h>
+#include <ufo/ufo-profiler.h>
 
 G_BEGIN_DECLS
 
@@ -117,6 +118,8 @@ gchar * ufo_message_type_to_char (UfoMessageType);
 struct _UfoMessengerIface {
     /*< private >*/
     GTypeInterface parent_iface;
+
+    UfoProfiler *profiler;
 
     void (*connect)                         (UfoMessenger   *msger,
                                              gchar *addr,
