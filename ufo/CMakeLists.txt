@@ -281,7 +281,8 @@ if(GTK_DOC_FOUND)
 
         add_custom_target(reference ALL DEPENDS ${docs_dir}/html.stamp)
 
-        install(FILES ${reference_files} DESTINATION share/gtk-doc/html/Ufo)
+        install(FILES ${reference_files}
+                DESTINATION ${UFO_DATADIR}/gtk-doc/html/Ufo)
     endif()
 endif(GTK_DOC_FOUND)
 #}}}
