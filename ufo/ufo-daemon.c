@@ -233,6 +233,7 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *msg)
 
     priv->scheduler_thread = g_thread_create ((GThreadFunc) run_scheduler, daemon, TRUE, NULL);
     g_free (json);
+    g_debug("end of handle stream json");
 }
 
 static void
@@ -373,13 +374,13 @@ handle_terminate (UfoDaemon *daemon)
     ufo_messenger_send_blocking (priv->msger, response, NULL);
     ufo_message_free (response);
 
+    ufo_messenger_disconnect (priv->msger);
+
     if(priv->scheduler_thread != NULL) {
         g_message ("waiting for scheduler to finish");
         g_thread_join (priv->scheduler_thread);
         g_message ("scheduler finished!");
     }
-
-    ufo_messenger_disconnect (priv->msger);
 }
 
 static gpointer
@@ -510,6 +511,7 @@ ufo_daemon_stop (UfoDaemon *daemon)
     ufo_messenger_connect (tmp_msger, priv->listen_address, UFO_MESSENGER_CLIENT);
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
     ufo_messenger_send_blocking (tmp_msger, request, NULL);
+    ufo_messenger_disconnect (tmp_msger);
 
     g_thread_join (priv->thread);
 
