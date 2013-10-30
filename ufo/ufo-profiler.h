@@ -76,14 +76,22 @@ struct _UfoProfilerClass {
  * @name: Name of the event
  * @type: Type of the event
  * @thread_id: ID of thread in which the event was issued
- * @timestamp: Arbitrary timestamp of the event
+ * @timestamp: The fraction of a second of the timestamp.
+ *             Beware: this is actually only the fraction of miliseconds and can
+ *             not be used for timings > 1sec. since its value is
+ *             taken modulo 100000
+ * @timestamp_absolute: The absolute timestamp in seconds since timer start
+ * @timestamp_delta: Only interesting in sorted series of events where you want
+ *                   the delta to a given event (like the first on in a series)
  */
 typedef struct {
     const gchar *name;
     const gchar *type;
     gpointer     thread_id;
     gdouble      timestamp;
-    gdouble      timestamp_relative;
+    gdouble      timestamp_absolute;
+    gdouble      timestamp_delta;
+    
 } UfoTraceEvent;
 
 typedef enum {
@@ -109,7 +117,7 @@ void         ufo_profiler_start         (UfoProfiler        *profiler,
                                          UfoProfilerTimer    timer);
 void         ufo_profiler_stop          (UfoProfiler        *profiler,
                                          UfoProfilerTimer    timer);
-void         ufo_profiler_trace_event   (UfoProfiler        *profiler,
+UfoTraceEvent *ufo_profiler_trace_event   (UfoProfiler        *profiler,
                                          const gchar        *name,
                                          const gchar        *type);
 void         ufo_profiler_enable_tracing

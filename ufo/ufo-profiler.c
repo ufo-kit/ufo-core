@@ -176,26 +176,30 @@ ufo_profiler_stop (UfoProfiler       *profiler,
     g_timer_stop (profiler->priv->timers[timer]);
 }
 
-void
+UfoTraceEvent *
 ufo_profiler_trace_event (UfoProfiler *profiler,
                           const gchar *name,
                           const gchar *type)
 {
     UfoTraceEvent *event;
-    gulong timestamp;
+    gulong timestamp_fraction;
+    gdouble timestamp_absolute;
 
-    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    g_return_val_if_fail (UFO_IS_PROFILER (profiler), NULL);
     if (!profiler->priv->trace)
-        return;
+        return NULL;
 
-    g_timer_elapsed (global_clock, &timestamp);
+    timestamp_absolute = g_timer_elapsed (global_clock, &timestamp_fraction);
 
     event = g_malloc0 (sizeof(UfoTraceEvent));
     event->name = name;
     event->type = type;
     event->thread_id = g_thread_self ();
-    event->timestamp = (gdouble) timestamp;
+    event->timestamp_absolute = timestamp_absolute;
+    event->timestamp = (gdouble) timestamp_fraction;
     profiler->priv->trace_events = g_list_append (profiler->priv->trace_events, event);
+
+    return event;
 }
 
 
@@ -227,7 +231,7 @@ compare_event (const UfoTraceEvent *a,
                const UfoTraceEvent *b,
                gpointer user_data)
 {
-    return (gint) (a->timestamp - b->timestamp);
+    return (gint) (a->timestamp_absolute - b->timestamp_absolute);
 }
 
 GList *
@@ -238,10 +242,10 @@ ufo_profiler_get_trace_events_sorted (UfoProfiler *profiler)
 
     /* set relative timestamps based on the occurence of the first event */
     GList *first = g_list_first (sorted_events);
-    gdouble base = ((UfoTraceEvent *) first->data)->timestamp;
+    gdouble base = ((UfoTraceEvent *) first->data)->timestamp_absolute;
     for (GList *it = g_list_first (sorted_events); it != NULL; it = g_list_next (it)) {
         UfoTraceEvent *event = (UfoTraceEvent *) it->data;
-        event->timestamp_relative = event->timestamp - base;
+        event->timestamp_delta = event->timestamp_absolute - base;
     }
 
     return sorted_events;
@@ -366,16 +370,15 @@ ufo_profiler_foreach (UfoProfiler    *profiler,
 void ufo_profiler_write_events_csv (UfoProfiler *profiler,
                                     gchar *filename)
 {
-    UfoProfilerPrivate *priv = UFO_PROFILER_GET_PRIVATE (profiler);
     FILE *fp = fopen (filename, "w");
 
     GList *events = ufo_profiler_get_trace_events_sorted (profiler);
    
     for (GList *it = g_list_first (events); it != NULL; it = g_list_next (it)) {
         UfoTraceEvent *event = (UfoTraceEvent *) it->data;
-        g_debug ("[%f] %s %s", event->timestamp, event->name, event->type);
-        fprintf (fp, "%.2f\t%.2f\t%s\t%s\n", event->timestamp, event->timestamp_relative,
-                                    event->name, event->type);
+        fprintf (fp, "%.4f\t%.4f\t%s\t%s\n",
+                 event->timestamp_absolute, event->timestamp_delta,
+                 event->name, event->type);
     }
     fclose (fp);
 }
