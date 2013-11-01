@@ -9,7 +9,7 @@ set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
 #{{{ Library version
 set(UFO_VERSION_MAJOR "0")
 set(UFO_VERSION_MINOR "5")
-set(UFO_VERSION_PATCH "2")
+set(UFO_VERSION_PATCH "3")
 set(UFO_GIR_VERSION "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}")
 
 # increase UFO_SO_VERSION on each version that breaks ABI compatibility
