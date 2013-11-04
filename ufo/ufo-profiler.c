@@ -370,9 +370,11 @@ ufo_profiler_foreach (UfoProfiler    *profiler,
 void ufo_profiler_write_events_csv (UfoProfiler *profiler,
                                     gchar *filename)
 {
-    FILE *fp = fopen (filename, "w");
-
     GList *events = ufo_profiler_get_trace_events_sorted (profiler);
+    if (g_list_length (events) == 0)
+        return;
+
+    FILE *fp = fopen (filename, "w");
    
     for (GList *it = g_list_first (events); it != NULL; it = g_list_next (it)) {
         UfoTraceEvent *event = (UfoTraceEvent *) it->data;
