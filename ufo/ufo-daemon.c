@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <ufo/ufo-config.h>
 #include <ufo/ufo-daemon.h>
 #include <ufo/ufo-dummy-task.h>
@@ -112,6 +113,18 @@ handle_get_num_devices (UfoDaemon *daemon)
                                NULL));
 
     *(guint16 *) msg->data = (guint16) *num_devices;
+
+    ufo_messenger_send_blocking (priv->msger, msg, 0);
+    ufo_message_free (msg);
+}
+
+static void
+handle_get_num_cpus (UfoDaemon *daemon)
+{
+    UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+
+    UfoMessage *msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (guint16));
+    *(guint16 *) msg->data = (guint16) sysconf(_SC_NPROCESSORS_ONLN);
 
     ufo_messenger_send_blocking (priv->msger, msg, 0);
     ufo_message_free (msg);
@@ -424,6 +437,9 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
             switch (msg->type) {
                 case UFO_MESSAGE_GET_NUM_DEVICES:
                     handle_get_num_devices (daemon);
+                    break;
+                case UFO_MESSAGE_GET_NUM_CPUS:
+                    handle_get_num_cpus (daemon);
                     break;
                 case UFO_MESSAGE_STREAM_JSON:
                     handle_stream_json (daemon, msg);

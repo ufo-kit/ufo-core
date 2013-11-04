@@ -80,6 +80,24 @@ ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
     return n_devices;
 }
 
+guint
+ufo_remote_node_get_num_cpus (UfoRemoteNode *node)
+{
+    g_return_val_if_fail (UFO_IS_REMOTE_NODE (node), 0);
+
+    UfoRemoteNodePrivate *priv = node->priv;
+    UfoMessage *request = ufo_message_new (UFO_MESSAGE_GET_NUM_CPUS, 0);
+
+    UfoMessage *result;
+    result = ufo_messenger_send_blocking (priv->msger, request, NULL);
+    guint n_devices = * (guint16 *) result->data;
+
+    ufo_message_free (request);
+    ufo_message_free (result);
+    g_assert (n_devices > 0);
+    return n_devices;
+}
+
 void
 ufo_remote_node_request_setup (UfoRemoteNode *node)
 {

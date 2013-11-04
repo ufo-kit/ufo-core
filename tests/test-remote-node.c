@@ -49,12 +49,21 @@ teardown (Fixture *fixture, gconstpointer data)
 }
 
 static void
-test_remote_node_get_num_cpus (Fixture *fixture,
+test_remote_node_get_num_gpus (Fixture *fixture,
                                gconstpointer unused)
 {
     guint n_gpus = ufo_remote_node_get_num_gpus (fixture->remote_node);
     g_debug ("Found %d number of GPUs at remotenode", n_gpus);
     g_assert (n_gpus > 0);
+}
+
+static void
+test_remote_node_get_num_cpus (Fixture *fixture,
+                               gconstpointer unused)
+{
+    guint n_cpus = ufo_remote_node_get_num_cpus (fixture->remote_node);
+    g_debug ("Found %d number of CPUs at remotenode", n_cpus);
+    g_assert (n_cpus > 0);
 }
 
 static void
@@ -69,7 +78,6 @@ test_remote_node_get_structure (Fixture *fixture,
     g_assert (n_inputs == 1);
     g_message ("received n_dims == %d", in_params->n_dims);
     g_assert (in_params->n_dims == 2);
-
 }
 
 void
@@ -78,6 +86,9 @@ test_add_remote_node (void)
     g_test_add ("/remotenode/get_structure",
                 Fixture, NULL,
                 setup, test_remote_node_get_structure, teardown);
+    g_test_add ("/remotenode/get_num_gpus",
+                Fixture, NULL,
+                setup, test_remote_node_get_num_gpus, teardown);
     g_test_add ("/remotenode/get_num_cpus",
                 Fixture, NULL,
                 setup, test_remote_node_get_num_cpus, teardown);
