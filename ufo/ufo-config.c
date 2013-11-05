@@ -43,12 +43,14 @@ enum {
     PROP_0,
     PROP_PATHS,
     PROP_DEVICE_TYPE,
+    PROP_NO_LOCAL,
     N_PROPERTIES
 };
 
 struct _UfoConfigPrivate {
     GValueArray     *path_array;
     UfoDeviceType    device_type;
+    gboolean         no_local;
 };
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
@@ -158,6 +160,10 @@ ufo_config_set_property (GObject      *object,
             priv->device_type = g_value_get_flags (value);
             break;
 
+        case PROP_NO_LOCAL:
+            priv->no_local = g_value_get_boolean (value);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -179,6 +185,10 @@ ufo_config_get_property (GObject      *object,
 
         case PROP_DEVICE_TYPE:
             g_value_set_flags (value, priv->device_type);
+            break;
+
+        case PROP_NO_LOCAL:
+            g_value_set_boolean (value, priv->no_local);
             break;
 
         default:
@@ -245,11 +255,25 @@ ufo_config_class_init (UfoConfigClass *klass)
                             UFO_TYPE_DEVICE_TYPE,
                             UFO_DEVICE_ALL,
                             G_PARAM_READWRITE);
+    /**
+     * UfoConfig:no-local
+     *
+     * Let the user select whether the main machine is used for gpu computing.
+     *
+     */
+    properties[PROP_NO_LOCAL] =
+        g_param_spec_boolean ("no-local",
+                              "Don't use local machine for GPU computing",
+                              "Don't use local machine for GPU computing",
+                              FALSE,
+                              G_PARAM_READWRITE);
 
     g_object_class_install_property (oclass, PROP_PATHS,
                                      properties[PROP_PATHS]);
     g_object_class_install_property (oclass, PROP_DEVICE_TYPE,
                                      properties[PROP_DEVICE_TYPE]);
+    g_object_class_install_property (oclass, PROP_NO_LOCAL,
+                                     properties[PROP_NO_LOCAL]);
 
     g_type_class_add_private(klass, sizeof (UfoConfigPrivate));
 }

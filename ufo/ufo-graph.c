@@ -775,6 +775,27 @@ ufo_graph_dump_dot (UfoGraph *graph,
     fclose (fp);
 }
 
+void
+ufo_graph_remove_node (UfoGraph *graph,
+                       UfoNode *node)
+{
+
+    UfoGraphPrivate *priv;
+    priv = graph->priv;
+
+    GList *in_edges = get_source_edges (priv->edges, node);
+    for (GList *it = g_list_first (in_edges); it != NULL; it = g_list_next (it))
+        priv->edges = g_list_remove (priv->edges, it->data);
+    
+    GList *out_edges = get_target_edges (priv->edges, node);
+    for (GList *it = g_list_first (out_edges); it != NULL; it = g_list_next (it))
+        priv->edges = g_list_remove (priv->edges, it->data);
+
+    priv->nodes = g_list_remove (priv->nodes, node);
+
+}
+
+
 static gint
 cmp_edge (gconstpointer a, gconstpointer b)
 {

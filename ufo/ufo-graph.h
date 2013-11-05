@@ -117,6 +117,8 @@ void        ufo_graph_expand                (UfoGraph       *graph,
                                              GList          *path);
 UfoGraph   *ufo_graph_copy                  (UfoGraph       *graph,
                                              GError        **error);
+void        ufo_graph_remove_node           (UfoGraph *graph,
+                                             UfoNode *node);
 void        ufo_graph_dump_dot              (UfoGraph       *graph,
                                              const gchar    *filename);
 GType       ufo_graph_get_type              (void);
