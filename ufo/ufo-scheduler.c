@@ -277,10 +277,12 @@ run_remote_task (TaskLocalData *tld)
                 continue;
 
             ufo_remote_node_get_requisition (remote, &requisition);
-            group = ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task));
-            output = ufo_group_pop_output_buffer (group, &requisition);
-            ufo_remote_node_get_result (remote, output);
-            ufo_group_push_output_buffer (group, output);
+            if (requisition.n_dims > 0) {
+                group = ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task));
+                output = ufo_group_pop_output_buffer (group, &requisition);
+                ufo_remote_node_get_result (remote, output);
+                ufo_group_push_output_buffer (group, output);
+            }
         }
 
         active = any (alive, n_remote_gpus);
@@ -565,14 +567,15 @@ correct_connections (UfoTaskGraph *graph,
         ufo_task_get_structure (UFO_TASK (node), &n_inputs, &in_params, &mode);
         group = ufo_task_node_get_out_group (node);
 
-        if (((mode == UFO_TASK_MODE_GENERATOR) || (mode == UFO_TASK_MODE_REDUCTOR)) &&
-            ufo_group_get_num_targets (group) < 1) {
-            g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
-                         "No outgoing node for `%s'",
-                         ufo_task_node_get_unique_name (node));
-            result = FALSE;
-            break;
-        }
+        // if (((mode == UFO_TASK_MODE_GENERATOR) || (mode == UFO_TASK_MODE_REDUCTOR)) &&
+        //     ufo_group_get_num_targets (group) < 1) {
+        //     G_BREAKPOINT();
+        //     g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
+        //                  "No outgoing node for `%s'",
+        //                  ufo_task_node_get_unique_name (node));
+        //     result = FALSE;
+        //     break;
+        // }
     }
 
     g_list_free (nodes);

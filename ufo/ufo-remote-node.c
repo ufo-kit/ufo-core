@@ -35,6 +35,7 @@ struct _UfoRemoteNodePrivate {
     guint n_inputs;
     gboolean terminated;
     UfoMessenger *msger;
+    gchar *addr;
 };
 
 UfoNode *
@@ -55,7 +56,8 @@ ufo_remote_node_new (const gchar *address)
 
     gchar *addr = g_strdup (address);
     ufo_messenger_connect (priv->msger, addr, UFO_MESSENGER_CLIENT);
-    g_free(addr);
+    priv->addr = addr;
+    // g_free(addr);
 
     return UFO_NODE (node);
 }
@@ -163,8 +165,11 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     } msg_data;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
-    *mode = UFO_TASK_MODE_PROCESSOR;
-
+    //TODO return the mode of underlying task
+    if (g_str_has_suffix (priv->addr, ":5556"))
+        *mode = UFO_TASK_MODE_REDUCTOR;
+    else
+        *mode = UFO_TASK_MODE_PROCESSOR;
 
     request = ufo_message_new (UFO_MESSAGE_GET_STRUCTURE, 0);
     response = ufo_messenger_send_blocking (priv->msger, request, NULL);

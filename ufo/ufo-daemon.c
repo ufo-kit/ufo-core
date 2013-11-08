@@ -314,7 +314,16 @@ handle_get_requisition (UfoDaemon *daemon)
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     UfoRequisition requisition;
 
+    if (g_str_has_suffix (priv->listen_address, ":5556")) {
+        requisition.n_dims = 0;
+        UfoMessage *msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (UfoRequisition));
+        memcpy (msg->data, &requisition, msg->data_size);
+        ufo_messenger_send_blocking (priv->msger, msg, NULL);
+        ufo_message_free (msg);
+        return;
+    }
     /* We need to get the requisition from the last node */
+    g_debug("wait for requisition");
     ufo_output_task_get_output_requisition (UFO_OUTPUT_TASK (priv->output_task),
                                             &requisition);
 

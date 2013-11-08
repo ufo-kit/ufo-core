@@ -452,6 +452,13 @@ find_longest_path (GList *paths)
     return longest;
 }
 
+static gboolean
+is_writer_node (UfoNode *node, gpointer user_data)
+{
+    gchar *name = ufo_task_node_get_plugin_name (UFO_TASK_NODE (node));
+    return g_str_has_prefix (name, "writer");
+}
+
 /**
  * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
@@ -467,6 +474,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
                        UfoArchGraph *arch_graph,
                        gboolean expand_remote)
 {
+    UfoTaskGraphPrivate *priv = UFO_TASK_GRAPH_GET_PRIVATE (task_graph);
     GList *paths;
     GList *path;
 
@@ -478,14 +486,21 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     g_debug ("Number of cleaned paths: %i", g_list_length (paths));
     path = find_longest_path (paths);
 
-    if (path != NULL) {
+    GList *remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
+    
+    // last remote reserved for writer
+    GList *last_remote = g_list_last (remotes);
+    UfoRemoteNode *writer_remote = NULL;
+    if (last_remote != NULL) {
+        writer_remote = UFO_REMOTE_NODE (last_remote->data);
+        remotes = g_list_remove (remotes, writer_remote);
+    }
+
+    if (path != NULL && g_list_length (remotes) > 0) {
         guint n_gpus;
 
         if (expand_remote) {
-            GList *remotes;
             guint n_remotes;
-
-            remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
             n_remotes = g_list_length (remotes);
 
             if (n_remotes > 0) {
@@ -501,6 +516,36 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
         for (guint i = 1; i < n_gpus; i++)
             ufo_graph_expand (UFO_GRAPH (task_graph), path);
+    }
+
+    // only execute on main runner, no on ufod
+    if (g_list_length (remotes) > 0) {
+        // find the writer task
+        ufo_graph_dump_dot (UFO_GRAPH(task_graph), "foos.dot");
+        GList *allnodes = ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_writer_node, NULL);
+        if (allnodes != NULL) {
+            // create a remote node for it
+            UfoTaskGraph *remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+            UfoTaskNode *writer_task = UFO_TASK_NODE(allnodes->data);
+
+            // construct a remote graph that we send to the rmeote (only thewriter node)
+            UfoTaskNode *dummy = UFO_TASK_NODE (ufo_dummy_task_new ());
+            ufo_task_graph_connect_nodes (remote_graph, dummy, writer_task);
+            gchar *json;
+            json = ufo_task_graph_get_json_data (remote_graph, NULL);
+            ufo_remote_node_send_json (writer_remote, UFO_REMOTE_MODE_STREAM, json);
+
+            // create the mapping RemoteTask<->RemoteNode
+            UfoTaskNode *remote_task = UFO_TASK_NODE (ufo_remote_task_new ());
+            priv->remote_tasks = g_list_append (priv->remote_tasks, remote_task);
+            ufo_task_node_set_proc_node (remote_task, UFO_NODE (writer_remote));
+
+            // remove all edges to the local writer task node
+            // re-connect all edges  to the remote task
+            ufo_graph_dump_dot (UFO_GRAPH(task_graph), "before.dot");
+            ufo_graph_replace_node (UFO_GRAPH (task_graph), UFO_NODE (writer_task), UFO_NODE (remote_task));
+            ufo_graph_dump_dot (UFO_GRAPH(task_graph), "after.dot");
+        }
     }
 
     g_list_foreach (paths, (GFunc) g_list_free, NULL);
