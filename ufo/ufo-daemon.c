@@ -410,13 +410,55 @@ run_scheduler (UfoDaemon *daemon)
     return NULL;
 }
 
+static gboolean
+handle_incoming (UfoDaemon *daemon, UfoMessage *msg)
+{
+    // g_debug ("handling %s", ufo_message_type_to_char (msg->type));
+    switch (msg->type) {
+        case UFO_MESSAGE_GET_NUM_DEVICES:
+            handle_get_num_devices (daemon);
+            break;
+        case UFO_MESSAGE_GET_NUM_CPUS:
+            handle_get_num_cpus (daemon);
+            break;
+        case UFO_MESSAGE_STREAM_JSON:
+            handle_stream_json (daemon, msg);
+            break;
+        case UFO_MESSAGE_REPLICATE_JSON:
+            handle_replicate_json (daemon, msg);
+            break;
+        case UFO_MESSAGE_GET_STRUCTURE:
+            handle_get_structure (daemon);
+            break;
+        case UFO_MESSAGE_SEND_INPUTS:
+            handle_send_inputs (daemon, msg);
+            break;
+        case UFO_MESSAGE_GET_REQUISITION:
+            handle_get_requisition (daemon);
+            break;
+        case UFO_MESSAGE_GET_RESULT:
+            handle_get_result (daemon);
+            break;
+        case UFO_MESSAGE_CLEANUP:
+            handle_cleanup (daemon);
+            break;
+        case UFO_MESSAGE_TERMINATE:
+            handle_terminate (daemon);
+            return FALSE;
+            break;
+        default:
+            g_message ("Unknown message received\n");
+    }
+    return TRUE;
+}
+
 static void
 ufo_daemon_start_impl (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     g_debug ("UfoDaemon started on address %s", priv->listen_address);
 
-    // tell the calling thread that we have started 
+    // tell the calling thread that we have started
     g_mutex_lock (priv->started_lock);
     priv->has_started = TRUE;
     g_cond_signal (priv->started_cond);
@@ -424,7 +466,6 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
 
     gboolean wait_for_messages = TRUE;
     while (wait_for_messages) {
-
         GError *err = NULL;
         UfoMessage *msg = ufo_messenger_recv_blocking (priv->msger, &err);
         if (err != NULL) {
@@ -433,44 +474,9 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
             */
             wait_for_messages = FALSE;
         } else {
-            g_debug ("handling %s", ufo_message_type_to_char (msg->type));
-            switch (msg->type) {
-                case UFO_MESSAGE_GET_NUM_DEVICES:
-                    handle_get_num_devices (daemon);
-                    break;
-                case UFO_MESSAGE_GET_NUM_CPUS:
-                    handle_get_num_cpus (daemon);
-                    break;
-                case UFO_MESSAGE_STREAM_JSON:
-                    handle_stream_json (daemon, msg);
-                    break;
-                case UFO_MESSAGE_REPLICATE_JSON:
-                    handle_replicate_json (daemon, msg);
-                    break;
-                case UFO_MESSAGE_GET_STRUCTURE:
-                    handle_get_structure (daemon);
-                    break;
-                case UFO_MESSAGE_SEND_INPUTS:
-                    handle_send_inputs (daemon, msg);
-                    break;
-                case UFO_MESSAGE_GET_REQUISITION:
-                    handle_get_requisition (daemon);
-                    break;
-                case UFO_MESSAGE_GET_RESULT:
-                    handle_get_result (daemon);
-                    break;
-                case UFO_MESSAGE_CLEANUP:
-                    handle_cleanup (daemon);
-                    break;
-                case UFO_MESSAGE_TERMINATE:
-                    handle_terminate (daemon);
-                    wait_for_messages = FALSE;
-                    break;
-                default:
-                    g_message ("Unknown message received\n");
-            }
+            wait_for_messages = handle_incoming (daemon, msg);
+            ufo_message_free (msg);
         }
-        ufo_message_free (msg);
     }
 
     // tell calling thread we have stopped
