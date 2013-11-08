@@ -464,6 +464,38 @@ ufo_graph_get_num_successors (UfoGraph *graph,
     return n_successors;
 }
 
+/**
+ * ufo_graph_replace_node:
+ * @graph: A #UfoGraph
+ * @oldnode: A #UfoNode who is to be replaced
+ * @newnode: A #UfoNode that is inserted with same connectivity
+ *
+ * Replaces a node with another one. All source and target edges
+ * of the old node are connected to the new node.
+ */
+void
+ufo_graph_replace_node (UfoGraph *graph,
+                        UfoNode *oldnode,
+                        UfoNode *newnode)
+{
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
+
+    add_node_if_not_found (graph, newnode);
+
+    GList *in_edges = get_source_edges (priv->edges, oldnode);
+    for (GList *it = g_list_first (in_edges); it != NULL; it = g_list_next (it)) {
+        UfoEdge *edge = (UfoEdge*) (it->data);
+        edge->source = newnode;
+    }
+
+    GList *out_edges = get_target_edges (priv->edges, oldnode);
+    for (GList *it = g_list_first (out_edges); it != NULL; it = g_list_next (it)) {
+        UfoEdge *edge = (UfoEdge*) (it->data);
+        edge->target = newnode;
+    }
+    ufo_graph_remove_node (graph, oldnode);
+}
+
 static void
 copy_and_connect_successors (UfoGraph *graph,
                              UfoGraph *copy,
