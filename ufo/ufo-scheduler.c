@@ -770,6 +770,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         /* remove all GPU nodes, but only if there are remote nodes in the graph
          * (we don't want to remove them, if we are running from within ufod)
          */
+        g_debug ("Removing local GPU task nodes");
         gint num_remotes = g_list_length (ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_remote_node, NULL));
         if (num_remotes > 0) {
             GList *gpu_tasks = ufo_graph_get_nodes_filtered (UFO_GRAPH (task_graph), is_gpu_node, NULL);
@@ -777,8 +778,11 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                 ufo_graph_remove_node (UFO_GRAPH (task_graph), it->data);
         }
     }
-    
+
     propagate_partition (task_graph);
+#ifdef DEBUG
+    ufo_graph_dump_dot (UFO_GRAPH (task_graph), "task_graph_expanded.dot");
+#endif
     ufo_task_graph_map (task_graph, arch_graph);
 
     /* Prepare task structures */

@@ -530,7 +530,6 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     // only execute on main runner, no on ufod
     if (g_list_length (remotes) > 0) {
         // find the writer task
-        ufo_graph_dump_dot (UFO_GRAPH(task_graph), "foos.dot");
         UfoNode *writer_node = ufo_task_graph_get_writer_node (task_graph);
         if (writer_node != NULL) {
             // create a remote node for it
@@ -551,9 +550,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
             // remove all edges to the local writer task node
             // re-connect all edges  to the remote task
-            ufo_graph_dump_dot (UFO_GRAPH(task_graph), "before.dot");
             ufo_graph_replace_node (UFO_GRAPH (task_graph), UFO_NODE (writer_task), UFO_NODE (remote_task));
-            ufo_graph_dump_dot (UFO_GRAPH(task_graph), "after.dot");
         }
     }
 
