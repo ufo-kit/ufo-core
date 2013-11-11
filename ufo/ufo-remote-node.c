@@ -162,20 +162,18 @@ ufo_remote_node_get_structure (UfoRemoteNode *node,
     struct _Structure {
         guint16 n_inputs;
         guint16 n_dims;
+        UfoTaskMode mode;
     } msg_data;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
-    //TODO return the mode of underlying task
-    if (g_str_has_suffix (priv->addr, ":5556"))
-        *mode = UFO_TASK_MODE_REDUCTOR;
-    else
-        *mode = UFO_TASK_MODE_PROCESSOR;
 
     request = ufo_message_new (UFO_MESSAGE_GET_STRUCTURE, 0);
     response = ufo_messenger_send_blocking (priv->msger, request, NULL);
     g_assert (response->data_size == sizeof (struct _Structure));
 
     msg_data = *(struct _Structure *) response->data;
+
+    *mode = msg_data.mode;
 
     priv->n_inputs = msg_data.n_inputs;
     *n_inputs = msg_data.n_inputs;

@@ -567,15 +567,14 @@ correct_connections (UfoTaskGraph *graph,
         ufo_task_get_structure (UFO_TASK (node), &n_inputs, &in_params, &mode);
         group = ufo_task_node_get_out_group (node);
 
-        // if (((mode == UFO_TASK_MODE_GENERATOR) || (mode == UFO_TASK_MODE_REDUCTOR)) &&
-        //     ufo_group_get_num_targets (group) < 1) {
-        //     G_BREAKPOINT();
-        //     g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
-        //                  "No outgoing node for `%s'",
-        //                  ufo_task_node_get_unique_name (node));
-        //     result = FALSE;
-        //     break;
-        // }
+        if ((mode == UFO_TASK_MODE_GENERATOR) &&
+            ufo_group_get_num_targets (group) < 1) {
+            g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
+                         "No outgoing node for `%s'",
+                         ufo_task_node_get_unique_name (node));
+            result = FALSE;
+            break;
+        }
     }
 
     g_list_free (nodes);

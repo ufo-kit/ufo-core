@@ -259,11 +259,18 @@ handle_get_structure (UfoDaemon *daemon)
     struct _Structure {
         guint16 n_inputs;
         guint16 n_dims;
+        UfoTaskMode mode;
     } msg_data;
 
     /* TODO don't hardcode these */
     msg_data.n_inputs = 1;
     msg_data.n_dims = 2;
+
+    UfoNode *writer_node = ufo_task_graph_get_writer_node (priv->task_graph);
+    if (writer_node != NULL)
+        msg_data.mode = UFO_TASK_MODE_REDUCTOR;
+    else
+        msg_data.mode = UFO_TASK_MODE_PROCESSOR;
 
     response = ufo_message_new (UFO_MESSAGE_ACK, sizeof (struct _Structure));
     *(struct _Structure *) (response->data) = msg_data;
@@ -314,7 +321,8 @@ handle_get_requisition (UfoDaemon *daemon)
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     UfoRequisition requisition;
 
-    if (g_str_has_suffix (priv->listen_address, ":5556")) {
+    UfoNode *writer_node = ufo_task_graph_get_writer_node (priv->task_graph);
+    if (writer_node != NULL) {
         requisition.n_dims = 0;
         UfoMessage *msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (UfoRequisition));
         memcpy (msg->data, &requisition, msg->data_size);

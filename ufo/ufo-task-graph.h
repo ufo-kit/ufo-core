@@ -105,6 +105,7 @@ void         ufo_task_graph_set_partition       (UfoTaskGraph       *task_graph,
 void         ufo_task_graph_get_partition       (UfoTaskGraph       *task_graph,
                                                  guint              *index,
                                                  guint              *total);
+UfoNode *    ufo_task_graph_get_writer_node     (UfoTaskGraph       *task_graph);
 GType        ufo_task_graph_get_type            (void);
 GQuark       ufo_task_graph_error_quark         (void);
 

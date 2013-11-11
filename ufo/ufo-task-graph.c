@@ -455,8 +455,18 @@ find_longest_path (GList *paths)
 static gboolean
 is_writer_node (UfoNode *node, gpointer user_data)
 {
-    gchar *name = ufo_task_node_get_plugin_name (UFO_TASK_NODE (node));
+    const gchar *name = ufo_task_node_get_plugin_name (UFO_TASK_NODE (node));
     return g_str_has_prefix (name, "writer");
+}
+
+UfoNode *
+ufo_task_graph_get_writer_node (UfoTaskGraph *task_graph)
+{
+    GList *allnodes = ufo_graph_get_nodes_filtered (UFO_GRAPH (task_graph), is_writer_node, NULL);
+    if (allnodes == NULL)
+        return NULL;
+
+    return (UfoNode *) g_list_nth_data (allnodes, 0);
 }
 
 /**
@@ -487,7 +497,6 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     path = find_longest_path (paths);
 
     GList *remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
-    
     // last remote reserved for writer
     GList *last_remote = g_list_last (remotes);
     UfoRemoteNode *writer_remote = NULL;
@@ -522,11 +531,11 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     if (g_list_length (remotes) > 0) {
         // find the writer task
         ufo_graph_dump_dot (UFO_GRAPH(task_graph), "foos.dot");
-        GList *allnodes = ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_writer_node, NULL);
-        if (allnodes != NULL) {
+        UfoNode *writer_node = ufo_task_graph_get_writer_node (task_graph);
+        if (writer_node != NULL) {
             // create a remote node for it
             UfoTaskGraph *remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-            UfoTaskNode *writer_task = UFO_TASK_NODE(allnodes->data);
+            UfoTaskNode *writer_task = UFO_TASK_NODE (writer_node);
 
             // construct a remote graph that we send to the rmeote (only thewriter node)
             UfoTaskNode *dummy = UFO_TASK_NODE (ufo_dummy_task_new ());
