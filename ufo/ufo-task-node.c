@@ -25,6 +25,11 @@ G_DEFINE_TYPE (UfoTaskNode, ufo_task_node, UFO_TYPE_NODE)
 
 #define UFO_TASK_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_TASK_NODE, UfoTaskNodePrivate))
 
+enum {
+    PROP_0,
+    PROP_NUM_PROCESSED,
+    N_PROPERTIES
+};
 
 struct _UfoTaskNodePrivate {
     gchar           *plugin;
@@ -38,7 +43,10 @@ struct _UfoTaskNodePrivate {
     gint             n_expected[16];
     guint            index;
     guint            total;
+    guint            num_processed;
 };
+
+static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 void
 ufo_task_node_set_plugin_name (UfoTaskNode *task_node,
@@ -244,6 +252,13 @@ ufo_task_node_get_partition (UfoTaskNode *node,
     *total = node->priv->total;
 }
 
+void
+ufo_task_node_increase_processed (UfoTaskNode *node)
+{
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    node->priv->num_processed++;
+}
+
 static UfoNode *
 ufo_task_node_copy (UfoNode *node,
                     GError **error)
@@ -262,6 +277,25 @@ ufo_task_node_copy (UfoNode *node,
     ufo_task_node_set_plugin_name (copy, orig->priv->plugin);
 
     return UFO_NODE (copy);
+}
+
+static void
+ufo_task_node_get_property (GObject *object,
+                            guint property_id,
+                            GValue *value,
+                            GParamSpec *pspec)
+{
+    UfoTaskNodePrivate *priv = UFO_TASK_NODE_GET_PRIVATE (object);
+
+    switch (property_id) {
+        case PROP_NUM_PROCESSED:
+            g_value_set_uint (value, priv->num_processed);
+            break;
+
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
 }
 
 static void
@@ -298,11 +332,21 @@ ufo_task_node_class_init (UfoTaskNodeClass *klass)
     UfoNodeClass *nclass;
 
     oclass = G_OBJECT_CLASS (klass);
+    oclass->get_property = ufo_task_node_get_property;
     oclass->dispose = ufo_task_node_dispose;
     oclass->finalize = ufo_task_node_finalize;
 
     nclass = UFO_NODE_CLASS (klass);
     nclass->copy = ufo_task_node_copy;
+
+    properties[PROP_NUM_PROCESSED] =
+        g_param_spec_uint ("num-processed",
+                           "Number of processed elements",
+                           "Number of processed elements",
+                           0, G_MAXUINT, 0,
+                           G_PARAM_READABLE);
+
+    g_object_class_install_property (oclass, PROP_NUM_PROCESSED, properties[PROP_NUM_PROCESSED]);
 
     g_type_class_add_private (klass, sizeof(UfoTaskNodePrivate));
 }
@@ -318,6 +362,7 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv->out_group = NULL;
     self->priv->index = 0;
     self->priv->total = 1;
+    self->priv->num_processed = 0;
     self->priv->profiler = ufo_profiler_new ();
 
     for (guint i = 0; i < 16; i++) {

@@ -391,6 +391,7 @@ run_task (TaskLocalData *tld)
                 ufo_profiler_trace_event (profiler, "process", "B");
                 active = process (tld->task, inputs, output, &requisition);
                 ufo_profiler_trace_event (profiler, "process", "E");
+                ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
                 break;
 
             case UFO_TASK_MODE_REDUCTOR:
@@ -398,6 +399,7 @@ run_task (TaskLocalData *tld)
                     ufo_profiler_trace_event (profiler, "process", "B");
                     process (tld->task, inputs, output, &requisition);
                     ufo_profiler_trace_event (profiler, "process", "E");
+                    ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
 
                     release_inputs (tld, inputs);
                     active = get_inputs (tld, inputs);
@@ -436,12 +438,6 @@ run_task (TaskLocalData *tld)
         if (!active)
             ufo_group_finish (group);
     }
-
-    // g_message ("`%s' finished: CPU: %3.5fs GPU: %3.5fs IO: %3.5fs",
-    //            G_OBJECT_TYPE_NAME (tld->task),
-    //            ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_CPU),
-    //            ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_GPU),
-    //            ufo_profiler_elapsed (profiler, UFO_PROFILER_TIMER_IO));
 
     g_object_unref (profiler);
     return NULL;

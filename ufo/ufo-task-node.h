@@ -99,6 +99,7 @@ void            ufo_task_node_get_partition         (UfoTaskNode    *node,
 void            ufo_task_node_set_profiler          (UfoTaskNode    *node,
                                                      UfoProfiler    *profiler);
 UfoProfiler    *ufo_task_node_get_profiler          (UfoTaskNode    *node);
+void            ufo_task_node_increase_processed    (UfoTaskNode    *node);
 GType           ufo_task_node_get_type              (void);
 
 G_END_DECLS
