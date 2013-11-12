@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     GError *error = NULL;
     gchar **paths = NULL;
     gchar **addresses = NULL;
-    gboolean no_local = FALSE;
+    gboolean disable_gpu = FALSE;
     gboolean show_version = FALSE;
     UfoConfig *config = NULL;
 
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
 #endif
         { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
           "Show version information", NULL },
-        { "no-local", 'n', 0, G_OPTION_ARG_NONE, &no_local,
+        { "disable-gpu", 'n', 0, G_OPTION_ARG_NONE, &disable_gpu,
           "Don't use local system for GPU computations", NULL },
         { NULL }
     };
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
     }
 
     config = get_config (paths);
-    g_object_set (G_OBJECT (config), "no-local", no_local, NULL);
+    g_object_set (G_OBJECT (config), "disable-gpu", disable_gpu, NULL);
 
 #ifdef MPI
     gint rank, size;

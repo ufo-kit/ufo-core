@@ -456,6 +456,8 @@ static gboolean
 is_writer_node (UfoNode *node, gpointer user_data)
 {
     const gchar *name = ufo_task_node_get_plugin_name (UFO_TASK_NODE (node));
+    if (name == NULL)
+        return FALSE;
     return g_str_has_prefix (name, "writer");
 }
 
@@ -482,7 +484,8 @@ ufo_task_graph_get_writer_node (UfoTaskGraph *task_graph)
 void
 ufo_task_graph_expand (UfoTaskGraph *task_graph,
                        UfoArchGraph *arch_graph,
-                       gboolean expand_remote)
+                       gboolean expand_remote,
+                       gboolean expand_gpu)
 {
     UfoTaskGraphPrivate *priv = UFO_TASK_GRAPH_GET_PRIVATE (task_graph);
     GList *paths;
@@ -505,30 +508,28 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         remotes = g_list_remove (remotes, writer_remote);
     }
 
-    if (path != NULL && g_list_length (remotes) > 0) {
+    if (path != NULL) {
         guint n_gpus;
 
-        if (expand_remote) {
-            guint n_remotes;
-            n_remotes = g_list_length (remotes);
-
-            if (n_remotes > 0) {
-                g_debug ("Expand for %i remote nodes", n_remotes);
-                expand_remotes (task_graph, remotes, path);
-            }
+        guint n_remotes = g_list_length (remotes);
+        if (expand_remote && n_remotes > 0) {
+            g_debug ("Expand for %i remote nodes", n_remotes);
+            expand_remotes (task_graph, remotes, path);
 
             g_list_free (remotes);
         }
 
-        n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
-        g_debug ("Expand for %i GPU nodes", n_gpus);
+        if (expand_gpu) {
+            n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
+            g_debug ("Expand for %i GPU nodes", n_gpus);
 
-        for (guint i = 1; i < n_gpus; i++)
-            ufo_graph_expand (UFO_GRAPH (task_graph), path);
+            for (guint i = 0; i < n_gpus; i++)
+                ufo_graph_expand (UFO_GRAPH (task_graph), path);
+        }
     }
 
-    // only execute on main runner, no on ufod
-    if (g_list_length (remotes) > 0) {
+    // only execute on main runner, not on ufod
+    if (path != NULL && expand_remote && g_list_length (remotes) > 0) {
         // find the writer task
         UfoNode *writer_node = ufo_task_graph_get_writer_node (task_graph);
         if (writer_node != NULL) {

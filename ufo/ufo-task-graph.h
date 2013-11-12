@@ -90,7 +90,8 @@ void         ufo_task_graph_map                 (UfoTaskGraph       *task_graph,
                                                  UfoArchGraph       *arch_graph);
 void         ufo_task_graph_expand              (UfoTaskGraph       *task_graph,
                                                  UfoArchGraph       *arch_graph,
-                                                 gboolean            expand_remote);
+                                                 gboolean            expand_remote,
+                                                 gboolean            expand_gpu);
 void         ufo_task_graph_connect_nodes       (UfoTaskGraph       *graph,
                                                  UfoTaskNode        *n1,
                                                  UfoTaskNode        *n2);

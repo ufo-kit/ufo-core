@@ -759,18 +759,15 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         replicate_task_graph (task_graph, arch_graph);
     }
 
+    gboolean disable_gpu;
+    g_object_get (G_OBJECT (priv->config), "disable-gpu", &disable_gpu, NULL);
+
     if (priv->expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
-        ufo_task_graph_expand (task_graph, arch_graph, expand_remote);
+        ufo_task_graph_expand (task_graph, arch_graph, expand_remote, !disable_gpu);
     }
 
-    gboolean no_local;
-    g_object_get (G_OBJECT (priv->config), "no-local", &no_local, NULL);
-    if (no_local == TRUE) {
-        /* remove all GPU nodes, but only if there are remote nodes in the graph
-         * (we don't want to remove them, if we are running from within ufod)
-         */
-        g_debug ("Removing local GPU task nodes");
+    if (disable_gpu == TRUE) {
         gint num_remotes = g_list_length (ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_remote_node, NULL));
         if (num_remotes > 0) {
             GList *gpu_tasks = ufo_graph_get_nodes_filtered (UFO_GRAPH (task_graph), is_gpu_node, NULL);
