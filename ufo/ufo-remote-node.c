@@ -207,14 +207,14 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
     };
 
     // determine our total message size
-    guint64 size = 0;
+    guint64 size = sizeof (struct _Header);
 
     for (guint i = 0; i < priv->n_inputs; i++) {
         guint64 buffer_size = ufo_buffer_get_size (inputs[i]);
         size += buffer_size;
     }
-
-    gpointer buffer = g_malloc (priv->n_inputs * sizeof (struct _Header) + size);
+    gsize buffer_size = priv->n_inputs * sizeof (struct _Header) + size;
+    gpointer buffer = g_malloc (buffer_size);
 
     char *base = buffer;
 
