@@ -57,6 +57,8 @@ if (WITH_MPI)
     
     if (NOT MPICC)
         message (FATAL_ERROR "No mpicc compiler be found but MPI was explicitly enabled")
+    else ()
+        message ("Using mpicc found at ${MPICC}")
     endif ()
 
     set(CMAKE_C_COMPILER ${MPICC})
