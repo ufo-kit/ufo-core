@@ -356,7 +356,9 @@ void handle_get_result (UfoDaemon *daemon)
     size = ufo_buffer_get_size (buffer);
 
     UfoMessage *response = ufo_message_new (UFO_MESSAGE_ACK, size);
-    memcpy (response->data, ufo_buffer_get_host_array (buffer, NULL), size);
+    // memcpy (response->data, ufo_buffer_get_host_array (buffer, NULL), size);
+    response->data = ufo_buffer_get_host_array (buffer, NULL);
+    response->data_size = size;
     ufo_messenger_send_blocking (priv->msger, response, NULL);
     ufo_output_task_release_output_buffer (UFO_OUTPUT_TASK (priv->output_task), buffer);
 }
