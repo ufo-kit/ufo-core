@@ -44,6 +44,7 @@ enum {
     PROP_PATHS,
     PROP_DEVICE_TYPE,
     PROP_DISABLE_GPU,
+    PROP_NETWORK_WRITER,
     N_PROPERTIES
 };
 
@@ -51,6 +52,7 @@ struct _UfoConfigPrivate {
     GValueArray     *path_array;
     UfoDeviceType    device_type;
     gboolean         disable_gpu;
+    gboolean         network_writer;
 };
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
@@ -161,7 +163,11 @@ ufo_config_set_property (GObject      *object,
             break;
 
         case PROP_DISABLE_GPU:
-            priv->disable_gpu= g_value_get_boolean (value);
+            priv->disable_gpu = g_value_get_boolean (value);
+            break;
+
+        case PROP_NETWORK_WRITER:
+            priv->network_writer = g_value_get_boolean (value);
             break;
 
         default:
@@ -189,6 +195,10 @@ ufo_config_get_property (GObject      *object,
 
         case PROP_DISABLE_GPU:
             g_value_set_boolean (value, priv->disable_gpu);
+            break;
+
+        case PROP_NETWORK_WRITER:
+            g_value_set_boolean (value, priv->network_writer);
             break;
 
         default:
@@ -268,12 +278,21 @@ ufo_config_class_init (UfoConfigClass *klass)
                               FALSE,
                               G_PARAM_READWRITE);
 
+    properties[PROP_NETWORK_WRITER] =
+        g_param_spec_boolean ("network-writer",
+                              "Use last network node as dedicated writer",
+                              "Use last network node as dedicated writer",
+                              FALSE,
+                              G_PARAM_READWRITE);
+
     g_object_class_install_property (oclass, PROP_PATHS,
                                      properties[PROP_PATHS]);
     g_object_class_install_property (oclass, PROP_DEVICE_TYPE,
                                      properties[PROP_DEVICE_TYPE]);
     g_object_class_install_property (oclass, PROP_DISABLE_GPU,
                                      properties[PROP_DISABLE_GPU]);
+    g_object_class_install_property (oclass, PROP_NETWORK_WRITER,
+                                     properties[PROP_NETWORK_WRITER]);
 
     g_type_class_add_private(klass, sizeof (UfoConfigPrivate));
 }

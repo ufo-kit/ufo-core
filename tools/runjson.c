@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
     gchar **paths = NULL;
     gchar **addresses = NULL;
     gboolean disable_gpu = FALSE;
+    gboolean network_writer = FALSE;
     gboolean show_version = FALSE;
     UfoConfig *config = NULL;
 
@@ -182,6 +183,8 @@ int main(int argc, char *argv[])
         { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
           "Show version information", NULL },
         { "disable-gpu", 'n', 0, G_OPTION_ARG_NONE, &disable_gpu,
+          "Don't use local system for GPU computations", NULL },
+        { "network-writer", 'w', 0, G_OPTION_ARG_NONE, &network_writer,
           "Don't use local system for GPU computations", NULL },
         { NULL }
     };
@@ -216,6 +219,7 @@ int main(int argc, char *argv[])
 
     config = get_config (paths);
     g_object_set (G_OBJECT (config), "disable-gpu", disable_gpu, NULL);
+    g_object_set (G_OBJECT (config), "network-writer", network_writer, NULL);
 
 #ifdef MPI
     gint rank, size;

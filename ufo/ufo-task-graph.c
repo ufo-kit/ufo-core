@@ -476,6 +476,9 @@ ufo_task_graph_get_writer_node (UfoTaskGraph *task_graph)
  * @task_graph: A #UfoTaskGraph
  * @arch_graph: A #UfoArchGraph
  * @expand_remote: %TRUE if remote nodes should be inserted
+ * @expand_gpu: %FALSE if the master node should not use gpus for computing
+ * @use_network_writer: %TRUE if the last remote node should be used for dedicated
+ *                      writing (no computation)
  *
  * Expands @task_graph in a way that most of the resources in @arch_graph can be
  * occupied. In the simple pipeline case, the longest possible GPU paths are
@@ -485,7 +488,8 @@ void
 ufo_task_graph_expand (UfoTaskGraph *task_graph,
                        UfoArchGraph *arch_graph,
                        gboolean expand_remote,
-                       gboolean expand_gpu)
+                       gboolean expand_gpu,
+                       gboolean network_writer)
 {
     UfoTaskGraphPrivate *priv = UFO_TASK_GRAPH_GET_PRIVATE (task_graph);
     GList *paths;
@@ -500,12 +504,15 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     path = find_longest_path (paths);
 
     GList *remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
-    // last remote reserved for writer
-    GList *last_remote = g_list_last (remotes);
+
     UfoRemoteNode *writer_remote = NULL;
-    if (last_remote != NULL) {
-        writer_remote = UFO_REMOTE_NODE (last_remote->data);
-        remotes = g_list_remove (remotes, writer_remote);
+    if (network_writer) {
+        // last remote reserved for writer
+        GList *last_remote = g_list_last (remotes);
+        if (last_remote != NULL) {
+            writer_remote = UFO_REMOTE_NODE (last_remote->data);
+            remotes = g_list_remove (remotes, writer_remote);
+        }
     }
 
     if (path != NULL) {
@@ -523,16 +530,15 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
             n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
             g_debug ("Expand for %i GPU nodes", n_gpus);
 
-            for (guint i = 0; i < n_gpus; i++)
+            for (guint i = 1; i < n_gpus; i++)
                 ufo_graph_expand (UFO_GRAPH (task_graph), path);
         }
-    }
 
-    // only execute on main runner, not on ufod
-    if (path != NULL && expand_remote && g_list_length (remotes) > 0) {
-        // find the writer task
-        UfoNode *writer_node = ufo_task_graph_get_writer_node (task_graph);
-        if (writer_node != NULL) {
+        // only execute on main runner, not on ufod
+        if (network_writer && expand_remote && g_list_length (remotes) > 0) {
+            // find the writer task
+            UfoNode *writer_node = ufo_task_graph_get_writer_node (task_graph);
+            g_assert (writer_node != NULL);
             // create a remote node for it
             UfoTaskGraph *remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
             UfoTaskNode *writer_task = UFO_TASK_NODE (writer_node);

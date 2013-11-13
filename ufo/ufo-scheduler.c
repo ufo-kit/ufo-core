@@ -760,11 +760,14 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     }
 
     gboolean disable_gpu;
+    gboolean use_network_writer;
     g_object_get (G_OBJECT (priv->config), "disable-gpu", &disable_gpu, NULL);
+    g_object_get (G_OBJECT (priv->config), "network-writer", &use_network_writer, NULL);
 
     if (priv->expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
-        ufo_task_graph_expand (task_graph, arch_graph, expand_remote, !disable_gpu);
+        ufo_task_graph_expand (task_graph, arch_graph,
+                               expand_remote, !disable_gpu, use_network_writer);
     }
 
     if (disable_gpu == TRUE) {
