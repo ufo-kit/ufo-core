@@ -115,7 +115,7 @@ ufo_mpi_messenger_disconnect (UfoMessenger *msger)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
     g_mutex_lock (priv->mutex);
-    priv->connected = FALSE; 
+    priv->connected = FALSE;
     g_mutex_unlock (priv->mutex);
 }
 
@@ -142,18 +142,18 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
 
     // send payload
     if (request_msg->data_size > 0) {
-        g_debug ("[%d:%d] SEND sending payload to: %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, request_msg->data_size);
+        // g_debug ("[%d:%d] SEND sending payload to: %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, request_msg->data_size);
         int err = MPI_Ssend (request_msg->data, request_msg->data_size, MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD);
         if (err != MPI_SUCCESS) {
             g_critical ("error on MPI_Ssend: %d", err);
-        } 
-        g_debug ("[%d:%d] SEND payload done to: %d", priv->pid, priv->own_rank, priv->remote_rank);
+        }
+        // g_debug ("[%d:%d] SEND payload done to: %d", priv->pid, priv->own_rank, priv->remote_rank);
     }
 
     if (request_msg->type == UFO_MESSAGE_ACK) {
         goto finalize;
     }
-    
+
     // receive the response
     MPI_Status status;
     UfoMessage *response = g_malloc0 (sizeof (UfoMessage));
@@ -165,15 +165,15 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
     // G_BREAKPOINT();
     MPI_Recv (response_frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
     // g_debug ("[%d:%d] SEND response preflight received from: %d SIZE:%lu", priv->pid, priv->own_rank, priv->remote_rank, response_frame->data_size);
- 
+
     response->type = response_frame->type;
     response->data_size = response_frame->data_size;
 
     if (response_frame->data_size > 0) {
         gpointer buff = g_malloc0 (response_frame->data_size);
-        g_debug ("[%d:%d] SEND waiting for response payload from: %d", priv->pid, priv->own_rank, priv->remote_rank);
+        // g_debug ("[%d:%d] SEND waiting for response payload from: %d", priv->pid, priv->own_rank, priv->remote_rank);
         MPI_Recv (buff, response_frame->data_size, MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
-        g_debug ("[%d:%d] SEND payload received from: %d", priv->pid, priv->own_rank, priv->remote_rank);
+        // g_debug ("[%d:%d] SEND payload received from: %d", priv->pid, priv->own_rank, priv->remote_rank);
         response->data = buff;
     }
 
@@ -199,22 +199,22 @@ ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
 
     DataFrame *frame = g_malloc0 (sizeof (DataFrame));
     MPI_Status status;
-    
-    g_debug ("[%d:%d] RECV waiting for preflight from %d", priv->pid, priv->own_rank, priv->remote_rank);
+
+    // g_debug ("[%d:%d] RECV waiting for preflight from %d", priv->pid, priv->own_rank, priv->remote_rank);
     int ret = MPI_Recv (frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
 
     if (ret != MPI_SUCCESS)
         g_critical ("error on recv: %d", ret);
 
-    g_debug ("[%d:%d] RECV preflight received from %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, frame->data_size);
+    // g_debug ("[%d:%d] RECV preflight received from %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, frame->data_size);
     response->type = frame->type;
     response->data_size = frame->data_size;
 
     if (frame->data_size > 0) {
         gpointer buff = g_malloc0 (frame->data_size);
-        g_debug ("[%d:%d] RECV waiting for payload with size %lu from %d", priv->pid, priv->own_rank, frame->data_size, priv->remote_rank);
+        // g_debug ("[%d:%d] RECV waiting for payload with size %lu from %d", priv->pid, priv->own_rank, frame->data_size, priv->remote_rank);
         MPI_Recv (buff, frame->data_size, MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
-        g_debug ("[%d:%d] RECV payload received from %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, frame->data_size);
+        // g_debug ("[%d:%d] RECV payload received from %d, size: %lu", priv->pid, priv->own_rank, priv->remote_rank, frame->data_size);
         response->data = buff;
     }
     g_mutex_unlock (priv->mutex);
