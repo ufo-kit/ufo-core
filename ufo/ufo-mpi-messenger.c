@@ -194,6 +194,9 @@ ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
     g_assert (priv->connected == TRUE);
 
     UfoMessage *response = g_malloc0 (sizeof (DataFrame));
+    response->data = NULL;
+    response->data_size = 0;
+
     DataFrame *frame = g_malloc0 (sizeof (DataFrame));
     MPI_Status status;
     
