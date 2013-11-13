@@ -1,0 +1,20 @@
+language: c
+
+env:
+   - BUILD_TYPE=Debug
+   - BUILD_TYPE=Release
+
+before_install:
+  # Hijacking the crystfel repos for OpenCL headers and ICD
+  - sudo add-apt-repository ppa:valmar-lp/crystfel-releases -y
+  - sudo apt-get update -qq -y
+  - sudo apt-get install opencl-headers ocl-icd-opencl-dev
+  - sudo apt-get install cmake gobject-introspection libglib2.0-dev libjson-glib-dev libzmq3-dev
+
+before_script:
+  - mkdir build
+  - cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_GIR=OFF -DWITH_GTK_DOC=OFF -DWITH_PYTHON=OFF
+
+script:
+  - make
