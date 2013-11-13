@@ -82,7 +82,10 @@ ufo_messenger_error_quark ()
     return g_quark_from_static_string ("ufo-messenger-error-quark");
 }
 
+#ifdef DEBUG
 static UfoMessenger *messenger_to_profile;
+#endif
+
 /**
  * ufo_messenger_connect:
  * @msger: The messenger object
@@ -105,13 +108,16 @@ ufo_messenger_connect (UfoMessenger *msger,
     GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
     g_mutex_lock (mutex);
 
+#ifdef DEBUG
     UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
     if (profiler == NULL) {
         profiler = ufo_profiler_new ();
         messenger_to_profile = msger;
+        UFO_MESSENGER_GET_IFACE (msger)->addr = g_strdup (addr);
         ufo_profiler_enable_tracing (profiler, TRUE);
         UFO_MESSENGER_GET_IFACE (msger)->profiler = profiler;
     }
+#endif
 
     UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role);
 
@@ -125,14 +131,16 @@ ufo_messenger_disconnect (UfoMessenger *msger)
     GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
     g_mutex_lock (mutex);
 
+#ifdef DEBUG
     UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
+    char *own_addr = UFO_MESSENGER_GET_IFACE (msger)->addr;
     if (profiler != NULL && msger == messenger_to_profile) {
-        gchar *filename = g_strdup_printf (".trace.messenger-%p.csv",
-                                           (void *) g_thread_self ());
+        gchar *filename = g_strdup_printf ("trace-messenger-%s.csv", own_addr);
         ufo_profiler_write_events_csv (profiler, filename);
         g_object_unref (UFO_MESSENGER_GET_IFACE (msger)->profiler);
         UFO_MESSENGER_GET_IFACE (msger)->profiler = NULL;
     }
+#endif
     UFO_MESSENGER_GET_IFACE (msger)->disconnect (msger);
 
     g_mutex_unlock (mutex);
@@ -153,6 +161,7 @@ ufo_messenger_send_blocking (UfoMessenger *msger,
                              UfoMessage *request,
                              GError **error)
 {
+#ifdef DEBUG
     UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
     gchar *name;
     if (msger == messenger_to_profile) {
@@ -160,11 +169,15 @@ ufo_messenger_send_blocking (UfoMessenger *msger,
         ufo_profiler_trace_event (profiler, name, "B");
 
     }
+#endif
 
     UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->send_blocking (msger, request, error);
 
+#ifdef DEBUG
     if (UFO_IS_PROFILER (profiler) && msger == messenger_to_profile)
         ufo_profiler_trace_event (profiler, name, "E");
+#endif
+
     return msg;
 }
 
@@ -183,15 +196,19 @@ UfoMessage *
 ufo_messenger_recv_blocking (UfoMessenger *msger,
                             GError **error)
 {
+
+#ifdef DEBUG
     UfoTraceEvent *ev;
     UfoProfiler *profiler;
     if (msger == messenger_to_profile) {
         profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
         ev = ufo_profiler_trace_event (profiler, "RECV", "B");
     }
+#endif
 
     UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->recv_blocking (msger, error);
-   
+
+#ifdef DEBUG
     if (msger == messenger_to_profile) {
         gchar *name = g_strdup_printf ("RECV %s", ufo_message_type_to_char (msg->type));
         if (UFO_IS_PROFILER (profiler)) {
@@ -200,6 +217,7 @@ ufo_messenger_recv_blocking (UfoMessenger *msger,
             ufo_profiler_trace_event (profiler, name, "E");
         }
     }
+#endif
 
     return msg;
 }

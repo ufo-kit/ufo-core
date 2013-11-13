@@ -121,6 +121,7 @@ struct _UfoMessengerIface {
     GTypeInterface parent_iface;
 
     UfoProfiler *profiler;
+    gchar *addr;
 
     void (*connect)                         (UfoMessenger   *msger,
                                              gchar *addr,
