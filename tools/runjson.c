@@ -144,14 +144,13 @@ mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
     g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
              getpid(), *rank, *global_size - 1);
 
-    sleep (3);
+    sleep (5);
 #endif
 
 }
 
 #endif
 
-#ifdef DEBUG
 static void
 log_handler (const gchar     *domain,
             GLogLevelFlags   flags,
@@ -160,7 +159,6 @@ log_handler (const gchar     *domain,
 {
     g_print ("%s\n",message);
 }
-#endif
 
 int main(int argc, char *argv[])
 {
@@ -170,6 +168,7 @@ int main(int argc, char *argv[])
     gchar **addresses = NULL;
     gboolean disable_gpu = FALSE;
     gboolean network_writer = FALSE;
+    gboolean debug = FALSE;
     gboolean show_version = FALSE;
     UfoConfig *config = NULL;
 
@@ -186,14 +185,13 @@ int main(int argc, char *argv[])
           "Don't use local system for GPU computations", NULL },
         { "network-writer", 'w', 0, G_OPTION_ARG_NONE, &network_writer,
           "Don't use local system for GPU computations", NULL },
+        { "debug", 'd', 0, G_OPTION_ARG_NONE, &debug,
+          "Don't use local system for GPU computations", NULL },
         { NULL }
     };
 
     g_type_init();
 
-#ifdef DEBUG
-    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, log_handler, NULL);
-#endif
 
     context = g_option_context_new ("FILE");
     g_option_context_add_main_entries (context, entries, NULL);
@@ -220,6 +218,10 @@ int main(int argc, char *argv[])
     config = get_config (paths);
     g_object_set (G_OBJECT (config), "disable-gpu", disable_gpu, NULL);
     g_object_set (G_OBJECT (config), "network-writer", network_writer, NULL);
+    g_object_set (G_OBJECT (config), "network-writer", debug, NULL);
+
+    if (debug)
+        g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, log_handler, NULL);
 
 #ifdef MPI
     gint rank, size;
