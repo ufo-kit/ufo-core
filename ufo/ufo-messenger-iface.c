@@ -125,6 +125,7 @@ ufo_messenger_connect (UfoMessenger *msger,
     g_mutex_unlock (mutex);
 }
 
+#ifdef DEBUG
 static gchar*
 get_ip_and_port (gchar *str)
 {
@@ -137,6 +138,7 @@ get_ip_and_port (gchar *str)
     g_strreverse (addr);
     return addr;
 }
+#endif
 
 void
 ufo_messenger_disconnect (UfoMessenger *msger)
