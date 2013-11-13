@@ -18,6 +18,7 @@
  */
 
  #include <ufo/ufo-messenger-iface.h>
+ #include <string.h>
 
 typedef UfoMessengerIface UfoMessengerInterface;
 
@@ -124,6 +125,19 @@ ufo_messenger_connect (UfoMessenger *msger,
     g_mutex_unlock (mutex);
 }
 
+static gchar*
+get_ip_and_port (gchar *str)
+{
+    gsize len = strlen (str);
+    if (len == 0 && !g_str_has_prefix(str, "tcp://"))
+        return str;
+
+    gchar *rev = g_strreverse (g_strdup(str));
+    gchar *addr = g_strndup (rev, len - 6);
+    g_strreverse (addr);
+    return addr;
+}
+
 void
 ufo_messenger_disconnect (UfoMessenger *msger)
 {
@@ -133,7 +147,7 @@ ufo_messenger_disconnect (UfoMessenger *msger)
 
 #ifdef DEBUG
     UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
-    char *own_addr = UFO_MESSENGER_GET_IFACE (msger)->addr;
+    gchar *own_addr = get_ip_and_port (UFO_MESSENGER_GET_IFACE (msger)->addr);
     if (profiler != NULL && msger == messenger_to_profile) {
         gchar *filename = g_strdup_printf ("trace-messenger-%s.csv", own_addr);
         ufo_profiler_write_events_csv (profiler, filename);
