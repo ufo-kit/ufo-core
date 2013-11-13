@@ -434,7 +434,7 @@ run_scheduler (UfoDaemon *daemon)
 static gboolean
 handle_incoming (UfoDaemon *daemon, UfoMessage *msg)
 {
-    // g_debug ("handling %s", ufo_message_type_to_char (msg->type));
+    g_debug ("handling %s", ufo_message_type_to_char (msg->type));
     switch (msg->type) {
         case UFO_MESSAGE_GET_NUM_DEVICES:
             handle_get_num_devices (daemon);
