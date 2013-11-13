@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
     config = get_config (paths);
     g_object_set (G_OBJECT (config), "disable-gpu", disable_gpu, NULL);
     g_object_set (G_OBJECT (config), "network-writer", network_writer, NULL);
-    g_object_set (G_OBJECT (config), "network-writer", debug, NULL);
+    g_object_set (G_OBJECT (config), "debug", debug, NULL);
 
     if (debug)
         g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, log_handler, NULL);
