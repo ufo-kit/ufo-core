@@ -216,6 +216,10 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *msg)
     priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
     ufo_task_graph_read_from_data (priv->task_graph, priv->manager, json, &error);
 
+#ifdef DEBUG
+    ufo_graph_dump_dot (UFO_GRAPH (priv->task_graph), "task_graph_received.dot");
+#endif
+
     if (error != NULL) {
         g_printerr ("%s\n", error->message);
         /* Send error to master */
