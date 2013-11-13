@@ -10,7 +10,11 @@ implemented as plugins in the
 [ufo-filters](https://github.com/ufo-kit/ufo-filters) sister project.
 
 The [ufo-python-tools](https://github.com/ufo-kit/ufo-python-tools) suite
-provides functions for better integration within Python-based projects.
+provides functions for better integration within Python-based projects. The
+[ufo-scripts](https://github.com/ufo-kit/ufo-scripts) project is a collection of
+small programs for offline reconstruction of tomographic data using the UFO
+framework. A wide range of sample programms that test the framework can be found
+in the [ufo-tests](https://github.com/ufo-kit/ufo-tests) project.
 
 
 ## Further information
