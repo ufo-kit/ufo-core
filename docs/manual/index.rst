@@ -2,8 +2,8 @@
 UFO Documentation
 =================
 
-User documentation
-==================
+Users
+=====
 
 .. toctree::
     :maxdepth: 2
@@ -13,13 +13,12 @@ User documentation
     json
 
 
-Developer documentation
-=======================
+Developers
+==========
 
 .. toctree::
     :maxdepth: 2
 
-    api/index
     bugs
     faq
     changelog
@@ -31,5 +30,4 @@ Additional notes
 .. toctree::
     :maxdepth: 2
 
-    glossary
     copyright

@@ -48,15 +48,9 @@ Retrieving the source code
 In an empty directory, issue the following commands to retrieve the current
 unstable version of the source::
 
-    $ git clone http://ufo.kit.edu/git/ufo-core
-    $ git clone http://ufo.kit.edu/git/ufo-filters
-    $ git clone http://ufo.kit.edu/git/oclfft
-
-    OR
-
-    $ git clone git@ufo.kit.edu:ufo-core
-    $ git clone git@ufo.kit.edu:ufo-filters
-    $ git clone git@ufo.kit.edu:oclfft
+    $ git clone https://github.com/ufo-kit/ufo-core
+    $ git clone https://github.com/ufo-kit/ufo-filters
+    $ git clone https://github.com/ufo-kit/oclfft
 
 The latter is used for developers who have write-access to the corresponding
 repositories. All stable versions are tagged. To see a list of all releases
@@ -92,13 +86,13 @@ CMake will notify you, if some of the dependencies are not met. In case you want
 to install the library system-wide on a 64-bit machine you should generate the
 Makefiles with ::
 
-  $ cmake <path-to-ufo> -DLIB_SUFFIX=64
+  $ cmake <path-to-ufo> -DLIBDIR=/usr/lib64
 
 For earlier versions of PyGObject, it is necessary that the introspection files
 are located under ``/usr`` not ``/usr/local``. You can force the prefix by
 calling ::
 
-  $ cmake <path-to-ufo> -DCMAKE_INSTALL_PREFIX=/usr
+  $ cmake <path-to-ufo> -DPREFIX=/usr
 
 Last but not least build the framework, introspection files, API reference and
 the documentation using ::
@@ -132,7 +126,7 @@ way ::
 
     $ mkdir -p build/ufo-filters
     $ cd build/ufo-filters
-    $ cmake <path-to-ufo-filters> -DLIB_SUFFIX=64 -DCMAKE_INSTALL_PREFIX=/usr
+    $ cmake <path-to-ufo-filters> -DLIBDIR=/usr/lib64 -DPREFIX=/usr
     $ make
     $ make install
 
@@ -148,7 +142,7 @@ have to configure ufo-core like this ::
 
   $ mkdir -p build/ufo-core
   $ cd build/ufo-core
-  $ cmake <path-to-ufo> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
+  $ cmake <path-to-ufo> -DPREFIX=/home/user/tmp/usr
   $ make && make install
 
 Now, we have to adjust the ``pkg-config`` path, so that the library can be
@@ -157,7 +151,7 @@ found when configuring the filters ::
   $ export PKG_CONFIG_PATH=/home/user/tmp/usr/lib/pkgconfig
   $ mkdir -p build/ufo-filters
   $ cd build/ufo-filters
-  $ cmake <path-to-ufo-core> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
+  $ cmake <path-to-ufo-core> -DPREFIX=/home/user/tmp/usr
   $ make && make install
 
 After installation you have to set the typelib and linker path so that
