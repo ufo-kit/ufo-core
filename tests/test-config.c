@@ -106,10 +106,10 @@ test_path_not_set (void)
 void
 test_add_config (void)
 {
-    g_test_add_func("/config/path",
+    g_test_add_func("/no-opencl/config/path",
                     test_path);
 
     /* Check trac ticket #127 */
-    g_test_add_func("/config/path-not-set",
+    g_test_add_func("/no-opencl/config/path-not-set",
                     test_path_not_set);
 }

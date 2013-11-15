@@ -75,10 +75,10 @@ test_remote_node_get_structure (Fixture *fixture,
 void
 test_add_remote_node (void)
 {
-    g_test_add ("/remotenode/get_structure",
+    g_test_add ("/opencl/remotenode/get_structure",
                 Fixture, NULL,
                 setup, test_remote_node_get_structure, teardown);
-    g_test_add ("/remotenode/get_num_cpus",
+    g_test_add ("/opencl/remotenode/get_num_cpus",
                 Fixture, NULL,
                 setup, test_remote_node_get_num_cpus, teardown);
 }

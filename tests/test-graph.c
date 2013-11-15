@@ -369,21 +369,21 @@ void
 test_add_graph (void)
 {
     TestCase test_cases[] = {
-        { "/graph/connected",               test_connected },
-        { "/graph/nodes/number",            test_get_num_nodes },
-        { "/graph/nodes/roots",             test_get_roots },
-        { "/graph/nodes/successors",        test_get_successors },
-        { "/graph/nodes/successors/num",    test_get_num_successors },
-        { "/graph/nodes/predecessors",      test_get_predecessors },
-        { "/graph/nodes/predecessors/num",  test_get_num_predecessors },
-        { "/graph/nodes/filtered",          test_get_nodes_filtered },
-        { "/graph/edges/number",            test_get_num_edges },
-        { "/graph/edges/all",               test_get_edges },
-        { "/graph/edges/remove",            test_remove_edge },
-        { "/graph/labels",                  test_get_labels },
-        { "/graph/expansion",               test_expansion },
-        { "/graph/copy",                    test_copy },
-        { "/graph/flatten",                 test_flatten },
+        { "/no-opencl/graph/connected",               test_connected },
+        { "/no-opencl/graph/nodes/number",            test_get_num_nodes },
+        { "/no-opencl/graph/nodes/roots",             test_get_roots },
+        { "/no-opencl/graph/nodes/successors",        test_get_successors },
+        { "/no-opencl/graph/nodes/successors/num",    test_get_num_successors },
+        { "/no-opencl/graph/nodes/predecessors",      test_get_predecessors },
+        { "/no-opencl/graph/nodes/predecessors/num",  test_get_num_predecessors },
+        { "/no-opencl/graph/nodes/filtered",          test_get_nodes_filtered },
+        { "/no-opencl/graph/edges/number",            test_get_num_edges },
+        { "/no-opencl/graph/edges/all",               test_get_edges },
+        { "/no-opencl/graph/edges/remove",            test_remove_edge },
+        { "/no-opencl/graph/labels",                  test_get_labels },
+        { "/no-opencl/graph/expansion",               test_expansion },
+        { "/no-opencl/graph/copy",                    test_copy },
+        { "/no-opencl/graph/flatten",                 test_flatten },
         { NULL, NULL }
     };
 

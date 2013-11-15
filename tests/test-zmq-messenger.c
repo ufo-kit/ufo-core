@@ -105,7 +105,7 @@ static void test_zmq_messenger (Fixture *fixture, gconstpointer unused)
 void
 test_add_zmq_messenger (void)
 {
-    g_test_add ("/zmq_messenger/test_messenger",
+    g_test_add ("/opencl/zmq_messenger/test_messenger",
                 Fixture, NULL,
                 setup, test_zmq_messenger, teardown);
 }

@@ -66,7 +66,7 @@ test_timer_elapsed (Fixture *fixture, gconstpointer data)
 void
 test_add_profiler (void)
 {
-    g_test_add ("/timer/elapsed",
+    g_test_add ("/no-opencl/timer/elapsed",
                 Fixture,
                 NULL,
                 fixture_setup,

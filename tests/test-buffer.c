@@ -112,19 +112,19 @@ test_convert_16_from_data (Fixture *fixture,
 void
 test_add_buffer (void)
 {
-    g_test_add ("/buffer/convert/8/host",
+    g_test_add ("/no-opencl/buffer/convert/8/host",
                 Fixture, NULL,
                 setup, test_convert_8, teardown);
 
-    g_test_add ("/buffer/convert/8/data",
+    g_test_add ("/no-opencl/buffer/convert/8/data",
                 Fixture, NULL,
                 setup, test_convert_8_from_data, teardown);
 
-    g_test_add ("/buffer/convert/16/host",
+    g_test_add ("/no-opencl/buffer/convert/16/host",
                 Fixture, NULL,
                 setup, test_convert_16, teardown);
 
-    g_test_add ("/buffer/convert/16/data",
+    g_test_add ("/no-opencl/buffer/convert/16/data",
                 Fixture, NULL,
                 setup, test_convert_16_from_data, teardown);
 }
