@@ -21,7 +21,7 @@
 #include <glib/gstdio.h>
 #include <stdio.h>
 #include <string.h>
-#include <ufo.h>
+#include <ufo/ufo.h>
 #include "test-suite.h"
 
 typedef struct {

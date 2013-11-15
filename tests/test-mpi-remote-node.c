@@ -23,7 +23,7 @@ void __unused_test_mpi_remote_fn_(void);
 #ifdef MPI
 
 #include <string.h>
-#include <ufo.h>
+#include <ufo/ufo.h>
 #include "test-suite.h"
 #include <mpi.h>
 #include <unistd.h>
