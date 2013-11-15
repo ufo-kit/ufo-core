@@ -12,21 +12,14 @@ if(SPHINX)
         set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/manual)
 
         file(GLOB_RECURSE sphinx_source ${input_dir}/*.rst)
-        list(APPEND sphinx_source "${output_dir}/conf.py")
-
-        set(sphinx_static
-            _static/ufo-logo.png)
-
-        configure_file(${input_dir}/conf.py.in ${output_dir}/conf.py)
         
         foreach(file ${sphinx_static})
             configure_file(${input_dir}/${file} ${output_dir}/${file} COPYONLY)
         endforeach()
 
         add_custom_command(OUTPUT ${output_dir}/html/index.html
-            COMMAND ${SPHINX} -b html -c ${output_dir} ${input_dir} html
+            COMMAND ${SPHINX} -b html ${input_dir} ${output_dir}
             DEPENDS ${sphinx_source}
-            WORKING_DIRECTORY ${output_dir}
             COMMENT "Build Sphinx HTML")
 
         add_custom_target(manual ALL DEPENDS ${output_dir}/html/index.html)
