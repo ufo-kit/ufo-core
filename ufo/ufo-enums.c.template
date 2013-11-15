@@ -7,7 +7,7 @@
 
 /*** BEGIN file-production ***/
 /* enumerations from "@filename@" */
-#include "@filename@"
+#include "ufo/@filename@"
 /*** END file-production ***/
 
 

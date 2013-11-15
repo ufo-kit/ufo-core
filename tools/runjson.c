@@ -17,7 +17,7 @@
  * License along with runjson.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#include "ufo/config.h"
 #include <stdlib.h>
 #include <ufo/ufo.h>
 

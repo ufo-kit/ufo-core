@@ -25,7 +25,7 @@
 #endif
 
 #include <ufo/ufo-output-task.h>
-#include <ufo-cpu-task-iface.h>
+#include <ufo/ufo-cpu-task-iface.h>
 
 /**
  * SECTION:ufo-output-task
