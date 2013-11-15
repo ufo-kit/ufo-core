@@ -21,7 +21,7 @@ in the [ufo-tests](https://github.com/ufo-kit/ufo-tests) project.
 
 More information can be found at various locations:
 
-* [User manual](http://ufo.kit.edu/extra/manual/html/)
+* [User manual](http://ufo-core.readthedocs.org)
 * [API reference](http://ufo.kit.edu/extra/reference/)
 * [Task reference](http://ufo.kit.edu/extra/filters/reference/)
 
