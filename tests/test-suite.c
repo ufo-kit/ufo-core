@@ -34,11 +34,10 @@ ignore_log (const gchar     *domain,
 
 int main(int argc, char *argv[])
 {
-    g_type_init();
-    g_test_init(&argc, &argv, NULL);
-    g_test_bug_base("http://ufo.kit.edu/ufo/ticket");
+    g_type_init ();
+    g_test_init (&argc, &argv, NULL);
+    g_test_bug_base ("https://github.com/ufo-kit/ufo-core/issues");
 
-    // g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO, ignore_log, NULL);
     g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
     g_log_set_handler ("ocl", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
 
@@ -46,6 +45,7 @@ int main(int argc, char *argv[])
     test_add_config ();
     test_add_graph ();
     test_add_profiler ();
+
 #ifdef MPI
     int provided;
     MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
     test_add_zmq_messenger ();
     test_add_remote_node ();
 #endif
+
     g_test_run();
 
 #ifdef MPI
