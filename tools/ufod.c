@@ -17,7 +17,7 @@
  * License along with ufod.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ufo/config.h"
+#include "config.h"
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>

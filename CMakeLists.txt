@@ -121,6 +121,9 @@ if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
 endif()
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 #}}}
 #{{{ Subdirectories
 add_subdirectory(ufo)

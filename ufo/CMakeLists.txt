@@ -79,11 +79,6 @@ if(WITH_MPI)
 endif ()
 #}}}
 #{{{ libufo
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 add_definitions(-DUFO_COMPILATION)
 
 if(CMAKE_BUILD_TYPE MATCHES "Release")
