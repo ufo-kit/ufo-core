@@ -1,7 +1,6 @@
 ## What is the UFO framework?
 
-[![Build
-Status](https://travis-ci.org/ufo-kit/ufo-core.png)](https://travis-ci.org/ufo-kit/ufo-core)
+[![Build Status](https://travis-ci.org/ufo-kit/ufo-core.png?branch=master)](https://travis-ci.org/ufo-kit/ufo-core)
 
 UFO is a multi-threaded, GPU-enabled and distributed data processing
 *framework*. It provides base classes, scheduler implementations and run-time
