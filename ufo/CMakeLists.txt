@@ -112,7 +112,7 @@ install(FILES ${ufocore_HDRS}
         DESTINATION ${UFO_INCLUDEDIR}/ufo)
 
 install(FILES ufo-basic-ops.cl
-        DESTINATION ${UFO_LIBDIR}/ufo)
+        DESTINATION ${UFO_KERNELDIR})
 #}}}
 #}}}
 #{{{ glib-mkenums

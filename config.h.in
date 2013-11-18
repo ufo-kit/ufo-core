@@ -2,4 +2,5 @@
 #cmakedefine HAVE_VIENNACL 1
 #cmakedefine HAVE_PYTHON 1
 #define UFO_PLUGIN_DIR "${UFO_LIBDIR}/ufo"
+#define UFO_KERNEL_DIR "${UFO_KERNELDIR}"
 #define UFO_VERSION "${PACKAGE_VERSION}"

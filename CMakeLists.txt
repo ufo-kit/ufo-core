@@ -33,6 +33,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 # Add configure-like prefixes and directories
 include(ConfigurePaths)
 configure_paths(UFO)
+
+set(UFO_KERNELDIR "${UFO_DATADIR}/ufo")
 #}}}
 #{{{ Options
 find_program (MPICC "mpicc")
