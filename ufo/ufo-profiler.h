@@ -123,6 +123,10 @@ UfoTraceEvent *ufo_profiler_trace_event   (UfoProfiler        *profiler,
 void         ufo_profiler_enable_tracing
                                         (UfoProfiler        *profiler,
                                          gboolean            enable);
+void         ufo_profiler_enable_network_tracing
+                                        (UfoProfiler        *profiler,
+                                         gboolean            enable,
+                                         gchar              *trace_addr);
 GList       *ufo_profiler_get_trace_events
                                         (UfoProfiler        *profiler);
 GList       *ufo_profiler_get_trace_events_sorted

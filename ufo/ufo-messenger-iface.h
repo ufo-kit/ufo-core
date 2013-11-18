@@ -120,9 +120,6 @@ struct _UfoMessengerIface {
     /*< private >*/
     GTypeInterface parent_iface;
 
-    UfoProfiler *profiler;
-    gchar *addr;
-
     void (*connect)                         (UfoMessenger   *msger,
                                              gchar *addr,
                                              UfoMessengerRole role);
@@ -135,6 +132,7 @@ struct _UfoMessengerIface {
 
     UfoMessage * (*recv_blocking)           (UfoMessenger *msger,
                                              GError **error);
+    UfoProfiler * (*get_profiler)           (UfoMessenger *msger);
 };
 
 
@@ -150,7 +148,7 @@ UfoMessage *ufo_messenger_send_blocking     (UfoMessenger     *msger,
 
 UfoMessage *ufo_messenger_recv_blocking     (UfoMessenger     *msger,
                                              GError          **error);
-
+UfoProfiler *ufo_messenger_get_profiler     (UfoMessenger     *msger);
 GQuark      ufo_messenger_error_quark       (void);
 GType       ufo_messenger_get_type          (void);
 

@@ -38,6 +38,7 @@ struct _UfoZmqMessengerPrivate {
     gpointer zmq_socket;
     gpointer zmq_ctx;
     UfoMessengerRole role;
+    UfoProfiler *profiler;
 };
 
 /* C99 allows flexible length structs that we use to map
@@ -60,6 +61,7 @@ ufo_zmq_messenger_new (void)
 
     UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
     priv->zmq_ctx = zmq_ctx_new ();
+    priv->profiler = ufo_profiler_new ();
 
     return msger;
 }
@@ -260,6 +262,13 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
         return result;
 }
 
+UfoProfiler *
+ufo_zmq_messenger_get_profiler (UfoMessenger *msger)
+{
+    UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
+    return priv->profiler;
+}
+
 static void
 ufo_messenger_interface_init (UfoMessengerIface *iface)
 {
@@ -267,6 +276,7 @@ ufo_messenger_interface_init (UfoMessengerIface *iface)
     iface->disconnect = ufo_zmq_messenger_disconnect;
     iface->send_blocking = ufo_zmq_messenger_send_blocking;
     iface->recv_blocking = ufo_zmq_messenger_recv_blocking;
+    iface->get_profiler = ufo_zmq_messenger_get_profiler;
 }
 
 

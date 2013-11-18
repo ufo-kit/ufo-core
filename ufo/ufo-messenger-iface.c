@@ -84,7 +84,18 @@ ufo_messenger_error_quark ()
 }
 
 #ifdef DEBUG
-static UfoMessenger *messenger_to_profile;
+static gchar*
+get_ip_and_port (gchar *str)
+{
+    gsize len = strlen (str);
+    if (len == 0 || !g_str_has_prefix(str, "tcp://"))
+        return g_strdup (str);
+
+    gchar *rev = g_strreverse (g_strdup(str));
+    gchar *addr = g_strndup (rev, len - 6);
+    g_strreverse (addr);
+    return g_strdup (addr);
+}
 #endif
 
 /**
@@ -110,14 +121,9 @@ ufo_messenger_connect (UfoMessenger *msger,
     g_mutex_lock (mutex);
 
 #ifdef DEBUG
-    UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
-    if (profiler == NULL) {
-        profiler = ufo_profiler_new ();
-        messenger_to_profile = msger;
-        UFO_MESSENGER_GET_IFACE (msger)->addr = g_strdup (addr);
-        ufo_profiler_enable_tracing (profiler, TRUE);
-        UFO_MESSENGER_GET_IFACE (msger)->profiler = profiler;
-    }
+    UfoProfiler *profiler = ufo_messenger_get_profiler (msger);
+    gchar *trace_addr = get_ip_and_port (addr);
+    ufo_profiler_enable_network_tracing (profiler, TRUE, trace_addr);
 #endif
 
     UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role);
@@ -125,20 +131,7 @@ ufo_messenger_connect (UfoMessenger *msger,
     g_mutex_unlock (mutex);
 }
 
-#ifdef DEBUG
-static gchar*
-get_ip_and_port (gchar *str)
-{
-    gsize len = strlen (str);
-    if (len == 0 || !g_str_has_prefix(str, "tcp://"))
-        return str;
 
-    gchar *rev = g_strreverse (g_strdup(str));
-    gchar *addr = g_strndup (rev, len - 6);
-    g_strreverse (addr);
-    return addr;
-}
-#endif
 
 void
 ufo_messenger_disconnect (UfoMessenger *msger)
@@ -148,15 +141,12 @@ ufo_messenger_disconnect (UfoMessenger *msger)
     g_mutex_lock (mutex);
 
 #ifdef DEBUG
-    UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
-    gchar *own_addr = get_ip_and_port (UFO_MESSENGER_GET_IFACE (msger)->addr);
-    if (profiler != NULL && msger == messenger_to_profile) {
-        gchar *filename = g_strdup_printf ("trace-messenger-%s.csv", own_addr);
-        ufo_profiler_write_events_csv (profiler, filename);
-        g_object_unref (UFO_MESSENGER_GET_IFACE (msger)->profiler);
-        UFO_MESSENGER_GET_IFACE (msger)->profiler = NULL;
-    }
+    UfoProfiler *profiler = ufo_messenger_get_profiler (msger);
+    gchar *filename = g_strdup ("trace-messenger");
+    ufo_profiler_write_events_csv (profiler, filename);
+    g_object_unref (profiler);
 #endif
+
     UFO_MESSENGER_GET_IFACE (msger)->disconnect (msger);
 
     g_mutex_unlock (mutex);
@@ -178,20 +168,20 @@ ufo_messenger_send_blocking (UfoMessenger *msger,
                              GError **error)
 {
 #ifdef DEBUG
-    UfoProfiler *profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
+    UfoProfiler *profiler = ufo_messenger_get_profiler(msger);
     gchar *name;
-    if (msger == messenger_to_profile) {
-        name= g_strdup_printf ("SEND %s", ufo_message_type_to_char (request->type));
-        ufo_profiler_trace_event (profiler, name, "B");
-
+    if (UFO_IS_PROFILER (profiler)) {
+        name = g_strdup_printf ("SEND %s", ufo_message_type_to_char (request->type));
+        ufo_profiler_trace_event (profiler, name, "BEGIN");
     }
 #endif
 
     UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->send_blocking (msger, request, error);
 
 #ifdef DEBUG
-    if (UFO_IS_PROFILER (profiler) && msger == messenger_to_profile)
-        ufo_profiler_trace_event (profiler, name, "E");
+    if (UFO_IS_PROFILER (profiler)) {
+        ufo_profiler_trace_event (profiler, name, "END");
+    }
 #endif
 
     return msg;
@@ -215,27 +205,28 @@ ufo_messenger_recv_blocking (UfoMessenger *msger,
 
 #ifdef DEBUG
     UfoTraceEvent *ev;
-    UfoProfiler *profiler;
-    if (msger == messenger_to_profile) {
-        profiler = UFO_MESSENGER_GET_IFACE (msger)->profiler;
-        ev = ufo_profiler_trace_event (profiler, "RECV", "B");
-    }
+    UfoProfiler *profiler = ufo_messenger_get_profiler (msger);
+    ev = ufo_profiler_trace_event (profiler, "RECV", "BEGIN");
 #endif
 
     UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->recv_blocking (msger, error);
 
 #ifdef DEBUG
-    if (msger == messenger_to_profile) {
-        gchar *name = g_strdup_printf ("RECV %s", ufo_message_type_to_char (msg->type));
-        if (UFO_IS_PROFILER (profiler)) {
-            // know that we know the name, update the previously traced event
-            ev->name = name;
-            ufo_profiler_trace_event (profiler, name, "E");
-        }
+    gchar *name = g_strdup_printf ("RECV %s", ufo_message_type_to_char (msg->type));
+    if (UFO_IS_PROFILER (profiler)) {
+        // now that we know the name, update the previously traced event
+        ev->name = name;
+        ufo_profiler_trace_event (profiler, name, "END");
     }
 #endif
 
     return msg;
+}
+
+UfoProfiler *
+ufo_messenger_get_profiler (UfoMessenger *msger)
+{
+    return UFO_MESSENGER_GET_IFACE (msger)->get_profiler (msger);
 }
 
 static void
