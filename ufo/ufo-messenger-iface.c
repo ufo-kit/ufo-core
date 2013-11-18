@@ -130,7 +130,7 @@ static gchar*
 get_ip_and_port (gchar *str)
 {
     gsize len = strlen (str);
-    if (len == 0 && !g_str_has_prefix(str, "tcp://"))
+    if (len == 0 || !g_str_has_prefix(str, "tcp://"))
         return str;
 
     gchar *rev = g_strreverse (g_strdup(str));
