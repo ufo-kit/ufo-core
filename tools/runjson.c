@@ -184,9 +184,9 @@ int main(int argc, char *argv[])
         { "disable-gpu", 'n', 0, G_OPTION_ARG_NONE, &disable_gpu,
           "Don't use local system for GPU computations", NULL },
         { "network-writer", 'w', 0, G_OPTION_ARG_NONE, &network_writer,
-          "Don't use local system for GPU computations", NULL },
+          "Assign the writer task to last remote node", NULL },
         { "debug", 'd', 0, G_OPTION_ARG_NONE, &debug,
-          "Don't use local system for GPU computations", NULL },
+          "Print debug log messages", NULL },
         { NULL }
     };
 
