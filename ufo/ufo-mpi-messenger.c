@@ -157,6 +157,8 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
     // receive the response
     MPI_Status status;
     UfoMessage *response = g_malloc0 (sizeof (UfoMessage));
+    response->data = NULL;
+    response->data_size = 0;
 
     // reuse the memory buffer
     DataFrame *response_frame = request_frame;
@@ -193,7 +195,7 @@ ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
     g_mutex_lock (priv->mutex);
     g_assert (priv->connected == TRUE);
 
-    UfoMessage *response = g_malloc0 (sizeof (DataFrame));
+    UfoMessage *response = g_malloc0 (sizeof (UfoMessage));
     response->data = NULL;
     response->data_size = 0;
 
