@@ -229,7 +229,7 @@ ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
 UfoProfiler *
 ufo_mpi_messenger_get_profiler (UfoMessenger *msger)
 {
-    UfoMpiMessengerPrivate priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
+    UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
     return priv->profiler;
 }
 
@@ -240,7 +240,7 @@ ufo_messenger_interface_init (UfoMessengerIface *iface)
     iface->disconnect = ufo_mpi_messenger_disconnect;
     iface->send_blocking = ufo_mpi_messenger_send_blocking;
     iface->recv_blocking = ufo_mpi_messenger_recv_blocking;
-    iface->get_profiler = ufo_mpi_messenger_set_profiler;
+    iface->get_profiler = ufo_mpi_messenger_get_profiler;
 }
 
 
