@@ -84,6 +84,9 @@ typedef struct {
 typedef struct {
     gdouble timestamp_start;
     gdouble timestamp_end;
+    gdouble duration;
+    gsize size_req;
+    gsize size_resp;
     UfoMessageType type;
     gchar   *role;
 } NetworkEvent;
@@ -119,11 +122,14 @@ static NetworkEvent * start_trace_event (UfoMessenger *msger, UfoMessage *msg)
         return NULL;
 
     NetworkEvent *ev = g_malloc0 (sizeof (NetworkEvent));
+    ev->size_req = 0; ev->size_resp = 0;
     ev->timestamp_start = g_timer_elapsed (global_clock, NULL);
 
-    if (msg == NULL)
+    if (msg == NULL) {
         ev->role = g_strdup ("RECV");
+    }
     else {
+        ev->size_req = msg->data_size;
         ev->role = g_strdup ("SEND");
         ev->type = msg->type;
     }
@@ -139,9 +145,14 @@ stop_trace_event (UfoMessenger *msger, UfoMessage *msg, NetworkEvent *ev)
 
     ev->timestamp_end = g_timer_elapsed (global_clock, NULL);
 
-    if (msg != NULL && msg->type != UFO_MESSAGE_ACK)
-        // it was a RECV message and we dont know the type until now
-        ev->type = msg->type;
+    if (msg != NULL) {
+        if (msg->type != UFO_MESSAGE_ACK)
+            // it was a RECV message and we dont know the type until now
+            ev->type = msg->type;
+        ev->size_resp = msg->data_size;
+    } else {
+        ev->size_resp = 0;
+    }
 
     p->events = g_list_append (p->events, ev);
 }
@@ -185,9 +196,12 @@ static void write_events_csv (UfoMessenger *msger)
 
     for (GList *it = g_list_first (p->events); it != NULL; it = g_list_next (it)) {
         NetworkEvent *ev = (NetworkEvent *) it->data;
+        ev->duration = ev->timestamp_end - ev->timestamp_start;
         gchar *type = ufo_message_type_to_char (ev->type);
-        fprintf (fp, "%.4f\t%.4f\t%s\t%s\n", ev->timestamp_start,
-                 ev->timestamp_end, type, ev->role);
+
+        fprintf (fp, "%.4f\t%.4f\t%s\t%s\t%lu\t%lu\t%lu\n", ev->timestamp_start,
+                 ev->timestamp_end, type, ev->role,
+                 ev->size_req, ev->size_resp, ev->size_req + ev->size_resp);
         g_free (type);
     }
     fclose (fp);
