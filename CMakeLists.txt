@@ -79,6 +79,7 @@ pkg_check_modules(GTHREAD2 gthread-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GIO2 gio-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0>=${PKG_JSON_GLIB_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(ZMQ libzmq>=${PKG_ZMQ_MIN_REQUIRED} REQUIRED)
+pkg_check_modules(PYTHON python)
 
 set(UFOCORE_DEPS
     ${OPENCL_LIBRARIES}
@@ -89,6 +90,10 @@ set(UFOCORE_DEPS
     ${GIO2_LIBRARIES}
     ${JSON_GLIB_LIBRARIES}
     ${ZMQ_LIBRARIES})
+
+if(PYTHON_FOUND)
+    set(HAVE_PYTHON "1")
+endif()
 
 #{{{ Add include directories
 include_directories(

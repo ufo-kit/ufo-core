@@ -63,12 +63,6 @@ set(ufocore_HDRS
     )
 #}}}
 #{{{ optional dependencies
-pkg_check_modules(PYTHON python)
-
-if(PYTHON_FOUND)
-    set(HAVE_PYTHON "1")
-endif()
-
 if(WITH_MPI)
     set(ufocore_HDRS ${ufocore_HDRS}
         ufo-mpi-messenger.h
