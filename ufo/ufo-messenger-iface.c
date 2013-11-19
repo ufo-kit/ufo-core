@@ -194,14 +194,17 @@ static void write_events_csv (UfoMessenger *msger)
 
     FILE *fp = fopen (filename, "w");
 
+    gsize total_data = 0;
     for (GList *it = g_list_first (p->events); it != NULL; it = g_list_next (it)) {
         NetworkEvent *ev = (NetworkEvent *) it->data;
+        gsize combined_data = ev->size_req + ev->size_resp;
+        total_data += combined_data;
         ev->duration = ev->timestamp_end - ev->timestamp_start;
         gchar *type = ufo_message_type_to_char (ev->type);
 
-        fprintf (fp, "%.4f\t%.4f\t%s\t%s\t%lu\t%lu\t%lu\n", ev->timestamp_start,
+        fprintf (fp, "%.4f\t%.4f\t%s\t%s\t%lu\t%lu\t%lu\t%lu\n", ev->timestamp_start,
                  ev->timestamp_end, type, ev->role,
-                 ev->size_req, ev->size_resp, ev->size_req + ev->size_resp);
+                 ev->size_req, ev->size_resp, combined_data, total_data);
         g_free (type);
     }
     fclose (fp);
