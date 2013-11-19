@@ -61,7 +61,6 @@ struct _UfoProfilerPrivate {
     GTimer **timers;
     GList   *trace_events;
     gboolean trace;
-    gchar *trace_addr;
 };
 
 enum {
@@ -210,14 +209,6 @@ ufo_profiler_enable_tracing (UfoProfiler *profiler,
 {
     g_return_if_fail (UFO_IS_PROFILER (profiler));
     profiler->priv->trace = enable;
-}
-
-void
-ufo_profiler_enable_network_tracing (UfoProfiler *profiler,
-                                     gboolean enable, gchar *trace_addr)
-{
-    profiler->priv->trace_addr = trace_addr;
-    ufo_profiler_enable_tracing (profiler, enable);
 }
 /**
  * ufo_profiler_get_trace_events: (skip)
@@ -376,33 +367,6 @@ ufo_profiler_foreach (UfoProfiler    *profiler,
         g_free (row_string);
         g_free (kernel_name);
     }
-}
-
-void ufo_profiler_write_events_csv (UfoProfiler *profiler,
-                                    gchar *filename_base)
-{
-    GList *events = ufo_profiler_get_trace_events_sorted (profiler);
-    if (g_list_length (events) == 0)
-        return;
-
-    UfoProfilerPrivate *priv = UFO_PROFILER_GET_PRIVATE (profiler);
-
-    gchar *filename;
-    if (priv->trace_addr != NULL)
-        filename = g_strdup_printf("%s-%s.csv", filename_base, priv->trace_addr);
-    else
-        filename = g_strdup_printf("%s.csv", filename_base);
-
-
-    FILE *fp = fopen (filename, "w");
-
-    for (GList *it = g_list_first (events); it != NULL; it = g_list_next (it)) {
-        UfoTraceEvent *event = (UfoTraceEvent *) it->data;
-        fprintf (fp, "%.4f\t%.4f\t%s\t%s\n",
-                 event->timestamp_absolute, event->timestamp_delta,
-                 event->name, event->type);
-    }
-    fclose (fp);
 }
 
 static void

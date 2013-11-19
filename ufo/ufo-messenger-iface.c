@@ -19,6 +19,7 @@
 
  #include <ufo/ufo-messenger-iface.h>
  #include <string.h>
+ #include <stdio.h>
 
 typedef UfoMessengerIface UfoMessengerInterface;
 
@@ -71,19 +72,23 @@ gchar * ufo_message_type_to_char (UfoMessageType type)
             return g_strdup ("UNKNOWN - NOT MAPPED");
     }
 }
-G_DEFINE_INTERFACE (UfoMessenger, ufo_messenger, G_TYPE_OBJECT)
 
-/**
- * UfoTaskError:
- * @UFO_TASK_ERROR_SETUP: Error during setup of a task.
- */
-GQuark
-ufo_messenger_error_quark ()
-{
-    return g_quark_from_static_string ("ufo-messenger-error-quark");
-}
+static GTimer *global_clock = NULL;
 
-static gchar*
+typedef struct {
+    UfoMessengerRole role;
+    gchar *addr;
+    GList *events;
+} NetworkProfiler;
+
+typedef struct {
+    gdouble timestamp_start;
+    gdouble timestamp_end;
+    UfoMessageType type;
+    gchar   *role;
+} NetworkEvent;
+
+static gchar *
 get_ip_and_port (gchar *str)
 {
     gsize len = strlen (str);
@@ -94,6 +99,112 @@ get_ip_and_port (gchar *str)
     gchar *addr = g_strndup (rev, len - 6);
     g_strreverse (addr);
     return g_strdup (addr);
+}
+
+static NetworkProfiler *
+init_profiler (UfoMessenger *msger, gchar *addr)
+{
+    NetworkProfiler *p = g_malloc0 (sizeof(NetworkProfiler));
+    p->events = NULL;
+    p->addr = get_ip_and_port (addr);
+    gpointer data = (gpointer) p;
+    ufo_messenger_set_profiler (msger, data);
+    return p;
+}
+
+static NetworkEvent * start_trace_event (UfoMessenger *msger, UfoMessage *msg)
+{
+    NetworkProfiler *data = (NetworkProfiler *) ufo_messenger_get_profiler (msger);
+    if (data == NULL)
+        return NULL;
+
+    NetworkEvent *ev = g_malloc0 (sizeof (NetworkEvent));
+    ev->timestamp_start = g_timer_elapsed (global_clock, NULL);
+
+    if (msg == NULL)
+        ev->role = g_strdup ("RECV");
+    else {
+        ev->role = g_strdup ("SEND");
+        ev->type = msg->type;
+    }
+
+    return ev;
+}
+
+static void
+stop_trace_event (UfoMessenger *msger, UfoMessage *msg, NetworkEvent *ev)
+{
+    NetworkProfiler *p = (NetworkProfiler*) ufo_messenger_get_profiler (msger);
+    if (ev == NULL || p == NULL) return;
+
+    ev->timestamp_end = g_timer_elapsed (global_clock, NULL);
+
+    if (msg != NULL && msg->type != UFO_MESSAGE_ACK)
+        // it was a RECV message and we dont know the type until now
+        ev->type = msg->type;
+
+    p->events = g_list_append (p->events, ev);
+}
+
+static gint
+compare_network_event (const NetworkEvent *a,
+                       const NetworkEvent *b,
+                       gpointer unused)
+{
+    return (gint) (a->timestamp_start - b->timestamp_start);
+}
+
+static GList *
+get_sorted_events (NetworkProfiler *profiler)
+{
+    GList *events = g_list_copy (profiler->events);
+    GList *sorted_events = g_list_sort (events, (GCompareFunc) compare_network_event);
+    return sorted_events;
+}
+
+static void write_events_csv (UfoMessenger *msger)
+{
+    NetworkProfiler *p = (NetworkProfiler*) ufo_messenger_get_profiler (msger);
+    GList *events = get_sorted_events (p);
+    if (g_list_length (events) == 0)
+        return;
+
+    gchar *filename_base = g_strdup ("trace-messenger");
+    gchar *role, *filename;
+    if (p->role == UFO_MESSENGER_CLIENT)
+        role = g_strdup ("CLIENT");
+    else
+        role = g_strdup ("SERVER");
+
+    if (p->addr != NULL)
+        filename = g_strdup_printf("%s-%s-%s.csv", filename_base, role, p->addr);
+    else
+        filename = g_strdup_printf("%s-%s.csv", filename_base, role);
+
+    FILE *fp = fopen (filename, "w");
+
+    for (GList *it = g_list_first (p->events); it != NULL; it = g_list_next (it)) {
+        NetworkEvent *ev = (NetworkEvent *) it->data;
+        gchar *type = ufo_message_type_to_char (ev->type);
+        fprintf (fp, "%.4f\t%.4f\t%s\t%s\n", ev->timestamp_start,
+                 ev->timestamp_end, type, ev->role);
+        g_free (type);
+    }
+    fclose (fp);
+    g_free (filename_base);
+    g_free (filename);
+}
+
+G_DEFINE_INTERFACE (UfoMessenger, ufo_messenger, G_TYPE_OBJECT)
+
+/**
+ * UfoTaskError:
+ * @UFO_TASK_ERROR_SETUP: Error during setup of a task.
+ */
+GQuark
+ufo_messenger_error_quark ()
+{
+    return g_quark_from_static_string ("ufo-messenger-error-quark");
 }
 
 /**
@@ -118,13 +229,11 @@ ufo_messenger_connect (UfoMessenger *msger,
     GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
     g_mutex_lock (mutex);
 
-#ifdef DEBUG
-    if (role == UFO_MESSENGER_CLIENT) {
-        UfoProfiler *profiler = ufo_messenger_get_profiler (msger);
-        gchar *trace_addr = get_ip_and_port (addr);
-        ufo_profiler_enable_network_tracing (profiler, TRUE, trace_addr);
-    }
-#endif
+    if (global_clock == NULL)
+        global_clock = g_timer_new ();
+
+    init_profiler (msger, addr);
+
     UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role);
 
     g_mutex_unlock (mutex);
@@ -137,12 +246,7 @@ ufo_messenger_disconnect (UfoMessenger *msger)
     GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
     g_mutex_lock (mutex);
 
-    UfoProfiler *profiler = ufo_messenger_get_profiler (msger);
-    if (UFO_IS_PROFILER (profiler)) {
-        gchar *filename = g_strdup ("trace-messenger");
-        ufo_profiler_write_events_csv (profiler, filename);
-        g_object_unref (profiler);
-    }
+    write_events_csv (msger);
 
     UFO_MESSENGER_GET_IFACE (msger)->disconnect (msger);
 
@@ -164,19 +268,9 @@ ufo_messenger_send_blocking (UfoMessenger *msger,
                              UfoMessage *request,
                              GError **error)
 {
-    UfoProfiler *profiler = ufo_messenger_get_profiler(msger);
-    gchar *name;
-    if (UFO_IS_PROFILER (profiler)) {
-        name = g_strdup_printf ("SEND %s", ufo_message_type_to_char (request->type));
-        ufo_profiler_trace_event (profiler, name, "BEGIN");
-    }
-
+    NetworkEvent *ev = start_trace_event (msger, request);
     UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->send_blocking (msger, request, error);
-
-    if (UFO_IS_PROFILER (profiler)) {
-        ufo_profiler_trace_event (profiler, name, "END");
-    }
-
+    stop_trace_event (msger, msg, ev);
     return msg;
 }
 
@@ -195,31 +289,23 @@ UfoMessage *
 ufo_messenger_recv_blocking (UfoMessenger *msger,
                             GError **error)
 {
-
-    UfoTraceEvent *ev;
-    UfoProfiler *profiler = ufo_messenger_get_profiler (msger);
-    if (UFO_IS_PROFILER (profiler)) {
-        ev = ufo_profiler_trace_event (profiler, "RECV", "BEGIN");
-    }
-
+    NetworkEvent *ev = start_trace_event (msger, NULL);
     UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->recv_blocking (msger, error);
-
-    gchar *name = g_strdup_printf ("RECV %s", ufo_message_type_to_char (msg->type));
-    if (UFO_IS_PROFILER (profiler) && ev != NULL) {
-        // now that we know the name, update the previously traced event
-        ev->name = name;
-        ufo_profiler_trace_event (profiler, name, "END");
-    }
-
+    stop_trace_event (msger, msg, ev);
     return msg;
 }
 
-UfoProfiler *
+gpointer
 ufo_messenger_get_profiler (UfoMessenger *msger)
 {
     return UFO_MESSENGER_GET_IFACE (msger)->get_profiler (msger);
 }
+void
+ufo_messenger_set_profiler (UfoMessenger *msger, gpointer data)
+{
+    UFO_MESSENGER_GET_IFACE (msger)->set_profiler (msger, data);
 
+}
 static void
 ufo_messenger_default_init (UfoMessengerInterface *iface)
 {

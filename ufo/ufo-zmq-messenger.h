@@ -62,7 +62,8 @@ UfoMessage         *ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
                                                      UfoMessage *request,
                                                      GError **error);
 
-UfoProfiler        *ufo_zmq_messenger_get_profiler  (UfoMessenger *msg);
+gpointer            ufo_zmq_messenger_get_profiler  (UfoMessenger *msg);
+void                ufo_zmq_messenger_set_profiler  (UfoMessenger *msg, gpointer data);
 UfoMessage         *ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
                                                      GError **error);
 
