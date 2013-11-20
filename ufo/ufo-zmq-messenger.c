@@ -53,6 +53,18 @@ typedef struct _DataFrame {
     char data[];
 } DataFrame;
 
+static GTimer *global_time;
+
+static inline void
+ufo_mutex_lock (GMutex *mutex)
+{
+    gdouble start, end;
+    start = g_timer_elapsed (global_time, NULL);
+    g_mutex_lock (mutex);
+    end = g_timer_elapsed (global_time, NULL);
+    g_debug ("WAITED FOR LOCK:\t%.4f", end - start);
+}
+
 UfoZmqMessenger *
 ufo_zmq_messenger_new (void)
 {
@@ -63,6 +75,8 @@ ufo_zmq_messenger_new (void)
     priv->zmq_ctx = zmq_ctx_new ();
     priv->profiler = ufo_profiler_new ();
 
+    if (global_time == NULL)
+        global_time = g_timer_new ();
     return msger;
 }
 
@@ -86,7 +100,7 @@ void
 ufo_zmq_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole role)
 {
     UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
-    g_mutex_lock (priv->mutex);
+    ufo_mutex_lock (priv->mutex);
 
     priv->remote_addr = g_strdup (addr);
     priv->role = role;
@@ -122,7 +136,7 @@ ufo_zmq_messenger_disconnect (UfoMessenger *msger)
 {
     UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
 
-    g_mutex_lock (priv->mutex);
+    ufo_mutex_lock (priv->mutex);
 
     if (priv->zmq_socket != NULL) {
         zmq_close (priv->zmq_socket);
@@ -147,7 +161,7 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
     if (request_msg->type == UFO_MESSAGE_ACK && priv->role == UFO_MESSENGER_CLIENT)
         g_critical ("Clients can't send ACK messages");
 
-    g_mutex_lock (priv->mutex);
+    ufo_mutex_lock (priv->mutex);
 
     UfoMessage *result = NULL;
     zmq_msg_t request;
@@ -223,7 +237,7 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
     UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
     g_assert (priv->role == UFO_MESSENGER_SERVER);
 
-    g_mutex_lock (priv->mutex);
+    ufo_mutex_lock (priv->mutex);
 
     UfoMessage *result = NULL;
     zmq_msg_t reply;
