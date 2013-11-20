@@ -31,7 +31,6 @@ G_DEFINE_TYPE_WITH_CODE (UfoZmqMessenger, ufo_zmq_messenger, G_TYPE_OBJECT,
                          G_IMPLEMENT_INTERFACE (UFO_TYPE_MESSENGER,
                                                 ufo_messenger_interface_init))
 
-
 struct _UfoZmqMessengerPrivate {
     gchar *remote_addr;
     GMutex *mutex;
@@ -58,11 +57,18 @@ static GTimer *global_time;
 static inline void
 ufo_mutex_lock (GMutex *mutex)
 {
-    gdouble start, end;
+#ifdef DEBUG
+    gdouble start, end, delta;
     start = g_timer_elapsed (global_time, NULL);
     g_mutex_lock (mutex);
     end = g_timer_elapsed (global_time, NULL);
-    g_debug ("WAITED FOR LOCK:\t%.4f", end - start);
+    delta = end - start;
+    if (delta > 0.01)
+        g_debug ("WAITED FOR LOCK:\t%.4f", delta);
+#else
+    g_mutex_lock(mutex)
+#endif
+
 }
 
 UfoZmqMessenger *
