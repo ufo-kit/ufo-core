@@ -66,7 +66,7 @@ ufo_mutex_lock (GMutex *mutex)
     if (delta > 0.01)
         g_debug ("WAITED FOR LOCK:\t%.4f", delta);
 #else
-    g_mutex_lock(mutex)
+    g_mutex_lock(mutex);
 #endif
 
 }
