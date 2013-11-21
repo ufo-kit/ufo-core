@@ -78,7 +78,7 @@ static inline void trace (gchar *msg, TaskLocalData *tld)
     if (tld != NULL && UFO_IS_TASK_NODE (tld->task)) {
         name = g_strdup (ufo_task_node_get_unique_name (UFO_TASK_NODE(tld->task)));
     }
-    g_debug ("[%p] [%s] [%.4f] %s", (void*) g_thread_self(), name, now, msg);
+    g_debug ("[%.4f] [%p] [%s] %s", now, (void*) g_thread_self(), name, msg);
 }
 
 
@@ -404,9 +404,7 @@ run_task (TaskLocalData *tld)
         }
 
         /* Get output buffers */
-        trace (g_strdup_printf ("start getting requisition - get_inputs"), tld);
-        active = get_inputs (tld, inputs);
-        trace (g_strdup_printf ("get_inputs done, start getting requisition"), tld);
+        trace (g_strdup_printf ("start getting requisition"), tld);
         ufo_task_get_requisition (tld->task, inputs, &requisition);
         trace (g_strdup_printf ("stop getting requisition"), tld);
         produces = requisition.n_dims > 0;
