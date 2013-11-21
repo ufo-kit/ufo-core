@@ -206,8 +206,10 @@ get_inputs (TaskLocalData *tld,
         if (!tld->finished[i]) {
             UfoBuffer *input;
 
+            trace (g_strdup_printf ("START waiting/popping input buffer from input #%d", i), tld);
             group = ufo_task_node_get_current_in_group (node, i);
             input = ufo_group_pop_input_buffer (group, tld->task);
+            trace (g_strdup_printf ("END waiting/popping input buffer from input #%d", i), tld);
 
             if (input == UFO_END_OF_STREAM) {
                 tld->finished[i] = TRUE;
@@ -392,7 +394,9 @@ run_task (TaskLocalData *tld)
         group = ufo_task_node_get_out_group (node);
 
         /* Get input buffers */
+        trace (g_strdup_printf ("start call get_inputs"), tld);
         active = get_inputs (tld, inputs);
+        trace (g_strdup_printf ("end call get_inputs"), tld);
 
         if (!active) {
             ufo_group_finish (group);
