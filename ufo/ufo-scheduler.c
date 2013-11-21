@@ -61,6 +61,8 @@ G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
 
 #define UFO_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SCHEDULER, UfoSchedulerPrivate))
 
+static GTimer *global_clock;
+
 typedef struct {
     UfoTask         *task;
     UfoTaskMode      mode;
@@ -68,6 +70,17 @@ typedef struct {
     UfoInputParam   *in_params;
     gboolean        *finished;
 } TaskLocalData;
+
+static inline void trace (gchar *msg, TaskLocalData *tld)
+{
+    gdouble now = g_timer_elapsed (global_clock, NULL);
+    gchar *name = NULL;
+    if (tld != NULL && UFO_IS_TASK_NODE (tld->task)) {
+        name = g_strdup (ufo_task_node_get_unique_name (UFO_TASK_NODE(tld->task)));
+    }
+    g_debug ("[%p] [%s] [%.4f] %s", (void*) g_thread_self(), name, now, msg);
+}
+
 
 struct _UfoSchedulerPrivate {
     GError          *construct_error;
@@ -123,6 +136,9 @@ ufo_scheduler_new (UfoConfig *config,
                                          "config", config,
                                          NULL));
     priv = sched->priv;
+
+    if (global_clock == NULL)
+        global_clock = g_timer_new();
 
     for (GList *it = g_list_first (remotes); it != NULL; it = g_list_next (it))
         priv->remotes = g_list_append (priv->remotes, g_strdup (it->data));
@@ -184,8 +200,9 @@ get_inputs (TaskLocalData *tld,
 {
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
     guint n_finished = 0;
-
+    trace (g_strdup_printf ("I have %d inputs!", tld->n_inputs), tld);
     for (guint i = 0; i < tld->n_inputs; i++) {
+        trace (g_strdup_printf ("getting input #%d", i), tld);
         UfoGroup *group;
 
         if (!tld->finished[i]) {
@@ -197,6 +214,7 @@ get_inputs (TaskLocalData *tld,
             if (input == UFO_END_OF_STREAM) {
                 tld->finished[i] = TRUE;
                 n_finished++;
+                trace (g_strdup_printf ("Input #%d finished; %d/%d finished in total", i, n_finished, tld->n_inputs), tld);
             }
             else
                 inputs[i] = input;
@@ -215,6 +233,7 @@ release_inputs (TaskLocalData *tld,
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
 
     for (guint i = 0; i < tld->n_inputs; i++) {
+        trace(g_strdup_printf ("releasing input #%d", i), tld);
         UfoGroup *group;
 
         group = ufo_task_node_get_current_in_group (node, i);
@@ -259,6 +278,7 @@ run_remote_task (TaskLocalData *tld)
             UfoBuffer *input;
 
             if (get_inputs (tld, &input)) {
+                trace (g_strdup("sending input to remote node"), tld);
                 ufo_remote_node_send_inputs (remote, &input);
                 release_inputs (tld, &input);
                 alive[i] = TRUE;
@@ -409,14 +429,18 @@ run_task (TaskLocalData *tld)
                 break;
 
             case UFO_TASK_MODE_GENERATOR:
+                trace(g_strdup_printf ("start generate"), tld);
                 ufo_profiler_trace_event (profiler, "generate", "B");
                 active = generate (tld->task, output, &requisition);
+                trace(g_strdup_printf ("end generate"), tld);
                 ufo_profiler_trace_event (profiler, "generate", "E");
                 break;
         }
 
-        if (active && produces && (tld->mode != UFO_TASK_MODE_REDUCTOR))
+        if (active && produces && (tld->mode != UFO_TASK_MODE_REDUCTOR)) {
+            trace (g_strdup ("pushing output buffer"), tld);
             ufo_group_push_output_buffer (group, output);
+        }
 
         /* Release buffers for further consumption */
         if (active)
@@ -427,7 +451,9 @@ run_task (TaskLocalData *tld)
 
             do {
                 ufo_profiler_trace_event (profiler, "generate", "B");
+                trace (g_strdup ("start generating as REDUCTOR"), tld);
                 active = generate (tld->task, output, &requisition);
+                trace (g_strdup ("stop generating as REDUCTOR"), tld);
                 ufo_profiler_trace_event (profiler, "generate", "E");
 
                 if (active) {
@@ -440,6 +466,8 @@ run_task (TaskLocalData *tld)
         if (!active)
             ufo_group_finish (group);
     }
+
+    trace (g_strdup_printf ("I am not active anymore"), tld);
 
     g_object_unref (profiler);
     return NULL;
@@ -529,15 +557,17 @@ setup_groups (UfoSchedulerPrivate *priv,
         for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
             UfoNode *target;
             gpointer label;
-            guint input;
+            guint input_pos;
 
             target = UFO_NODE (jt->data);
             label = ufo_graph_get_edge_label (UFO_GRAPH (task_graph), node, target);
-            input = (guint) GPOINTER_TO_INT (label);
-            ufo_task_node_add_in_group (UFO_TASK_NODE (target), input, group);
-            ufo_group_set_num_expected (group, UFO_TASK (target),
-                                        ufo_task_node_get_num_expected (UFO_TASK_NODE (target),
-                                                                        input));
+            input_pos = (guint) GPOINTER_TO_INT (label);
+            trace (g_strdup_printf("input_pos: %d", input_pos), NULL);
+            ufo_task_node_add_in_group (UFO_TASK_NODE (target), input_pos, group);
+
+            gint num_expected = ufo_task_node_get_num_expected (UFO_TASK_NODE (target), input_pos);
+            trace (g_strdup_printf("num_expected: %d", num_expected), NULL);
+            ufo_group_set_num_expected (group, UFO_TASK (target), num_expected);
         }
 
         g_list_free (successors);

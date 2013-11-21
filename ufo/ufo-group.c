@@ -140,8 +140,10 @@ ufo_group_pop_output_buffer (UfoGroup *group,
 
     priv = group->priv;
 
-    if ((priv->pattern == UFO_SEND_SCATTER) || (priv->pattern == UFO_SEND_SEQUENTIAL))
+    if ((priv->pattern == UFO_SEND_SCATTER) || (priv->pattern == UFO_SEND_SEQUENTIAL)) {
+        g_debug ("pop output buffer - my pos is %d", pos);
         pos = priv->current;
+    }
 
     return pop_or_alloc_buffer (priv, pos, requisition);
 }
@@ -155,15 +157,19 @@ ufo_group_push_output_buffer (UfoGroup *group,
     priv = group->priv;
     priv->n_received++;
 
+    g_debug("n_received: %d", priv->n_received);
     /* Copy or not depending on the send pattern */
     if (priv->pattern == UFO_SEND_SCATTER) {
+        g_debug("SEND_SCATTER");
         ufo_queue_push (priv->queues[priv->current],
                         UFO_QUEUE_PRODUCER,
                         buffer);
 
         priv->current = (priv->current + 1) % priv->n_targets;
+        g_debug("priv->current: %d, priv->n_targets: %d", priv->current, priv->n_targets);
     }
     else if (priv->pattern == UFO_SEND_BROADCAST) {
+        g_debug("SEND_BROADCAST");
         UfoRequisition requisition;
 
         ufo_buffer_get_requisition (buffer, &requisition);
@@ -179,6 +185,7 @@ ufo_group_push_output_buffer (UfoGroup *group,
         ufo_queue_push (priv->queues[0], UFO_QUEUE_PRODUCER, buffer);
     }
     else if (priv->pattern == UFO_SEND_SEQUENTIAL) {
+        g_debug("SEND_SEQUENTIAL");
         ufo_queue_push (priv->queues[priv->current],
                         UFO_QUEUE_PRODUCER,
                         buffer);
@@ -226,6 +233,7 @@ ufo_group_pop_input_buffer (UfoGroup *group,
 
     priv = group->priv;
     pos = g_list_index (priv->targets, target);
+    g_debug ("popping input buffer from queue %d", pos);
     input = pos >= 0 ? ufo_queue_pop (priv->queues[pos], UFO_QUEUE_CONSUMER) : NULL;
 
     return input;
