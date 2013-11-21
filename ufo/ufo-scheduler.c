@@ -422,7 +422,9 @@ run_task (TaskLocalData *tld)
             case UFO_TASK_MODE_REDUCTOR:
                 do {
                     ufo_profiler_trace_event (profiler, "process", "B");
+                    trace(g_strdup_printf ("REDUCTOR start process"), tld);
                     process (tld->task, inputs, output, &requisition);
+                    trace(g_strdup_printf ("REDUCTOR stop process"), tld);
                     ufo_profiler_trace_event (profiler, "process", "E");
                     ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
 
