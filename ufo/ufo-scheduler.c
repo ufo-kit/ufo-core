@@ -200,9 +200,7 @@ get_inputs (TaskLocalData *tld,
 {
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
     guint n_finished = 0;
-    trace (g_strdup_printf ("I have %d inputs!", tld->n_inputs), tld);
     for (guint i = 0; i < tld->n_inputs; i++) {
-        trace (g_strdup_printf ("getting input #%d", i), tld);
         UfoGroup *group;
 
         if (!tld->finished[i]) {
@@ -214,7 +212,6 @@ get_inputs (TaskLocalData *tld,
             if (input == UFO_END_OF_STREAM) {
                 tld->finished[i] = TRUE;
                 n_finished++;
-                trace (g_strdup_printf ("Input #%d finished; %d/%d finished in total", i, n_finished, tld->n_inputs), tld);
             }
             else
                 inputs[i] = input;
@@ -308,6 +305,7 @@ run_remote_task (TaskLocalData *tld)
         active = any (alive, n_remote_gpus);
     }
 
+    trace (g_strdup_printf ("remote task finished"), NULL);
     g_free (alive);
     ufo_group_finish (ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task)));
 }
@@ -466,8 +464,7 @@ run_task (TaskLocalData *tld)
         if (!active)
             ufo_group_finish (group);
     }
-
-    trace (g_strdup_printf ("I am not active anymore"), tld);
+    trace (g_strdup_printf ("Local Task finished"), tld);
 
     g_object_unref (profiler);
     return NULL;
