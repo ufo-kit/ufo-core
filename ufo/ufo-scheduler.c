@@ -234,7 +234,9 @@ release_inputs (TaskLocalData *tld,
         UfoGroup *group;
 
         group = ufo_task_node_get_current_in_group (node, i);
+        trace(g_strdup_printf ("start pushing input buffer to target %d in group", i), tld);
         ufo_group_push_input_buffer (group, tld->task, inputs[i]);
+        trace(g_strdup_printf ("end pushing input buffer to target %d in group", i), tld);
         ufo_task_node_switch_in_group (node, i);
     }
 }
@@ -295,10 +297,13 @@ run_remote_task (TaskLocalData *tld)
 
             ufo_remote_node_get_requisition (remote, &requisition);
             if (requisition.n_dims > 0) {
+                trace (g_strdup_printf ("waiting for result from remote node"), tld);
                 group = ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task));
                 output = ufo_group_pop_output_buffer (group, &requisition);
                 ufo_remote_node_get_result (remote, output);
+                trace (g_strdup_printf ("got the remote result, pushing buffer from remote to output"), tld);
                 ufo_group_push_output_buffer (group, output);
+                trace (g_strdup_printf ("push done"), tld);
             }
         }
 
@@ -436,8 +441,9 @@ run_task (TaskLocalData *tld)
         }
 
         if (active && produces && (tld->mode != UFO_TASK_MODE_REDUCTOR)) {
-            trace (g_strdup ("pushing output buffer"), tld);
+            trace (g_strdup ("start pushing output buffer"), tld);
             ufo_group_push_output_buffer (group, output);
+            trace (g_strdup ("end pushing output buffer"), tld);
         }
 
         /* Release buffers for further consumption */
@@ -455,8 +461,12 @@ run_task (TaskLocalData *tld)
                 ufo_profiler_trace_event (profiler, "generate", "E");
 
                 if (active) {
+                    trace (g_strdup ("REDUCTOR start pushing output buffer"), tld);
                     ufo_group_push_output_buffer (group, output);
+                    trace (g_strdup ("REDUCTOR stop pushing output buffer"), tld);
+                    trace (g_strdup ("REDUCTOR start popping output buffer"), tld);
                     output = ufo_group_pop_output_buffer (group, &requisition);
+                    trace (g_strdup ("REDUCTOR stop popping output buffer"), tld);
                 }
             } while (active);
         }
