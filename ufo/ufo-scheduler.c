@@ -428,8 +428,10 @@ run_task (TaskLocalData *tld)
                     ufo_profiler_trace_event (profiler, "process", "E");
                     ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
 
+                    trace(g_strdup_printf ("REDUCTOR start release inputs and wait for new ones"), tld);
                     release_inputs (tld, inputs);
                     active = get_inputs (tld, inputs);
+                    trace(g_strdup_printf ("REDUCTOR stop release inputs and wait for new ones"), tld);
                 } while (active);
                 break;
 
