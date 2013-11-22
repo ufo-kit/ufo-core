@@ -91,7 +91,7 @@ endif()
 
 set_target_properties(ufo PROPERTIES
     VERSION ${PACKAGE_VERSION}
-    SOVERSION ${UFO_SO_VERSION})
+    SOVERSION ${UFO_VERSION_MAJOR})
 
 target_link_libraries(ufo ${UFOCORE_DEPS})
 
