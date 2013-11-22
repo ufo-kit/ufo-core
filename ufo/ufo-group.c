@@ -58,6 +58,7 @@ static gpointer      ufo_queue_pop          (UfoQueue *queue, UfoQueueAccess acc
 static void          ufo_queue_push         (UfoQueue *queue, UfoQueueAccess access, gpointer data);
 static void          ufo_queue_insert       (UfoQueue *queue, UfoQueueAccess access, gpointer data);
 static guint         ufo_queue_get_capacity (UfoQueue *queue);
+static guint         ufo_queue_length       (UfoQueue *queue, UfoQueueAccess access);
 
 /**
  * ufo_group_new:
@@ -135,17 +136,51 @@ UfoBuffer *
 ufo_group_pop_output_buffer (UfoGroup *group,
                              UfoRequisition *requisition)
 {
-    UfoGroupPrivate *priv;
-    guint pos = 0;
+    UfoGroupPrivate *priv = group->priv;
+    UfoBuffer *buffer = ufo_buffer_new (requisition, priv->context);
+    priv->buffers = g_list_append (priv->buffers, buffer);
 
-    priv = group->priv;
+    return buffer;
+    // UfoGroupPrivate *priv;
+    // guint pos = 0;
 
-    if ((priv->pattern == UFO_SEND_SCATTER) || (priv->pattern == UFO_SEND_SEQUENTIAL)) {
-        g_debug ("pop output buffer - my pos is %d", pos);
-        pos = priv->current;
+    // priv = group->priv;
+
+    // if ((priv->pattern == UFO_SEND_SCATTER) || (priv->pattern == UFO_SEND_SEQUENTIAL)) {
+    //     g_debug ("pop output buffer - my pos is %d", pos);
+    //     pos = priv->current;
+    // }
+
+    // return pop_or_alloc_buffer (priv, pos, requisition);
+}
+
+static void push_buffer_roundrobin (UfoGroup *group, UfoBuffer *buffer)
+{
+    UfoGroupPrivate *priv = group->priv;
+    ufo_queue_push (priv->queues[priv->current],
+        UFO_QUEUE_PRODUCER,
+        buffer);
+
+    priv->current = (priv->current + 1) % priv->n_targets;
+    g_debug("priv->current: %d, priv->n_targets: %d", priv->current, priv->n_targets);
+}
+
+static void push_buffer_least_utilized (UfoGroup *group, UfoBuffer *buffer)
+{
+    UfoGroupPrivate *priv = group->priv;
+    // find a queue with least current utilization
+    guint lowest_len = G_MAXUINT;
+    guint selected;
+    for (guint i = 0; i < priv->n_targets; i++) {
+        guint len = ufo_queue_length (priv->queues[i], UFO_QUEUE_PRODUCER);
+        if (len < lowest_len) {
+            lowest_len = len;
+            selected = i;
+        }
     }
-
-    return pop_or_alloc_buffer (priv, pos, requisition);
+    g_debug ("selected queue with lowest utilization: %d", selected);
+    // ufo_queue_push (priv->queues[selected], UFO_QUEUE_PRODUCER, buffer);
+    ufo_queue_push (priv->queues[0], UFO_QUEUE_PRODUCER, buffer);
 }
 
 void
@@ -160,45 +195,43 @@ ufo_group_push_output_buffer (UfoGroup *group,
     g_debug("n_received: %d", priv->n_received);
     /* Copy or not depending on the send pattern */
     if (priv->pattern == UFO_SEND_SCATTER) {
-        g_debug("SEND_SCATTER");
-        ufo_queue_push (priv->queues[priv->current],
-                        UFO_QUEUE_PRODUCER,
-                        buffer);
-
-        priv->current = (priv->current + 1) % priv->n_targets;
-        g_debug("priv->current: %d, priv->n_targets: %d", priv->current, priv->n_targets);
+        push_buffer_roundrobin (group, buffer);
+        // push_buffer_least_utilized (group, buffer);
     }
-    else if (priv->pattern == UFO_SEND_BROADCAST) {
-        g_debug("SEND_BROADCAST");
-        UfoRequisition requisition;
+    return;
+    // else if (priv->pattern == UFO_SEND_BROADCAST) {
+    //     g_debug("SEND_BROADCAST");
+    //     g_assert (FALSE);
+    //     UfoRequisition requisition;
 
-        ufo_buffer_get_requisition (buffer, &requisition);
+    //     ufo_buffer_get_requisition (buffer, &requisition);
 
-        for (guint pos = 1; pos < priv->n_targets; pos++) {
-            UfoBuffer *copy;
+    //     for (guint pos = 1; pos < priv->n_targets; pos++) {
+    //         UfoBuffer *copy;
 
-            copy = pop_or_alloc_buffer (priv, pos, &requisition);
-            ufo_buffer_copy (buffer, copy);
-            ufo_queue_push (priv->queues[pos], UFO_QUEUE_PRODUCER, copy);
-        }
+    //         copy = pop_or_alloc_buffer (priv, pos, &requisition);
+    //         ufo_buffer_copy (buffer, copy);
+    //         ufo_queue_push (priv->queues[pos], UFO_QUEUE_PRODUCER, copy);
+    //     }
 
-        ufo_queue_push (priv->queues[0], UFO_QUEUE_PRODUCER, buffer);
-    }
-    else if (priv->pattern == UFO_SEND_SEQUENTIAL) {
-        g_debug("SEND_SEQUENTIAL");
-        ufo_queue_push (priv->queues[priv->current],
-                        UFO_QUEUE_PRODUCER,
-                        buffer);
+    //     ufo_queue_push (priv->queues[0], UFO_QUEUE_PRODUCER, buffer);
+    // }
+    // else if (priv->pattern == UFO_SEND_SEQUENTIAL) {
+    //     g_assert (FALSE);
+    //     g_debug("SEND_SEQUENTIAL");
+    //     ufo_queue_push (priv->queues[priv->current],
+    //                     UFO_QUEUE_PRODUCER,
+    //                     buffer);
 
-        if (priv->n_expected[priv->current] == priv->n_received) {
-            ufo_queue_push (priv->queues[priv->current],
-                            UFO_QUEUE_PRODUCER,
-                            UFO_END_OF_STREAM);
-            /* FIXME: setting priv->current to 0 again wouldn't be right */
-            priv->current = (priv->current + 1) % priv->n_targets;
-            priv->n_received = 0;
-        }
-    }
+    //     if (priv->n_expected[priv->current] == priv->n_received) {
+    //         ufo_queue_push (priv->queues[priv->current],
+    //                         UFO_QUEUE_PRODUCER,
+    //                         UFO_END_OF_STREAM);
+    //         /* FIXME: setting priv->current to 0 again wouldn't be right */
+    //         priv->current = (priv->current + 1) % priv->n_targets;
+    //         priv->n_received = 0;
+    //     }
+    // }
 }
 
 void
@@ -287,6 +320,12 @@ ufo_queue_free (UfoQueue *queue)
     g_async_queue_unref (queue->queues[0]);
     g_async_queue_unref (queue->queues[1]);
     g_free (queue);
+}
+
+static guint
+ufo_queue_length (UfoQueue *queue, UfoQueueAccess access)
+{
+    return g_async_queue_length (queue->queues[access]);
 }
 
 static gpointer
