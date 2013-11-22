@@ -69,16 +69,20 @@ typedef struct {
     guint            n_inputs;
     UfoInputParam   *in_params;
     gboolean        *finished;
+    gdouble          last_trace;
 } TaskLocalData;
 
 static inline void trace (gchar *msg, TaskLocalData *tld)
 {
     gdouble now = g_timer_elapsed (global_clock, NULL);
     gchar *name = NULL;
+    gdouble delta = 0.0;
     if (tld != NULL && UFO_IS_TASK_NODE (tld->task)) {
         name = g_strdup (ufo_task_node_get_unique_name (UFO_TASK_NODE(tld->task)));
+        delta = now - tld->last_trace;
+        tld->last_trace = now;
     }
-    g_debug ("[%.4f] [%p] [%s] %s", now, (void*) g_thread_self(), name, msg);
+    g_debug ("[%.4f] [%.4f] [%p] [%s] %s", now, delta, (void*) g_thread_self(), name, msg);
 }
 
 
@@ -526,6 +530,7 @@ setup_tasks (UfoSchedulerPrivate *priv,
 
         node = g_list_nth_data (nodes, i);
         tld = g_new0 (TaskLocalData, 1);
+        tld->last_trace = 0.0;
         tld->task = UFO_TASK (node);
         tlds[i] = tld;
 
