@@ -81,7 +81,7 @@ libufo_la_LIBADD += $(PYTHON_LIBS)
 endif
 
 
-ufoincludedir = ${includedir}/ufo-@VMAJ@
+ufoincludedir = ${includedir}/ufo-@VMAJ@/ufo
 ufoinclude_HEADERS = $(ufo_headers) ufo.h ufo-enums.h
 
 dist_pkgdata_DATA = ufo-basic-ops.cl
