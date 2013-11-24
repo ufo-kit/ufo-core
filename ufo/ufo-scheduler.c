@@ -585,7 +585,7 @@ replicate_task_graph (UfoTaskGraph *graph,
 {
     GList *remotes;
     guint n_graphs;
-    guint index = 1;
+    guint idx = 1;
 
     remotes = ufo_arch_graph_get_remote_nodes (arch);
     n_graphs = g_list_length (remotes) + 1;
@@ -594,8 +594,8 @@ replicate_task_graph (UfoTaskGraph *graph,
         UfoRemoteNode *node;
         gchar *json;
 
-        /* Set partition index for the remote task graph */
-        ufo_task_graph_set_partition (graph, index++, n_graphs);
+        /* Set partition idx for the remote task graph */
+        ufo_task_graph_set_partition (graph, idx++, n_graphs);
         json = ufo_task_graph_get_json_data (graph, NULL);
         node = UFO_REMOTE_NODE (it->data);
         ufo_remote_node_send_json (node, UFO_REMOTE_MODE_REPLICATE, json);
@@ -611,14 +611,14 @@ static void
 propagate_partition (UfoTaskGraph *graph)
 {
     GList *nodes;
-    guint index;
+    guint idx;
     guint total;
 
-    ufo_task_graph_get_partition (graph, &index, &total);
+    ufo_task_graph_get_partition (graph, &idx, &total);
     nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
 
     for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it))
-        ufo_task_node_set_partition (UFO_TASK_NODE (it->data), index, total);
+        ufo_task_node_set_partition (UFO_TASK_NODE (it->data), idx, total);
 
     g_list_free (nodes);
 }
