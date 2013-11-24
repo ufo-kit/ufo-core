@@ -18,6 +18,10 @@
  */
 #include "config.h"
 
+#ifdef HAVE_PYTHON
+#include <Python.h>
+#endif
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
@@ -26,10 +30,6 @@
 #include <gmodule.h>
 #include <ufo/ufo-input-task.h>
 #include <ufo/ufo-cpu-task-iface.h>
-
-#ifdef HAVE_PYTHON
-#include <Python.h>
-#endif
 
 /**
  * SECTION:ufo-input-task

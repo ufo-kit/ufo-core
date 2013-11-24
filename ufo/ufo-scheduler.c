@@ -18,6 +18,10 @@
  */
 #include "config.h"
 
+#ifdef HAVE_PYTHON
+#include <Python.h>
+#endif
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
@@ -26,10 +30,6 @@
 #include <gio/gio.h>
 #include <stdio.h>
 #include <string.h>
-
-#ifdef HAVE_PYTHON
-#include <Python.h>
-#endif
 
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-config.h>
