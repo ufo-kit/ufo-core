@@ -70,6 +70,42 @@ static guint         ufo_queue_length       (UfoQueue *queue, UfoQueueAccess acc
  *
  * Returns: A new #UfoGroup.
  */
+
+static GTimer *global_clock;
+typedef struct {
+    gdouble start;
+    gchar *msg;
+    UfoQueue *queue;
+    gint pos;
+    UfoQueueAccess access;
+} QueueTrace;
+
+static inline gpointer start_trace_queue (const gchar *msg, UfoQueue *queue, gint pos, UfoQueueAccess access)
+{
+    QueueTrace *h = g_malloc0(sizeof(QueueTrace));
+    h->start = g_timer_elapsed (global_clock, NULL);
+    h->queue = queue;
+    h->pos = pos;
+    h->msg = g_strdup (msg);
+    h->access = access;
+    return (gpointer) h;
+}
+static inline void stop_trace_queue (gpointer data)
+{
+    QueueTrace *h = (QueueTrace *) data;
+    gdouble now = g_timer_elapsed (global_clock, NULL);
+    gdouble delta = now - h->start;
+    gchar *a;
+    if (h->access == UFO_QUEUE_PRODUCER)
+        a = g_strdup ("UFO_QUEUE_PRODUCER");
+    else
+        a = g_strdup ("UFO_QUEUE_CONSUMER");
+    g_debug ("[%.8f] [%s] [%s] [%p]", delta, h->msg, a, (void*) h->queue);
+
+    g_free (h->msg);
+    g_free (h);
+}
+
 UfoGroup *
 ufo_group_new (GList *targets,
                gpointer context,
@@ -113,10 +149,14 @@ pop_or_alloc_buffer (UfoGroupPrivate *priv,
     if (ufo_queue_get_capacity (priv->queues[pos]) < (priv->n_targets + 1)) {
         buffer = ufo_buffer_new (requisition, priv->context);
         priv->buffers = g_list_append (priv->buffers, buffer);
+        gpointer h = start_trace_queue ("INSERT", priv->queues[pos], pos, UFO_QUEUE_PRODUCER);
         ufo_queue_insert (priv->queues[pos], UFO_QUEUE_PRODUCER, buffer);
+        stop_trace_queue (h);
     }
 
+    gpointer h = start_trace_queue ("POP", priv->queues[pos], pos, UFO_QUEUE_PRODUCER);
     buffer = ufo_queue_pop (priv->queues[pos], UFO_QUEUE_PRODUCER);
+    stop_trace_queue (h);
 
     if (ufo_buffer_cmp_dimensions (buffer, requisition))
         ufo_buffer_resize (buffer, requisition);
@@ -157,10 +197,11 @@ ufo_group_pop_output_buffer (UfoGroup *group,
 static void push_buffer_roundrobin (UfoGroup *group, UfoBuffer *buffer)
 {
     UfoGroupPrivate *priv = group->priv;
+    gpointer h = start_trace_queue ("PUSH", priv->queues[priv->current], priv->current, UFO_QUEUE_PRODUCER);
     ufo_queue_push (priv->queues[priv->current],
         UFO_QUEUE_PRODUCER,
         buffer);
-
+    stop_trace_queue (h);
     priv->current = (priv->current + 1) % priv->n_targets;
     g_debug("priv->current: %d, priv->n_targets: %d", priv->current, priv->n_targets);
 }
@@ -179,8 +220,7 @@ static void push_buffer_least_utilized (UfoGroup *group, UfoBuffer *buffer)
         }
     }
     g_debug ("selected queue with lowest utilization: %d", selected);
-    // ufo_queue_push (priv->queues[selected], UFO_QUEUE_PRODUCER, buffer);
-    ufo_queue_push (priv->queues[0], UFO_QUEUE_PRODUCER, buffer);
+    ufo_queue_push (priv->queues[selected], UFO_QUEUE_PRODUCER, buffer);
 }
 
 void
@@ -266,9 +306,9 @@ ufo_group_pop_input_buffer (UfoGroup *group,
 
     priv = group->priv;
     pos = g_list_index (priv->targets, target);
-    g_debug ("popping input buffer from queue %d", pos);
+    gpointer h = start_trace_queue ("POP", priv->queues[pos], pos, UFO_QUEUE_CONSUMER);
     input = pos >= 0 ? ufo_queue_pop (priv->queues[pos], UFO_QUEUE_CONSUMER) : NULL;
-
+    stop_trace_queue (h);
     return input;
 }
 
@@ -280,14 +320,14 @@ ufo_group_push_input_buffer (UfoGroup *group,
     UfoGroupPrivate *priv;
     gint pos;
 
-    if (group == NULL) {
-        // G_BREAKPOINT();
-    }
     priv = group->priv;
     pos = g_list_index (priv->targets, target);
 
-    if (pos >= 0)
+    if (pos >= 0) {
+        gpointer h = start_trace_queue ("PUSH", priv->queues[pos], pos, UFO_QUEUE_CONSUMER);
         ufo_queue_push (priv->queues[pos], UFO_QUEUE_CONSUMER, input);
+        stop_trace_queue (h);
+    }
 }
 
 void
@@ -298,9 +338,11 @@ ufo_group_finish (UfoGroup *group)
     priv = group->priv;
 
     for (guint i = 0; i < priv->n_targets; i++) {
+        gpointer h = start_trace_queue ("PUSH EOS", priv->queues[i], i, UFO_QUEUE_PRODUCER);
         ufo_queue_push (priv->queues[i],
                         UFO_QUEUE_PRODUCER,
                         UFO_END_OF_STREAM);
+        stop_trace_queue (h);
     }
 }
 
@@ -388,6 +430,9 @@ ufo_group_finalize (GObject *object)
 static void
 ufo_group_class_init (UfoGroupClass *klass)
 {
+    if (global_clock == NULL)
+        global_clock = g_timer_new();
+
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
 
     gobject_class->dispose  = ufo_group_dispose;
