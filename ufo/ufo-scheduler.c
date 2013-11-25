@@ -79,6 +79,9 @@ static inline void trace (gchar *msg, TaskLocalData *tld)
     gdouble delta = 0.0;
     if (tld != NULL && UFO_IS_TASK_NODE (tld->task)) {
         name = g_strdup (ufo_task_node_get_unique_name (UFO_TASK_NODE(tld->task)));
+        if (g_str_has_prefix(name, "writer")) {
+            // G_BREAKPOINT();
+        }
         delta = now - tld->last_trace;
         tld->last_trace = now;
     }
@@ -206,9 +209,13 @@ get_inputs (TaskLocalData *tld,
     guint n_finished = 0;
     for (guint i = 0; i < tld->n_inputs; i++) {
         UfoGroup *group;
+        trace (g_strdup_printf ("iterating over inputs: %d/%d ", i + 1, tld->n_inputs), tld);
 
         if (!tld->finished[i]) {
             UfoBuffer *input;
+
+            gdouble delta;
+            gdouble now = g_timer_elapsed (global_clock, NULL);
 
             trace (g_strdup_printf ("START waiting/popping input buffer from input #%d", i), tld);
             group = ufo_task_node_get_current_in_group (node, i);
