@@ -119,7 +119,7 @@ static inline void stop_trace_queue (gpointer data)
         has_writer = g_strdup ("NO_WRITER");
 
 
-    g_debug ("%.8f %s %s %p %s %s", delta, h->msg, a, (void*) h->queue, has_remote, has_writer);
+    g_debug ("%.8f %s %s %p %d %s %s", delta, h->msg, a, (void*) h->queue, h->pos, has_remote, has_writer);
 
     g_free (h->msg);
     g_free (h);
@@ -176,7 +176,6 @@ ufo_group_new (GList *targets,
         g_debug("I HAVE A WRITER!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
     if (priv->has_remote_node) {
         g_debug("I HAVE A REMOTE!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
-        G_BREAKPOINT();
     }
 
 

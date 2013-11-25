@@ -79,9 +79,6 @@ static inline void trace (gchar *msg, TaskLocalData *tld)
     gdouble delta = 0.0;
     if (tld != NULL && UFO_IS_TASK_NODE (tld->task)) {
         name = g_strdup (ufo_task_node_get_unique_name (UFO_TASK_NODE(tld->task)));
-        if (g_str_has_prefix(name, "writer")) {
-            // G_BREAKPOINT();
-        }
         delta = now - tld->last_trace;
         tld->last_trace = now;
     }
