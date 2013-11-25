@@ -20,6 +20,7 @@
 #include <CL/cl.h>
 #include <ufo/ufo-group.h>
 #include <ufo/ufo-task-node.h>
+#include <ufo/ufo-remote-node.h>
 
 G_DEFINE_TYPE (UfoGroup, ufo_group, G_TYPE_OBJECT)
 
@@ -41,6 +42,8 @@ struct _UfoGroupPrivate {
     guint            current;
     cl_context       context;
     GList           *buffers;
+    gboolean         has_writer_node;
+    gboolean         has_remote_node;
 };
 
 enum {
@@ -78,9 +81,10 @@ typedef struct {
     UfoQueue *queue;
     gint pos;
     UfoQueueAccess access;
+    UfoGroupPrivate *priv;
 } QueueTrace;
 
-static inline gpointer start_trace_queue (const gchar *msg, UfoQueue *queue, gint pos, UfoQueueAccess access)
+static inline gpointer start_trace_queue (const gchar *msg, UfoGroupPrivate *priv, UfoQueue *queue, gint pos, UfoQueueAccess access)
 {
     QueueTrace *h = g_malloc0(sizeof(QueueTrace));
     h->start = g_timer_elapsed (global_clock, NULL);
@@ -88,6 +92,7 @@ static inline gpointer start_trace_queue (const gchar *msg, UfoQueue *queue, gin
     h->pos = pos;
     h->msg = g_strdup (msg);
     h->access = access;
+    h->priv = priv;
     return (gpointer) h;
 }
 static inline void stop_trace_queue (gpointer data)
@@ -100,10 +105,42 @@ static inline void stop_trace_queue (gpointer data)
         a = g_strdup ("UFO_QUEUE_PRODUCER");
     else
         a = g_strdup ("UFO_QUEUE_CONSUMER");
-    g_debug ("[%.8f] [%s] [%s] [%p]", delta, h->msg, a, (void*) h->queue);
+
+    gchar *has_remote;
+    if (h->priv->has_remote_node)
+        has_remote = g_strdup ("HAS_REMOTE");
+    else
+        has_remote = g_strdup ("NO_REMOTE");
+
+    gchar *has_writer;
+    if (h->priv->has_writer_node)
+        has_writer = g_strdup ("HAS_WRITER");
+    else
+        has_writer = g_strdup ("NO_WRITER");
+
+
+    g_debug ("%.8f %s %s %p %s %s", delta, h->msg, a, (void*) h->queue, has_remote, has_writer);
 
     g_free (h->msg);
     g_free (h);
+}
+
+static gboolean
+is_remote_node (UfoNode *node, gpointer user_data)
+{
+    const gchar *name = ufo_task_node_get_plugin_name (UFO_TASK_NODE (node));
+    if (name == NULL)
+        return TRUE;
+    return FALSE;
+}
+
+static gboolean
+is_writer_node (UfoNode *node, gpointer user_data)
+{
+    const gchar *name = ufo_task_node_get_plugin_name (UFO_TASK_NODE (node));
+    if (name == NULL)
+        return FALSE;
+    return g_str_has_prefix (name, "writer");
 }
 
 UfoGroup *
@@ -125,6 +162,23 @@ ufo_group_new (GList *targets,
     priv->current = 0;
     priv->context = context;
     priv->n_received = 0;
+
+    gint n_remotes = 0;
+    for (GList *t = g_list_first (targets); t != NULL; t = g_list_next (t)) {
+        if (is_remote_node (t->data, NULL)) {
+            priv->has_remote_node = TRUE;
+            n_remotes++;
+        }
+        else if (is_writer_node (UFO_NODE (t->data), NULL))
+            priv->has_writer_node = TRUE;
+    }
+    if (priv->has_writer_node)
+        g_debug("I HAVE A WRITER!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
+    if (priv->has_remote_node) {
+        g_debug("I HAVE A REMOTE!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
+        G_BREAKPOINT();
+    }
+
 
     for (guint i = 0; i < priv->n_targets; i++)
         priv->queues[i] = ufo_queue_new ();
@@ -149,12 +203,12 @@ pop_or_alloc_buffer (UfoGroupPrivate *priv,
     if (ufo_queue_get_capacity (priv->queues[pos]) < (priv->n_targets + 1)) {
         buffer = ufo_buffer_new (requisition, priv->context);
         priv->buffers = g_list_append (priv->buffers, buffer);
-        gpointer h = start_trace_queue ("INSERT", priv->queues[pos], pos, UFO_QUEUE_PRODUCER);
+        gpointer h = start_trace_queue ("INSERT", priv, priv->queues[pos], pos, UFO_QUEUE_PRODUCER);
         ufo_queue_insert (priv->queues[pos], UFO_QUEUE_PRODUCER, buffer);
         stop_trace_queue (h);
     }
 
-    gpointer h = start_trace_queue ("POP", priv->queues[pos], pos, UFO_QUEUE_PRODUCER);
+    gpointer h = start_trace_queue ("POP", priv, priv->queues[pos], pos, UFO_QUEUE_PRODUCER);
     buffer = ufo_queue_pop (priv->queues[pos], UFO_QUEUE_PRODUCER);
     stop_trace_queue (h);
 
@@ -192,7 +246,7 @@ ufo_group_pop_output_buffer (UfoGroup *group,
 static void push_buffer_roundrobin (UfoGroup *group, UfoBuffer *buffer)
 {
     UfoGroupPrivate *priv = group->priv;
-    gpointer h = start_trace_queue ("PUSH", priv->queues[priv->current], priv->current, UFO_QUEUE_PRODUCER);
+    gpointer h = start_trace_queue ("PUSH", priv, priv->queues[priv->current], priv->current, UFO_QUEUE_PRODUCER);
     ufo_queue_push (priv->queues[priv->current],
         UFO_QUEUE_PRODUCER,
         buffer);
@@ -300,7 +354,7 @@ ufo_group_pop_input_buffer (UfoGroup *group,
 
     priv = group->priv;
     pos = g_list_index (priv->targets, target);
-    gpointer h = start_trace_queue ("POP", priv->queues[pos], pos, UFO_QUEUE_CONSUMER);
+    gpointer h = start_trace_queue ("POP", priv, priv->queues[pos], pos, UFO_QUEUE_CONSUMER);
     input = pos >= 0 ? ufo_queue_pop (priv->queues[pos], UFO_QUEUE_CONSUMER) : NULL;
     stop_trace_queue (h);
     return input;
@@ -318,7 +372,7 @@ ufo_group_push_input_buffer (UfoGroup *group,
     pos = g_list_index (priv->targets, target);
 
     if (pos >= 0) {
-        gpointer h = start_trace_queue ("PUSH", priv->queues[pos], pos, UFO_QUEUE_CONSUMER);
+        gpointer h = start_trace_queue ("PUSH", priv, priv->queues[pos], pos, UFO_QUEUE_CONSUMER);
         ufo_queue_push (priv->queues[pos], UFO_QUEUE_CONSUMER, input);
         stop_trace_queue (h);
     }
@@ -332,7 +386,7 @@ ufo_group_finish (UfoGroup *group)
     priv = group->priv;
 
     for (guint i = 0; i < priv->n_targets; i++) {
-        gpointer h = start_trace_queue ("PUSH EOS", priv->queues[i], i, UFO_QUEUE_PRODUCER);
+        gpointer h = start_trace_queue ("PUSH EOS", priv, priv->queues[i], i, UFO_QUEUE_PRODUCER);
         ufo_queue_push (priv->queues[i],
                         UFO_QUEUE_PRODUCER,
                         UFO_END_OF_STREAM);
