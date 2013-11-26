@@ -82,7 +82,7 @@ static inline void trace (gchar *msg, TaskLocalData *tld)
         delta = now - tld->last_trace;
         tld->last_trace = now;
     }
-    if (name == NULL || g_str_has_prefix (name, "fft"))
+    // if (name == NULL || g_str_has_prefix (name, "fft"))
         g_debug ("[%.4f] [%.4f] [%p] [%s] %s", now, delta, (void*) g_thread_self(), name, msg);
 }
 
@@ -231,6 +231,7 @@ get_inputs (TaskLocalData *tld,
             input = ufo_group_pop_input_buffer (group, tld->task);
 
             if (input == UFO_END_OF_STREAM) {
+                g_debug("Setting INPUT %d to finished", i);
                 tld->finished[i] = TRUE;
                 n_finished++;
             }
@@ -502,6 +503,7 @@ run_task (TaskLocalData *tld)
             } while (active);
         }
 
+
         if (!active)
             ufo_group_finish (group);
     }
@@ -657,6 +659,7 @@ static gboolean
 correct_connections (UfoTaskGraph *graph,
                      GError **error)
 {
+    return TRUE;
     GList *nodes;
     gboolean result = TRUE;
 
@@ -935,7 +938,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         write_traces (tlds, n_nodes);
 
     cleanup_task_local_data (tlds, n_nodes);
-    g_list_foreach (groups, (GFunc) g_object_unref, NULL);
+    //g_list_foreach (groups, (GFunc) g_object_unref, NULL);
     g_list_free (groups);
     g_free (threads);
 
