@@ -80,6 +80,7 @@ gint            ufo_task_node_get_num_expected      (UfoTaskNode    *node,
 void            ufo_task_node_set_out_group         (UfoTaskNode    *node,
                                                      UfoGroup       *group);
 UfoGroup       *ufo_task_node_get_out_group         (UfoTaskNode    *node);
+GList          *ufo_task_node_get_in_groups         (UfoTaskNode    *node);
 void            ufo_task_node_add_in_group          (UfoTaskNode    *node,
                                                      guint           pos,
                                                      UfoGroup       *group);

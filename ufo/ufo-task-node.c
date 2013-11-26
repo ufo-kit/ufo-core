@@ -147,6 +147,17 @@ ufo_task_node_add_in_group (UfoTaskNode *node,
     node->priv->current[pos] = node->priv->in_groups[pos];
 }
 
+GList *
+ufo_task_node_get_in_groups (UfoTaskNode *node)
+{
+    GList *in_groups = NULL;
+    for (int i=0; i < 16; i++) {
+        if (node->priv->in_groups[i] != NULL)
+            in_groups = g_list_append (in_groups, node->priv->in_groups[i]);
+    }
+    return in_groups;
+}
+
 /**
  * ufo_task_node_get_current_in_group:
  * @node: A #UfoTaskNode

@@ -82,7 +82,8 @@ static inline void trace (gchar *msg, TaskLocalData *tld)
         delta = now - tld->last_trace;
         tld->last_trace = now;
     }
-    g_debug ("[%.4f] [%.4f] [%p] [%s] %s", now, delta, (void*) g_thread_self(), name, msg);
+    if (name == NULL || g_str_has_prefix (name, "fft"))
+        g_debug ("[%.4f] [%.4f] [%p] [%s] %s", now, delta, (void*) g_thread_self(), name, msg);
 }
 
 
@@ -150,6 +151,16 @@ ufo_scheduler_new (UfoConfig *config,
     return sched;
 }
 
+static gboolean
+is_remote_node (UfoNode *node, gpointer user_data)
+{
+    return UFO_IS_REMOTE_TASK (node);
+}
+static gboolean
+is_not_remote_node (UfoNode *node, gpointer user_data)
+{
+    return !UFO_IS_REMOTE_TASK (node);
+}
 /**
  * ufo_scheduler_get_context:
  * @scheduler: A #UfoScheduler
@@ -216,8 +227,8 @@ get_inputs (TaskLocalData *tld,
 
             trace (g_strdup_printf ("START waiting/popping input buffer from input #%d", i), tld);
             group = ufo_task_node_get_current_in_group (node, i);
-            input = ufo_group_pop_input_buffer (group, tld->task);
             trace (g_strdup_printf ("END waiting/popping input buffer from input #%d", i), tld);
+            input = ufo_group_pop_input_buffer (group, tld->task);
 
             if (input == UFO_END_OF_STREAM) {
                 tld->finished[i] = TRUE;
@@ -307,11 +318,13 @@ run_remote_task (TaskLocalData *tld)
 
             ufo_remote_node_get_requisition (remote, &requisition);
             if (requisition.n_dims > 0) {
-                trace (g_strdup_printf ("waiting for result from remote node"), tld);
                 group = ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task));
+                trace (g_strdup_printf ("RemoteTask START waiting for an output buffer"), tld);
                 output = ufo_group_pop_output_buffer (group, &requisition);
+                trace (g_strdup_printf ("RemoteTask STOP waiting for an output buffer"), tld);
+                trace (g_strdup_printf ("RemoteTask START waiting for result from remote node"), tld);
                 ufo_remote_node_get_result (remote, output);
-                trace (g_strdup_printf ("got the remote result, pushing buffer from remote to output"), tld);
+                trace (g_strdup_printf ("RemoteTask STOP waiting for result from remote node"), tld);
                 ufo_group_push_output_buffer (group, output);
                 trace (g_strdup_printf ("push done"), tld);
             }
@@ -554,6 +567,34 @@ setup_tasks (UfoSchedulerPrivate *priv,
     return tlds;
 }
 
+static void print_groups (UfoTaskNode *node) {
+    GList *in_groups = ufo_task_node_get_in_groups (node);
+    for (guint i=0; i < g_list_length (in_groups); i++) {
+        g_debug("\t\tIN GROUP: %p", (void*) g_list_nth_data (in_groups, i));
+    }
+    UfoGroup *out_group = ufo_task_node_get_out_group (node);
+    g_debug("\t\tOUT GROUP: %p", (void *) out_group);
+}
+
+static void print_group_summary (GList *groups)
+{
+    g_debug ("Total groups: %d", g_list_length (groups));
+
+    for (guint i=0; i < g_list_length (groups); i++) {
+        UfoGroup *group = g_list_nth_data (groups, i);
+        g_debug ("Group %d (%p):", i);
+        GList *targets = ufo_group_get_targets (group);
+        gint n = g_list_length (targets);
+        for (guint j=0; j < g_list_length (targets); j++) {
+            UfoTaskNode *node = UFO_TASK_NODE (g_list_nth_data (targets, j));
+            g_debug ("\tTaskNode: %s", ufo_task_node_get_unique_name (node));
+            print_groups (node);
+        }
+    }
+}
+
+
+
 static GList *
 setup_groups (UfoSchedulerPrivate *priv,
               UfoTaskGraph *task_graph)
@@ -564,6 +605,8 @@ setup_groups (UfoSchedulerPrivate *priv,
 
     groups = NULL;
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
+    // nodes = ufo_graph_get_nodes_filtered (UFO_GRAPH (task_graph), is_not_remote_node, NULL);
+
     context = ufo_resources_get_context (priv->resources);
 
     for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
@@ -599,7 +642,14 @@ setup_groups (UfoSchedulerPrivate *priv,
         g_list_free (successors);
     }
 
+    // remove remote tasks from first group and put into own group
+    // GList *remote_nodes = ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_remote_node, NULL);
+    // for (GList *jt = g_list_first (remote_nodes); jt != NULL; jt = g_list_next (jt)) {
+
+    // }
+
     g_list_free (nodes);
+    print_group_summary (groups);
     return groups;
 }
 
@@ -778,12 +828,6 @@ static gboolean
 is_gpu_node (UfoNode *node, gpointer user_data)
 {
     return UFO_IS_GPU_TASK (node);
-}
-
-static gboolean
-is_remote_node (UfoNode *node, gpointer user_data)
-{
-    return UFO_IS_REMOTE_TASK (node);
 }
 
 void

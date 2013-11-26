@@ -119,7 +119,7 @@ static inline void stop_trace_queue (gpointer data)
         has_writer = g_strdup ("NO_WRITER");
 
 
-    g_debug ("%.8f %s %s %p %d %s %s", delta, h->msg, a, (void*) h->queue, h->pos, has_remote, has_writer);
+    // g_debug ("%.8f %s %s %p %d %s %s", delta, h->msg, a, (void*) h->queue, h->pos, has_remote, has_writer);
 
     g_free (h->msg);
     g_free (h);
@@ -192,13 +192,19 @@ ufo_group_get_num_targets (UfoGroup *group)
     return group->priv->n_targets;
 }
 
+GList *
+ufo_group_get_targets (UfoGroup *group)
+{
+    return g_list_copy (group->priv->targets);
+}
+
 static UfoBuffer *
 pop_or_alloc_buffer (UfoGroupPrivate *priv,
                      guint pos,
                      UfoRequisition *requisition)
 {
     UfoBuffer *buffer;
-
+    g_debug("n_targets is: %d", priv->n_targets);
     if (ufo_queue_get_capacity (priv->queues[pos]) < (priv->n_targets + 1)) {
         buffer = ufo_buffer_new (requisition, priv->context);
         priv->buffers = g_list_append (priv->buffers, buffer);
