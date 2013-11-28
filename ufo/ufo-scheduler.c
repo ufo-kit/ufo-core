@@ -64,7 +64,10 @@ G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
 static GTimer *global_clock;
 
 typedef struct {
-    UfoTaskNode         *task;
+    gpointer         context;
+    UfoTask          *task;
+    UfoTaskGraph     *task_graph;
+    GList            *successors;
     UfoTaskMode      mode;
     guint            n_inputs;
     UfoInputParam   *in_params;
@@ -377,6 +380,125 @@ is_correctly_implemented (UfoTaskNode *node,
     }
 }
 
+// static gpointer get_element_from_any_input_queue (GList nodes) {
+//     // round-robin try to get output from any node
+//     gpointer element = NULL;
+//     while (element == NULL) {
+//         for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+//             UfoTaskNode *node = UFO_TASK_NODE (it->data);
+//             gpointer = g_async_queue_try_pop (node->output_queue);
+//             if (gpointer != NULL)
+//                 break;
+//         }
+//         g_thread_yield ();
+//     }
+//     return element;
+// }
+
+static void push_to_least_utilized_queue (gpointer element, GList *queues)
+{
+    gint lowest = G_MAXINT;
+    GAsyncQueue *least_utilized_queue = NULL;
+
+    for (GList *it = g_list_first (queues); it != NULL; it = g_list_next (it)) {
+        GAsyncQueue *queue = (GAsyncQueue *) it->data;
+        gint len = g_async_queue_length (queue);
+        if (len <= lowest) {
+            lowest = len;
+            least_utilized_queue = queue;
+        }
+    }
+    g_async_queue_push (least_utilized_queue, element);
+}
+
+static void send_poisonpill_to_nodes (GList *queues){
+    for (GList *it = g_list_first (queues); it != NULL; it = g_list_next (it)) {
+        GAsyncQueue *queue = (GAsyncQueue *) it->data;
+        g_async_queue_push (queue, UFO_END_OF_STREAM);
+    }
+}
+
+static GList *
+get_input_queues (GList *nodes)
+{
+    GList *queues = NULL;
+    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+        UfoTaskNode *node = UFO_TASK_NODE (it->data);
+        queues = g_list_append (queues, (gpointer) ufo_task_node_get_input_queue (node));
+    }
+    return queues;
+}
+
+static gpointer
+run_task_simple (TaskLocalData *tld)
+{
+
+    UfoBuffer *input;
+    UfoBuffer *output;
+    UfoTaskProcessFunc process;
+    UfoTaskGenerateFunc generate;
+    UfoRequisition requisition;
+    gboolean active = TRUE;
+
+    UfoTaskNode *self = UFO_TASK_NODE (tld->task);
+
+    GList *successor_queues = get_input_queues (tld->successors);
+
+    if (UFO_IS_GPU_TASK (tld->task)) {
+        process = (UfoTaskProcessFunc) ufo_gpu_task_process;
+        generate = (UfoTaskGenerateFunc) ufo_gpu_task_generate;
+    }
+    else {
+        process = (UfoTaskProcessFunc) ufo_cpu_task_process;
+        generate = (UfoTaskGenerateFunc) ufo_cpu_task_generate;
+    }
+
+    while (active) {
+        gboolean produces;
+
+        if (!tld->mode == UFO_TASK_MODE_GENERATOR) {
+            gpointer next_input = g_async_queue_pop (ufo_task_node_get_input_queue (self));
+            if ((int *)next_input == UFO_END_OF_STREAM) {
+                active = FALSE;
+                break;
+            }
+            input = (UfoBuffer *) next_input;
+        }
+
+        ufo_task_get_requisition (UFO_TASK (tld->task), &input, &requisition);
+        produces = requisition.n_dims > 0;
+
+        if (produces) {
+            // create a new buffer we can use for output
+            output = ufo_buffer_new (&requisition, tld->context);
+        }
+
+        switch (tld->mode) {
+            case UFO_TASK_MODE_PROCESSOR:
+                active = process (tld->task, &input, output, &requisition);
+                ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
+                break;
+
+            case UFO_TASK_MODE_REDUCTOR:
+                g_assert(FALSE);
+                break;
+
+            case UFO_TASK_MODE_GENERATOR:
+                active = generate (tld->task, output, &requisition);
+                break;
+        }
+
+        // forward the result
+        if (produces) {
+            push_to_least_utilized_queue (output, successor_queues);
+        }
+    }
+
+    // send poisonpill as ouput
+    send_poisonpill_to_nodes (successor_queues);
+    return NULL;
+}
+
 static gpointer
 run_task (TaskLocalData *tld)
 {
@@ -551,9 +673,14 @@ setup_tasks (UfoSchedulerPrivate *priv,
 
         node = g_list_nth_data (nodes, i);
         tld = g_new0 (TaskLocalData, 1);
+        tld->task_graph = task_graph;
+        tld->context = ufo_resources_get_context (priv->resources);
+        tld->successors = NULL;
         tld->last_trace = 0.0;
         tld->task = UFO_TASK (node);
         tlds[i] = tld;
+
+        tld->successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
 
         ufo_task_setup (UFO_TASK (node), priv->resources, error);
         ufo_task_get_structure (UFO_TASK (node), &tld->n_inputs, &tld->in_params, &tld->mode);
@@ -586,7 +713,7 @@ static void print_group_summary (GList *groups)
 
     for (guint i=0; i < g_list_length (groups); i++) {
         UfoGroup *group = g_list_nth_data (groups, i);
-        g_debug ("Group %d (%p):", i);
+        g_debug ("Group %d:", i);
         GList *targets = ufo_group_get_targets (group);
         gint n = g_list_length (targets);
         for (guint j=0; j < g_list_length (targets); j++) {
@@ -618,6 +745,7 @@ setup_groups2 (UfoSchedulerPrivate *priv,
         UfoSendPattern pattern = ufo_task_node_get_send_pattern (node);
         GList *task_nodes_for_group = g_list_append (NULL, node);
         UfoGroup *group = ufo_group_new (task_nodes_for_group, context, pattern);
+        g_assert (UFO_IS_GROUP (group));
         groups = g_list_append (groups, group);
         ufo_task_node_set_own_group (node, group);
         ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
@@ -627,9 +755,9 @@ setup_groups2 (UfoSchedulerPrivate *priv,
     for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
         UfoTaskNode *node = UFO_TASK_NODE (it->data);
         UfoGroup *node_group = ufo_task_node_get_own_group (node);
+        g_assert (UFO_IS_GROUP (node_group));
         g_assert (node != NULL);
-        g_assert (node_group != NULL);
-        GList *successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
+        GList *successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), UFO_NODE(node));
 
         // set input of all successors to the output of the predecessor
         gint i = 0;
@@ -948,7 +1076,11 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     if (tlds == NULL)
         return;
 
-    groups = setup_groups2 (priv, task_graph);
+    GList *remote_nodes = ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_remote_node, NULL);
+    // if (remote_nodes != NULL)
+    //     groups = setup_groups2 (priv, task_graph);
+    // else
+    //     groups = setup_groups2 (priv, task_graph);
 
     if (!correct_connections (task_graph, error))
         return;
@@ -959,7 +1091,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
-        threads[i] = g_thread_create ((GThreadFunc) run_task, tlds[i], TRUE, error);
+        threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
 
         if (error && (*error != NULL))
             return;
@@ -993,7 +1125,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     cleanup_task_local_data (tlds, n_nodes);
     //g_list_foreach (groups, (GFunc) g_object_unref, NULL);
-    g_list_free (groups);
+    //g_list_free (groups);
     g_free (threads);
 
     g_object_unref (arch_graph);

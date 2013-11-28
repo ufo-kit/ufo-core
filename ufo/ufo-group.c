@@ -398,5 +398,5 @@ ufo_group_init (UfoGroup *self)
     UfoGroupPrivate *priv;
     self->priv = priv = UFO_GROUP_GET_PRIVATE (self);
     priv->buffers = NULL;
-    priv->max_queue_capacity = 2;
+    priv->max_queue_capacity = 4;
 }
