@@ -64,7 +64,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
 static GTimer *global_clock;
 
 typedef struct {
-    UfoTask         *task;
+    UfoTaskNode         *task;
     UfoTaskMode      mode;
     guint            n_inputs;
     UfoInputParam   *in_params;
@@ -227,8 +227,10 @@ get_inputs (TaskLocalData *tld,
 
             trace (g_strdup_printf ("START waiting/popping input buffer from input #%d", i), tld);
             group = ufo_task_node_get_current_in_group (node, i);
-            trace (g_strdup_printf ("END waiting/popping input buffer from input #%d", i), tld);
             input = ufo_group_pop_input_buffer (group, tld->task);
+            trace (g_strdup_printf ("END waiting/popping input buffer from input #%d", i), tld);
+            if (input == NULL)
+                G_BREAKPOINT();
 
             if (input == UFO_END_OF_STREAM) {
                 g_debug("Setting INPUT %d to finished", i);
@@ -595,7 +597,59 @@ static void print_group_summary (GList *groups)
     }
 }
 
+static GList *
+setup_groups2 (UfoSchedulerPrivate *priv,
+               UfoTaskGraph *task_graph)
+{
+    // ASSUMPTIONS: A Task is in exactly one group. A Group has exactly one task
+    // A group has n inputs, and 1 output
+    GList *groups;
+    GList *nodes;
+    cl_context context;
 
+    groups = NULL;
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
+    context = ufo_resources_get_context (priv->resources);
+
+    // add each task node into its own group that it writes it output to
+    // hack we rely on the order of the GList groups to remain the same
+    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+        UfoTaskNode *node = UFO_TASK_NODE (it->data);
+        UfoSendPattern pattern = ufo_task_node_get_send_pattern (node);
+        GList *task_nodes_for_group = g_list_append (NULL, node);
+        UfoGroup *group = ufo_group_new (task_nodes_for_group, context, pattern);
+        groups = g_list_append (groups, group);
+        ufo_task_node_set_own_group (node, group);
+        ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
+    }
+
+    // now fuse the inputs & outputs of the tasknode's corresponding group
+    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+        UfoTaskNode *node = UFO_TASK_NODE (it->data);
+        UfoGroup *node_group = ufo_task_node_get_own_group (node);
+        g_assert (node != NULL);
+        g_assert (node_group != NULL);
+        GList *successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
+
+        // set input of all successors to the output of the predecessor
+        gint i = 0;
+        for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+            UfoTaskNode *target_node = UFO_TASK_NODE (jt->data);
+            UfoGroup *target_group = ufo_task_node_get_own_group (target_node);
+            g_assert (target_group != NULL);
+            ufo_task_node_add_in_group (target_node, i, node_group);
+
+            // gint num_expected = ufo_task_node_get_num_expected (node, i);
+            ufo_group_set_num_expected (target_group, target_node, 0);
+            //i++;
+        }
+        g_list_free (successors);
+    }
+
+    g_list_free (nodes);
+    print_group_summary (groups);
+    return groups;
+}
 
 static GList *
 setup_groups (UfoSchedulerPrivate *priv,
@@ -894,7 +948,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     if (tlds == NULL)
         return;
 
-    groups = setup_groups (priv, task_graph);
+    groups = setup_groups2 (priv, task_graph);
 
     if (!correct_connections (task_graph, error))
         return;

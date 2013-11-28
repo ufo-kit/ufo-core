@@ -37,6 +37,7 @@ struct _UfoTaskNodePrivate {
     UfoSendPattern   pattern;
     UfoNode         *proc_node;
     UfoGroup        *out_group;
+    UfoGroup        *own_group;
     UfoProfiler     *profiler;
     GList           *in_groups[16];
     GList           *current[16];
@@ -120,6 +121,20 @@ ufo_task_node_set_out_group (UfoTaskNode *node,
     node->priv->out_group = group;
 }
 
+void
+ufo_task_node_set_own_group (UfoTaskNode *node, UfoGroup *group)
+{
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    node->priv->own_group = group;
+}
+
+UfoGroup *
+ufo_task_node_get_own_group (UfoTaskNode *node)
+{
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    return node->priv->own_group;
+}
+
 /**
  * ufo_task_node_get_out_group:
  * @node: A #UfoTaskNode
@@ -174,7 +189,10 @@ ufo_task_node_get_current_in_group (UfoTaskNode *node,
                                     guint pos)
 {
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), NULL);
-    return UFO_GROUP (node->priv->current[pos]->data);
+    UfoGroup *group = UFO_GROUP (node->priv->current[pos]->data);
+    if (group == NULL)
+        G_BREAKPOINT();
+    return group;
 }
 
 void

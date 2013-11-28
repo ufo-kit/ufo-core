@@ -279,8 +279,8 @@ ufo_group_finish (UfoGroup *group)
     priv = group->priv;
 
     // TODO we don't know how many groups are pop-ing from us, make it enough
-    // for (int i=0; i<= 16; i++)
-        // ufo_queue_push (priv->queue, UFO_QUEUE_PRODUCER, UFO_END_OF_STREAM);
+    for (int i=0; i<= 16; i++)
+        ufo_queue_push (priv->queue, UFO_QUEUE_PRODUCER, UFO_END_OF_STREAM, NULL);
 }
 
 static UfoQueue *
