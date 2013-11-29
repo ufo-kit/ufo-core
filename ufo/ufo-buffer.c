@@ -861,22 +861,16 @@ free_cl_mem (cl_mem *mem)
 }
 
 static void
-ufo_buffer_dispose (GObject *gobject)
+ufo_buffer_finalize (GObject *gobject)
 {
     UfoBuffer *buffer = UFO_BUFFER (gobject);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
     g_free (priv->host_array);
     priv->host_array = NULL;
+
     free_cl_mem (&priv->device_array);
     free_cl_mem (&priv->device_image);
-
-}
-static void
-ufo_buffer_finalize (GObject *gobject)
-{
-    UfoBuffer *buffer = UFO_BUFFER (gobject);
-    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
@@ -886,7 +880,6 @@ ufo_buffer_class_init (UfoBufferClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     gobject_class->finalize = ufo_buffer_finalize;
-    gobject_class->dispose = ufo_buffer_dispose;
 
     g_type_class_add_private(klass, sizeof(UfoBufferPrivate));
 }

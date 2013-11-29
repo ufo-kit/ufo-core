@@ -431,7 +431,7 @@ get_input_queues (GList *nodes)
 
 static GAsyncQueue *buffer_pool;
 static guint buffer_capacity;
-#define BUFFER_POOL_CAPACITY 20
+#define BUFFER_POOL_CAPACITY 40
 
 static gpointer
 run_task_simple (TaskLocalData *tld)
@@ -474,10 +474,8 @@ run_task_simple (TaskLocalData *tld)
 
         if (produces) {
             // create a new buffer we can use for output
-            g_debug("try to pop buffer");
             // output = g_async_queue_pop (buffer_pool);
             output = ufo_buffer_new (&requisition, tld->context);
-            g_debug("got one");
             g_assert (output != NULL);
             if ((int *) output != UFO_END_OF_STREAM)
                 ufo_buffer_discard_location (output);
@@ -504,7 +502,7 @@ run_task_simple (TaskLocalData *tld)
         }
         if (input != NULL) {
             g_object_unref (input);
-            g_debug ("releasing a buffer to the pool");
+            // g_debug ("releasing a buffer to the pool");
             // g_async_queue_push (buffer_pool, input);
         }
     }
@@ -1111,15 +1109,15 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     gpointer context = ufo_resources_get_context (priv->resources);
 
     // creates new buffers with 2d requisition
-    UfoRequisition *sample_req = g_malloc (sizeof(UfoRequisition));
-    sample_req->n_dims = 2;
-    sample_req->dims[0]= 800;
-    sample_req->dims[1]= 800;
-    while (buffer_capacity < 20) {
-        buffer_capacity++;
-        UfoBuffer *buf = ufo_buffer_new (sample_req, context);
-        g_async_queue_push (buffer_pool, buf);
-    }
+    // UfoRequisition *sample_req = g_malloc (sizeof(UfoRequisition));
+    // sample_req->n_dims = 2;
+    // sample_req->dims[0]= 800;
+    // sample_req->dims[1]= 800;
+    // while (buffer_capacity < 20) {
+    //     buffer_capacity++;
+    //     UfoBuffer *buf = ufo_buffer_new (sample_req, context);
+    //     g_async_queue_push (buffer_pool, buf);
+    // }
 
 
     /* Spawn threads */
