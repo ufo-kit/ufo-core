@@ -154,6 +154,8 @@ stop_trace_event (UfoMessenger *msger, UfoMessage *msg, NetworkEvent *ev)
         ev->size_resp = 0;
     }
 
+    g_debug ("%.4f %.4f %s", ev->timestamp_start, ev->timestamp_end, ufo_message_type_to_char (ev->type));
+
     p->events = g_list_append (p->events, ev);
 }
 

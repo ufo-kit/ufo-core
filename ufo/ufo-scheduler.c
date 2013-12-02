@@ -395,6 +395,7 @@ is_correctly_implemented (UfoTaskNode *node,
 //     return element;
 // }
 
+static gint x = 0;
 static void push_to_least_utilized_queue (gpointer element, GList *queues)
 {
     gint lowest = G_MAXINT;
@@ -408,7 +409,9 @@ static void push_to_least_utilized_queue (gpointer element, GList *queues)
             least_utilized_queue = queue;
         }
     }
-    g_async_queue_push (least_utilized_queue, element);
+    gint max = g_list_length(queues);
+    g_async_queue_push (g_list_nth_data (queues, x % max), element);
+    x++;
 }
 
 static void send_poisonpill_to_nodes (GList *queues){
