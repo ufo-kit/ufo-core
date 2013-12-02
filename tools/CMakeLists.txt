@@ -12,7 +12,7 @@ install(TARGETS ufod ufo-runjson
 #{{{ ufo-mkfilter
 set(UFO_FILTER_TEMPLATE_DIR "${UFO_DATADIR}/ufo/templates")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ufo-mkfilter.py
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ufo-mkfilter.in
                ${CMAKE_CURRENT_BINARY_DIR}/ufo-mkfilter
                @ONLY IMMEDIATE)
 

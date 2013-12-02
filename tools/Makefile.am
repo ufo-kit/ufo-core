@@ -7,7 +7,21 @@ bin_PROGRAMS=ufo-runjson ufod
 
 ufo_runjson_SOURCES = runjson.c
 
-dist_bin_SCRIPTS = ufo-mkfilter.py
+ufotemplatesdir=$(pkgdatadir)/templates
+
+dist_ufotemplates_DATA=\
+	templates/ufo-cpu-task.c.in \
+	templates/ufo-cpu-task.h.in \
+	templates/ufo-gpu-task.c.in \
+	templates/ufo-gpu-task.h.in
+
+nodist_bin_SCRIPTS = ufo-mkfilter
+ufo-mkfilter: ufo-mkfilter.in
+	sed -e 's![@]UFO_FILTER_TEMPLATE_DIR[@]!$(ufotemplatesdir)!g' $(srcdir)/ufo-mkfilter.in > $@
+
+EXTRA_DIST = ufo-mkfilter.in
+
+CLEANFILES = ufo-mkfilter
 
 # Support for GNU Flymake, in Emacs.
 
