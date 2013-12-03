@@ -17,8 +17,7 @@ UFO has only a few hard source dependencies, namely
 
 Furthermore, it is necessary to build the framework with a recent version of
 `CMake <http://cmake.org>`_.  `Sphinx <http://sphinx.pocoo.org>`_ is used to
-create this documentation and `Bazaar <bazaar.canonical.com>`_ for revision
-control.
+create this documentation.
 
 In case you use openSUSE, just issue ::
 
@@ -27,19 +26,26 @@ In case you use openSUSE, just issue ::
     $ zypper install gtk-doc python-Sphinx
     $ zypper install libtiff-devel
 
-to install dependencies from the package repositories. Depending on which system
-you are using you have to install ZeroMQ 3.2 from source ::
-
-    $ wget http://download.zeromq.org/zeromq-3.2.2.tar.gz
-    $ tar xfz zeromq-3.2.2.tar.gz
-    $ cd zeromq-3.2.2
-    $ ./configure && make && make distcheck
-    $ make install
+to install dependencies from the package repositories.
 
 OpenCL development files must be installed in order to build UFO. However, we
 cannot give general advices as installation procedures vary between different
 vendors. However, our CMake build facility is in most cases intelligent enough
 to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
+
+
+Quick deployment
+================
+
+UFO comes with a ``deploy.sh`` script located in ``$UFO_ROOT/tools``. The
+easiest way to install UFO is::
+
+    wget -O - https://raw.github.com/ufo-kit/ufo-core/master/tools/deploy.sh | bash
+
+However, you are strongly advised to read the script and check for malicious
+intentions. If you run it directly you can also provide a prefix and a lib dir::
+
+    ./deploy.sh $HOME/usr $HOME/usr/lib64
 
 
 Retrieving the source code
@@ -57,15 +63,6 @@ repositories. All stable versions are tagged. To see a list of all releases
 issue::
 
     $ git tag -l
-
-
-Quick deployment
-================
-
-UFO comes with a deploy script located in ``$UFO_ROOT/tools``. If executed
-without any arguments it will try to build and install ZeroMQ, UFO (core and
-filters) and oclfft for ``/usr/local``. You can set the installation prefix as
-an argument to install it into your home directory.
 
 
 System-wide installation
