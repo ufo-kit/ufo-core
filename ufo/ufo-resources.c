@@ -412,7 +412,6 @@ initialize_opencl (UfoResourcesPrivate *priv,
     device_type = get_device_type (priv);
 
     // errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
-    G_BREAKPOINT();
     errcode = clGetDeviceIDs (priv->platform, CL_DEVICE_TYPE_GPU, 0, NULL, &priv->n_devices);
     UFO_RESOURCES_CHECK_AND_SET (errcode, error);
 
