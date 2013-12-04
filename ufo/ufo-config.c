@@ -261,7 +261,7 @@ ufo_config_init (UfoConfig *config)
 
     config->priv = priv = UFO_CONFIG_GET_PRIVATE (config);
     priv->path_array = g_value_array_new (0);
-    priv->device_type = UFO_DEVICE_ALL;
+    priv->device_type = UFO_DEVICE_GPU;
 
     add_path ("/usr/local/lib64/ufo", priv);
     add_path ("/usr/local/lib/ufo", priv);
