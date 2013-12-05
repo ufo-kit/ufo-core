@@ -163,6 +163,8 @@ ufo_task_node_get_current_in_group (UfoTaskNode *node,
                                     guint pos)
 {
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), NULL);
+    g_assert (pos < 16);
+    g_assert (node->priv->current[pos] != NULL);
     return UFO_GROUP (node->priv->current[pos]->data);
 }
 
