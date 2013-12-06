@@ -458,6 +458,50 @@ cleanup_task_local_data (TaskLocalData **tlds,
     g_free (tlds);
 }
 
+static gboolean
+check_target_connections (UfoTaskGraph *graph,
+                          UfoNode *target,
+                          guint n_inputs,
+                          GError **error)
+{
+    GList *predecessors;
+    guint16 connection_bitmap;
+    guint16 mask;
+    gboolean result = TRUE;
+
+    if (n_inputs == 0)
+        return TRUE;
+
+    predecessors = ufo_graph_get_predecessors (UFO_GRAPH (graph), target);
+    connection_bitmap = 0;
+
+    /* Check all edges and enable bit number for edge label */
+    for (GList *it = g_list_first (predecessors); it != NULL; it = g_list_next (it)) {
+        gpointer label;
+        gint input;
+
+        label = ufo_graph_get_edge_label (UFO_GRAPH (graph),
+                                          UFO_NODE (it->data), target);
+        input = GPOINTER_TO_INT (label);
+        g_assert (input >= 0 && input < 16);
+        connection_bitmap |= 1 << input;
+    }
+
+    mask = (1 << n_inputs) - 1;
+
+    /* Check if mask matches what we have */
+    if ((mask & connection_bitmap) != mask) {
+        g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
+                     "Not all inputs of `%s' are connected",
+                     ufo_task_node_get_plugin_name (UFO_TASK_NODE (target)));
+
+        result = FALSE;
+    }
+
+    g_list_free (predecessors);
+    return result;
+}
+
 static TaskLocalData **
 setup_tasks (UfoSchedulerPrivate *priv,
              UfoTaskGraph *task_graph,
@@ -483,7 +527,11 @@ setup_tasks (UfoSchedulerPrivate *priv,
         tlds[i] = tld;
 
         ufo_task_setup (UFO_TASK (node), priv->resources, error);
+
         ufo_task_get_structure (UFO_TASK (node), &tld->n_inputs, &tld->in_params, &tld->mode);
+
+        if (!check_target_connections (task_graph, node, tld->n_inputs, error))
+            return NULL;
 
         profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (node));
         ufo_profiler_enable_tracing (profiler, priv->trace);
