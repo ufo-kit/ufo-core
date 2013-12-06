@@ -1021,5 +1021,5 @@ ufo_resources_init (UfoResources *self)
     priv->include_paths = g_list_append (NULL, g_strdup ("."));
 
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
-    priv->kernel_paths = g_list_append (NULL, g_strdup (UFO_KERNEL_DIR));
+    priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_KERNEL_DIR));
 }
