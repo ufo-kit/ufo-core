@@ -93,7 +93,7 @@ UfoBuffer *
 ufo_output_task_get_output_buffer (UfoOutputTask *task)
 {
     g_return_val_if_fail (UFO_IS_OUTPUT_TASK (task), NULL);
-    return g_async_queue_pop (task->priv->out_queue);
+    return g_object_ref (g_async_queue_pop (task->priv->out_queue));
 }
 
 void
@@ -150,12 +150,13 @@ ufo_output_task_process (UfoCpuTask *task,
 
     if (priv->n_copies == 0) {
         copy = ufo_buffer_dup (outputs[0]);
-        g_async_queue_push (priv->in_queue, copy);
         priv->copies = g_list_append (priv->copies, copy);
         priv->n_copies++;
     }
+    else {
+        copy = g_async_queue_pop (priv->in_queue);
+    }
 
-    copy = g_async_queue_pop (priv->in_queue);
     ufo_buffer_copy (outputs[0], copy);
     g_async_queue_push (priv->out_queue, copy);
     return TRUE;

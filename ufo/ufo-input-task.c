@@ -144,7 +144,14 @@ ufo_input_task_get_requisition (UfoTask *task,
 
     /* Pop input here but release later in ufo_input_task_generate */
     if (priv->active) {
-        priv->input = g_async_queue_pop (priv->in_queue);
+        priv->input = NULL;
+
+        while (priv->active && priv->input == NULL)
+            priv->input = g_async_queue_timeout_pop (priv->in_queue, G_USEC_PER_SEC / 10);
+
+        if (priv->input == NULL)
+            return;
+
         ufo_buffer_get_requisition (priv->input, requisition);
     }
 }
