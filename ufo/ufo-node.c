@@ -76,11 +76,13 @@ copy_properties (GObject *dst,
     props = g_object_class_list_properties (G_OBJECT_GET_CLASS (src), &n_props);
 
     for (guint i = 0; i < n_props; i++) {
-        GValue value = {0};
+        if (props[i]->flags & G_PARAM_WRITABLE) {
+            GValue value = {0};
 
-        g_value_init (&value, props[i]->value_type);
-        g_object_get_property (G_OBJECT (src), props[i]->name, &value);
-        g_object_set_property (G_OBJECT (dst), props[i]->name, &value);
+            g_value_init (&value, props[i]->value_type);
+            g_object_get_property (G_OBJECT (src), props[i]->name, &value);
+            g_object_set_property (G_OBJECT (dst), props[i]->name, &value);
+        }
     }
 
     g_free (props);
