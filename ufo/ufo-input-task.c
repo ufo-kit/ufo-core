@@ -31,6 +31,8 @@
 #include <ufo/ufo-input-task.h>
 #include <ufo/ufo-cpu-task-iface.h>
 
+#include "compat.h"
+
 /**
  * SECTION:ufo-input-task
  * @Short_description: An input task

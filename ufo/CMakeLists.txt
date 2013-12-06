@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 #{{{ sources
 set(ufocore_SRCS
+    compat.c
     ufo-arch-graph.c
     ufo-buffer.c
     ufo-configurable.c
