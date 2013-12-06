@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <ufo.h>
+#include <stdio.h>
 #include "test-suite.h"
 
 typedef struct {
@@ -80,9 +81,96 @@ test_remote_node_get_structure (Fixture *fixture,
     g_assert (in_params->n_dims == 2);
 }
 
+static gchar *
+read_file (const gchar *filename)
+{
+    FILE *fp = fopen (filename, "r");
+
+    if (fp == NULL)
+        return NULL;
+
+    fseek (fp, 0, SEEK_END);
+    const gsize length = (gsize) ftell (fp);
+    rewind (fp);
+    gchar *buffer = (gchar *) g_malloc0(length + 1);
+
+    if (buffer == NULL) {
+        fclose (fp);
+        return NULL;
+    }
+
+    size_t buffer_length = fread (buffer, 1, length, fp);
+    fclose (fp);
+
+    if (buffer_length != length) {
+        g_free (buffer);
+        return NULL;
+    }
+
+    return buffer;
+}
+
+gboolean should_abort (const gchar *log_domain,
+                       GLogLevelFlags log_level,
+                       const gchar *message,
+                       gpointer user_data)
+{
+    return FALSE;
+}
+
+static void
+test_remote_node_send_inputs (Fixture *fixture,
+                              gconstpointer unused)
+{
+    UfoRemoteNode *remote_node = fixture->remote_node;
+    g_test_log_set_fatal_handler ((GTestLogFatalFunc) should_abort, NULL);
+
+    gchar *json = read_file("test.json");
+    ufo_remote_node_send_json(remote_node, UFO_REMOTE_MODE_STREAM, json);
+
+    UfoRequisition *sample_req = g_malloc (sizeof(UfoRequisition));
+    sample_req->n_dims = 2;
+    sample_req->dims[0]= 800;
+    sample_req->dims[1]= 800;
+
+    UfoResources *res = ufo_resources_new(NULL, NULL);
+    gpointer context = ufo_resources_get_context (res);
+    UfoBuffer *buffer = ufo_buffer_new (sample_req, context);
+
+    UfoBuffer **inputs = g_malloc(sizeof (UfoBuffer *));
+    inputs[0] = buffer;
+
+    UfoInputParam *in_params;
+    UfoTaskMode *mode = UFO_TASK_MODE_PROCESSOR;
+    guint n_inputs;
+    ufo_remote_node_get_structure (remote_node, &n_inputs, &in_params, &mode);
+
+    UfoRequisition req;
+    gboolean got_requisition = FALSE;
+    UfoBuffer *output = NULL;
+
+    for (guint i=0; i < 1000; i++) {
+        ufo_remote_node_send_inputs (remote_node, inputs);
+
+        if (!got_requisition || TRUE) {
+            ufo_remote_node_get_requisition(remote_node, &req);
+            got_requisition = TRUE;
+        }
+
+        if (output == NULL)
+            output = ufo_buffer_new (&req, context);
+
+        ufo_remote_node_get_result (remote_node, output);
+    }
+
+}
+
 void
 test_add_remote_node (void)
 {
+    g_test_add ("/remotenode/send_inputs",
+                Fixture, NULL,
+                setup, test_remote_node_send_inputs, teardown);
     g_test_add ("/remotenode/get_structure",
                 Fixture, NULL,
                 setup, test_remote_node_get_structure, teardown);
