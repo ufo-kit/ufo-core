@@ -18,6 +18,7 @@
  */
 
 #include <glib.h>
+#include "compat.h"
 
 
 #if !GLIB_CHECK_VERSION(2, 31, 0)
