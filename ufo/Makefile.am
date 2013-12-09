@@ -8,6 +8,8 @@ AM_CPPFLAGS = \
 # ufo library
 
 ufo_sources = \
+	compat.h \
+	compat.c
     ufo-arch-graph.c \
     ufo-buffer.c \
     ufo-configurable.c \
