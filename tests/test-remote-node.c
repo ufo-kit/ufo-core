@@ -146,23 +146,36 @@ test_remote_node_send_inputs (Fixture *fixture,
     ufo_remote_node_get_structure (remote_node, &n_inputs, &in_params, &mode);
 
     UfoRequisition req;
-    gboolean got_requisition = FALSE;
     UfoBuffer *output = NULL;
 
-    for (guint i=0; i < 1000; i++) {
-        ufo_remote_node_send_inputs (remote_node, inputs);
+    GTimer *timer = g_timer_new ();
 
-        if (!got_requisition || TRUE) {
+    gint num_inputs = 10;
+    gint num_runs = 100;
+    gfloat total = 0.0;
+
+    for (guint i=0; i < num_runs; i++) {
+        g_timer_reset (timer);
+        for (gint j = 0; j < num_inputs; j++)
+            ufo_remote_node_send_inputs (remote_node, inputs);
+
             ufo_remote_node_get_requisition(remote_node, &req);
-            got_requisition = TRUE;
-        }
 
-        if (output == NULL)
+        if (G_UNLIKELY(output == NULL))
             output = ufo_buffer_new (&req, context);
 
-        ufo_remote_node_get_result (remote_node, output);
-    }
+        for (gint j = 0; j < num_inputs; j++)
+            ufo_remote_node_get_result (remote_node, output);
 
+        gfloat iter = g_timer_elapsed (timer, NULL);
+        g_message ("Iteration took %.6f seconds", iter);
+
+        if (i > 0)
+            total += iter;
+    }
+    gfloat avg = total / (gfloat) (num_runs - 1);
+    gfloat per_frame = avg / ((gfloat) num_inputs);
+    g_message ("Iteration avg: %.4fs, per frame: %.6fs", avg, per_frame);
 }
 
 void
