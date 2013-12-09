@@ -222,8 +222,8 @@ ufo_buffer_new (UfoRequisition *requisition,
     priv = buffer->priv;
     priv->context = context;
 
-    priv->size = compute_required_size (requisition);
     copy_requisition (requisition, &priv->requisition);
+    priv->size = compute_required_size (requisition);
 
     return buffer;
 }
@@ -557,6 +557,7 @@ ufo_buffer_resize (UfoBuffer *buffer,
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
         priv->device_array = NULL;
     }
+    priv->size = compute_required_size (requisition);
 
     copy_requisition (requisition, &priv->requisition);
 }

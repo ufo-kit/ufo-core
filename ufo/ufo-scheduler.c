@@ -401,14 +401,14 @@ static void push_to_least_utilized_queue (gpointer element, GList *queues)
     gint lowest = G_MAXINT;
     GAsyncQueue *least_utilized_queue = NULL;
 
-    for (GList *it = g_list_first (queues); it != NULL; it = g_list_next (it)) {
-        GAsyncQueue *queue = (GAsyncQueue *) it->data;
-        gint len = g_async_queue_length (queue);
-        if (len <= lowest) {
-            lowest = len;
-            least_utilized_queue = queue;
-        }
-    }
+    // for (GList *it = g_list_first (queues); it != NULL; it = g_list_next (it)) {
+    //     GAsyncQueue *queue = (GAsyncQueue *) it->data;
+    //     gint len = g_async_queue_length (queue);
+    //     if (len <= lowest) {
+    //         lowest = len;
+    //         least_utilized_queue = queue;
+    //     }
+    // }
     gint max = g_list_length(queues);
     g_async_queue_push (g_list_nth_data (queues, x % max), element);
     x++;
@@ -433,8 +433,39 @@ get_input_queues (GList *nodes)
 }
 
 static GAsyncQueue *buffer_pool;
-static guint buffer_capacity;
-#define BUFFER_POOL_CAPACITY 40
+static volatile gint *buffers_in_pool;
+UfoBuffer *acquire_buffer(UfoRequisition *req);
+void release_buffer(UfoBuffer *buffer);
+
+#define MAX_BUFFER_POOL_CAPACITY 250
+
+static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
+
+UfoBuffer *
+acquire_buffer (UfoRequisition *requisition)
+{
+    g_mutex_lock(g_static_mutex_get_mutex (&static_mutex));
+    g_atomic_int_add (buffers_in_pool, -1);
+    g_debug ("acquire buffer, avail: %d real: %d", *buffers_in_pool, g_async_queue_length (buffer_pool));
+    UfoBuffer *buffer = g_async_queue_pop (buffer_pool);
+    ufo_buffer_discard_location (buffer);
+    g_assert (UFO_IS_BUFFER (buffer));
+
+    ufo_buffer_resize (buffer, requisition);
+    g_mutex_unlock(g_static_mutex_get_mutex (&static_mutex));
+    return buffer;
+}
+
+void
+release_buffer (UfoBuffer *buf)
+{
+    if (buf == NULL || !UFO_IS_BUFFER (buf)) return;
+    g_mutex_lock(g_static_mutex_get_mutex (&static_mutex));
+    g_atomic_int_add (buffers_in_pool, 1);
+    // g_debug ("releasing buffer, avail: %d real: %d", *buffers_in_pool, g_async_queue_length (buffer_pool));
+    g_async_queue_push (buffer_pool, buf);
+    g_mutex_unlock(g_static_mutex_get_mutex (&static_mutex));
+}
 
 static gpointer
 run_task_simple (TaskLocalData *tld)
@@ -477,11 +508,11 @@ run_task_simple (TaskLocalData *tld)
 
         if (produces) {
             // create a new buffer we can use for output
-            // output = g_async_queue_pop (buffer_pool);
-            output = ufo_buffer_new (&requisition, tld->context);
-            g_assert (output != NULL);
-            if ((int *) output != UFO_END_OF_STREAM)
-                ufo_buffer_discard_location (output);
+            output = acquire_buffer (&requisition);
+            // ufo_buffer_resize (output, &requisition);
+            // output = ufo_buffer_new (&requisition, tld->context);
+            // if ((int *) output != UFO_END_OF_STREAM)
+                // ufo_buffer_discard_location (output);
         }
 
         switch (tld->mode) {
@@ -502,12 +533,10 @@ run_task_simple (TaskLocalData *tld)
         // forward the result
         if (produces) {
             push_to_least_utilized_queue (output, successor_queues);
+        } else {
+            release_buffer (output);
         }
-        if (input != NULL) {
-            g_object_unref (input);
-            // g_debug ("releasing a buffer to the pool");
-            // g_async_queue_push (buffer_pool, input);
-        }
+        release_buffer (input);
     }
 
     // send poisonpill as output
@@ -1108,20 +1137,21 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     timer = g_timer_new ();
 
     buffer_pool = g_async_queue_new ();
-    buffer_capacity = 0;
+    buffers_in_pool = g_malloc(sizeof(gint));
+    *buffers_in_pool = MAX_BUFFER_POOL_CAPACITY;
     gpointer context = ufo_resources_get_context (priv->resources);
 
     // creates new buffers with 2d requisition
-    // UfoRequisition *sample_req = g_malloc (sizeof(UfoRequisition));
-    // sample_req->n_dims = 2;
-    // sample_req->dims[0]= 800;
-    // sample_req->dims[1]= 800;
-    // while (buffer_capacity < 20) {
-    //     buffer_capacity++;
-    //     UfoBuffer *buf = ufo_buffer_new (sample_req, context);
-    //     g_async_queue_push (buffer_pool, buf);
-    // }
+    UfoRequisition *sample_req = g_malloc (sizeof(UfoRequisition));
+    sample_req->n_dims = 2;
+    sample_req->dims[0]= 800;
+    sample_req->dims[1]= 800;
 
+    gint buffer_capacity = MAX_BUFFER_POOL_CAPACITY;
+    while (buffer_capacity-- > 0) {
+        UfoBuffer *buf = ufo_buffer_new (sample_req, context);
+        g_async_queue_push (buffer_pool, buf);
+    }
 
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
