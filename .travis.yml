@@ -23,10 +23,10 @@ before_script:
 
 script:
   # Build with Autotools
-  - cd $TRAVIS_BUILD_DIR
+  - cd ..
   - make
 
   # Build with CMake
-  - cd $TRAVIS_BUILD_DIR/build
+  - cd build
   - make
   - ./tests/test-suite -p /no-opencl
