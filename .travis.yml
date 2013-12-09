@@ -9,13 +9,24 @@ before_install:
   - sudo add-apt-repository ppa:valmar-lp/crystfel-releases -y
   - sudo apt-get update -qq -y
   - sudo apt-get install opencl-headers ocl-icd-opencl-dev
-  - sudo apt-get install cmake gobject-introspection libglib2.0-dev libjson-glib-dev libzmq3-dev
+  - sudo apt-get install cmake gobject-introspection libglib2.0-dev libjson-glib-dev libzmq3-dev autoconf-archive gtk-doc-tools
 
 before_script:
+  # Configure with Autotools
+  - ./autogen.sh
+  - ./configure
+
+  # Configure with CMake
   - mkdir build
   - cd build
   - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_GIR=OFF -DWITH_GTK_DOC=OFF -DWITH_PYTHON=OFF
 
 script:
+  # Build with Autotools
+  - cd $TRAVIS_BUILD_DIR
+  - make
+
+  # Build with CMake
+  - cd $TRAVIS_BUILD_DIR/build
   - make
   - ./tests/test-suite -p /no-opencl
