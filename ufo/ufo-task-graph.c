@@ -27,6 +27,7 @@
 #include <ufo/ufo-input-task.h>
 #include <ufo/ufo-dummy-task.h>
 #include <ufo/ufo-remote-task.h>
+#include "compat.h"
 
 /**
  * SECTION:ufo-task-graph
@@ -198,6 +199,7 @@ get_json_representation (UfoTaskGraph *graph,
                          GError **error)
 {
     GList *task_nodes;
+    GList *it;
     JsonNode *root_node = json_node_new (JSON_NODE_OBJECT);
     JsonObject *root_object = json_object_new ();
     JsonArray *nodes = json_array_new ();
@@ -206,14 +208,15 @@ get_json_representation (UfoTaskGraph *graph,
     task_nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
     g_list_foreach (task_nodes, (GFunc) add_task_node_to_json_array, nodes);
 
-    for (GList *it = g_list_first (task_nodes); it != NULL; it = g_list_next (it)) {
+    g_list_for (task_nodes, it) {
         UfoNode *from;
         GList *successors;
+        GList *jt;
 
         from = UFO_NODE (it->data);
         successors = ufo_graph_get_successors (UFO_GRAPH (graph), from);
 
-        for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+        g_list_for (successors, jt) {
             UfoNode *to;
             gint port;
             JsonObject *to_object;
@@ -367,6 +370,7 @@ expand_remotes (UfoTaskGraph *task_graph,
     UfoTaskNode *node;
     GList *first;
     GList *last;
+    GList *it;
 
     first = g_list_first (path);
     last = g_list_last (path);
@@ -379,9 +383,9 @@ expand_remotes (UfoTaskGraph *task_graph,
                                       node);
     }
 
-    for (GList *jt = g_list_first (remotes); jt != NULL; jt = g_list_next (jt)) {
+    g_list_for (remotes, it) {
         create_remote_tasks (task_graph, remote_graph,
-                             first->data, last->data, jt->data);
+                             first->data, last->data, it->data);
     }
 
     g_object_unref (remote_graph);
@@ -414,11 +418,12 @@ remove_common_ancestry_paths (GList *paths)
 {
     GList *result;
     GList *visited;
+    GList *it;
 
     result = NULL;
     visited = NULL;
 
-    for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
+    g_list_for (paths, it) {
         GList *path = (GList *) it->data;
 
         if (path_unvisited (it->data, &visited))
@@ -434,9 +439,10 @@ static GList *
 find_longest_path (GList *paths)
 {
     GList *longest = NULL;
+    GList *it;
     guint max_length = 0;
 
-    for (GList *it = g_list_first (paths); it != NULL; it = g_list_next (it)) {
+    g_list_for (paths, it) {
         guint length;
         GList *path;
 
@@ -528,6 +534,7 @@ map_proc_node (UfoGraph *graph,
 {
     UfoNode *proc_node;
     GList *successors;
+    GList *it;
     guint n_gpus;
 
     proc_node = UFO_NODE (g_list_nth_data (gpu_nodes, proc_index));
@@ -545,7 +552,7 @@ map_proc_node (UfoGraph *graph,
     n_gpus = g_list_length (gpu_nodes);
     successors = ufo_graph_get_successors (graph, node);
 
-    for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it)) {
+    g_list_for (successors, it) {
         map_proc_node (graph, UFO_NODE (it->data), proc_index, gpu_nodes);
 
         if (!UFO_IS_REMOTE_TASK (UFO_NODE (it->data)))
@@ -570,12 +577,14 @@ ufo_task_graph_map (UfoTaskGraph *task_graph,
 {
     GList *gpu_nodes;
     GList *roots;
+    GList *it;
 
     gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch_graph);
     roots = ufo_graph_get_roots (UFO_GRAPH (task_graph));
 
-    for (GList *it = g_list_first (roots); it != NULL; it = g_list_next (it))
+    g_list_for (roots, it) {
         map_proc_node (UFO_GRAPH (task_graph), UFO_NODE (it->data), 0, gpu_nodes);
+    }
 
     g_list_free (roots);
     g_list_free (gpu_nodes);
@@ -652,8 +661,9 @@ add_nodes_from_json (UfoTaskGraph *graph,
     if (json_object_has_member (root_object, "nodes")) {
         JsonArray *nodes = json_object_get_array_member (root_object, "nodes");
         GList *elements = json_array_get_elements (nodes);
+        GList *it;
 
-        for (GList *it = g_list_first (elements); it != NULL; it = g_list_next (it)) {
+        g_list_for (elements, it) {
             if (!handle_json_task_node (it->data, graph->priv, error)) {
                 g_list_free (elements);
                 return;

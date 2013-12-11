@@ -30,6 +30,7 @@
 
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-configurable.h>
+#include "compat.h"
 
 /**
  * SECTION:ufo-resources
@@ -215,6 +216,8 @@ static gchar *
 lookup_kernel_path (UfoResourcesPrivate *priv,
                   const gchar *filename)
 {
+    GList *it;
+
     /* Check first if filename is already a path */
     if (g_path_is_absolute (filename)) {
         if (g_file_test (filename, G_FILE_TEST_EXISTS))
@@ -223,7 +226,7 @@ lookup_kernel_path (UfoResourcesPrivate *priv,
             return NULL;
     }
 
-    for (GList *it = g_list_first (priv->kernel_paths); it != NULL; it = g_list_next (it)) {
+    g_list_for (priv->kernel_paths, it) {
         gchar *path;
 
         path = g_build_filename ((gchar *) it->data, filename, NULL);

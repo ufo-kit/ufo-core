@@ -42,6 +42,7 @@
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-task-iface.h>
+#include "compat.h"
 
 /**
  * SECTION:ufo-scheduler
@@ -118,14 +119,16 @@ ufo_scheduler_new (UfoConfig *config,
 {
     UfoScheduler *sched;
     UfoSchedulerPrivate *priv;
+    GList *it;
 
     sched = UFO_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER,
                                          "config", config,
                                          NULL));
     priv = sched->priv;
 
-    for (GList *it = g_list_first (remotes); it != NULL; it = g_list_next (it))
+    g_list_for (remotes, it) {
         priv->remotes = g_list_append (priv->remotes, g_strdup (it->data));
+    }
 
     return sched;
 }
@@ -465,6 +468,7 @@ check_target_connections (UfoTaskGraph *graph,
                           GError **error)
 {
     GList *predecessors;
+    GList *it;
     guint16 connection_bitmap;
     guint16 mask;
     gboolean result = TRUE;
@@ -476,7 +480,7 @@ check_target_connections (UfoTaskGraph *graph,
     connection_bitmap = 0;
 
     /* Check all edges and enable bit number for edge label */
-    for (GList *it = g_list_first (predecessors); it != NULL; it = g_list_next (it)) {
+    g_list_for (predecessors, it) {
         gpointer label;
         gint input;
 
@@ -552,14 +556,16 @@ setup_groups (UfoSchedulerPrivate *priv,
 {
     GList *groups;
     GList *nodes;
+    GList *it;
     cl_context context;
 
     groups = NULL;
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
     context = ufo_resources_get_context (priv->resources);
 
-    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+    g_list_for (nodes, it) {
         GList *successors;
+        GList *jt;
         UfoNode *node;
         UfoGroup *group;
         UfoSendPattern pattern;
@@ -572,7 +578,7 @@ setup_groups (UfoSchedulerPrivate *priv,
         groups = g_list_append (groups, group);
         ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
 
-        for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+        g_list_for (successors, jt) {
             UfoNode *target;
             gpointer label;
             guint input;
@@ -598,11 +604,12 @@ correct_connections (UfoTaskGraph *graph,
                      GError **error)
 {
     GList *nodes;
+    GList *it;
     gboolean result = TRUE;
 
     nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
 
-    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+    g_list_for (nodes, it) {
         UfoTaskNode *node;
         UfoInputParam *in_params;
         guint n_inputs;
@@ -632,13 +639,14 @@ replicate_task_graph (UfoTaskGraph *graph,
                       UfoArchGraph *arch)
 {
     GList *remotes;
+    GList *it;
     guint n_graphs;
     guint idx = 1;
 
     remotes = ufo_arch_graph_get_remote_nodes (arch);
     n_graphs = g_list_length (remotes) + 1;
 
-    for (GList *it = g_list_first (remotes); it != NULL; it = g_list_next (it)) {
+    g_list_for (remotes, it) {
         UfoRemoteNode *node;
         gchar *json;
 
@@ -659,14 +667,16 @@ static void
 propagate_partition (UfoTaskGraph *graph)
 {
     GList *nodes;
+    GList *it;
     guint idx;
     guint total;
 
     ufo_task_graph_get_partition (graph, &idx, &total);
     nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
 
-    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it))
+    g_list_for (nodes, it) {
         ufo_task_node_set_partition (UFO_TASK_NODE (it->data), idx, total);
+    }
 
     g_list_free (nodes);
 }
@@ -695,12 +705,13 @@ get_sorted_event_trace (TaskLocalData **tlds,
         UfoTaskNode *node;
         UfoProfiler *profiler;
         GList *events;
+        GList *it;
 
         node = UFO_TASK_NODE (tlds[i]->task);
         profiler = ufo_task_node_get_profiler (node);
         events = ufo_profiler_get_trace_events (profiler);
 
-        for (GList *it = g_list_first (events); it != NULL; it = g_list_next (it)) {
+        g_list_for (events, it) {
             UfoTraceEvent *event;
             SortedEvent *new_event;
 
@@ -725,6 +736,7 @@ write_traces (TaskLocalData **tlds,
     gchar *filename;
     guint pid;
     GList *sorted;
+    GList *it;
 
     sorted = get_sorted_event_trace (tlds, n_nodes);
     pid = (guint) getpid ();
@@ -732,7 +744,7 @@ write_traces (TaskLocalData **tlds,
     fp = fopen (filename, "w");
     fprintf (fp, "{ \"traceEvents\": [");
 
-    for (GList *it = g_list_first (sorted); it != NULL; it = g_list_next (it)) {
+    g_list_for (sorted, it) {
         SortedEvent *sorted_event;
         UfoTraceEvent *event;
         gchar *name;

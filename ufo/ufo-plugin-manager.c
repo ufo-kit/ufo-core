@@ -24,6 +24,7 @@
 #include <ufo/ufo-configurable.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-dummy-task.h>
+#include "compat.h"
 
 /**
  * SECTION:ufo-plugin-manager
@@ -78,6 +79,8 @@ ufo_plugin_manager_error_quark (void)
 static gchar *
 plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 {
+    GList *it;
+
     /* Check first if filename is already a path */
     if (g_path_is_absolute (name)) {
         if (g_file_test (name, G_FILE_TEST_EXISTS))
@@ -87,8 +90,8 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
     }
 
     /* If it is not a path, search in all known paths */
-    for (GList *p = g_list_first (priv->search_paths); p != NULL; p = g_list_next (p)) {
-        gchar *path = g_build_filename ((gchar *) p->data, name, NULL);
+    g_list_for (priv->search_paths, it) {
+        gchar *path = g_build_filename ((gchar *) it->data, name, NULL);
 
         if (g_file_test (path, G_FILE_TEST_EXISTS))
             return path;
@@ -217,17 +220,19 @@ ufo_plugin_get_all_plugin_names (UfoPluginManager *manager,
                                  const GRegex *filename_regex,
                                  const gchar *filename_pattern)
 {
-    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
-    UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
+    UfoPluginManagerPrivate *priv;
+    GList *it;
     GList *result = NULL;
-
     GMatchInfo *match_info = NULL;
 
-    for (GList *path = g_list_first (priv->search_paths); path != NULL; path = g_list_next (path)) {
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
+    priv = manager->priv;
+
+    g_list_for (priv->search_paths, it) {
         glob_t glob_vector;
         gchar *pattern;
 
-        pattern = g_build_filename ((gchar *) path->data, filename_pattern, NULL);
+        pattern = g_build_filename ((gchar *) it->data, filename_pattern, NULL);
         glob (pattern, GLOB_MARK | GLOB_TILDE, NULL, &glob_vector);
         g_free (pattern);
         gsize i = 0;

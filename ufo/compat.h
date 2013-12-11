@@ -29,6 +29,12 @@ gpointer    g_async_queue_timeout_pop (GAsyncQueue *queue,
                                        guint64 timeout);
 #endif
 
+/* g_list_for() never existed, but it's nice to have anyway. */
+#define g_list_for(list, it) \
+        for (it = g_list_first (list); \
+             it != NULL; \
+             it = g_list_next (it))
+
 G_END_DECLS
 
 #endif

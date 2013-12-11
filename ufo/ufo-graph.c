@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <ufo/ufo-node.h>
 #include <ufo/ufo-graph.h>
+#include "compat.h"
 
 /**
  * SECTION:ufo-graph
@@ -210,12 +211,13 @@ ufo_graph_get_nodes_filtered (UfoGraph *graph,
                               gpointer user_data)
 {
     UfoGraphPrivate *priv;
+    GList *it;
     GList *result = NULL;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
     priv = graph->priv;
 
-    for (GList *it = g_list_first (priv->nodes); it != NULL; it = g_list_next (it)) {
+    g_list_for (priv->nodes, it) {
         UfoNode *node = UFO_NODE (it->data);
 
         if (func (node, user_data))
@@ -289,7 +291,9 @@ static gboolean
 has_no_predecessor (UfoNode *node,
                     UfoGraph *graph)
 {
-    for (GList *it = g_list_first (graph->priv->nodes); it != NULL; it = g_list_next (it)) {
+    GList *it;
+
+    g_list_for (graph->priv->nodes, it) {
         UfoNode *source = (UfoNode *) it->data;
 
         if (ufo_graph_is_connected (graph, source, node))
@@ -319,7 +323,9 @@ static gboolean
 has_no_successor (UfoNode *node,
                   UfoGraph *graph)
 {
-    for (GList *it = g_list_first (graph->priv->nodes); it != NULL; it = g_list_next (it)) {
+    GList *it;
+
+    g_list_for (graph->priv->nodes, it) {
         UfoNode *target = (UfoNode *) it->data;
 
         if (ufo_graph_is_connected (graph, node, target))
@@ -381,6 +387,7 @@ ufo_graph_get_predecessors (UfoGraph *graph,
 {
     UfoGraphPrivate *priv;
     GList *edges;
+    GList *it;
     GList *result;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
@@ -388,7 +395,7 @@ ufo_graph_get_predecessors (UfoGraph *graph,
     edges = get_target_edges (priv->edges, node);
     result = NULL;
 
-    for (GList *it = g_list_first (edges); it != NULL; it = g_list_next (it)) {
+    g_list_for (edges, it) {
         UfoEdge *edge = (UfoEdge *) it->data;
         result = g_list_prepend (result, edge->source);
     }
@@ -429,6 +436,7 @@ ufo_graph_get_successors (UfoGraph *graph,
 {
     UfoGraphPrivate *priv;
     GList *edges;
+    GList *it;
     GList *result;
 
     g_return_val_if_fail (UFO_IS_GRAPH (graph), NULL);
@@ -436,7 +444,7 @@ ufo_graph_get_successors (UfoGraph *graph,
     edges = get_source_edges (priv->edges, node);
     result = NULL;
 
-    for (GList *it = g_list_first (edges); it != NULL; it = g_list_next (it)) {
+    g_list_for (edges, it) {
         UfoEdge *edge = (UfoEdge *) it->data;
         result = g_list_append (result, edge->target);
     }
@@ -469,17 +477,18 @@ copy_and_connect_successors (UfoGraph *graph,
                              GError **error)
 {
     GList *successors;
+    GList *it;
     UfoNode *copied_source;
 
     copied_source = g_hash_table_lookup (map, source);
     successors = ufo_graph_get_successors (graph, source);
 
-    for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+    g_list_for (successors, it) {
         UfoNode *target;
         UfoNode *copied_target;
         gpointer label;
 
-        target = UFO_NODE (jt->data);
+        target = UFO_NODE (it->data);
         copied_target = g_hash_table_lookup (map, target);
 
         if (copied_target == NULL) {
@@ -516,6 +525,7 @@ ufo_graph_copy (UfoGraph *graph,
 {
     UfoGraph *copy;
     GList *roots;
+    GList *it;
     GHashTable *map;    /* maps from real node to copied node */
     GError *tmp_error = NULL;
 
@@ -523,7 +533,7 @@ ufo_graph_copy (UfoGraph *graph,
     map = g_hash_table_new (NULL, NULL);
     roots = ufo_graph_get_roots (graph);
 
-    for (GList *it = g_list_first (roots); it != NULL; it = g_list_next (it)) {
+    g_list_for (roots, it) {
         UfoNode *root;
         UfoNode *copied_root;
 
@@ -558,18 +568,20 @@ append_level (UfoGraph *graph,
               GList *current_level,
               GList *result)
 {
+    GList *it;
     GList *next_level = NULL;
 
     result = g_list_append (result, current_level);
 
-    for (GList *it = g_list_first (current_level); it != NULL; it = g_list_next (it)) {
+    g_list_for (current_level, it) {
         GList *successors;
+        GList *jt;
         UfoNode *node;
 
         node = UFO_NODE (it->data);
         successors = ufo_graph_get_successors (graph, node);
 
-        for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+        g_list_for (successors, jt) {
             UfoNode *succ;
 
             succ = UFO_NODE (jt->data);
@@ -675,6 +687,7 @@ pickup_paths (UfoGraph *graph,
               GList **paths)
 {
     GList *successors;
+    GList *it;
 
     if (pred (current, NULL)) {
         if (!pred (last, NULL))
@@ -693,8 +706,9 @@ pickup_paths (UfoGraph *graph,
 
     successors = ufo_graph_get_successors (graph, current);
 
-    for (GList *it = g_list_first (successors); it != NULL; it = g_list_next (it))
+    g_list_for (successors, it) {
         pickup_paths (graph, pred, it->data, current, g_list_copy (current_path), paths);
+    }
 
     g_list_free (successors);
 }
@@ -715,11 +729,12 @@ ufo_graph_get_paths (UfoGraph *graph,
                      UfoFilterPredicate pred)
 {
     GList *roots;
+    GList *it;
     GList *paths = NULL;
 
     roots = ufo_graph_get_roots (graph);
 
-    for (GList *it = g_list_first (roots); it != NULL; it = g_list_next (it)) {
+    g_list_for (roots, it) {
         UfoNode *node = UFO_NODE (it->data);
         pickup_paths (graph, pred, node, node, NULL, &paths);
     }
@@ -741,20 +756,22 @@ ufo_graph_dump_dot (UfoGraph *graph,
 {
     FILE *fp;
     GList *nodes;
+    GList *it;
 
     fp = fopen (filename, "w");
     fprintf (fp, "digraph foo {\n");
 
     nodes = ufo_graph_get_nodes (graph);
 
-    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+    g_list_for (nodes, it) {
         UfoNode *source;
         GList *successors;
+        GList *jt;
 
         source = UFO_NODE (it->data);
         successors = ufo_graph_get_successors (graph, source);
 
-        for (GList *jt = g_list_first (successors); jt != NULL; jt = g_list_next (jt)) {
+        g_list_for (successors, jt) {
             UfoNode *target;
 
             target = UFO_NODE (jt->data);
@@ -815,9 +832,10 @@ g_list_find_all_data (GList *list,
                       gconstpointer data,
                       GCompareFunc func)
 {
+    GList *it;
     GList *result = NULL;
 
-    for (GList *it = g_list_first (list); it != NULL; it = g_list_next (it)) {
+    g_list_for (list, it) {
         if (func (data, it->data) == 0)
             result = g_list_prepend (result, it->data);
     }
