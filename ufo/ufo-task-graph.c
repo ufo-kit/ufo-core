@@ -27,6 +27,7 @@
 #include <ufo/ufo-input-task.h>
 #include <ufo/ufo-dummy-task.h>
 #include <ufo/ufo-remote-task.h>
+#include <ufo/ufo-opencl-task.h>
 #include "compat.h"
 
 /**
@@ -315,6 +316,12 @@ is_gpu_task (UfoNode *node, gpointer user_data)
     return UFO_IS_GPU_TASK (node);
 }
 
+static gboolean
+is_opencl_task (UfoNode *node, gpointer user_data)
+{
+    return UFO_IS_OPENCL_TASK (node);
+}
+
 static UfoTaskNode *
 build_remote_graph (UfoTaskGraph *remote_graph,
                     GList *first,
@@ -458,6 +465,13 @@ find_longest_path (GList *paths)
     return longest;
 }
 
+static void
+free_path_list (GList *paths)
+{
+    g_list_foreach (paths, (GFunc) g_list_free, NULL);
+    g_list_free (paths);
+}
+
 /**
  * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
@@ -509,21 +523,26 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
             ufo_graph_expand (UFO_GRAPH (task_graph), path);
     }
 
-    g_list_foreach (paths, (GFunc) g_list_free, NULL);
-    g_list_free (paths);
+    free_path_list (paths);
 }
 
 /**
  * ufo_task_graph_fuse:
  * @task_graph: A #UfoTaskGraph
  *
- * Fuses task nodes to increase data locality.
- *
- * Note: This is not implemented and a no-op right now.
+ * Fuses OpenCL task nodes to increase data locality.
  */
 void
 ufo_task_graph_fuse (UfoTaskGraph *task_graph)
 {
+    GList *paths;
+
+    g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
+
+    paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_opencl_task);
+    g_debug ("Number of fusable paths: %i", g_list_length (paths));
+
+    free_path_list (paths);
 }
 
 static void

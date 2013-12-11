@@ -77,12 +77,14 @@ struct _UfoSchedulerPrivate {
     GList           *remotes;
     UfoRemoteMode    mode;
     gboolean         expand;
+    gboolean         fuse;
     gboolean         trace;
 };
 
 enum {
     PROP_0,
     PROP_EXPAND,
+    PROP_FUSE,
     PROP_REMOTES,
     PROP_ENABLE_TRACING,
     N_PROPERTIES,
@@ -805,15 +807,23 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         replicate_task_graph (task_graph, arch_graph);
     }
 
+    if (priv->fuse) {
+        g_debug ("--- Fusing");
+        ufo_task_graph_fuse (task_graph);
+    }
+
     if (priv->expand) {
+        g_debug ("--- Exanding");
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
         ufo_task_graph_expand (task_graph, arch_graph, expand_remote);
     }
 
     propagate_partition (task_graph);
+
+    g_debug ("--- Mapping tasks to processing units");
     ufo_task_graph_map (task_graph, arch_graph);
 
-    /* Prepare task structures */
+    g_debug ("--- Prepare execution");
     tlds = setup_tasks (priv, task_graph, error);
 
     if (tlds == NULL)
@@ -828,7 +838,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     threads = g_new0 (GThread *, n_nodes);
     timer = g_timer_new ();
 
-    /* Spawn threads */
+    g_debug ("--- Spawn threads");
     for (guint i = 0; i < n_nodes; i++) {
         threads[i] = g_thread_create ((GThreadFunc) run_task, tlds[i], TRUE, error);
 
@@ -855,7 +865,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     if (Py_IsInitialized ())
 #endif
 
-    g_message ("Processing finished after %3.5fs", g_timer_elapsed (timer, NULL));
+    g_debug ("--- Finished after %3.5fs", g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
 
     /* Cleanup */
@@ -917,6 +927,10 @@ ufo_scheduler_set_property (GObject      *object,
             priv->expand = g_value_get_boolean (value);
             break;
 
+        case PROP_FUSE:
+            priv->fuse = g_value_get_boolean (value);
+            break;
+
         case PROP_ENABLE_TRACING:
             priv->trace = g_value_get_boolean (value);
             break;
@@ -938,6 +952,10 @@ ufo_scheduler_get_property (GObject      *object,
     switch (property_id) {
         case PROP_EXPAND:
             g_value_set_boolean (value, priv->expand);
+            break;
+
+        case PROP_FUSE:
+            g_value_set_boolean (value, priv->fuse);
             break;
 
         case PROP_ENABLE_TRACING:
@@ -1042,8 +1060,15 @@ ufo_scheduler_class_init (UfoSchedulerClass *klass)
 
     properties[PROP_EXPAND] =
         g_param_spec_boolean ("expand",
+                              "Expand the task graph",
                               "Expand the task graph for better multi GPU performance",
-                              "Expand the task graph for better multi GPU performance",
+                              TRUE,
+                              G_PARAM_READWRITE);
+
+    properties[PROP_FUSE] =
+        g_param_spec_boolean ("fuse",
+                              "Fuse OpenCL tasks",
+                              "Fuse OpenCL tasks to reduce kernel launch overhead",
                               TRUE,
                               G_PARAM_READWRITE);
 
@@ -1080,6 +1105,7 @@ ufo_scheduler_init (UfoScheduler *scheduler)
 
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
     priv->expand = TRUE;
+    priv->fuse = TRUE;
     priv->trace = FALSE;
     priv->config = NULL;
     priv->resources = NULL;
