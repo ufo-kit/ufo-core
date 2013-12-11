@@ -62,8 +62,9 @@ struct _UfoOpenCLTaskClass {
     UfoTaskNodeClass parent_class;
 };
 
-UfoNode  *ufo_opencl_task_new       (void);
-GType     ufo_opencl_task_get_type  (void);
+UfoNode     * ufo_opencl_task_new           (void);
+const gchar * ufo_opencl_task_get_source    (UfoOpenCLTask *task);
+GType         ufo_opencl_task_get_type      (void);
 
 G_END_DECLS
 

@@ -76,6 +76,15 @@ ufo_opencl_task_new (void)
     return UFO_NODE (g_object_new (UFO_TYPE_OPENCL_TASK, NULL));
 }
 
+const gchar *
+ufo_opencl_task_get_source (UfoOpenCLTask *task)
+{
+    g_return_val_if_fail (UFO_IS_OPENCL_TASK (task), NULL);
+
+    /* TODO: return kernel source also from file */
+    return task->priv->source;
+}
+
 static gboolean
 ufo_opencl_task_process (UfoGpuTask *task,
                          UfoBuffer **inputs,
