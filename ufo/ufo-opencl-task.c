@@ -248,7 +248,11 @@ static void
 copy_string_if_non_zero_length (const GValue *value,
                                 gchar **str_location)
 {
-    if (strlen (g_value_get_string (value)) > 0) {
+    const gchar *s;
+
+    s = g_value_get_string (value);
+
+    if (s && strlen (g_value_get_string (value)) > 0) {
         g_free (*str_location);
         *str_location = g_value_dup_string (value);
     }
