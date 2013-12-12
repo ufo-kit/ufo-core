@@ -81,10 +81,10 @@ this::
 
         g_type_init ();  /* you _must_ call this! */
 
-        graph = ufo_graph_new ();
-        manager = ufo_plugin_manager_new ();
+        graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+        manager = ufo_plugin_manager_new (NULL);
 
-        ufo_task_graph_read_from_json (graph, manager, "hello-world.json", NULL);
+        ufo_task_graph_read_from_file (graph, manager, "hello-world.json", NULL);
 
         scheduler = ufo_scheduler_new (NULL, NULL);
         ufo_scheduler_run (scheduler, graph, NULL);
@@ -111,17 +111,19 @@ pipeline with a ``UfoScheduler`` object.
 Rather than loading the structure from a file, you can also construct it by
 hand::
 
-    int main(void)
+    #include <ufo/ufo.h>
+
+    int main (void)
     {
-        UfoGraph *graph;
+        UfoTaskGraph *graph;
         UfoPluginManager *manager;
         UfoScheduler *scheduler;
-        UfoNode *reader;
-        UfoNode *writer;
+        UfoTaskNode *reader;
+        UfoTaskNode *writer;
 
         g_type_init ();  /* you _must_ call this! */
 
-        graph = ufo_graph_new ();
+        graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
         manager = ufo_plugin_manager_new (NULL);
         scheduler = ufo_scheduler_new (NULL, NULL);
         reader = ufo_plugin_manager_get_task (manager, "reader", NULL);
@@ -132,7 +134,7 @@ hand::
                       "count", 5,
                       NULL);
 
-        ufo_graph_connect_nodes (graph, reader, writer, NULL);
+        ufo_task_graph_connect_nodes (graph, reader, writer);
         ufo_scheduler_run (scheduler, graph, NULL);
         return 0;
     }
