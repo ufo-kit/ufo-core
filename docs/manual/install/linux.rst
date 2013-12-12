@@ -56,7 +56,7 @@ unstable version of the source::
 
     $ git clone https://github.com/ufo-kit/ufo-core
     $ git clone https://github.com/ufo-kit/ufo-filters
-    $ git clone https://github.com/ufo-kit/oclfft
+    $ git clone http://ufo.kit.edu/git/oclfft
 
 The latter is used for developers who have write-access to the corresponding
 repositories. All stable versions are tagged. To see a list of all releases
@@ -83,13 +83,13 @@ CMake will notify you, if some of the dependencies are not met. In case you want
 to install the library system-wide on a 64-bit machine you should generate the
 Makefiles with ::
 
-  $ cmake <path-to-ufo> -DLIBDIR=/usr/lib64
+  $ cmake -DLIBDIR=/usr/lib64 <path-to-ufo>
 
 For earlier versions of PyGObject, it is necessary that the introspection files
 are located under ``/usr`` not ``/usr/local``. You can force the prefix by
 calling ::
 
-  $ cmake <path-to-ufo> -DPREFIX=/usr
+  $ cmake -DPREFIX=/usr <path-to-ufo>
 
 Last but not least build the framework, introspection files, API reference and
 the documentation using ::
