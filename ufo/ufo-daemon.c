@@ -303,7 +303,7 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
     /* Receive buffer size */
     requisition = header->requisition;
     if (priv->input == NULL) {
-        priv->input = ufo_buffer_new (&requisition, context);
+        priv->input = ufo_buffer_new (&requisition, NULL, context);
     }
     else {
         if (ufo_buffer_cmp_dimensions (priv->input, &requisition))

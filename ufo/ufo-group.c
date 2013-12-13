@@ -165,7 +165,7 @@ pop_or_alloc_buffer (UfoGroupPrivate *priv, UfoRequisition *requisition)
 {
     UfoBuffer *buffer;
     if (ufo_queue_get_capacity (priv->queue) < priv->max_queue_capacity) {
-        buffer = ufo_buffer_new (requisition, priv->context);
+        buffer = ufo_buffer_new (requisition, NULL, priv->context);
         priv->buffers = g_list_append (priv->buffers, buffer);
         ufo_queue_insert (priv->queue, UFO_QUEUE_PRODUCER, buffer);
     }

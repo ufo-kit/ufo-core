@@ -25,6 +25,7 @@
 #endif
 
 #include <ufo/ufo-buffer.h>
+#include <ufo/ufo-buffer-pool.h>
 #include <ufo/ufo-resources.h>
 
 /**
@@ -61,6 +62,7 @@ struct _UfoBufferPrivate {
     gsize               size;   /**< size of buffer in bytes */
     UfoMemLocation      location;
     UfoMemLocation      last_location;
+    UfoBufferPool       *origin;
 };
 
 static void
@@ -211,16 +213,21 @@ alloc_device_image (UfoBufferPrivate *priv)
  */
 UfoBuffer *
 ufo_buffer_new (UfoRequisition *requisition,
+                gpointer origin,
                 gpointer context)
 {
     UfoBuffer *buffer;
     UfoBufferPrivate *priv;
+
+    if (requisition->n_dims > UFO_BUFFER_MAX_NDIMS || requisition->n_dims == 0)
+        G_BREAKPOINT();
 
     g_return_val_if_fail ((requisition->n_dims <= UFO_BUFFER_MAX_NDIMS) &&
                           (requisition->n_dims > 0), NULL);
     buffer = UFO_BUFFER (g_object_new (UFO_TYPE_BUFFER, NULL));
     priv = buffer->priv;
     priv->context = context;
+    priv->origin = origin;
 
     copy_requisition (requisition, &priv->requisition);
     priv->size = compute_required_size (requisition);
@@ -239,6 +246,7 @@ ufo_buffer_new (UfoRequisition *requisition,
  */
 UfoBuffer *
 ufo_buffer_new_with_size (GList *dims,
+                          gpointer origin,
                           gpointer context)
 {
     UfoRequisition req;
@@ -249,7 +257,21 @@ ufo_buffer_new_with_size (GList *dims,
     for (guint i = 0; i < req.n_dims; i++)
         req.dims[i] = (gsize) g_list_nth_data (dims, i);
 
-    return ufo_buffer_new (&req, context);
+    return ufo_buffer_new (&req, NULL, context);
+}
+
+void
+ufo_buffer_release_to_pool (UfoBuffer *buffer)
+{
+    if (!UFO_IS_BUFFER (buffer)) {
+        return;
+    }
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
+    if (priv->origin == NULL) {
+        g_debug ("Buffer has no origin, returning");
+        return;
+    }
+    ufo_buffer_pool_release (priv->origin, buffer);
 }
 
 /**
@@ -524,7 +546,7 @@ ufo_buffer_dup (UfoBuffer *buffer)
     UfoRequisition requisition;
 
     ufo_buffer_get_requisition (buffer, &requisition);
-    copy = ufo_buffer_new (&requisition, buffer->priv->context);
+    copy = ufo_buffer_new (&requisition, buffer->priv->origin, buffer->priv->context);
     return copy;
 }
 
@@ -588,6 +610,21 @@ ufo_buffer_cmp_dimensions (UfoBuffer *buffer,
         gint host_dim = (gint) priv->requisition.dims[i];
         result += req_dim - host_dim;
     }
+
+    return result;
+}
+
+gint
+ufo_buffer_cmp_dimensions_real (UfoBuffer *b1, UfoBuffer *b2)
+{
+    UfoRequisition req1;
+    UfoRequisition req2;
+    ufo_buffer_get_requisition (b1, &req1);
+    ufo_buffer_get_requisition (b2, &req2);
+
+    gint result = 0;
+    result += ufo_buffer_cmp_dimensions (b1, &req2);
+    result += ufo_buffer_cmp_dimensions (b2, &req1);
 
     return result;
 }

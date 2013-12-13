@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 set(ufocore_SRCS
     ufo-arch-graph.c
     ufo-buffer.c
+    ufo-buffer-pool.c
     ufo-configurable.c
     ufo-config.c
     ufo-cpu-node.c
@@ -35,6 +36,7 @@ set(ufocore_SRCS
 set(ufocore_HDRS
     ufo-arch-graph.h
     ufo-buffer.h
+    ufo-buffer-pool.h
     ufo-configurable.h
     ufo-config.h
     ufo-cpu-node.h

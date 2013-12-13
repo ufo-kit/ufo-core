@@ -24,8 +24,6 @@ G_DEFINE_TYPE(UfoBufferPool, ufo_buffer_pool, G_TYPE_OBJECT)
 
 #define UFO_BUFFER_POOL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BUFFER_POOL, UfoBufferPoolPrivate))
 
-#define MAX_INTERNAL_POOL_CAPACITY 20
-
 struct _UfoBufferPoolPrivate {
     GAsyncQueue *pool;
     gint allocated_buffers;
@@ -43,10 +41,7 @@ ufo_buffer_pool_new (gint capacity, gpointer ocl_context)
     UfoBufferPoolPrivate *priv = UFO_BUFFER_POOL_GET_PRIVATE (bp);
     priv->context = ocl_context;
 
-    if (capacity == -1)
-        priv->capacity = MAX_INTERNAL_POOL_CAPACITY;
-    else
-        priv->capacity = capacity;
+    priv->capacity = capacity;
 
     return bp;
 }
@@ -56,22 +51,18 @@ ufo_buffer_pool_acquire (UfoBufferPool *bp, UfoRequisition *requisition) {
     UfoBuffer *buffer;
     UfoBufferPoolPrivate *priv = UFO_BUFFER_POOL_GET_PRIVATE (bp);
 
+    // g_debug ("TRY ACQUIRE alloc: %d\tin queue: %d", priv->allocated_buffers, g_async_queue_length (priv->pool));
     g_mutex_lock (priv->mutex);
     if (priv->allocated_buffers < priv->capacity) {
-        buffer = ufo_buffer_new (requisition, priv->context);
         priv->allocated_buffers++;
         g_mutex_unlock (priv->mutex);
+        buffer = ufo_buffer_new (requisition, bp, priv->context);
     } else {
         g_mutex_unlock (priv->mutex);
         buffer = g_async_queue_pop (priv->pool);
+        // g_debug ("DONE ACQUIRE alloc: %d\tin queue: %d", priv->allocated_buffers, g_async_queue_length (priv->pool));
     }
 
-    // TODO future implementation can maintain multiple queues for different
-    // requisitions to avoid resizing
-    ufo_buffer_resize (buffer, requisition);
-    ufo_buffer_discard_location (buffer);
-
-    g_debug ("ACQUIRE alloc: %d\tin queue: %d", priv->allocated_buffers, g_async_queue_length (priv->pool));
 
     return buffer;
 }
@@ -82,6 +73,7 @@ ufo_buffer_pool_release (UfoBufferPool *bp, UfoBuffer *buffer)
     g_return_if_fail (UFO_IS_BUFFER (buffer));
 
     UfoBufferPoolPrivate *priv = UFO_BUFFER_POOL_GET_PRIVATE (bp);
+    // g_debug ("RELEASE alloc: %d\tin queue: %d", priv->allocated_buffers, g_async_queue_length (priv->pool));
     g_async_queue_push (priv->pool, buffer);
 }
 

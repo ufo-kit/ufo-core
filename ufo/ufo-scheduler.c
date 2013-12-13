@@ -42,6 +42,7 @@
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-task-iface.h>
+#include <ufo/ufo-buffer-pool.h>
 
 /**
  * SECTION:ufo-scheduler
@@ -344,6 +345,102 @@ run_remote_task (TaskLocalData *tld)
     ufo_group_finish (ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task)));
 }
 
+static void send_poisonpill_to_nodes (GList *queues){
+    for (GList *it = g_list_first (queues); it != NULL; it = g_list_next (it)) {
+        GAsyncQueue *queue = (GAsyncQueue *) it->data;
+        g_async_queue_push (queue, UFO_END_OF_STREAM);
+    }
+}
+
+static GList *
+get_input_queues (GList *nodes)
+{
+    GList *queues = NULL;
+    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
+        UfoTaskNode *node = UFO_TASK_NODE (it->data);
+        queues = g_list_append (queues, (gpointer) ufo_task_node_get_input_queue (node));
+    }
+    return queues;
+}
+
+static gint x = 0;
+static void push_to_least_utilized_queue (gpointer element, GList *queues)
+{
+    gint lowest = G_MAXINT;
+    GAsyncQueue *least_utilized_queue = NULL;
+
+    // for (GList *it = g_list_first (queues); it != NULL; it = g_list_next (it)) {
+    //     GAsyncQueue *queue = (GAsyncQueue *) it->data;
+    //     gint len = g_async_queue_length (queue);
+    //     if (len <= lowest) {
+    //         lowest = len;
+    //         least_utilized_queue = queue;
+    //     }
+    // }
+    gint max = g_list_length(queues);
+    g_async_queue_push (g_list_nth_data (queues, x % max), element);
+    x++;
+}
+
+#define MAX_REMOTE_IN_FLIGHT 20
+static gpointer static_context;
+
+static void run_remote_task_simple (TaskLocalData *tld)
+{
+    UfoBuffer *input = NULL;
+    UfoBuffer *output = NULL;
+    UfoRemoteNode *remote;
+    UfoRequisition requisition;
+    guint n_remote_gpus;
+    gboolean active = TRUE;
+    UfoBufferPool *obp = ufo_buffer_pool_new (10, static_context);
+    GList *successor_queues = get_input_queues (tld->successors);
+
+    UfoTaskNode *self = UFO_TASK_NODE (tld->task);
+
+    g_debug(" RUNNING REMOTE TASK SIMPLE");
+    g_assert (tld->n_inputs == 1);
+
+    remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
+    n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
+
+    gint max_in_flight = n_remote_gpus * MAX_REMOTE_IN_FLIGHT;
+
+    gint in_flight = 0;
+
+    while (active) {
+        while (in_flight < max_in_flight) {
+            gpointer next_input = g_async_queue_pop (ufo_task_node_get_input_queue (self));
+            if ((int *)next_input == UFO_END_OF_STREAM) {
+                active = FALSE;
+                break;
+            }
+            input = (UfoBuffer *) next_input;
+
+            ufo_remote_node_send_inputs (remote, &input);
+            ufo_buffer_release_to_pool (input);
+            in_flight++;
+        }
+        // TODO remove call for requisition as we can determine that once
+        // we received the first result -> save one network call
+        ufo_remote_node_get_requisition (remote, &requisition);
+
+        while (in_flight > 0) {
+            output = ufo_buffer_pool_acquire (obp, &requisition);
+            ufo_remote_node_get_result (remote, output);
+            in_flight--;
+            push_to_least_utilized_queue (output, successor_queues);
+        }
+    }
+    while (in_flight > 0) {
+        output = ufo_buffer_pool_acquire (obp, &requisition);
+        ufo_remote_node_get_result (remote, output);
+        in_flight--;
+        push_to_least_utilized_queue (output, successor_queues);
+    }
+    send_poisonpill_to_nodes (successor_queues);
+}
+
 static gboolean
 check_implementation (UfoTaskNode *node,
                       const gchar *func,
@@ -395,90 +492,25 @@ is_correctly_implemented (UfoTaskNode *node,
 //     return element;
 // }
 
-static gint x = 0;
-static void push_to_least_utilized_queue (gpointer element, GList *queues)
-{
-    gint lowest = G_MAXINT;
-    GAsyncQueue *least_utilized_queue = NULL;
-
-    // for (GList *it = g_list_first (queues); it != NULL; it = g_list_next (it)) {
-    //     GAsyncQueue *queue = (GAsyncQueue *) it->data;
-    //     gint len = g_async_queue_length (queue);
-    //     if (len <= lowest) {
-    //         lowest = len;
-    //         least_utilized_queue = queue;
-    //     }
-    // }
-    gint max = g_list_length(queues);
-    g_async_queue_push (g_list_nth_data (queues, x % max), element);
-    x++;
-}
-
-static void send_poisonpill_to_nodes (GList *queues){
-    for (GList *it = g_list_first (queues); it != NULL; it = g_list_next (it)) {
-        GAsyncQueue *queue = (GAsyncQueue *) it->data;
-        g_async_queue_push (queue, UFO_END_OF_STREAM);
-    }
-}
-
-static GList *
-get_input_queues (GList *nodes)
-{
-    GList *queues = NULL;
-    for (GList *it = g_list_first (nodes); it != NULL; it = g_list_next (it)) {
-        UfoTaskNode *node = UFO_TASK_NODE (it->data);
-        queues = g_list_append (queues, (gpointer) ufo_task_node_get_input_queue (node));
-    }
-    return queues;
-}
-
-static GAsyncQueue *buffer_pool;
-static volatile gint *buffers_in_pool;
-UfoBuffer *acquire_buffer(UfoRequisition *req);
-void release_buffer(UfoBuffer *buffer);
-
-#define MAX_BUFFER_POOL_CAPACITY 250
-
-static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
-
-UfoBuffer *
-acquire_buffer (UfoRequisition *requisition)
-{
-    g_mutex_lock(g_static_mutex_get_mutex (&static_mutex));
-    g_atomic_int_add (buffers_in_pool, -1);
-    g_debug ("acquire buffer, avail: %d real: %d", *buffers_in_pool, g_async_queue_length (buffer_pool));
-    UfoBuffer *buffer = g_async_queue_pop (buffer_pool);
-    ufo_buffer_discard_location (buffer);
-    g_assert (UFO_IS_BUFFER (buffer));
-
-    ufo_buffer_resize (buffer, requisition);
-    g_mutex_unlock(g_static_mutex_get_mutex (&static_mutex));
-    return buffer;
-}
-
-void
-release_buffer (UfoBuffer *buf)
-{
-    if (buf == NULL || !UFO_IS_BUFFER (buf)) return;
-    g_mutex_lock(g_static_mutex_get_mutex (&static_mutex));
-    g_atomic_int_add (buffers_in_pool, 1);
-    // g_debug ("releasing buffer, avail: %d real: %d", *buffers_in_pool, g_async_queue_length (buffer_pool));
-    g_async_queue_push (buffer_pool, buf);
-    g_mutex_unlock(g_static_mutex_get_mutex (&static_mutex));
-}
 
 static gpointer
 run_task_simple (TaskLocalData *tld)
 {
-
     UfoBuffer *input = NULL;
-    UfoBuffer *output;
+    UfoBuffer *local_input = NULL;
+    UfoBuffer *output = NULL;
     UfoTaskProcessFunc process;
     UfoTaskGenerateFunc generate;
     UfoRequisition requisition;
     gboolean active = TRUE;
-
+    UfoBufferPool *ibp = ufo_buffer_pool_new (10, static_context);
+    UfoBufferPool *obp = ufo_buffer_pool_new (10, static_context);
     UfoTaskNode *self = UFO_TASK_NODE (tld->task);
+
+    if (UFO_IS_REMOTE_TASK (tld->task)) {
+        run_remote_task_simple (tld);
+        return NULL;
+    }
 
     GList *successor_queues = get_input_queues (tld->successors);
 
@@ -501,19 +533,24 @@ run_task_simple (TaskLocalData *tld)
                 break;
             }
             input = (UfoBuffer *) next_input;
+
+            // copy the buffer to our own buffer pool
+            ufo_buffer_get_requisition (input, &requisition);
+            local_input = ufo_buffer_pool_acquire (ibp, &requisition);
+            if (ufo_buffer_cmp_dimensions_real (input, local_input) != 0) {
+                G_BREAKPOINT();
+            }
+            ufo_buffer_copy (input, local_input);
+            ufo_buffer_release_to_pool (input);
+        } else {
+            ufo_buffer_release_to_pool (input);
         }
 
         ufo_task_get_requisition (UFO_TASK (tld->task), &input, &requisition);
         produces = requisition.n_dims > 0;
 
-        if (produces) {
-            // create a new buffer we can use for output
-            output = acquire_buffer (&requisition);
-            // ufo_buffer_resize (output, &requisition);
-            // output = ufo_buffer_new (&requisition, tld->context);
-            // if ((int *) output != UFO_END_OF_STREAM)
-                // ufo_buffer_discard_location (output);
-        }
+        if (produces)
+            output = ufo_buffer_pool_acquire (obp, &requisition);
 
         switch (tld->mode) {
             case UFO_TASK_MODE_PROCESSOR:
@@ -532,11 +569,17 @@ run_task_simple (TaskLocalData *tld)
 
         // forward the result
         if (produces) {
+            UfoRequisition out_req;
+            ufo_buffer_get_requisition (output, &out_req);
             push_to_least_utilized_queue (output, successor_queues);
+            // we consumed a source buffer and add it to the internal buffer pool
         } else {
-            release_buffer (output);
+            if (output != NULL)
+                ufo_buffer_release_to_pool (output);
         }
-        release_buffer (input);
+        // will be null for generators
+        if (local_input != NULL)
+            ufo_buffer_release_to_pool (local_input);
     }
 
     // send poisonpill as output
@@ -563,7 +606,7 @@ run_task (TaskLocalData *tld)
     profiler = g_object_ref (ufo_task_node_get_profiler (node));
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
-        run_remote_task (tld);
+        run_remote_task_simple (tld);
         return NULL;
     }
 
@@ -1136,22 +1179,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     threads = g_new0 (GThread *, n_nodes);
     timer = g_timer_new ();
 
-    buffer_pool = g_async_queue_new ();
-    buffers_in_pool = g_malloc(sizeof(gint));
-    *buffers_in_pool = MAX_BUFFER_POOL_CAPACITY;
-    gpointer context = ufo_resources_get_context (priv->resources);
-
-    // creates new buffers with 2d requisition
-    UfoRequisition *sample_req = g_malloc (sizeof(UfoRequisition));
-    sample_req->n_dims = 2;
-    sample_req->dims[0]= 800;
-    sample_req->dims[1]= 800;
-
-    gint buffer_capacity = MAX_BUFFER_POOL_CAPACITY;
-    while (buffer_capacity-- > 0) {
-        UfoBuffer *buf = ufo_buffer_new (sample_req, context);
-        g_async_queue_push (buffer_pool, buf);
-    }
+    static_context = ufo_resources_get_context (priv->resources);
 
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
