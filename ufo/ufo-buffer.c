@@ -263,9 +263,8 @@ ufo_buffer_new_with_size (GList *dims,
 void
 ufo_buffer_release_to_pool (UfoBuffer *buffer)
 {
-    if (!UFO_IS_BUFFER (buffer)) {
-        return;
-    }
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
     if (priv->origin == NULL) {
         g_debug ("Buffer has no origin, returning");

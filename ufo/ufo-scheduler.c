@@ -418,6 +418,7 @@ static void run_remote_task_simple (TaskLocalData *tld)
             input = (UfoBuffer *) next_input;
 
             ufo_remote_node_send_inputs (remote, &input);
+            g_assert (UFO_IS_BUFFER(input));
             ufo_buffer_release_to_pool (input);
             in_flight++;
         }
@@ -542,8 +543,10 @@ run_task_simple (TaskLocalData *tld)
             }
             ufo_buffer_copy (input, local_input);
             ufo_buffer_release_to_pool (input);
-        } else {
-            ufo_buffer_release_to_pool (input);
+        }
+         else {
+            if (UFO_IS_BUFFER (input))
+                ufo_buffer_release_to_pool (input);
         }
 
         ufo_task_get_requisition (UFO_TASK (tld->task), &input, &requisition);
