@@ -6,8 +6,8 @@ Quick start guide
 
 There are essentially two ways to specify and execute a graph of tasks. One
 involves writing a :ref:`JSON file <json-configuration>` that is executed by the
-``runjson`` utility, the other way uses the provided language bindings to setup
-the task graph specifically.
+``ufo-runjson`` utility, the other way uses the provided language bindings to
+setup the task graph specifically.
 
 
 Using a JSON description
@@ -47,13 +47,13 @@ one-dimensional Fourier-transform on a set of input files::
         ]
     }
 
-Save this to a file named ``fft.json`` and execute it by calling the ``runjson``
-tool::
+Save this to a file named ``fft.json`` and execute it by calling the
+``ufo-runjson`` tool::
 
-    $ runjson fft.json
+    $ ufo-runjson fft.json
 
-``runjson`` takes two optional parameters. ``-p`` or ``--path`` expects a path
-name to a location where UFO plugins are stored. This can be useful if the
+``ufo-runjson`` takes two optional parameters. ``-p`` or ``--path`` expects a
+path name to a location where UFO plugins are stored. This can be useful if the
 standard nodes were installed in a user-defined location or third-party nodes
 should be looked up too.
 
