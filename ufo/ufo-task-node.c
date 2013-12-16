@@ -102,7 +102,6 @@ ufo_task_node_set_num_expected (UfoTaskNode *node,
                                 guint pos,
                                 gint n_expected)
 {
-    g_assert(FALSE);
     g_return_if_fail (UFO_IS_TASK_NODE (node));
     g_return_if_fail (pos < 16);
     node->priv->n_expected[pos] = n_expected;
@@ -112,7 +111,6 @@ gint
 ufo_task_node_get_num_expected (UfoTaskNode *node,
                                 guint pos)
 {
-    g_assert(FALSE);
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), 0);
     g_return_val_if_fail (pos < 16, 0);
     return node->priv->n_expected[pos];
@@ -122,7 +120,6 @@ void
 ufo_task_node_set_out_group (UfoTaskNode *node,
                              UfoGroup *group)
 {
-    g_assert(FALSE);
     g_assert (UFO_IS_TASK_NODE (node));
     node->priv->out_group = group;
 }
@@ -130,7 +127,6 @@ ufo_task_node_set_out_group (UfoTaskNode *node,
 void
 ufo_task_node_set_own_group (UfoTaskNode *node, UfoGroup *group)
 {
-    g_assert(FALSE);
     g_assert (UFO_IS_TASK_NODE (node));
     node->priv->own_group = group;
 }
@@ -138,8 +134,7 @@ ufo_task_node_set_own_group (UfoTaskNode *node, UfoGroup *group)
 UfoGroup *
 ufo_task_node_get_own_group (UfoTaskNode *node)
 {
-    g_assert(FALSE);
-    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    g_assert (UFO_IS_TASK_NODE (node));
     return node->priv->own_group;
 }
 
@@ -168,7 +163,6 @@ ufo_task_node_get_output_queue (UfoTaskNode *node)
 UfoGroup *
 ufo_task_node_get_out_group (UfoTaskNode *node)
 {
-    g_assert(FALSE);
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), NULL);
     return node->priv->out_group;
 }
@@ -178,7 +172,6 @@ ufo_task_node_add_in_group (UfoTaskNode *node,
                             guint pos,
                             UfoGroup *group)
 {
-    g_assert(FALSE);
     g_return_if_fail (UFO_IS_TASK_NODE (node));
     /* TODO: check out-of-bounds condition */
     g_assert (UFO_IS_GROUP (group));
@@ -189,7 +182,6 @@ ufo_task_node_add_in_group (UfoTaskNode *node,
 GList *
 ufo_task_node_get_in_groups (UfoTaskNode *node)
 {
-    g_assert(FALSE);
     GList *in_groups = NULL;
     for (int i=0; i < 16; i++) {
         if (node->priv->in_groups[i] != NULL)
@@ -213,7 +205,6 @@ UfoGroup *
 ufo_task_node_get_current_in_group (UfoTaskNode *node,
                                     guint pos)
 {
-    g_assert(FALSE);
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), NULL);
     // UfoGroup *group = UFO_GROUP (node->priv->current[pos]->data);
     UfoGroup *group;
@@ -232,7 +223,6 @@ void
 ufo_task_node_switch_in_group (UfoTaskNode *node,
                                guint pos)
 {
-    g_assert(FALSE);
     UfoTaskNodePrivate *priv;
 
     g_return_if_fail (UFO_IS_TASK_NODE (node));
