@@ -166,7 +166,7 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
                     --output ${GIR_XML}
                     --warn-all
                     --quiet
-                    ${_gir_input} 2> /dev/null
+                    ${_gir_input}
             DEPENDS ${ufocore_SRCS}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
