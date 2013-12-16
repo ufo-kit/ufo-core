@@ -89,6 +89,9 @@ ufo_zmq_messenger_new (void)
 static void
 validate_zmq_listen_address (gchar *addr)
 {
+    if (g_str_has_prefix (addr, "ipc://"))
+        return;
+
     if (!g_str_has_prefix (addr, "tcp://"))
         g_critical ("address didn't start with tcp:// scheme, which is required currently");
 

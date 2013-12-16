@@ -154,7 +154,7 @@ stop_trace_event (UfoMessenger *msger, UfoMessage *msg, NetworkEvent *ev)
         ev->size_resp = 0;
     }
 
-    g_debug ("%.4f %.4f %s", ev->timestamp_start, ev->timestamp_end, ufo_message_type_to_char (ev->type));
+    // g_debug ("%.4f %.4f %s", ev->timestamp_start, ev->timestamp_end, ufo_message_type_to_char (ev->type));
 
     p->events = g_list_append (p->events, ev);
 }
@@ -189,7 +189,7 @@ static void write_events_csv (UfoMessenger *msger)
     else
         role = g_strdup ("SERVER");
 
-    if (p->addr != NULL)
+    if (p->addr != NULL && !g_str_has_prefix (p->addr, "ipc:"))
         filename = g_strdup_printf("%s-%s-%s.csv", filename_base, role, p->addr);
     else
         filename = g_strdup_printf("%s-%s.csv", filename_base, role);
