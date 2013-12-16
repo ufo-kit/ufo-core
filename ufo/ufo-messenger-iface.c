@@ -30,6 +30,13 @@ ufo_message_free (UfoMessage *msg)
     g_free (msg);
 }
 
+/**
+ * ufo_message_new: (skip)
+ * @type: message type
+ * @data_size: total size of the message
+ *
+ * Create a new message.
+ */
 UfoMessage *
 ufo_message_new (UfoMessageType type, guint64 data_size)
 {
@@ -78,7 +85,7 @@ ufo_messenger_disconnect (UfoMessenger *msger)
 }
 
 /**
- * ufo_messenger_send_blocking:
+ * ufo_messenger_send_blocking: (skip)
  * @msger: The messenger object
  * @request: (transfer none): The request #UfoMessage.
  * @error: A #GError
@@ -96,7 +103,7 @@ ufo_messenger_send_blocking (UfoMessenger *msger,
 }
 
 /**
- * ufo_messenger_recv_blocking:
+ * ufo_messenger_recv_blocking: (skip)
  * @msger: The messenger object.
  * @error: The #GError object
  *

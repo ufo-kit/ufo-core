@@ -59,7 +59,7 @@ void                ufo_zmq_messenger_connect       (UfoMessenger *msger,
 void                ufo_zmq_messenger_disconnect    (UfoMessenger *msg);
 
 UfoMessage         *ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
-                                                     UfoMessage *request,
+                                                     UfoMessage *request_msg,
                                                      GError **error);
 
 UfoMessage         *ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,

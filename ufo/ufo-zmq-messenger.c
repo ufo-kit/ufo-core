@@ -135,6 +135,14 @@ ufo_zmq_messenger_disconnect (UfoMessenger *msger)
     return;
 }
 
+/**
+ * ufo_zmq_messenger_send_blocking: (skip)
+ * @msger: #UfoMessenger
+ * @request_msg: Request message
+ * @error: Location for an error or %NULL
+ *
+ * Send message in blocking way.
+ */
 UfoMessage *
 ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
                                  UfoMessage *request_msg,
@@ -214,6 +222,13 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
 
 }
 
+/**
+ * ufo_zmq_messenger_recv_blocking: (skip)
+ * @msger: A #UfoMessenger
+ * @error: Location for an error or %NULL
+ *
+ * Receive message in blocking way.
+ */
 UfoMessage *
 ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
                                  GError **error)
