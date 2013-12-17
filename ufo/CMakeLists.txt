@@ -18,6 +18,7 @@ set(ufocore_SRCS
     ufo-input-task.c
     ufo-messenger-iface.c
     ufo-node.c
+    ufo-opencl-task.c
     ufo-output-task.c
     ufo-plugin-manager.c
     ufo-profiler.c
@@ -49,6 +50,7 @@ set(ufocore_HDRS
     ufo-input-task.h
     ufo-messenger-iface.h
     ufo-node.h
+    ufo-opencl-task.h
     ufo-output-task.h
     ufo-plugin-manager.h
     ufo-profiler.h

@@ -91,6 +91,7 @@ void         ufo_task_graph_map                 (UfoTaskGraph       *task_graph,
 void         ufo_task_graph_expand              (UfoTaskGraph       *task_graph,
                                                  UfoArchGraph       *arch_graph,
                                                  gboolean            expand_remote);
+void         ufo_task_graph_fuse                (UfoTaskGraph       *task_graph);
 void         ufo_task_graph_connect_nodes       (UfoTaskGraph       *graph,
                                                  UfoTaskNode        *n1,
                                                  UfoTaskNode        *n2);
@@ -98,7 +99,6 @@ void         ufo_task_graph_connect_nodes_full  (UfoTaskGraph       *graph,
                                                  UfoTaskNode        *n1,
                                                  UfoTaskNode        *n2,
                                                  guint               input);
-void         ufo_task_graph_fuse                (UfoTaskGraph       *task_graph);
 void         ufo_task_graph_set_partition       (UfoTaskGraph       *task_graph,
                                                  guint               index,
                                                  guint               total);
