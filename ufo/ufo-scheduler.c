@@ -45,7 +45,7 @@
 #include <ufo/ufo-buffer-pool.h>
 
 // best result with 10 for zmq ipc:// transport
-#define MAX_REMOTE_IN_FLIGHT 10
+#define MAX_REMOTE_IN_FLIGHT 20
 #define MAX_POOL_LEN 10
 static gpointer static_context;
 /**
@@ -523,8 +523,8 @@ static void run_remote_task_singlethreaded (TaskLocalData *tld)
             }
             input = (UfoBuffer *) next_input;
 
+            g_debug("SEND INPUT");
             ufo_remote_node_send_inputs (remote, &input);
-            g_assert (UFO_IS_BUFFER(input));
             ufo_buffer_release_to_pool (input);
             in_flight++;
         }
@@ -537,6 +537,7 @@ static void run_remote_task_singlethreaded (TaskLocalData *tld)
 
         while (in_flight > 0) {
             output = ufo_buffer_pool_acquire (obp, &requisition);
+            g_debug("GET RESULT");
             ufo_remote_node_get_result (remote, output);
             in_flight--;
             push_to_least_utilized_queue (output, successor_queues);
@@ -619,8 +620,8 @@ run_task_simple (TaskLocalData *tld)
     UfoTaskNode *self = UFO_TASK_NODE (tld->task);
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
-        // run_remote_task_singlethreaded (tld);
-        run_remote_task_multithreaded (tld);
+        run_remote_task_singlethreaded (tld);
+        // run_remote_task_multithreaded (tld);
         return NULL;
     }
 
@@ -1286,10 +1287,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         has_remote_nodes = TRUE;
 
     // if (remote_nodes != NULL)
-    //     groups = setup_groups2 (priv, task_graph);
+        // groups = setup_groups2 (priv, task_graph);
     // else
-    // if (!has_remote_nodes)
-        // groups = setup_groups (priv, task_graph);
+    if (!has_remote_nodes)
+        groups = setup_groups (priv, task_graph);
 
     if (!correct_connections (task_graph, error))
         return;
@@ -1303,7 +1304,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
         // threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
-        threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
+        if (has_remote_nodes)
+            threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
+        else
+            threads[i] = g_thread_create ((GThreadFunc) run_task, tlds[i], TRUE, error);
 
         if (error && (*error != NULL))
             return;
