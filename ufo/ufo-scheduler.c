@@ -44,6 +44,10 @@
 #include <ufo/ufo-task-iface.h>
 #include <ufo/ufo-buffer-pool.h>
 
+// best result with 10 for zmq ipc:// transport
+#define MAX_REMOTE_IN_FLIGHT 10
+#define MAX_POOL_LEN 10
+static gpointer static_context;
 /**
  * SECTION:ufo-scheduler
  * @Short_description: Schedule the execution of a graph of nodes
@@ -383,7 +387,7 @@ static void push_to_least_utilized_queue (gpointer element, GList *queues)
     //     }
     // }
     gint max = g_list_length(queues);
-    if (max == 2) {
+    if (max == 2 && FALSE) {
         if (x % 4 == 0)
             g_async_queue_push (g_list_nth_data (queues, 0), element);
         else
@@ -394,10 +398,6 @@ static void push_to_least_utilized_queue (gpointer element, GList *queues)
     x++;
 }
 
-// best result with 10 for zmq ipc:// transport
-#define MAX_REMOTE_IN_FLIGHT 10
-
-static gpointer static_context;
 
 static void send_data_to_remote (TaskLocalData *tld)
 {
@@ -614,8 +614,8 @@ run_task_simple (TaskLocalData *tld)
     UfoTaskGenerateFunc generate;
     UfoRequisition requisition;
     gboolean active = TRUE;
-    UfoBufferPool *ibp = ufo_buffer_pool_new (10, static_context);
-    UfoBufferPool *obp = ufo_buffer_pool_new (10, static_context);
+    UfoBufferPool *ibp = ufo_buffer_pool_new (MAX_POOL_LEN, static_context);
+    UfoBufferPool *obp = ufo_buffer_pool_new (MAX_POOL_LEN, static_context);
     UfoTaskNode *self = UFO_TASK_NODE (tld->task);
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
@@ -649,9 +649,6 @@ run_task_simple (TaskLocalData *tld)
             // copy the buffer to our own buffer pool
             ufo_buffer_get_requisition (input, &requisition);
             local_input = ufo_buffer_pool_acquire (ibp, &requisition);
-            if (ufo_buffer_cmp_dimensions_real (input, local_input) != 0) {
-                G_BREAKPOINT();
-            }
             ufo_buffer_copy (input, local_input);
             ufo_buffer_release_to_pool (input);
         }
@@ -1283,7 +1280,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         return;
 
     GList *remote_nodes = ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_remote_node, NULL);
-    if (remote_nodes == NULL && FALSE)
+    if (remote_nodes == NULL)
         has_remote_nodes = FALSE;
     else
         has_remote_nodes = TRUE;
@@ -1291,8 +1288,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     // if (remote_nodes != NULL)
     //     groups = setup_groups2 (priv, task_graph);
     // else
-    if (!has_remote_nodes)
-        groups = setup_groups (priv, task_graph);
+    // if (!has_remote_nodes)
+        // groups = setup_groups (priv, task_graph);
 
     if (!correct_connections (task_graph, error))
         return;
@@ -1306,10 +1303,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
         // threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
-        if (has_remote_nodes)
-            threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
-        else
-            threads[i] = g_thread_create ((GThreadFunc) run_task, tlds[i], TRUE, error);
+        threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
 
         if (error && (*error != NULL))
             return;
@@ -1334,7 +1328,9 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     if (Py_IsInitialized ())
 #endif
 
-    g_message ("Processing finished after %3.5fs", g_timer_elapsed (timer, NULL));
+    g_debug ("Processing finished after %3.5fs", g_timer_elapsed (timer, NULL));
+
+    g_debug ("Processing finished after %3.5fs", g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
 
     /* Cleanup */
