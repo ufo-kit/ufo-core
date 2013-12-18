@@ -81,6 +81,7 @@ typedef struct {
 
 static inline gpointer start_trace_queue (const gchar *msg, UfoQueue *queue, UfoGroupPrivate *priv, UfoQueueAccess access)
 {
+    return NULL;
     QueueTrace *h = g_malloc0(sizeof(QueueTrace));
     h->start = g_timer_elapsed (global_clock, NULL);
     h->queue = queue;
@@ -92,6 +93,7 @@ static inline gpointer start_trace_queue (const gchar *msg, UfoQueue *queue, Ufo
 
 static inline void stop_trace_queue (gpointer data)
 {
+    return;
     QueueTrace *h = (QueueTrace *) data;
     gdouble now = g_timer_elapsed (global_clock, NULL);
     gdouble delta = now - h->start;
@@ -194,9 +196,9 @@ ufo_group_pop_output_buffer (UfoGroup *group,
 
     priv = group->priv;
 
-    if ((priv->pattern == UFO_SEND_SCATTER) || (priv->pattern == UFO_SEND_SEQUENTIAL)) {
-        g_debug ("pop output buffer - my pos is %d", pos);
-    }
+    // if ((priv->pattern == UFO_SEND_SCATTER) || (priv->pattern == UFO_SEND_SEQUENTIAL)) {
+    //     g_debug ("pop output buffer - my pos is %d", pos);
+    // }
 
     return pop_or_alloc_buffer (priv, requisition);
 }
@@ -216,7 +218,7 @@ ufo_group_push_output_buffer (UfoGroup *group,
     priv = group->priv;
     priv->n_received++;
 
-    g_debug("n_received: %d", priv->n_received);
+    // g_debug("n_received: %d", priv->n_received);
     /* Copy or not depending on the send pattern */
     if (priv->pattern == UFO_SEND_SCATTER) {
         push_buffer_roundrobin (group, buffer, NULL);

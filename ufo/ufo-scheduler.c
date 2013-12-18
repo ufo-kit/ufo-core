@@ -51,7 +51,7 @@
  *
  * A scheduler object uses a graphs information to schedule the contained nodes
  * on CPU and GPU hardware.
- */
+*/
 
 static void ufo_scheduler_initable_iface_init (GInitableIface *iface);
 
@@ -63,6 +63,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
 #define UFO_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SCHEDULER, UfoSchedulerPrivate))
 
 static GTimer *global_clock;
+static gboolean has_remote_nodes = FALSE;
 
 typedef struct {
     gpointer         context;
@@ -74,10 +75,14 @@ typedef struct {
     UfoInputParam   *in_params;
     gboolean        *finished;
     gdouble          last_trace;
+    volatile gint   *in_flight;
+    gint             max_in_flight;
+    GList           *successor_queues;
 } TaskLocalData;
 
 static inline void trace (gchar *msg, TaskLocalData *tld)
 {
+    return;
     gdouble now = g_timer_elapsed (global_clock, NULL);
     gchar *name = NULL;
     gdouble delta = 0.0;
@@ -378,33 +383,139 @@ static void push_to_least_utilized_queue (gpointer element, GList *queues)
     //     }
     // }
     gint max = g_list_length(queues);
-    g_async_queue_push (g_list_nth_data (queues, x % max), element);
+    if (max == 2) {
+        if (x % 4 == 0)
+            g_async_queue_push (g_list_nth_data (queues, 0), element);
+        else
+            g_async_queue_push (g_list_nth_data (queues, 1), element);
+    } else {
+        g_async_queue_push (g_list_nth_data (queues, x % max), element);
+    }
     x++;
 }
 
-#define MAX_REMOTE_IN_FLIGHT 20
+// best result with 10 for zmq ipc:// transport
+#define MAX_REMOTE_IN_FLIGHT 10
+
 static gpointer static_context;
 
-static void run_remote_task_simple (TaskLocalData *tld)
+static void send_data_to_remote (TaskLocalData *tld)
+{
+    UfoTaskNode *self = UFO_TASK_NODE (tld->task);
+    UfoRemoteNode *remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
+
+    gboolean active = TRUE;
+
+    g_debug ("SENDER starting");
+    while (g_atomic_int_get (tld->in_flight) != G_MAXINT) {
+        while (g_atomic_int_get (tld->in_flight) < tld->max_in_flight) {
+            gpointer next_input = g_async_queue_pop (ufo_task_node_get_input_queue (self));
+            if ((int *)next_input == UFO_END_OF_STREAM) {
+                g_atomic_int_set (tld->in_flight, G_MAXINT);
+                break;
+            }
+            UfoBuffer *input = (UfoBuffer *) next_input;
+
+            g_debug ("SENDING INPUT");
+            ufo_remote_node_send_inputs (remote, &input);
+            ufo_buffer_release_to_pool (input);
+
+            if (g_atomic_int_get (tld->in_flight) == G_MININT)
+                g_atomic_int_set (tld->in_flight, 1);
+            else
+                g_atomic_int_add (tld->in_flight, 1);
+        }
+    }
+    g_debug ("SENDER HAS FINISHED");
+}
+
+static void recv_data_from_remote (TaskLocalData *tld)
+{
+    UfoRemoteNode *remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
+    UfoBuffer *output = NULL;
+    UfoRequisition requisition = {
+        .n_dims = G_MAXINT
+    };
+
+    UfoBufferPool *obp;
+    obp = ufo_buffer_pool_new (tld->max_in_flight + 10, static_context);
+
+    // wait for the sending thread to start
+    // TODO dont do busy waiting
+    while (g_atomic_int_get (tld->in_flight) == G_MININT)
+        g_thread_yield ();
+
+    g_debug ("RECVER starting");
+    while (g_atomic_int_get (tld->in_flight) != G_MAXINT) {
+        // TODO dont do busy waiting
+        // g_thread_yield ();
+        while (g_atomic_int_get (tld->in_flight) > 0 && g_atomic_int_get (tld->in_flight) != G_MAXINT) {
+
+            // We assume a requisition of a remote node does not change, so we can
+            // save multiple network calls by only asking once for the requisition
+            if (requisition.n_dims == G_MAXINT)
+                ufo_remote_node_get_requisition (remote, &requisition);
+
+            g_debug ("WAIT OBP");
+            output = ufo_buffer_pool_acquire (obp, &requisition);
+            g_debug ("GOT OBP");
+            ufo_remote_node_get_result (remote, output);
+            g_debug ("GOT RESULT");
+            if (g_atomic_int_get (tld->in_flight) != G_MAXINT)
+                g_atomic_int_add (tld->in_flight, -1);
+            push_to_least_utilized_queue (output, tld->successor_queues);
+        }
+    }
+    g_debug ("RECVER HAS FINISHED");
+}
+
+static void run_remote_task_multithreaded (TaskLocalData *tld)
+{
+    UfoRemoteNode *remote;
+
+    guint n_remote_gpus;
+
+    tld->successor_queues = get_input_queues (tld->successors);
+
+    UfoTaskNode *self = UFO_TASK_NODE (tld->task);
+
+    g_assert (tld->n_inputs == 1);
+
+    tld->in_flight = g_malloc (sizeof(gint));
+    *tld->in_flight = G_MININT;
+
+    remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
+    n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
+    tld->max_in_flight = n_remote_gpus * MAX_REMOTE_IN_FLIGHT;
+
+    GThread *send = g_thread_create ((GThreadFunc) send_data_to_remote, tld, TRUE, NULL);
+    GThread *recv = g_thread_create ((GThreadFunc) recv_data_from_remote, tld, TRUE, NULL);
+
+    g_thread_join (send);
+    g_thread_join (recv);
+
+    send_poisonpill_to_nodes (tld->successor_queues);
+}
+static void run_remote_task_singlethreaded (TaskLocalData *tld)
 {
     UfoBuffer *input = NULL;
     UfoBuffer *output = NULL;
     UfoRemoteNode *remote;
     UfoRequisition requisition;
+    requisition.n_dims = G_MAXINT;
     guint n_remote_gpus;
     gboolean active = TRUE;
-    UfoBufferPool *obp = ufo_buffer_pool_new (10, static_context);
     GList *successor_queues = get_input_queues (tld->successors);
 
     UfoTaskNode *self = UFO_TASK_NODE (tld->task);
 
-    g_debug(" RUNNING REMOTE TASK SIMPLE");
     g_assert (tld->n_inputs == 1);
 
     remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
     n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
 
     gint max_in_flight = n_remote_gpus * MAX_REMOTE_IN_FLIGHT;
+    UfoBufferPool *obp = ufo_buffer_pool_new (max_in_flight + 10, static_context);
 
     gint in_flight = 0;
 
@@ -422,9 +533,12 @@ static void run_remote_task_simple (TaskLocalData *tld)
             ufo_buffer_release_to_pool (input);
             in_flight++;
         }
-        // TODO remove call for requisition as we can determine that once
-        // we received the first result -> save one network call
-        ufo_remote_node_get_requisition (remote, &requisition);
+        // We assume a requisition of a remote node does not change, so we can
+        // save multiple network calls by only asking once for the requisition
+        if (requisition.n_dims == G_MAXINT)
+            ufo_remote_node_get_requisition (remote, &requisition);
+
+        if (!active) break;
 
         while (in_flight > 0) {
             output = ufo_buffer_pool_acquire (obp, &requisition);
@@ -440,6 +554,7 @@ static void run_remote_task_simple (TaskLocalData *tld)
         push_to_least_utilized_queue (output, successor_queues);
     }
     send_poisonpill_to_nodes (successor_queues);
+    g_debug ("\tTASK EXITING: %s", ufo_task_node_get_unique_name (UFO_TASK_NODE (tld->task)));
 }
 
 static gboolean
@@ -509,7 +624,8 @@ run_task_simple (TaskLocalData *tld)
     UfoTaskNode *self = UFO_TASK_NODE (tld->task);
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
-        run_remote_task_simple (tld);
+        // run_remote_task_singlethreaded (tld);
+        run_remote_task_multithreaded (tld);
         return NULL;
     }
 
@@ -575,11 +691,12 @@ run_task_simple (TaskLocalData *tld)
             UfoRequisition out_req;
             ufo_buffer_get_requisition (output, &out_req);
             push_to_least_utilized_queue (output, successor_queues);
-            // we consumed a source buffer and add it to the internal buffer pool
-        } else {
-            if (output != NULL)
-                ufo_buffer_release_to_pool (output);
         }
+
+        // will be null for sinks (like writer)
+        if (output != NULL)
+            ufo_buffer_release_to_pool (output);
+
         // will be null for generators
         if (local_input != NULL)
             ufo_buffer_release_to_pool (local_input);
@@ -587,6 +704,7 @@ run_task_simple (TaskLocalData *tld)
 
     // send poisonpill as output
     send_poisonpill_to_nodes (successor_queues);
+    g_debug ("\tTASK EXITING: %s", ufo_task_node_get_unique_name (UFO_TASK_NODE (tld->task)));
 
     return NULL;
 }
@@ -609,7 +727,7 @@ run_task (TaskLocalData *tld)
     profiler = g_object_ref (ufo_task_node_get_profiler (node));
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
-        run_remote_task_simple (tld);
+        run_remote_task (tld);
         return NULL;
     }
 
@@ -1170,10 +1288,16 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         return;
 
     GList *remote_nodes = ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_remote_node, NULL);
+    if (remote_nodes == NULL && FALSE)
+        has_remote_nodes = FALSE;
+    else
+        has_remote_nodes = TRUE;
+
     // if (remote_nodes != NULL)
     //     groups = setup_groups2 (priv, task_graph);
     // else
-    //     groups = setup_groups2 (priv, task_graph);
+    if (!has_remote_nodes)
+        groups = setup_groups (priv, task_graph);
 
     if (!correct_connections (task_graph, error))
         return;
@@ -1186,7 +1310,11 @@ ufo_scheduler_run (UfoScheduler *scheduler,
 
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
-        threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
+        // threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
+        if (has_remote_nodes)
+            threads[i] = g_thread_create ((GThreadFunc) run_task_simple, tlds[i], TRUE, error);
+        else
+            threads[i] = g_thread_create ((GThreadFunc) run_task, tlds[i], TRUE, error);
 
         if (error && (*error != NULL))
             return;
