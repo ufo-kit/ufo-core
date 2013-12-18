@@ -426,7 +426,6 @@ static void send_data_to_remote (TaskLocalData *tld)
                 g_atomic_int_add (tld->in_flight, 1);
         }
     }
-    g_debug ("SENDER HAS FINISHED");
 }
 
 static void recv_data_from_remote (TaskLocalData *tld)
@@ -445,7 +444,6 @@ static void recv_data_from_remote (TaskLocalData *tld)
     while (g_atomic_int_get (tld->in_flight) == G_MININT)
         g_thread_yield ();
 
-    g_debug ("RECVER starting");
     while (g_atomic_int_get (tld->in_flight) != G_MAXINT) {
         // TODO dont do busy waiting
         // g_thread_yield ();
@@ -456,17 +454,14 @@ static void recv_data_from_remote (TaskLocalData *tld)
             if (requisition.n_dims == G_MAXINT)
                 ufo_remote_node_get_requisition (remote, &requisition);
 
-            g_debug ("WAIT OBP");
             output = ufo_buffer_pool_acquire (obp, &requisition);
-            g_debug ("GOT OBP");
+            g_debug ("GETTING RESULT");
             ufo_remote_node_get_result (remote, output);
-            g_debug ("GOT RESULT");
             if (g_atomic_int_get (tld->in_flight) != G_MAXINT)
                 g_atomic_int_add (tld->in_flight, -1);
             push_to_least_utilized_queue (output, tld->successor_queues);
         }
     }
-    g_debug ("RECVER HAS FINISHED");
 }
 
 static void run_remote_task_multithreaded (TaskLocalData *tld)
