@@ -74,6 +74,7 @@ gchar * ufo_message_type_to_char (UfoMessageType type)
 }
 
 static GTimer *global_clock = NULL;
+static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
 
 typedef struct {
     UfoMessengerRole role;
@@ -126,7 +127,9 @@ static NetworkEvent * start_trace_event (UfoMessenger *msger, UfoMessage *msg)
     ev->timestamp_start = g_timer_elapsed (global_clock, NULL);
 
     if (msg == NULL) {
-        ev->role = g_strdup ("RECV");
+        g_free(ev);
+	return NULL;
+        //ev->role = g_strdup ("RECV");
     }
     else {
         ev->size_req = msg->data_size;
@@ -140,15 +143,16 @@ static NetworkEvent * start_trace_event (UfoMessenger *msger, UfoMessage *msg)
 static void
 stop_trace_event (UfoMessenger *msger, UfoMessage *msg, NetworkEvent *ev)
 {
+    if (ev == NULL) return;
     NetworkProfiler *p = (NetworkProfiler*) ufo_messenger_get_profiler (msger);
-    if (ev == NULL || p == NULL) return;
+    if (p == NULL) return;
 
     ev->timestamp_end = g_timer_elapsed (global_clock, NULL);
 
     if (msg != NULL) {
         if (msg->type != UFO_MESSAGE_ACK)
-            // it was a RECV message and we dont know the type until now
             ev->type = msg->type;
+
         ev->size_resp = msg->data_size;
     } else {
         ev->size_resp = 0;
@@ -177,9 +181,11 @@ get_sorted_events (NetworkProfiler *profiler)
 
 static void write_events_csv (UfoMessenger *msger)
 {
+    if (msger == NULL) return;
     NetworkProfiler *p = (NetworkProfiler*) ufo_messenger_get_profiler (msger);
+    if (p == NULL) return;
     GList *events = get_sorted_events (p);
-    if (g_list_length (events) == 0)
+    if (g_list_length (events) <= 30)
         return;
 
     gchar *filename_base = g_strdup ("trace-messenger");
@@ -189,10 +195,10 @@ static void write_events_csv (UfoMessenger *msger)
     else
         role = g_strdup ("SERVER");
 
-    if (p->addr != NULL && !g_str_has_prefix (p->addr, "ipc:"))
-        filename = g_strdup_printf("%s-%s-%s.csv", filename_base, role, p->addr);
+    if (p->addr != NULL)
+        filename = g_strdup_printf("%s-%s-%s-%p.csv", filename_base, role, p->addr, (void*) g_thread_self());
     else
-        filename = g_strdup_printf("%s-%s.csv", filename_base, role);
+        filename = g_strdup_printf("%s-%s-%p.csv", filename_base, role, (void*) g_thread_self());
 
     FILE *fp = fopen (filename, "w");
 
@@ -244,15 +250,12 @@ ufo_messenger_connect (UfoMessenger *msger,
      * we use a static lock for connect/disconnect which should not affect performance
      * and only profile the first messenger that is created
     */
-    static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
     GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
     g_mutex_lock (mutex);
 
     if (global_clock == NULL)
         global_clock = g_timer_new ();
-
     init_profiler (msger, addr);
-
     UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role);
 
     g_mutex_unlock (mutex);
@@ -261,7 +264,6 @@ ufo_messenger_connect (UfoMessenger *msger,
 void
 ufo_messenger_disconnect (UfoMessenger *msger)
 {
-    static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
     GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
     g_mutex_lock (mutex);
 
@@ -287,9 +289,12 @@ ufo_messenger_send_blocking (UfoMessenger *msger,
                              UfoMessage *request,
                              GError **error)
 {
+    GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
+    g_mutex_lock (mutex);
     NetworkEvent *ev = start_trace_event (msger, request);
     UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->send_blocking (msger, request, error);
     stop_trace_event (msger, msg, ev);
+    g_mutex_unlock (mutex);
     return msg;
 }
 
@@ -308,9 +313,12 @@ UfoMessage *
 ufo_messenger_recv_blocking (UfoMessenger *msger,
                             GError **error)
 {
-    NetworkEvent *ev = start_trace_event (msger, NULL);
+    GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
+    g_mutex_lock (mutex);
+    //NetworkEvent *ev = start_trace_event (msger, NULL);
     UfoMessage *msg = UFO_MESSENGER_GET_IFACE (msger)->recv_blocking (msger, error);
-    stop_trace_event (msger, msg, ev);
+    //stop_trace_event (msger, msg, ev);
+    g_mutex_unlock (mutex);
     return msg;
 }
 
