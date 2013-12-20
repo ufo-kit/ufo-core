@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
     if (rank == 0) {
         addresses = mpi_build_addresses (size);
     } else {
-        config->disable_gpu = FALSE;
+    	g_object_set (G_OBJECT (config), "disable-gpu", FALSE, NULL);
         gchar *addr = g_strdup_printf("%d", rank);
         UfoDaemon *daemon = ufo_daemon_new (config, addr);
         ufo_daemon_start (daemon);
