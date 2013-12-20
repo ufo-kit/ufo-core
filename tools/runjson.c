@@ -130,8 +130,8 @@ mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
 {
     gint provided;
     MPI_Init_thread (argc, &argv, MPI_THREAD_SERIALIZED, &provided);
-   
     MPI_Comm_rank (MPI_COMM_WORLD, rank);
+
     MPI_Comm_size (MPI_COMM_WORLD, global_size);
 
     if (*global_size == 1) {
@@ -230,6 +230,7 @@ int main(int argc, char *argv[])
     if (rank == 0) {
         addresses = mpi_build_addresses (size);
     } else {
+        config->disable_gpu = FALSE;
         gchar *addr = g_strdup_printf("%d", rank);
         UfoDaemon *daemon = ufo_daemon_new (config, addr);
         ufo_daemon_start (daemon);

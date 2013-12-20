@@ -130,12 +130,12 @@ test_remote_node_send_inputs (Fixture *fixture,
 
     UfoRequisition *sample_req = g_malloc (sizeof(UfoRequisition));
     sample_req->n_dims = 2;
-    sample_req->dims[0]= 800;
-    sample_req->dims[1]= 800;
+    sample_req->dims[0]= 799;
+    sample_req->dims[1]= 799;
 
     UfoResources *res = ufo_resources_new(NULL, NULL);
     gpointer context = ufo_resources_get_context (res);
-    UfoBuffer *buffer = ufo_buffer_new (sample_req, context);
+    UfoBuffer *buffer = ufo_buffer_new (sample_req, NULL, context);
 
     UfoBuffer **inputs = g_malloc(sizeof (UfoBuffer *));
     inputs[0] = buffer;
@@ -162,13 +162,12 @@ test_remote_node_send_inputs (Fixture *fixture,
             ufo_remote_node_get_requisition(remote_node, &req);
 
         if (G_UNLIKELY(output == NULL))
-            output = ufo_buffer_new (&req, context);
+            output = ufo_buffer_new (&req, NULL, context);
 
         for (gint j = 0; j < num_inputs; j++)
             ufo_remote_node_get_result (remote_node, output);
 
         gfloat iter = g_timer_elapsed (timer, NULL);
-        g_message ("Iteration took %.6f seconds", iter);
 
         if (i > 0)
             total += iter;
@@ -184,6 +183,7 @@ test_add_remote_node (void)
     g_test_add ("/remotenode/send_inputs",
                 Fixture, NULL,
                 setup, test_remote_node_send_inputs, teardown);
+    return;
     g_test_add ("/remotenode/get_structure",
                 Fixture, NULL,
                 setup, test_remote_node_get_structure, teardown);
