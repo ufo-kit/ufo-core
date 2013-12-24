@@ -277,7 +277,6 @@ void
 ufo_group_finish (UfoGroup *group)
 {
     UfoGroupPrivate *priv;
-    g_debug("GROUP FINSISH");
     priv = group->priv;
 
     // TODO we don't know how many groups are pop-ing from us, make it enough

@@ -200,14 +200,12 @@ read_file (const gchar *filename)
 static void
 release_kernel (cl_kernel kernel)
 {
-    g_debug ("Release kernel=%p", (gpointer) kernel);
     UFO_RESOURCES_CHECK_CLERR (clReleaseKernel (kernel));
 }
 
 static void
 release_program (cl_program program)
 {
-    g_debug ("Release program=%p", (gpointer) program);
     UFO_RESOURCES_CHECK_CLERR (clReleaseProgram (program));
 }
 
