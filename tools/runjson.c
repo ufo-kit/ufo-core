@@ -228,6 +228,7 @@ int main(int argc, char *argv[])
     mpi_init (&argc, argv, &rank, &size);
 
     if (rank == 0) {
+    	g_object_set (G_OBJECT (config), "disable-gpu", TRUE, NULL);
         addresses = mpi_build_addresses (size);
     } else {
     	g_object_set (G_OBJECT (config), "disable-gpu", FALSE, NULL);
