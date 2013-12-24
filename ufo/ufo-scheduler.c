@@ -246,7 +246,6 @@ get_inputs (TaskLocalData *tld,
                 G_BREAKPOINT();
 
             if (input == UFO_END_OF_STREAM) {
-                g_debug("Setting INPUT %d to finished", i);
                 tld->finished[i] = TRUE;
                 n_finished++;
             }
