@@ -47,6 +47,7 @@
 // best result with 10 for zmq ipc:// transport
 #define MAX_REMOTE_IN_FLIGHT 20
 #define MAX_POOL_LEN 10
+#define POOL_SPARE 10
 static gpointer static_context;
 /**
  * SECTION:ufo-scheduler
@@ -415,7 +416,7 @@ static void send_data_to_remote (TaskLocalData *tld)
             }
             UfoBuffer *input = (UfoBuffer *) next_input;
 
-            g_debug ("SENDING INPUT");
+            printf ("+");
             ufo_remote_node_send_inputs (remote, &input);
             ufo_buffer_release_to_pool (input);
 
@@ -436,7 +437,7 @@ static void recv_data_from_remote (TaskLocalData *tld)
     };
 
     UfoBufferPool *obp;
-    obp = ufo_buffer_pool_new (tld->max_in_flight + 10, static_context);
+    obp = ufo_buffer_pool_new (tld->max_in_flight + POOL_SPARE, static_context);
 
     // wait for the sending thread to start
     // TODO dont do busy waiting
@@ -454,7 +455,7 @@ static void recv_data_from_remote (TaskLocalData *tld)
                 ufo_remote_node_get_requisition (remote, &requisition);
 
             output = ufo_buffer_pool_acquire (obp, &requisition);
-            g_debug ("GETTING RESULT");
+            printf (".");
             ufo_remote_node_get_result (remote, output);
             if (g_atomic_int_get (tld->in_flight) != G_MAXINT)
                 g_atomic_int_add (tld->in_flight, -1);
@@ -522,7 +523,7 @@ static void run_remote_task_singlethreaded (TaskLocalData *tld)
             }
             input = (UfoBuffer *) next_input;
 
-            g_debug("SEND INPUT");
+            //g_debug("SEND INPUT");
             ufo_remote_node_send_inputs (remote, &input);
             ufo_buffer_release_to_pool (input);
             in_flight++;
@@ -536,7 +537,7 @@ static void run_remote_task_singlethreaded (TaskLocalData *tld)
 
         while (in_flight > 0) {
             output = ufo_buffer_pool_acquire (obp, &requisition);
-            g_debug("GET RESULT");
+            //g_debug("GET RESULT");
             ufo_remote_node_get_result (remote, output);
             in_flight--;
             push_to_least_utilized_queue (output, successor_queues);
@@ -619,8 +620,8 @@ run_task_simple (TaskLocalData *tld)
     UfoTaskNode *self = UFO_TASK_NODE (tld->task);
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
-        run_remote_task_singlethreaded (tld);
-        // run_remote_task_multithreaded (tld);
+        //run_remote_task_singlethreaded (tld);
+        run_remote_task_multithreaded (tld);
         return NULL;
     }
 
@@ -913,7 +914,7 @@ static void print_group_summary (GList *groups)
 {
     g_debug ("Total groups: %d", g_list_length (groups));
 
-    for (guint i=0; i < g_list_length (groups); i++) {
+/*    for (guint i=0; i < g_list_length (groups); i++) {
         UfoGroup *group = g_list_nth_data (groups, i);
         g_debug ("Group %d:", i);
         GList *targets = ufo_group_get_targets (group);
@@ -924,6 +925,7 @@ static void print_group_summary (GList *groups)
             print_groups (node);
         }
     }
+*/
 }
 
 static GList *
