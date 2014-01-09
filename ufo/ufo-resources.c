@@ -1022,6 +1022,7 @@ ufo_resources_init (UfoResources *self)
     priv->kernel_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->build_opts = g_string_new ("-cl-mad-enable ");
     priv->include_paths = g_list_append (NULL, g_strdup ("."));
+    priv->include_paths = g_list_append (priv->include_paths, g_strdup (UFO_KERNEL_DIR));
 
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_KERNEL_DIR));
