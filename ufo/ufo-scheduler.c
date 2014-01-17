@@ -74,6 +74,7 @@ struct _UfoSchedulerPrivate {
     GError          *construct_error;
     UfoConfig       *config;
     UfoResources    *resources;
+    UfoArchGraph    *arch_graph;
     GList           *remotes;
     UfoRemoteMode    mode;
     gboolean         expand;
@@ -179,6 +180,33 @@ ufo_scheduler_set_remote_mode (UfoScheduler *scheduler,
 {
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
     scheduler->priv->mode = mode;
+}
+
+void
+ufo_scheduler_set_arch_graph (UfoScheduler *scheduler,
+                              UfoArchGraph *graph)
+{
+    g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
+
+    if (scheduler->priv->arch_graph != NULL)
+        g_object_unref (scheduler->priv->arch_graph);
+
+    scheduler->priv->arch_graph = g_object_ref (graph);
+}
+
+/**
+ * ufo_scheduler_get_resources:
+ * @scheduler: A #UfoScheduler
+ *
+ * Get a reference on the #UfoResources object of this scheduler.
+ *
+ * Return value: (transfer none): Associated #UfoResources object.
+ */
+UfoResources *
+ufo_scheduler_get_resources (UfoScheduler *scheduler)
+{
+    g_return_val_if_fail (UFO_IS_SCHEDULER (scheduler), NULL);
+    return scheduler->priv->resources;
 }
 
 static gboolean
@@ -531,7 +559,6 @@ setup_tasks (UfoSchedulerPrivate *priv,
         tlds[i] = tld;
 
         ufo_task_setup (UFO_TASK (node), priv->resources, error);
-
         ufo_task_get_structure (UFO_TASK (node), &tld->n_inputs, &tld->in_params, &tld->mode);
 
         if (!check_target_connections (task_graph, node, tld->n_inputs, error))
@@ -798,8 +825,13 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         return;
     }
 
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources,
-                                                     priv->remotes));
+    if (priv->arch_graph != NULL) {
+        arch_graph = priv->arch_graph;
+    }
+    else {
+        arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources,
+                                                         priv->remotes));
+    }
 
     if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
         replicate_task_graph (task_graph, arch_graph);
@@ -867,7 +899,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_list_free (groups);
     g_free (threads);
 
-    g_object_unref (arch_graph);
+    if (priv->arch_graph == NULL)
+        g_object_unref (arch_graph);
 }
 
 static void
@@ -977,6 +1010,11 @@ ufo_scheduler_dispose (GObject *object)
         priv->resources = NULL;
     }
 
+    if (priv->arch_graph != NULL) {
+        g_object_unref (priv->arch_graph);
+        priv->arch_graph = NULL;
+    }
+
     G_OBJECT_CLASS (ufo_scheduler_parent_class)->dispose (object);
 }
 
@@ -1083,6 +1121,7 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     priv->trace = FALSE;
     priv->config = NULL;
     priv->resources = NULL;
+    priv->arch_graph = NULL;
     priv->remotes = NULL;
     priv->construct_error = NULL;
     priv->mode = UFO_REMOTE_MODE_STREAM;

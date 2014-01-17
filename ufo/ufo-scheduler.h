@@ -81,6 +81,9 @@ void          ufo_scheduler_set_task_expansion  (UfoScheduler  *scheduler,
                                                  gboolean       split);
 void          ufo_scheduler_set_remote_mode     (UfoScheduler  *scheduler,
                                                  UfoRemoteMode  mode);
+void          ufo_scheduler_set_arch_graph      (UfoScheduler  *scheduler,
+                                                 UfoArchGraph  *graph);
+UfoResources *ufo_scheduler_get_resources       (UfoScheduler  *scheduler);
 GType         ufo_scheduler_get_type            (void);
 GQuark        ufo_scheduler_error_quark         (void);
 
