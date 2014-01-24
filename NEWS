@@ -5,6 +5,48 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.6
+===========
+
+Released on January 24th 2014.
+
+Due to the inclusion of Autotools builds, we restructured and cleaned up
+installation paths, along the lines of GLib. That means headers are installed
+into major API version dependent directories, e.g. now /usr/include/ufo-0/ufo.
+We also split hardware-dependent and -independent files, thus kernels go into
+/usr/share/ufo now. In the same vein, we also lowered the SO version down to 0,
+so please if you have installed from source, make sure to remove any traces of
+an old UFO installation before installing the latest version.
+
+Minor changes include:
+
+- Added "time" property to scheduler.
+- Scheduler can now use and existing arch graph and return associated resources.
+- By default only GPU devices are used.
+- Documentation is now hosted at ufo-core.readthedocs.org.
+- Added "num-processed" property.
+
+Developers
+----------
+
+- Replace GList for loops with g_list_for macro
+- Include compat.h
+- Renamed and install mkfilter as ufo-mkfilter.
+- ufo-core is now monitored by Travis CI
+- Removed the python/ subdir which is replaced by ufo-python-tools
+- Removed unnecessary clprof tool.
+
+Bugfixes
+--------
+
+- Fix and simplify deploy script
+- Require json-glib in pkgconfig
+- Link to documentation on rtd.org
+- Fix .gir generation
+- Fix installation path for header files
+- Do not error on deprecated declarations
+
+
 Version 0.5
 ===========
 
