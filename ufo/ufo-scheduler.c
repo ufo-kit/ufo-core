@@ -79,6 +79,7 @@ struct _UfoSchedulerPrivate {
     UfoRemoteMode    mode;
     gboolean         expand;
     gboolean         trace;
+    gdouble          time;
 };
 
 enum {
@@ -86,6 +87,7 @@ enum {
     PROP_EXPAND,
     PROP_REMOTES,
     PROP_ENABLE_TRACING,
+    PROP_TIME,
     N_PROPERTIES,
 
     /* Here come the overriden properties that we don't install ourselves. */
@@ -887,7 +889,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     if (Py_IsInitialized ())
 #endif
 
-    g_message ("Processing finished after %3.5fs", g_timer_elapsed (timer, NULL));
+    priv->time = g_timer_elapsed (timer, NULL);
+    g_message ("Processing finished after %3.5fs", priv->time);
     g_timer_destroy (timer);
 
     /* Cleanup */
@@ -975,6 +978,10 @@ ufo_scheduler_get_property (GObject      *object,
 
         case PROP_ENABLE_TRACING:
             g_value_set_boolean (value, priv->trace);
+            break;
+
+        case PROP_TIME:
+            g_value_set_double (value, priv->time);
             break;
 
         default:
@@ -1103,6 +1110,13 @@ ufo_scheduler_class_init (UfoSchedulerClass *klass)
                                                        G_PARAM_READWRITE),
                                   G_PARAM_READWRITE);
 
+    properties[PROP_TIME] =
+        g_param_spec_double ("time",
+                             "Finished execution time",
+                             "Finished execution time in seconds",
+                              0.0, G_MAXDOUBLE, 0.0,
+                              G_PARAM_READABLE);
+
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
         g_object_class_install_property (gobject_class, i, properties[i]);
 
@@ -1125,4 +1139,5 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     priv->remotes = NULL;
     priv->construct_error = NULL;
     priv->mode = UFO_REMOTE_MODE_STREAM;
+    priv->time = 0.0;
 }
