@@ -28,6 +28,7 @@ set(ufocore_SRCS
     ufo-task-iface.c
     ufo-task-graph.c
     ufo-task-node.c
+    ufo-two-way-queue.c
     ufo-basic-ops.c
     ufo-zmq-messenger.c
     )
@@ -59,6 +60,7 @@ set(ufocore_HDRS
     ufo-task-iface.h
     ufo-task-graph.h
     ufo-task-node.h
+    ufo-two-way-queue.h
     ufo-basic-ops.h
     ufo-zmq-messenger.h
     )

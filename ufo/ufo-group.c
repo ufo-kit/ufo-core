@@ -20,20 +20,16 @@
 #include <CL/cl.h>
 #include <ufo/ufo-group.h>
 #include <ufo/ufo-task-node.h>
+#include <ufo/ufo-two-way-queue.h>
 
 G_DEFINE_TYPE (UfoGroup, ufo_group, G_TYPE_OBJECT)
 
 #define UFO_GROUP_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GROUP, UfoGroupPrivate))
 
-typedef struct {
-    GAsyncQueue *queues[2];
-    guint        capacity;
-} UfoQueue;
-
 struct _UfoGroupPrivate {
     GList           *targets;
     guint            n_targets;
-    UfoQueue       **queues;
+    UfoTwoWayQueue  **queues;
     gint            *n_expected;
     gint             n_received;
     gboolean        *ready;
@@ -48,16 +44,6 @@ enum {
     N_PROPERTIES
 };
 
-typedef enum {
-    UFO_QUEUE_PRODUCER = 0,
-    UFO_QUEUE_CONSUMER = 1
-} UfoQueueAccess;
-
-static UfoQueue     *ufo_queue_new          (void);
-static gpointer      ufo_queue_pop          (UfoQueue *queue, UfoQueueAccess access);
-static void          ufo_queue_push         (UfoQueue *queue, UfoQueueAccess access, gpointer data);
-static void          ufo_queue_insert       (UfoQueue *queue, UfoQueueAccess access, gpointer data);
-static guint         ufo_queue_get_capacity (UfoQueue *queue);
 
 /**
  * ufo_group_new:
@@ -82,7 +68,7 @@ ufo_group_new (GList *targets,
 
     priv->targets = g_list_copy (targets);
     priv->n_targets = g_list_length (targets);
-    priv->queues = g_new0 (UfoQueue *, priv->n_targets);
+    priv->queues = g_new0 (UfoTwoWayQueue *, priv->n_targets);
     priv->n_expected = g_new0 (gint, priv->n_targets);
     priv->pattern = pattern;
     priv->current = 0;
@@ -90,7 +76,7 @@ ufo_group_new (GList *targets,
     priv->n_received = 0;
 
     for (guint i = 0; i < priv->n_targets; i++)
-        priv->queues[i] = ufo_queue_new ();
+        priv->queues[i] = ufo_two_way_queue_new (NULL);
 
     return group;
 }
@@ -109,13 +95,13 @@ pop_or_alloc_buffer (UfoGroupPrivate *priv,
 {
     UfoBuffer *buffer;
 
-    if (ufo_queue_get_capacity (priv->queues[pos]) < (priv->n_targets + 1)) {
+    if (ufo_two_way_queue_get_capacity (priv->queues[pos]) < (priv->n_targets + 1)) {
         buffer = ufo_buffer_new (requisition, priv->context);
         priv->buffers = g_list_append (priv->buffers, buffer);
-        ufo_queue_insert (priv->queues[pos], UFO_QUEUE_PRODUCER, buffer);
+        ufo_two_way_queue_insert (priv->queues[pos], buffer);
     }
 
-    buffer = ufo_queue_pop (priv->queues[pos], UFO_QUEUE_PRODUCER);
+    buffer = ufo_two_way_queue_producer_pop (priv->queues[pos]);
 
     if (ufo_buffer_cmp_dimensions (buffer, requisition))
         ufo_buffer_resize (buffer, requisition);
@@ -157,10 +143,7 @@ ufo_group_push_output_buffer (UfoGroup *group,
 
     /* Copy or not depending on the send pattern */
     if (priv->pattern == UFO_SEND_SCATTER) {
-        ufo_queue_push (priv->queues[priv->current],
-                        UFO_QUEUE_PRODUCER,
-                        buffer);
-
+        ufo_two_way_queue_producer_push (priv->queues[priv->current], buffer);
         priv->current = (priv->current + 1) % priv->n_targets;
     }
     else if (priv->pattern == UFO_SEND_BROADCAST) {
@@ -173,20 +156,17 @@ ufo_group_push_output_buffer (UfoGroup *group,
 
             copy = pop_or_alloc_buffer (priv, pos, &requisition);
             ufo_buffer_copy (buffer, copy);
-            ufo_queue_push (priv->queues[pos], UFO_QUEUE_PRODUCER, copy);
+            ufo_two_way_queue_producer_push (priv->queues[pos], copy);
         }
 
-        ufo_queue_push (priv->queues[0], UFO_QUEUE_PRODUCER, buffer);
+        ufo_two_way_queue_producer_push (priv->queues[0], buffer);
     }
     else if (priv->pattern == UFO_SEND_SEQUENTIAL) {
-        ufo_queue_push (priv->queues[priv->current],
-                        UFO_QUEUE_PRODUCER,
-                        buffer);
+        ufo_two_way_queue_producer_push (priv->queues[priv->current], buffer);
 
         if (priv->n_expected[priv->current] == priv->n_received) {
-            ufo_queue_push (priv->queues[priv->current],
-                            UFO_QUEUE_PRODUCER,
-                            UFO_END_OF_STREAM);
+            ufo_two_way_queue_producer_push (priv->queues[priv->current], UFO_END_OF_STREAM);
+
             /* FIXME: setting priv->current to 0 again wouldn't be right */
             priv->current = (priv->current + 1) % priv->n_targets;
             priv->n_received = 0;
@@ -226,7 +206,7 @@ ufo_group_pop_input_buffer (UfoGroup *group,
 
     priv = group->priv;
     pos = g_list_index (priv->targets, target);
-    input = pos >= 0 ? ufo_queue_pop (priv->queues[pos], UFO_QUEUE_CONSUMER) : NULL;
+    input = pos >= 0 ? ufo_two_way_queue_consumer_pop (priv->queues[pos]) : NULL;
 
     return input;
 }
@@ -246,7 +226,7 @@ ufo_group_push_input_buffer (UfoGroup *group,
     pos = g_list_index (priv->targets, target);
 
     if (pos >= 0)
-        ufo_queue_push (priv->queues[pos], UFO_QUEUE_CONSUMER, input);
+        ufo_two_way_queue_consumer_push (priv->queues[pos], input);
 }
 
 void
@@ -256,54 +236,8 @@ ufo_group_finish (UfoGroup *group)
 
     priv = group->priv;
 
-    for (guint i = 0; i < priv->n_targets; i++) {
-        ufo_queue_push (priv->queues[i],
-                        UFO_QUEUE_PRODUCER,
-                        UFO_END_OF_STREAM);
-    }
-}
-
-static UfoQueue *
-ufo_queue_new (void)
-{
-    UfoQueue *queue = g_new0 (UfoQueue, 1);
-    queue->queues[0] = g_async_queue_new ();
-    queue->queues[1] = g_async_queue_new ();
-    queue->capacity  = 0;
-    return queue;
-}
-
-static void
-ufo_queue_free (UfoQueue *queue)
-{
-    g_async_queue_unref (queue->queues[0]);
-    g_async_queue_unref (queue->queues[1]);
-    g_free (queue);
-}
-
-static gpointer
-ufo_queue_pop (UfoQueue *queue, UfoQueueAccess access)
-{
-    return g_async_queue_pop (queue->queues[access]);
-}
-
-static void
-ufo_queue_push (UfoQueue *queue, UfoQueueAccess access, gpointer data)
-{
-    g_async_queue_push (queue->queues[1-access], data);
-}
-
-static void
-ufo_queue_insert (UfoQueue *queue, UfoQueueAccess access, gpointer data)
-{
-    g_async_queue_push (queue->queues[access], data);
-    queue->capacity++;
-}
-
-static guint
-ufo_queue_get_capacity (UfoQueue *queue)
-{
-    return queue->capacity;
+    for (guint i = 0; i < priv->n_targets; i++)
+        ufo_two_way_queue_producer_push (priv->queues[i], UFO_END_OF_STREAM);
 }
 
 static void
@@ -330,7 +264,7 @@ ufo_group_finalize (GObject *object)
     priv->buffers = NULL;
 
     for (guint i = 0; i < priv->n_targets; i++)
-        ufo_queue_free (priv->queues[i]);
+        ufo_two_way_queue_free (priv->queues[i]);
 
     g_free (priv->queues);
     priv->queues = NULL;
