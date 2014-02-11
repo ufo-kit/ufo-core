@@ -47,6 +47,7 @@
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-task-iface.h>
 #include <ufo/ufo-task-node.h>
+#include <ufo/ufo-two-way-queue.h>
 #include <ufo/ufo-basic-ops.h>
 #include <ufo/ufo-messenger-iface.h>
 
