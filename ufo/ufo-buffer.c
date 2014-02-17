@@ -54,6 +54,7 @@ enum {
 struct _UfoBufferPrivate {
     UfoRequisition      requisition;
     gfloat             *host_array;
+    gboolean            free;
     cl_mem              device_array;
     cl_mem              device_image;
     cl_context          context;
@@ -89,7 +90,7 @@ compute_required_size (UfoRequisition *requisition)
 static void
 alloc_host_mem (UfoBufferPrivate *priv)
 {
-    if (priv->host_array != NULL)
+    if (priv->host_array != NULL && priv->free)
         g_free (priv->host_array);
 
     priv->host_array = g_malloc0 (priv->size);
@@ -548,7 +549,7 @@ ufo_buffer_resize (UfoBuffer *buffer,
 
     priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
-    if (priv->host_array != NULL) {
+    if (priv->host_array != NULL && priv->free) {
         g_free (priv->host_array);
         priv->host_array = NULL;
     }
@@ -624,6 +625,32 @@ update_location (UfoBufferPrivate *priv,
 {
     priv->last_location = priv->location;
     priv->location = new_location;
+}
+
+/**
+ * ufo_buffer_set_host_array:
+ * @buffer: A #UfoBuffer
+ * @array: A pointer to a float array with suitable size.
+ * @free_data: %TRUE if @buffer is supposed to clean up the host array.
+ *
+ * Use this function to set a host array with a user-provided memory buffer.
+ * This is useful to expose private data of a generator filter to a subsequent
+ * consumer. Note, that the buffer *must* have an appropriate size.
+ */
+void
+ufo_buffer_set_host_array (UfoBuffer *buffer, gfloat *array, gboolean free_data)
+{
+    UfoBufferPrivate *priv;
+
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+
+    priv = buffer->priv;
+
+    if (priv->free)
+        g_free (priv->host_array);
+
+    priv->free = free_data;
+    priv->host_array = array;
 }
 
 /**
@@ -866,7 +893,9 @@ ufo_buffer_finalize (GObject *gobject)
     UfoBuffer *buffer = UFO_BUFFER (gobject);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
-    g_free (priv->host_array);
+    if (priv->free)
+        g_free (priv->host_array);
+
     priv->host_array = NULL;
 
     free_cl_mem (&priv->device_array);
@@ -893,6 +922,7 @@ ufo_buffer_init (UfoBuffer *buffer)
     priv->device_array = NULL;
     priv->device_image = NULL;
     priv->host_array = NULL;
+    priv->free = TRUE;
 
     priv->location = UFO_LOCATION_INVALID;
     priv->last_location = UFO_LOCATION_INVALID;
