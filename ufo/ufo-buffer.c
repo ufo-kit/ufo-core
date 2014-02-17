@@ -651,6 +651,8 @@ ufo_buffer_set_host_array (UfoBuffer *buffer, gfloat *array, gboolean free_data)
 
     priv->free = free_data;
     priv->host_array = array;
+
+    update_location (priv, UFO_LOCATION_HOST);
 }
 
 /**
