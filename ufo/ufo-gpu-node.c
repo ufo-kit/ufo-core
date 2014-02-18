@@ -80,7 +80,6 @@ ufo_gpu_node_dispose (GObject *object)
     priv = UFO_GPU_NODE_GET_PRIVATE (object);
 
     if (priv->cmd_queue != NULL) {
-        g_debug ("Release cmd_queue=%p", priv->cmd_queue);
         clReleaseCommandQueue (priv->cmd_queue);
         priv->cmd_queue = NULL;
     }

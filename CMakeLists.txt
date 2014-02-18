@@ -57,13 +57,15 @@ if (WITH_MPI)
     
     if (NOT MPICC)
         message (FATAL_ERROR "No mpicc compiler be found but MPI was explicitly enabled")
+    else ()
+        message ("Using mpicc found at ${MPICC}")
     endif ()
 
     set(CMAKE_C_COMPILER ${MPICC})
 endif ()
 #}}}
 #{{{ Dependencies
-set(PKG_GLIB2_MIN_REQUIRED "2.22")
+set(PKG_GLIB2_MIN_REQUIRED "2.30")
 set(PKG_JSON_GLIB_MIN_REQUIRED "0.7.6")
 set(PKG_ZMQ_MIN_REQUIRED "2.1")
 
@@ -105,7 +107,7 @@ include_directories(
 #}}}
 #}}}
 #{{{ Definitions
-add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
+add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
 
 if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
     add_definitions("-Wcast-align
@@ -115,6 +117,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
                      -Wmissing-prototypes
                      -Wnested-externs
                      -Wno-deprecated-declarations
+                     -Wno-unused
                      -Wno-long-long
                      -Wno-missing-field-initializers
                      -Wno-unused-parameter

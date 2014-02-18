@@ -18,6 +18,7 @@
  */
 
 #include <ufo/ufo-node.h>
+#include <ufo/ufo-graph.h>
 
 /**
  * SECTION:ufo-node
@@ -31,6 +32,7 @@ G_DEFINE_TYPE (UfoNode, ufo_node, G_TYPE_OBJECT)
 
 struct _UfoNodePrivate {
     UfoNode  *copied_from;
+    UfoGraph *graph;
     guint     index;
     guint     total;
     gpointer  label;
@@ -38,8 +40,10 @@ struct _UfoNodePrivate {
 
 enum {
     PROP_0,
+    PROP_GRAPH,
     N_PROPERTIES
 };
+static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 UfoNode *
 ufo_node_new (gpointer label)
@@ -93,7 +97,6 @@ ufo_node_copy_real (UfoNode *node,
                     GError **error)
 {
     GObject *copy;
-
     copy = g_object_new (G_OBJECT_TYPE (node), NULL);
     copy_properties (copy, G_OBJECT (node));
     return UFO_NODE (copy);
@@ -142,6 +145,7 @@ ufo_node_copy (UfoNode *node,
     offspring = UFO_NODE_GET_CLASS (node)->copy (node, error);
     offspring->priv->label = node->priv->label;
     offspring->priv->copied_from = node;
+    offspring->priv->graph = node->priv->graph;
     offspring->priv->index = node->priv->total;
     offspring->priv->total = offspring->priv->index + 1;
 
@@ -191,10 +195,73 @@ ufo_node_equal (UfoNode *n1,
 }
 
 static void
+ufo_node_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
+{
+    UfoNodePrivate *priv = UFO_NODE_GET_PRIVATE (object);
+
+    switch (property_id) {
+        case PROP_GRAPH:
+            {
+                UfoGraph *g = UFO_GRAPH (g_value_get_object (value));
+                priv->graph = g;
+            }
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+ufo_node_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
+{
+    UfoNodePrivate *priv = UFO_NODE_GET_PRIVATE (object);
+    switch (property_id) {
+        case PROP_GRAPH:
+            g_value_set_object (value, priv->graph);
+            break;
+
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+ufo_node_dispose (GObject *object)
+{
+}
+
+static void
+ufo_node_finalize (GObject *object)
+{
+    G_OBJECT_CLASS (ufo_node_parent_class)->finalize (object);
+}
+
+static void
 ufo_node_class_init (UfoNodeClass *klass)
 {
     klass->copy = ufo_node_copy_real;
     klass->equal = ufo_node_equal_real;
+
+    GObjectClass *oclass = G_OBJECT_CLASS (klass);
+
+    oclass->set_property = ufo_node_set_property;
+    oclass->get_property = ufo_node_get_property;
+    oclass->finalize = ufo_node_finalize;
+    oclass->dispose = ufo_node_dispose;
+
+    properties[PROP_GRAPH] =
+        g_param_spec_object ("graph",
+                             "Graph the node is member of",
+                             "Graph the node is member of",
+                             UFO_TYPE_GRAPH,
+                             G_PARAM_READWRITE
+        );
+
+    g_object_class_install_properties (oclass,
+                                       N_PROPERTIES,
+                                       properties);
 
     g_type_class_add_private(klass, sizeof(UfoNodePrivate));
 }
@@ -208,5 +275,6 @@ ufo_node_init (UfoNode *self)
     priv->copied_from = NULL;
     priv->index = 0;
     priv->total = 1;
+    priv->graph = NULL;
     priv->label = NULL;
 }

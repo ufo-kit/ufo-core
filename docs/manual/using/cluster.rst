@@ -39,3 +39,8 @@ mode, you have to prepare the scheduler::
     sched = Ufo.Scheduler(remotes=remotes)
     sched.set_remote_mode(Ufo.RemoteMode.REPLICATE)
     sched.run(graph)
+
+Using MPI
+=========================
+UFO has support for executing in cluster environments using MPI. See the
+:ref:`section on MPI <using-mpi>`

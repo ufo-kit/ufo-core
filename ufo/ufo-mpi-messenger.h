@@ -62,6 +62,8 @@ UfoMessage         *ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
                                                      UfoMessage *request,
                                                      GError **error);
 
+gpointer            ufo_mpi_messenger_get_profiler  (UfoMessenger *msg);
+void                ufo_mpi_messenger_set_profiler  (UfoMessenger *msg, gpointer data);
 UfoMessage         *ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
                                                      GError **error);
 

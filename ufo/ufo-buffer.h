@@ -114,21 +114,26 @@ typedef enum {
 } UfoBufferDepth;
 
 UfoBuffer*  ufo_buffer_new                  (UfoRequisition *requisition,
+                                            gpointer origin,
                                              gpointer        context);
-UfoBuffer*  ufo_buffer_new_with_size        (GList          *dims,
+UfoBuffer*  ufo_buffer_new_with_size        (GList          *dims, gpointer origin,
                                              gpointer        context);
 void        ufo_buffer_resize               (UfoBuffer      *buffer,
                                              UfoRequisition *requisition);
 gint        ufo_buffer_cmp_dimensions       (UfoBuffer      *buffer,
                                              UfoRequisition *requisition);
+gint        ufo_buffer_cmp_dimensions_real (UfoBuffer *b1, UfoBuffer *b2);
+
 void        ufo_buffer_get_requisition      (UfoBuffer      *buffer,
                                              UfoRequisition *requisition);
 gsize       ufo_buffer_get_size             (UfoBuffer      *buffer);
 void        ufo_buffer_copy                 (UfoBuffer      *src,
                                              UfoBuffer      *dst);
+void        ufo_buffer_release_to_pool      (UfoBuffer      *buffer);
 UfoBuffer  *ufo_buffer_dup                  (UfoBuffer      *buffer);
 gfloat*     ufo_buffer_get_host_array       (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
+void        ufo_buffer_set_host_array       (UfoBuffer *buf, gpointer data);
 gpointer    ufo_buffer_get_device_array     (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
 gpointer    ufo_buffer_get_device_image     (UfoBuffer      *buffer,
@@ -139,6 +144,10 @@ void        ufo_buffer_convert              (UfoBuffer      *buffer,
 void        ufo_buffer_convert_from_data    (UfoBuffer      *buffer,
                                              gconstpointer   data,
                                              UfoBufferDepth  depth);
+gfloat      ufo_buffer_get_fingerprint (UfoBuffer *buf);
+gfloat      ufo_buffer_get_fingerprint_from_data (gpointer data);
+guint       ufo_buffer_get_id (UfoBuffer *buf);
+void        ufo_buffer_set_id (UfoBuffer *buf, guint id);
 GType       ufo_buffer_get_type             (void);
 
 GParamSpec* ufo_buffer_param_spec           (const gchar*   name,

@@ -34,6 +34,7 @@ static UfoDaemon *daemon;
 typedef struct {
     gchar **paths;
     gchar *addr;
+    gboolean debug;
 } Options;
 
 static Options *
@@ -42,6 +43,7 @@ opts_parse (gint *argc, gchar ***argv)
     GOptionContext *context;
     Options *opts;
     gboolean show_version = FALSE;
+    gboolean debug = FALSE;
     GError *error = NULL;
 
     opts = g_new0 (Options, 1);
@@ -53,6 +55,8 @@ opts_parse (gint *argc, gchar ***argv)
           "Path to node plugins or OpenCL kernels", NULL },
         { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
           "Show version information", NULL },
+        { "debug", 'd', 0, G_OPTION_ARG_NONE, &debug,
+          "Enable debug messages", NULL },
         { NULL }
     };
 
@@ -72,6 +76,8 @@ opts_parse (gint *argc, gchar ***argv)
 
     if (opts->addr == NULL)
         opts->addr = g_strdup ("tcp://*:5555");
+
+    opts->debug = debug;
 
     g_option_context_free (context);
 
@@ -120,6 +126,15 @@ terminate (int signum)
     exit (EXIT_SUCCESS);
 }
 
+static void
+log_handler (const gchar     *domain,
+             GLogLevelFlags   flags,
+             const gchar     *message,
+             gpointer         data)
+{
+    g_print ("%s\n",message);
+}
+
 int
 main (int argc, char * argv[])
 {
@@ -130,6 +145,9 @@ main (int argc, char * argv[])
 
     if ((opts = opts_parse (&argc, &argv)) == NULL)
         return 1;
+
+    if (opts->debug)
+        g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, log_handler, NULL);
 
     /* Now, install SIGTERM/SIGINT handler */
     (void) signal (SIGTERM, terminate);
