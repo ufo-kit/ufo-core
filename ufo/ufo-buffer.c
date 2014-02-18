@@ -24,7 +24,9 @@
 #include <CL/cl.h>
 #endif
 
+#include <stdio.h>
 #include <ufo/ufo-buffer.h>
+#include <ufo/ufo-buffer-pool.h>
 #include <ufo/ufo-resources.h>
 
 /**
@@ -62,6 +64,9 @@ struct _UfoBufferPrivate {
     gsize               size;   /**< size of buffer in bytes */
     UfoMemLocation      location;
     UfoMemLocation      last_location;
+    UfoBufferPool       *origin;
+    guint                id;
+    GMutex              *mutex;
 };
 
 static void
@@ -212,19 +217,26 @@ alloc_device_image (UfoBufferPrivate *priv)
  */
 UfoBuffer *
 ufo_buffer_new (UfoRequisition *requisition,
+                gpointer origin,
                 gpointer context)
 {
     UfoBuffer *buffer;
     UfoBufferPrivate *priv;
+
+    if (requisition->n_dims > UFO_BUFFER_MAX_NDIMS || requisition->n_dims == 0) {
+        g_critical ("ufo_buffer_new failed: Wrong dimensions");
+    }
 
     g_return_val_if_fail ((requisition->n_dims <= UFO_BUFFER_MAX_NDIMS) &&
                           (requisition->n_dims > 0), NULL);
     buffer = UFO_BUFFER (g_object_new (UFO_TYPE_BUFFER, NULL));
     priv = buffer->priv;
     priv->context = context;
+    priv->origin = origin;
 
-    priv->size = compute_required_size (requisition);
     copy_requisition (requisition, &priv->requisition);
+    priv->size = compute_required_size (requisition);
+    priv->mutex = g_mutex_new ();
 
     return buffer;
 }
@@ -240,6 +252,7 @@ ufo_buffer_new (UfoRequisition *requisition,
  */
 UfoBuffer *
 ufo_buffer_new_with_size (GList *dims,
+                          gpointer origin,
                           gpointer context)
 {
     UfoRequisition req;
@@ -250,7 +263,34 @@ ufo_buffer_new_with_size (GList *dims,
     for (guint i = 0; i < req.n_dims; i++)
         req.dims[i] = (gsize) g_list_nth_data (dims, i);
 
-    return ufo_buffer_new (&req, context);
+    return ufo_buffer_new (&req, NULL, context);
+}
+
+void
+ufo_buffer_release_to_pool (UfoBuffer *buffer)
+{
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
+    if (priv->origin == NULL) {
+        g_debug ("Buffer has no origin, returning");
+        return;
+    }
+    ufo_buffer_pool_release (priv->origin, buffer);
+}
+
+guint
+ufo_buffer_get_id (UfoBuffer *buffer)
+{
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
+    return priv->id;
+}
+
+void
+ufo_buffer_set_id (UfoBuffer *buffer, guint id)
+{
+    UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
+    priv->id = id;
 }
 
 /**
@@ -476,8 +516,11 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
     typedef void (*TransferFunc) (UfoBufferPrivate *, UfoBufferPrivate *, cl_command_queue);
     typedef void (*AllocFunc) (UfoBufferPrivate *priv);
 
-    UfoBufferPrivate *spriv;
-    UfoBufferPrivate *dpriv;
+    g_return_if_fail (UFO_IS_BUFFER (src) && UFO_IS_BUFFER (dst));
+    g_return_if_fail (src->priv->size == dst->priv->size);
+    
+    UfoBufferPrivate *spriv = src->priv;
+    UfoBufferPrivate *dpriv = dst->priv;
     cl_command_queue queue;
 
     TransferFunc transfer[3][3] = {
@@ -488,11 +531,8 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
 
     AllocFunc alloc[3] = { alloc_host_mem, alloc_device_array, alloc_device_image };
 
-    g_return_if_fail (UFO_IS_BUFFER (src) && UFO_IS_BUFFER (dst));
-    g_return_if_fail (src->priv->size == dst->priv->size);
-
-    spriv = src->priv;
-    dpriv = dst->priv;
+    g_mutex_lock (spriv->mutex);
+    g_mutex_lock (dpriv->mutex);
     queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
 
     if (spriv->location == UFO_LOCATION_INVALID) {
@@ -507,6 +547,8 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
 
     transfer[spriv->location][dpriv->location](spriv, dpriv, queue);
     dpriv->last_queue = queue;
+    g_mutex_unlock (dpriv->mutex);
+    g_mutex_unlock (spriv->mutex);
 }
 
 /**
@@ -525,7 +567,7 @@ ufo_buffer_dup (UfoBuffer *buffer)
     UfoRequisition requisition;
 
     ufo_buffer_get_requisition (buffer, &requisition);
-    copy = ufo_buffer_new (&requisition, buffer->priv->context);
+    copy = ufo_buffer_new (&requisition, buffer->priv->origin, buffer->priv->context);
     return copy;
 }
 
@@ -558,6 +600,7 @@ ufo_buffer_resize (UfoBuffer *buffer,
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
         priv->device_array = NULL;
     }
+    priv->size = compute_required_size (requisition);
 
     copy_requisition (requisition, &priv->requisition);
 }
@@ -588,6 +631,21 @@ ufo_buffer_cmp_dimensions (UfoBuffer *buffer,
         gint host_dim = (gint) priv->requisition.dims[i];
         result += req_dim - host_dim;
     }
+
+    return result;
+}
+
+gint
+ufo_buffer_cmp_dimensions_real (UfoBuffer *b1, UfoBuffer *b2)
+{
+    UfoRequisition req1;
+    UfoRequisition req2;
+    ufo_buffer_get_requisition (b1, &req1);
+    ufo_buffer_get_requisition (b2, &req2);
+
+    gint result = 0;
+    result += ufo_buffer_cmp_dimensions (b1, &req2);
+    result += ufo_buffer_cmp_dimensions (b2, &req1);
 
     return result;
 }
@@ -646,6 +704,7 @@ ufo_buffer_set_host_array (UfoBuffer *buffer, gfloat *array, gboolean free_data)
 
     priv = buffer->priv;
 
+    g_mutex_lock (priv->mutex);
     if (priv->free)
         g_free (priv->host_array);
 
@@ -653,6 +712,7 @@ ufo_buffer_set_host_array (UfoBuffer *buffer, gfloat *array, gboolean free_data)
     priv->host_array = array;
 
     update_location (priv, UFO_LOCATION_HOST);
+    g_mutex_unlock (priv->mutex);
 }
 
 /**
@@ -668,15 +728,16 @@ gfloat *
 ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
 {
     UfoBufferPrivate *priv;
-
     g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
+
     priv = buffer->priv;
+    g_mutex_lock (priv->mutex);
 
     update_last_queue (priv, cmd_queue);
 
-    if (priv->host_array == NULL)
+    if (priv->host_array == NULL) {
         alloc_host_mem (priv);
-
+    }
     if (priv->location == UFO_LOCATION_DEVICE && priv->device_array)
         transfer_device_to_host (priv, priv, priv->last_queue);
 
@@ -684,7 +745,7 @@ ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
         transfer_image_to_host (priv, priv, priv->last_queue);
 
     update_location (priv, UFO_LOCATION_HOST);
-
+    g_mutex_unlock (priv->mutex);
     return priv->host_array;
 }
 
@@ -947,6 +1008,39 @@ ufo_buffer_param_set_default (GParamSpec *pspec, GValue *value)
     bspec->default_value = NULL;
     g_value_unset(value);
 }
+
+// for debugging
+gfloat ufo_buffer_get_fingerprint (UfoBuffer *buf) {
+    gfloat *data = ufo_buffer_get_host_array (buf, NULL);
+    return ufo_buffer_get_fingerprint_from_data (data);
+}
+
+gfloat ufo_buffer_get_fingerprint_from_data (gpointer p)
+{
+    gfloat *data = (gfloat *) p;
+    gfloat val1 = 0.0f;
+    val1 += (gfloat)  *(data+100);
+    val1 += (gfloat)  *(data+200);
+    val1 += (gfloat)  *(data+400);
+    val1 += (gfloat)  *(data+800);
+    val1 += (gfloat)  *(data+1600);
+    val1 += (gfloat)  *(data+3200);
+    val1 += (gfloat)  *(data+12800);
+    val1 += (gfloat)  *(data+13800);
+    val1 += (gfloat)  *(data+14800);
+    val1 += (gfloat)  *(data+15800);
+    val1 += (gfloat)  *(data+52800);
+    val1 += (gfloat)  *(data+62800);
+    val1 += (gfloat)  *(data+72800);
+    val1 += (gfloat)  *(data+75800);
+    val1 += (gfloat)  *(data+80800);
+    val1 += (gfloat)  *(data+81800);
+    val1 += (gfloat)  *(data+82800);
+    val1 += (gfloat)  *(data+85800);
+    val1 += (gfloat)  *(data+92800);
+    return val1;
+}
+
 
 GType
 ufo_buffer_param_get_type()

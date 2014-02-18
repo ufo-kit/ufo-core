@@ -87,11 +87,14 @@ ufo_graph_is_connected (UfoGraph *graph,
 }
 
 static void
-add_node_if_not_found (UfoGraphPrivate *priv,
+add_node_if_not_found (UfoGraph *graph,
                        UfoNode *node)
 {
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
+
     if (!g_list_find (priv->nodes, node)) {
         priv->nodes = g_list_append (priv->nodes, node);
+        g_object_set (G_OBJECT (node), "graph", graph, NULL);
         g_object_ref (node);
     }
 }
@@ -130,8 +133,8 @@ ufo_graph_connect_nodes (UfoGraph *graph,
 
     priv->edges = g_list_append (priv->edges, edge);
 
-    add_node_if_not_found (priv, source);
-    add_node_if_not_found (priv, target);
+    add_node_if_not_found (graph, source);
+    add_node_if_not_found (graph, target);
 }
 
 /**
@@ -469,6 +472,38 @@ ufo_graph_get_num_successors (UfoGraph *graph,
     return n_successors;
 }
 
+/**
+ * ufo_graph_replace_node:
+ * @graph: A #UfoGraph
+ * @oldnode: A #UfoNode who is to be replaced
+ * @newnode: A #UfoNode that is inserted with same connectivity
+ *
+ * Replaces a node with another one. All source and target edges
+ * of the old node are connected to the new node.
+ */
+void
+ufo_graph_replace_node (UfoGraph *graph,
+                        UfoNode *oldnode,
+                        UfoNode *newnode)
+{
+    UfoGraphPrivate *priv = UFO_GRAPH_GET_PRIVATE (graph);
+
+    add_node_if_not_found (graph, newnode);
+
+    GList *in_edges = get_source_edges (priv->edges, oldnode);
+    for (GList *it = g_list_first (in_edges); it != NULL; it = g_list_next (it)) {
+        UfoEdge *edge = (UfoEdge*) (it->data);
+        edge->source = newnode;
+    }
+
+    GList *out_edges = get_target_edges (priv->edges, oldnode);
+    for (GList *it = g_list_first (out_edges); it != NULL; it = g_list_next (it)) {
+        UfoEdge *edge = (UfoEdge*) (it->data);
+        edge->target = newnode;
+    }
+    ufo_graph_remove_node (graph, oldnode);
+}
+
 static void
 copy_and_connect_successors (UfoGraph *graph,
                              UfoGraph *copy,
@@ -741,6 +776,33 @@ ufo_graph_get_paths (UfoGraph *graph,
 
     g_list_free (roots);
     return paths;
+}
+
+/**
+ * ufo_graph_remove_node:
+ * @graph: A #UfoGraph
+ * @node: The node to remove from the graph.
+ *
+ * Remove @node from the @graph with all in and out edges.
+ */
+void
+ufo_graph_remove_node (UfoGraph *graph,
+                       UfoNode *node)
+{
+
+    UfoGraphPrivate *priv;
+    priv = graph->priv;
+
+    GList *in_edges = get_source_edges (priv->edges, node);
+    for (GList *it = g_list_first (in_edges); it != NULL; it = g_list_next (it))
+        priv->edges = g_list_remove (priv->edges, it->data);
+
+    GList *out_edges = get_target_edges (priv->edges, node);
+    for (GList *it = g_list_first (out_edges); it != NULL; it = g_list_next (it))
+        priv->edges = g_list_remove (priv->edges, it->data);
+
+    priv->nodes = g_list_remove (priv->nodes, node);
+
 }
 
 /**

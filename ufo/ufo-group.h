@@ -84,6 +84,7 @@ UfoGroup  * ufo_group_new                   (GList          *targets,
                                              gpointer        context,
                                              UfoSendPattern  pattern);
 guint       ufo_group_get_num_targets       (UfoGroup       *group);
+GList      *ufo_group_get_targets           (UfoGroup       *group);
 void        ufo_group_set_num_expected      (UfoGroup       *group,
                                              UfoTask        *target,
                                              gint            n_expected);

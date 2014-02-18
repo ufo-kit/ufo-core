@@ -201,14 +201,12 @@ read_file (const gchar *filename)
 static void
 release_kernel (cl_kernel kernel)
 {
-    g_debug ("Release kernel=%p", (gpointer) kernel);
     UFO_RESOURCES_CHECK_CLERR (clReleaseKernel (kernel));
 }
 
 static void
 release_program (cl_program program)
 {
-    g_debug ("Release program=%p", (gpointer) program);
     UFO_RESOURCES_CHECK_CLERR (clReleaseProgram (program));
 }
 
@@ -358,6 +356,48 @@ restrict_to_gpu_subset (UfoResourcesPrivate *priv)
     g_free (priv->devices);
     priv->devices = devices_subset;
     priv->n_devices = 1;
+
+    // assert that is is a GPU device
+    cl_device_type device_type;
+    cl_int err = clGetDeviceInfo (priv->devices[0], CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
+
+    g_assert(err == CL_SUCCESS);
+
+    if (device_type == CL_DEVICE_TYPE_GPU)
+        g_debug("Restricting to a single GPU");
+    else if (device_type == CL_DEVICE_TYPE_CPU)
+        g_warning ("WARNING: Only using CPU for OpenCL emulation");
+    else
+        g_warning ("WARNING: Using unknown device type for computation");
+}
+
+static void print_used_device_overview (UfoResourcesPrivate *priv)
+{
+    for (guint i = 0; i < priv->n_devices; i++) {
+        cl_device_id device_id = priv->devices[i];
+        gint err;
+        cl_device_type device_type;
+        cl_char vendor_name[1024] = {0};
+        cl_char device_name[1024] = {0};
+
+        err = clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(device_name), &device_name, NULL);
+        g_assert (err == CL_SUCCESS);
+        g_debug("Using Device[%d]: %s", i, device_name);
+
+        err = clGetDeviceInfo(device_id, CL_DEVICE_VENDOR, sizeof(vendor_name), &vendor_name, NULL);
+        g_assert (err == CL_SUCCESS);
+        g_debug("  VENDOR: %s", vendor_name);
+
+
+        err = clGetDeviceInfo(device_id, CL_DEVICE_TYPE, sizeof(device_type), &device_type, NULL);
+        g_assert (err == CL_SUCCESS);
+        if (device_type == CL_DEVICE_TYPE_GPU)
+            g_debug("  TYPE: GPU (Graphics Processing Unit)");
+        else if (device_type == CL_DEVICE_TYPE_CPU)
+            g_debug("  TYPE: CPU (Central Processing Unit");
+        else
+            g_assert(FALSE);
+    }
 }
 
 static gboolean
@@ -369,10 +409,11 @@ initialize_opencl (UfoResourcesPrivate *priv,
     cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
 
     priv->platform = get_preferably_gpu_based_platform ();
-    add_vendor_to_build_opts (priv->build_opts, priv->platform);
+    // add_vendor_to_build_opts (priv->build_opts, priv->platform);
     device_type = get_device_type (priv);
 
-    errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
+    // errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
+    errcode = clGetDeviceIDs (priv->platform, CL_DEVICE_TYPE_GPU, 0, NULL, &priv->n_devices);
     UFO_RESOURCES_CHECK_AND_SET (errcode, error);
 
     if (errcode != CL_SUCCESS)
@@ -380,7 +421,8 @@ initialize_opencl (UfoResourcesPrivate *priv,
 
     priv->devices = g_malloc0 (priv->n_devices * sizeof (cl_device_id));
 
-    errcode = clGetDeviceIDs (priv->platform, device_type, priv->n_devices, priv->devices, NULL);
+//    errcode = clGetDeviceIDs (priv->platform, device_type, priv->n_devices, priv->devices, NULL);
+    errcode = clGetDeviceIDs (priv->platform, CL_DEVICE_TYPE_GPU, priv->n_devices, priv->devices, NULL);
     UFO_RESOURCES_CHECK_AND_SET (errcode, error);
 
     if (errcode != CL_SUCCESS)
@@ -408,6 +450,8 @@ initialize_opencl (UfoResourcesPrivate *priv,
         if (errcode != CL_SUCCESS)
             return FALSE;
     }
+
+    print_used_device_overview (priv);
 
     return TRUE;
 }
@@ -1021,9 +1065,6 @@ ufo_resources_init (UfoResources *self)
     priv->kernels = NULL;
     priv->kernel_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->build_opts = g_string_new ("-cl-mad-enable ");
-    priv->include_paths = g_list_append (NULL, g_strdup ("."));
-    priv->include_paths = g_list_append (priv->include_paths, g_strdup (UFO_KERNEL_DIR));
-
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_KERNEL_DIR));
 }

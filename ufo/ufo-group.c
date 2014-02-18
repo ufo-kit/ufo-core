@@ -96,7 +96,7 @@ pop_or_alloc_buffer (UfoGroupPrivate *priv,
     UfoBuffer *buffer;
 
     if (ufo_two_way_queue_get_capacity (priv->queues[pos]) < (priv->n_targets + 1)) {
-        buffer = ufo_buffer_new (requisition, priv->context);
+        buffer = ufo_buffer_new (requisition, NULL, priv->context);
         priv->buffers = g_list_append (priv->buffers, buffer);
         ufo_two_way_queue_insert (priv->queues[pos], buffer);
     }
@@ -141,6 +141,9 @@ ufo_group_push_output_buffer (UfoGroup *group,
     priv = group->priv;
     priv->n_received++;
 
+    if (buffer == NULL) {
+        g_critical ("buffer was NULL!");
+    }
     /* Copy or not depending on the send pattern */
     if (priv->pattern == UFO_SEND_SCATTER) {
         ufo_two_way_queue_producer_push (priv->queues[priv->current], buffer);

@@ -29,8 +29,10 @@
 #endif
 
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <ufo/ufo-config.h>
 #include <ufo/ufo-daemon.h>
 #include <ufo/ufo-dummy-task.h>
@@ -70,6 +72,29 @@ struct _UfoDaemonPrivate {
 };
 
 static gpointer run_scheduler (UfoDaemon *daemon);
+static GTimer *global_clock;
+
+typedef struct {
+    gfloat start;
+    gchar *msg;
+} TraceHandle;
+
+static TraceHandle *
+start_trace (const gchar *msg)
+{
+    TraceHandle *th = g_new0 (TraceHandle, 1);
+    th->msg = g_strdup (msg);
+    th->start = g_timer_elapsed (global_clock, NULL);
+    return th;
+}
+static void
+stop_trace (TraceHandle *th)
+{
+    gfloat now = g_timer_elapsed (global_clock, NULL);
+    g_debug ("%s took %.6f", th->msg, now - th->start);
+    g_free (th->msg);
+    g_free (th);
+}
 
 UfoDaemon *
 ufo_daemon_new (UfoConfig *config, gchar *listen_address)
@@ -111,6 +136,18 @@ handle_get_num_devices (UfoDaemon *daemon)
                                NULL));
 
     *(guint16 *) msg->data = (guint16) *num_devices;
+
+    ufo_messenger_send_blocking (priv->msger, msg, 0);
+    ufo_message_free (msg);
+}
+
+static void
+handle_get_num_cpus (UfoDaemon *daemon)
+{
+    UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+
+    UfoMessage *msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (guint16));
+    *(guint16 *) msg->data = (guint16) sysconf(_SC_NPROCESSORS_ONLN);
 
     ufo_messenger_send_blocking (priv->msger, msg, 0);
     ufo_message_free (msg);
@@ -202,6 +239,10 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *msg)
     priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
     ufo_task_graph_read_from_data (priv->task_graph, priv->manager, json, &error);
 
+#ifdef DEBUG
+    ufo_graph_dump_dot (UFO_GRAPH (priv->task_graph), "task_graph_received.dot");
+#endif
+
     if (error != NULL) {
         g_printerr ("%s\n", error->message);
         /* Send error to master */
@@ -244,11 +285,18 @@ handle_get_structure (UfoDaemon *daemon)
     struct _Structure {
         guint16 n_inputs;
         guint16 n_dims;
+        UfoTaskMode mode;
     } msg_data;
 
     /* TODO don't hardcode these */
     msg_data.n_inputs = 1;
     msg_data.n_dims = 2;
+
+    UfoNode *writer_node = ufo_task_graph_get_writer_node (priv->task_graph);
+    if (writer_node != NULL)
+        msg_data.mode = UFO_TASK_MODE_REDUCTOR;
+    else
+        msg_data.mode = UFO_TASK_MODE_PROCESSOR;
 
     response = ufo_message_new (UFO_MESSAGE_ACK, sizeof (struct _Structure));
     *(struct _Structure *) (response->data) = msg_data;
@@ -261,47 +309,60 @@ static void
 handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
-    UfoRequisition requisition;
-    gpointer context;
+    gpointer context = ufo_scheduler_get_context (priv->scheduler);
 
-    context = ufo_scheduler_get_context (priv->scheduler);
+    UfoRequisition *requisition = (UfoRequisition *) request->data;
 
-    struct _Header {
-        UfoRequisition requisition;
-        guint64 buffer_size;
-    };
-
-    char *base = request->data;
-    struct _Header *header = (struct _Header *) base;
-
-    /* Receive buffer size */
-    requisition = header->requisition;
-    if (priv->input == NULL) {
-        priv->input = ufo_buffer_new (&requisition, context);
-    }
-    else {
-        if (ufo_buffer_cmp_dimensions (priv->input, &requisition))
-            ufo_buffer_resize (priv->input, &requisition);
-    }
-    memcpy (ufo_buffer_get_host_array (priv->input, NULL),
-            base + sizeof (struct _Header),
-            ufo_buffer_get_size (priv->input));
-    ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task), priv->input);
-
+    // send the ack for that
     UfoMessage *response = ufo_message_new (UFO_MESSAGE_ACK, 0);
     ufo_messenger_send_blocking (priv->msger, response, NULL);
     ufo_message_free (response);
+
+    if (priv->input == NULL) {
+        priv->input = ufo_buffer_new (requisition, NULL, context);
+    }
+    else {
+        if (ufo_buffer_cmp_dimensions (priv->input, requisition))
+            ufo_buffer_resize (priv->input, requisition);
+    }
+
+    UfoMessage *data_msg = ufo_messenger_recv_blocking (priv->msger, NULL);
+    response = ufo_message_new (UFO_MESSAGE_ACK, 0);
+    ufo_messenger_send_blocking (priv->msger, response, NULL);
+    ufo_message_free (response);
+
+    g_assert (ufo_buffer_get_size (priv->input) == data_msg->data_size);
+    ufo_buffer_set_host_array (priv->input, (gfloat *) data_msg->data, TRUE);
+
+    ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task), priv->input);
+    g_free (data_msg);
 }
 
+UfoRequisition *req = NULL;
 static void
 handle_get_requisition (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     UfoRequisition requisition;
 
+    UfoNode *writer_node = ufo_task_graph_get_writer_node (priv->task_graph);
+    if (writer_node != NULL) {
+        requisition.n_dims = 0;
+        UfoMessage *msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (UfoRequisition));
+        memcpy (msg->data, &requisition, msg->data_size);
+        ufo_messenger_send_blocking (priv->msger, msg, NULL);
+        ufo_message_free (msg);
+        return;
+    }
     /* We need to get the requisition from the last node */
-    ufo_output_task_get_output_requisition (UFO_OUTPUT_TASK (priv->output_task),
-                                            &requisition);
+    if (req == NULL || TRUE) {
+        req = g_new0 (UfoRequisition, 1);
+        ufo_output_task_get_output_requisition (UFO_OUTPUT_TASK (priv->output_task),
+                                                &requisition);
+        req = memcpy (req, &requisition, sizeof (UfoRequisition));
+    } else {
+        requisition = *req;
+    }
 
     UfoMessage *msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (UfoRequisition));
     memcpy (msg->data, &requisition, msg->data_size);
@@ -320,7 +381,8 @@ void handle_get_result (UfoDaemon *daemon)
     size = ufo_buffer_get_size (buffer);
 
     UfoMessage *response = ufo_message_new (UFO_MESSAGE_ACK, size);
-    memcpy (response->data, ufo_buffer_get_host_array (buffer, NULL), size);
+    response->data = ufo_buffer_get_host_array (buffer, NULL);
+    response->data_size = size;
     ufo_messenger_send_blocking (priv->msger, response, NULL);
     ufo_output_task_release_output_buffer (UFO_OUTPUT_TASK (priv->output_task), buffer);
 }
@@ -372,13 +434,13 @@ handle_terminate (UfoDaemon *daemon)
     ufo_messenger_send_blocking (priv->msger, response, NULL);
     ufo_message_free (response);
 
+    ufo_messenger_disconnect (priv->msger);
+
     if(priv->scheduler_thread != NULL) {
         g_message ("waiting for scheduler to finish");
         g_thread_join (priv->scheduler_thread);
         g_message ("scheduler finished!");
     }
-
-    ufo_messenger_disconnect (priv->msger);
 }
 
 static gpointer
@@ -395,13 +457,55 @@ run_scheduler (UfoDaemon *daemon)
     return NULL;
 }
 
+static gboolean
+handle_incoming (UfoDaemon *daemon, UfoMessage *msg)
+{
+    g_debug ("handling %s", ufo_message_type_to_char (msg->type));
+    switch (msg->type) {
+        case UFO_MESSAGE_GET_NUM_DEVICES:
+            handle_get_num_devices (daemon);
+            break;
+        case UFO_MESSAGE_GET_NUM_CPUS:
+            handle_get_num_cpus (daemon);
+            break;
+        case UFO_MESSAGE_STREAM_JSON:
+            handle_stream_json (daemon, msg);
+            break;
+        case UFO_MESSAGE_REPLICATE_JSON:
+            handle_replicate_json (daemon, msg);
+            break;
+        case UFO_MESSAGE_GET_STRUCTURE:
+            handle_get_structure (daemon);
+            break;
+        case UFO_MESSAGE_SEND_INPUTS_REQUISITION:
+            handle_send_inputs (daemon, msg);
+            break;
+        case UFO_MESSAGE_GET_REQUISITION:
+            handle_get_requisition (daemon);
+            break;
+        case UFO_MESSAGE_GET_RESULT:
+            handle_get_result (daemon);
+            break;
+        case UFO_MESSAGE_CLEANUP:
+            handle_cleanup (daemon);
+            break;
+        case UFO_MESSAGE_TERMINATE:
+            handle_terminate (daemon);
+            return FALSE;
+            break;
+        default:
+            g_message ("Unknown message received\n");
+    }
+    return TRUE;
+}
+
 static void
 ufo_daemon_start_impl (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     g_debug ("UfoDaemon started on address %s", priv->listen_address);
 
-    // tell the calling thread that we have started 
+    // tell the calling thread that we have started
     g_mutex_lock (priv->started_lock);
     priv->has_started = TRUE;
     g_cond_signal (priv->started_cond);
@@ -409,7 +513,6 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
 
     gboolean wait_for_messages = TRUE;
     while (wait_for_messages) {
-
         GError *err = NULL;
         UfoMessage *msg = ufo_messenger_recv_blocking (priv->msger, &err);
         if (err != NULL) {
@@ -418,40 +521,11 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
             */
             wait_for_messages = FALSE;
         } else {
-            switch (msg->type) {
-                case UFO_MESSAGE_GET_NUM_DEVICES:
-                    handle_get_num_devices (daemon);
-                    break;
-                case UFO_MESSAGE_STREAM_JSON:
-                    handle_stream_json (daemon, msg);
-                    break;
-                case UFO_MESSAGE_REPLICATE_JSON:
-                    handle_replicate_json (daemon, msg);
-                    break;
-                case UFO_MESSAGE_GET_STRUCTURE:
-                    handle_get_structure (daemon);
-                    break;
-                case UFO_MESSAGE_SEND_INPUTS:
-                    handle_send_inputs (daemon, msg);
-                    break;
-                case UFO_MESSAGE_GET_REQUISITION:
-                    handle_get_requisition (daemon);
-                    break;
-                case UFO_MESSAGE_GET_RESULT:
-                    handle_get_result (daemon);
-                    break;
-                case UFO_MESSAGE_CLEANUP:
-                    handle_cleanup (daemon);
-                    break;
-                case UFO_MESSAGE_TERMINATE:
-                    handle_terminate (daemon);
-                    wait_for_messages = FALSE;
-                    break;
-                default:
-                    g_message ("Unknown message received\n");
-            }
+            // spawn a new thread that handles this request
+
+            wait_for_messages = handle_incoming (daemon, msg);
+            ufo_message_free (msg);
         }
-        ufo_message_free (msg);
     }
 
     // tell calling thread we have stopped
@@ -508,6 +582,7 @@ ufo_daemon_stop (UfoDaemon *daemon)
     ufo_messenger_connect (tmp_msger, priv->listen_address, UFO_MESSENGER_CLIENT);
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
     ufo_messenger_send_blocking (tmp_msger, request, NULL);
+    ufo_messenger_disconnect (tmp_msger);
 
     g_thread_join (priv->thread);
 
@@ -569,6 +644,8 @@ ufo_daemon_class_init (UfoDaemonClass *klass)
     oclass->finalize = ufo_daemon_finalize;
 
     g_type_class_add_private (klass, sizeof (UfoDaemonPrivate));
+
+    global_clock = g_timer_new ();
 }
 
 static void
