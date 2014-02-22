@@ -454,8 +454,6 @@ run_task (TaskLocalData *tld)
             release_inputs (tld, inputs);
 
         if (tld->mode == UFO_TASK_MODE_REDUCTOR) {
-            active = TRUE;
-
             do {
                 ufo_profiler_trace_event (profiler, "generate", "B");
                 active = generate (tld->task, output, &requisition);
