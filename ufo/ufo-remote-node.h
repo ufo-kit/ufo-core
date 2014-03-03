@@ -81,6 +81,7 @@ typedef enum {
 
 UfoNode  *ufo_remote_node_new               (const gchar    *address);
 guint     ufo_remote_node_get_num_gpus      (UfoRemoteNode  *node);
+guint     ufo_remote_node_get_num_cpus      (UfoRemoteNode  *node);
 void      ufo_remote_node_request_setup     (UfoRemoteNode  *node);
 void      ufo_remote_node_send_json         (UfoRemoteNode  *node,
                                              UfoRemoteMode   mode,

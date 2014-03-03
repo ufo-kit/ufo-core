@@ -37,6 +37,7 @@ struct _UfoTaskNodePrivate {
     UfoSendPattern   pattern;
     UfoNode         *proc_node;
     UfoGroup        *out_group;
+    UfoGroup        *own_group;
     UfoProfiler     *profiler;
     GList           *in_groups[16];
     GList           *current[16];
@@ -44,6 +45,9 @@ struct _UfoTaskNodePrivate {
     guint            index;
     guint            total;
     guint            num_processed;
+
+    GAsyncQueue     *input_queue;
+    GAsyncQueue     *output_queue;
 };
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
@@ -116,8 +120,35 @@ void
 ufo_task_node_set_out_group (UfoTaskNode *node,
                              UfoGroup *group)
 {
-    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    g_assert (UFO_IS_TASK_NODE (node));
     node->priv->out_group = group;
+}
+
+void
+ufo_task_node_set_own_group (UfoTaskNode *node, UfoGroup *group)
+{
+    g_assert (UFO_IS_TASK_NODE (node));
+    node->priv->own_group = group;
+}
+
+UfoGroup *
+ufo_task_node_get_own_group (UfoTaskNode *node)
+{
+    g_assert (UFO_IS_TASK_NODE (node));
+    return node->priv->own_group;
+}
+
+
+GAsyncQueue *
+ufo_task_node_get_input_queue (UfoTaskNode *node)
+{
+    return node->priv->input_queue;
+}
+
+GAsyncQueue *
+ufo_task_node_get_output_queue (UfoTaskNode *node)
+{
+    return node->priv->output_queue;
 }
 
 /**
@@ -143,8 +174,20 @@ ufo_task_node_add_in_group (UfoTaskNode *node,
 {
     g_return_if_fail (UFO_IS_TASK_NODE (node));
     /* TODO: check out-of-bounds condition */
+    g_assert (UFO_IS_GROUP (group));
     node->priv->in_groups[pos] = g_list_prepend (node->priv->in_groups[pos], group);
     node->priv->current[pos] = node->priv->in_groups[pos];
+}
+
+GList *
+ufo_task_node_get_in_groups (UfoTaskNode *node)
+{
+    GList *in_groups = NULL;
+    for (int i=0; i < 16; i++) {
+        if (node->priv->in_groups[i] != NULL)
+            in_groups = g_list_append (in_groups, node->priv->in_groups[i]);
+    }
+    return in_groups;
 }
 
 /**
@@ -364,8 +407,12 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv->out_group = NULL;
     self->priv->index = 0;
     self->priv->total = 1;
+    self->priv->own_group = NULL;
     self->priv->num_processed = 0;
     self->priv->profiler = ufo_profiler_new ();
+
+    self->priv->input_queue = g_async_queue_new ();
+    self->priv->output_queue = g_async_queue_new ();
 
     for (guint i = 0; i < 16; i++) {
         self->priv->in_groups[i] = NULL;

@@ -24,6 +24,7 @@
 #endif
 #include <gmodule.h>
 #include <glob.h>
+#include <stdio.h>
 
 #include <ufo/ufo-profiler.h>
 #include <ufo/ufo-resources.h>
@@ -68,7 +69,6 @@ enum {
 };
 
 static GTimer *global_clock = NULL;
-
 
 /**
  * UfoProfilerTimer:
@@ -176,26 +176,30 @@ ufo_profiler_stop (UfoProfiler       *profiler,
     g_timer_stop (profiler->priv->timers[timer]);
 }
 
-void
+UfoTraceEvent *
 ufo_profiler_trace_event (UfoProfiler *profiler,
                           const gchar *name,
                           const gchar *type)
 {
     UfoTraceEvent *event;
-    gulong timestamp;
+    gulong timestamp_fraction;
+    gdouble timestamp_absolute;
 
-    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    g_return_val_if_fail (UFO_IS_PROFILER (profiler), NULL);
     if (!profiler->priv->trace)
-        return;
+        return NULL;
 
-    g_timer_elapsed (global_clock, &timestamp);
+    timestamp_absolute = g_timer_elapsed (global_clock, &timestamp_fraction);
 
     event = g_malloc0 (sizeof(UfoTraceEvent));
     event->name = name;
     event->type = type;
     event->thread_id = g_thread_self ();
-    event->timestamp = (gdouble) timestamp;
+    event->timestamp_absolute = timestamp_absolute;
+    event->timestamp = (gdouble) timestamp_fraction;
     profiler->priv->trace_events = g_list_append (profiler->priv->trace_events, event);
+
+    return event;
 }
 
 
@@ -206,7 +210,6 @@ ufo_profiler_enable_tracing (UfoProfiler *profiler,
     g_return_if_fail (UFO_IS_PROFILER (profiler));
     profiler->priv->trace = enable;
 }
-
 /**
  * ufo_profiler_get_trace_events: (skip)
  * @profiler: A #UfoProfiler object.
@@ -220,6 +223,34 @@ ufo_profiler_get_trace_events (UfoProfiler *profiler)
 {
     g_return_val_if_fail (UFO_IS_PROFILER (profiler), NULL);
     return profiler->priv->trace_events;
+}
+
+static gint
+compare_event (const UfoTraceEvent *a,
+               const UfoTraceEvent *b,
+               gpointer user_data)
+{
+    return (gint) (a->timestamp_absolute - b->timestamp_absolute);
+}
+
+GList *
+ufo_profiler_get_trace_events_sorted (UfoProfiler *profiler)
+{
+    GList *events = g_list_copy (ufo_profiler_get_trace_events (profiler));
+    GList *sorted_events = g_list_sort (events, (GCompareFunc) compare_event);
+
+    /* set relative timestamps based on the occurence of the first event */
+    GList *first = g_list_first (sorted_events);
+    if (first == NULL || first->data == NULL)
+        return events;
+
+    gdouble base = ((UfoTraceEvent *) first->data)->timestamp_absolute;
+    for (GList *it = g_list_first (sorted_events); it != NULL; it = g_list_next (it)) {
+        UfoTraceEvent *event = (UfoTraceEvent *) it->data;
+        event->timestamp_delta = event->timestamp_absolute - base;
+    }
+
+    return sorted_events;
 }
 
 static void
