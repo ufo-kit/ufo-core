@@ -338,6 +338,7 @@ get_input_queues (GList *nodes)
 }
 
 static gint next_queue_index = 0;
+
 static void
 push_to_next_queue (gpointer element, GList *queues)
 {
@@ -346,19 +347,22 @@ push_to_next_queue (gpointer element, GList *queues)
     next_queue_index++;
 }
 
-static gint remote_barrier (void)
+static gint
+remote_barrier (void)
 {
-    // another barrier to wait for all remote tasks and output runtime info
+    /* another barrier to wait for all remote tasks and output runtime info */
     gint wait1 = g_atomic_int_add (remote_pending, 1);
+
     while (g_atomic_int_get (remote_pending) % n_remotes != 0) {
-        // TODO HACK this is highly inefficient - remove busy waiting!
+        /* TODO: HACK this is highly inefficient - remove busy waiting! */
         g_thread_yield ();
     }
 
     return wait1 % n_remotes;
 }
 
-static void run_remote_task (TaskLocalData *tld)
+static void
+run_remote_task (TaskLocalData *tld)
 {
     UfoBuffer *input = NULL;
     UfoBuffer *output = NULL;
@@ -385,6 +389,7 @@ static void run_remote_task (TaskLocalData *tld)
     gint num_expected = 0;
 
     GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
+
     while (active) {
         g_mutex_lock (mutex);
         while (in_flight < max_in_flight) {
@@ -403,7 +408,7 @@ static void run_remote_task (TaskLocalData *tld)
         }
         g_mutex_unlock (mutex);
 
-        // wait until all remotes are filled with buffers
+        /* wait until all remotes are filled with buffers */
         remote_barrier ();
 
         if (!active) {
@@ -411,14 +416,17 @@ static void run_remote_task (TaskLocalData *tld)
         }
 
         while (in_flight > 0) {
-            // we only receive requisition once to save network calls
-            // this assumes the requisition remains constant
+            /*
+             * we only receive requisition once to save network calls this
+             * assumes the requisition remains constant
+             */
             if (G_UNLIKELY (!got_requisition)) {
                 g_mutex_lock (mutex);
                 ufo_remote_node_get_requisition (remote, &requisition);
                 got_requisition = TRUE;
                 g_mutex_unlock (mutex);
             }
+
             output = ufo_buffer_pool_acquire (obp, &requisition);
             g_mutex_lock (mutex);
             ufo_remote_node_get_result (remote, output);
@@ -429,7 +437,9 @@ static void run_remote_task (TaskLocalData *tld)
             push_to_next_queue (output, successor_queues);
         }
     }
+
     g_debug ("start to collect outstanding buffers");
+
     while (in_flight > 0) {
         if (G_UNLIKELY (!got_requisition)) {
             g_mutex_lock (mutex);
@@ -437,7 +447,7 @@ static void run_remote_task (TaskLocalData *tld)
             g_mutex_unlock (mutex);
             got_requisition = TRUE;
         }
-        //ufo_remote_node_get_requisition (remote, &requisition);
+
         output = ufo_buffer_pool_acquire (obp, &requisition);
         g_mutex_lock (mutex);
         ufo_remote_node_get_result (remote, output);
@@ -446,9 +456,10 @@ static void run_remote_task (TaskLocalData *tld)
         in_flight--;
         push_to_next_queue (output, successor_queues);
     }
+
     g_assert (num_received == num_expected);
 
-    //wait until all remotes completed before we write out a log
+    /* wait until all remotes completed before we write out a log */
     gint node_index = remote_barrier ();
 
     if (node_index == 0) {
@@ -536,19 +547,20 @@ run_task_without_grouping (TaskLocalData *tld)
 
         if (!tld->mode == UFO_TASK_MODE_GENERATOR) {
             gpointer next_input = g_async_queue_pop (ufo_task_node_get_input_queue (self));
+
             if ((int *)next_input == UFO_END_OF_STREAM) {
                 active = FALSE;
                 break;
             }
             input = (UfoBuffer *) next_input;
 
-            // copy the buffer to our own buffer pool
+            /* copy the buffer to our own buffer pool */
             ufo_buffer_get_requisition (input, &requisition);
             local_input = ufo_buffer_pool_acquire (ibp, &requisition);
             ufo_buffer_copy (input, local_input);
             ufo_buffer_release_to_pool (input);
         }
-         else {
+        else {
             if (UFO_IS_BUFFER (input))
                 ufo_buffer_release_to_pool (input);
         }
@@ -574,23 +586,19 @@ run_task_without_grouping (TaskLocalData *tld)
                 break;
         }
 
-        // forward the result
+        /* forward the result */
         if (produces) {
             UfoRequisition out_req;
             ufo_buffer_get_requisition (output, &out_req);
             push_to_next_queue (output, successor_queues);
         }
 
-        // will be null for sinks (like writer)
-        //if (output != NULL)
-        //    ufo_buffer_release_to_pool (output);
-
-        // will be null for generators
+        /* will be null for generators */
         if (local_input != NULL)
             ufo_buffer_release_to_pool (local_input);
     }
 
-    // send poisonpill as output
+    /* send poisonpill as output */
     send_poisonpill_to_nodes (successor_queues);
     g_debug ("\tTASK EXITING: %s", ufo_task_node_get_unique_name (UFO_TASK_NODE (tld->task)));
 
@@ -835,8 +843,6 @@ setup_groups (UfoSchedulerPrivate *priv,
 
     groups = NULL;
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
-    // nodes = ufo_graph_get_nodes_filtered (UFO_GRAPH (task_graph), is_not_remote_node, NULL);
-
     context = ufo_resources_get_context (priv->resources);
 
     g_list_for (nodes, it) {
@@ -872,12 +878,6 @@ setup_groups (UfoSchedulerPrivate *priv,
 
         g_list_free (successors);
     }
-
-    // remove remote tasks from first group and put into own group
-    // GList *remote_nodes = ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_remote_node, NULL);
-    // for (GList *jt = g_list_first (remote_nodes); jt != NULL; jt = g_list_next (jt)) {
-
-    // }
 
     g_list_free (nodes);
     return groups;
@@ -1078,6 +1078,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     guint n_nodes;
     GThread **threads;
     TaskLocalData **tlds;
+    gboolean disable_gpu = FALSE;
+    gboolean use_network_writer = FALSE;
     GTimer *timer;
 
     g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
@@ -1101,10 +1103,10 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         replicate_task_graph (task_graph, arch_graph);
     }
 
-    gboolean disable_gpu;
-    gboolean use_network_writer;
-    g_object_get (G_OBJECT (priv->config), "disable-gpu", &disable_gpu, NULL);
-    g_object_get (G_OBJECT (priv->config), "network-writer", &use_network_writer, NULL);
+    if (priv->config != NULL) {
+        g_object_get (G_OBJECT (priv->config), "disable-gpu", &disable_gpu, NULL);
+        g_object_get (G_OBJECT (priv->config), "network-writer", &use_network_writer, NULL);
+    }
 
     if (priv->expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
@@ -1112,10 +1114,11 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                                expand_remote, !disable_gpu, use_network_writer);
     }
 
-    // remove any GPU pathes in the task graph
+    /* remove any GPU pathes in the task graph */
     if (disable_gpu == TRUE) {
         gint num_remotes = g_list_length (ufo_graph_get_nodes_filtered (UFO_GRAPH(task_graph), is_remote_node, NULL));
-        // only remove if we have remotes (else we don't have anything left in the graph)
+
+        /* only remove if we have remotes (else we don't have anything left in the graph) */
         if (num_remotes > 0) {
             GList *gpu_tasks = ufo_graph_get_nodes_filtered (UFO_GRAPH (task_graph), is_gpu_node, NULL);
             for (GList *it = g_list_first (gpu_tasks); it != NULL; it = g_list_next (it))
@@ -1137,9 +1140,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     n_remotes = g_list_length (remotes);
     gboolean has_remote_nodes = n_remotes > 0;
 
-    // group system is only used when operating locally
-    // if (!has_remote_nodes)
-        groups = setup_groups (priv, task_graph);
+    groups = setup_groups (priv, task_graph);
 
     if (!correct_connections (task_graph, error))
         return;

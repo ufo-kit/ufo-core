@@ -109,18 +109,20 @@ ufo_output_task_get_output_buffer (UfoOutputTask *task)
     UfoBuffer *buffer;
     g_return_val_if_fail (UFO_IS_OUTPUT_TASK (task), NULL);
 
-    // this returns a result - not an empty buffer for reuse
-    // we need to make sure the buffers leave the queue in their order they were received
+    /*
+     * this returns a result - not an empty buffer for reuse we need to make
+     * sure the buffers leave the queue in their order they were received
+     */
     buffer = g_async_queue_pop (task->priv->sorted_result_queue);
+
     while (ufo_buffer_get_id (buffer) != (guint) g_atomic_int_get (last_buffer_position)) {
         g_async_queue_push_sorted (task->priv->sorted_result_queue,
-                                   buffer,
-                                   (GCompareDataFunc) compare_buffer_ids,
+                                   buffer, (GCompareDataFunc) compare_buffer_ids,
                                    NULL);
         buffer = g_async_queue_pop (task->priv->sorted_result_queue);
     }
-    g_atomic_int_add (last_buffer_position, 1);
 
+    g_atomic_int_add (last_buffer_position, 1);
     return buffer;
 }
 
@@ -162,6 +164,7 @@ ufo_output_task_get_structure (UfoTask *task,
 }
 
 static guint buffer_count = 0;
+
 static gboolean
 ufo_output_task_process (UfoCpuTask *task,
                          UfoBuffer **outputs,
@@ -177,7 +180,8 @@ ufo_output_task_process (UfoCpuTask *task,
 
     priv = UFO_OUTPUT_TASK_GET_PRIVATE (task);
 
-    // creates a copy so that we have 2 buffer that circle between in and out queue
+    /* creates a copy so that we have 2 buffer that circle between in and out
+     * queue */
     if (priv->n_copies == 0) {
         copy = ufo_buffer_dup (outputs[0]);
         priv->copies = g_list_append (priv->copies, copy);
@@ -190,7 +194,7 @@ ufo_output_task_process (UfoCpuTask *task,
     ufo_buffer_copy (outputs[0], copy);
     g_async_queue_push (priv->out_queue, copy);
 
-    // TODO avoid costly buffer copy?
+    /* TODO avoid costly buffer copy? */
     UfoBuffer *result_output = ufo_buffer_dup (copy);
     ufo_buffer_copy (copy, result_output);
     ufo_buffer_set_id (result_output, buffer_count++);

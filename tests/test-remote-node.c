@@ -110,10 +110,11 @@ read_file (const gchar *filename)
     return buffer;
 }
 
-gboolean should_abort (const gchar *log_domain,
-                       GLogLevelFlags log_level,
-                       const gchar *message,
-                       gpointer user_data)
+static gboolean
+should_abort (const gchar *log_domain,
+              GLogLevelFlags log_level,
+              const gchar *message,
+              gpointer user_data)
 {
     return FALSE;
 }
@@ -141,7 +142,7 @@ test_remote_node_send_inputs (Fixture *fixture,
     inputs[0] = buffer;
 
     UfoInputParam *in_params;
-    UfoTaskMode *mode = UFO_TASK_MODE_PROCESSOR;
+    UfoTaskMode mode = UFO_TASK_MODE_PROCESSOR;
     guint n_inputs;
     ufo_remote_node_get_structure (remote_node, &n_inputs, &in_params, &mode);
 
@@ -151,10 +152,10 @@ test_remote_node_send_inputs (Fixture *fixture,
     GTimer *timer = g_timer_new ();
 
     gint num_inputs = 10;
-    gint num_runs = 100;
+    guint num_runs = 100;
     gfloat total = 0.0;
 
-    for (guint i=0; i < num_runs; i++) {
+    for (guint i = 0; i < num_runs; i++) {
         g_timer_reset (timer);
         for (gint j = 0; j < num_inputs; j++)
             ufo_remote_node_send_inputs (remote_node, inputs);

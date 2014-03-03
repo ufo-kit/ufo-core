@@ -195,7 +195,7 @@ endif()
 #{{{ gtk-doc
 pkg_check_modules(GTK_DOC gtk-doc)
 
-if(0)
+if(GTK_DOC_FOUND)
     option(WITH_GTK_DOC "Build API reference" ON)
     if (WITH_GTK_DOC)
         set(docs_dir "${CMAKE_CURRENT_BINARY_DIR}/../docs")

@@ -41,15 +41,16 @@ struct _UfoZmqMessengerPrivate {
     gpointer profiler;
 };
 
-/* C99 allows flexible length structs that we use to map
-* arbitrary frame lengths that are transferred via zmq.
-* Note: Sizes of datatypes should be fixed and equal on all plattforms
-* (i.e. don't use a gsize as it has different size on x86 & x86_64)
-*/
+/*
+ * C99 allows flexible length structs that we use to map arbitrary frame lengths
+ * that are transferred via zmq.  Note: Sizes of datatypes should be fixed and
+ * equal on all plattforms (i.e. don't use a gsize as it has different size on
+ * x86 & x86_64)
+ */
 typedef struct _DataFrame {
     UfoMessageType type;
     guint64 data_size;
-    // variable length data field
+    /* variable length data field */
     char data[];
 } DataFrame;
 
@@ -105,7 +106,8 @@ ufo_zmq_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole ro
                         addr,
                         zmq_strerror (errno));
         }
-    } else if (role == UFO_MESSENGER_SERVER) {
+    }
+    else if (role == UFO_MESSENGER_SERVER) {
         validate_zmq_listen_address (priv->remote_addr);
         priv->zmq_socket = zmq_socket (priv->zmq_ctx, ZMQ_REP);
 
@@ -161,7 +163,8 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
 
     frame->data_size = request_msg->data_size;
     frame->type = request_msg->type;
-    //TODO eliminate extra copying
+
+    /* TODO eliminate extra copying */
     memcpy (frame->data, request_msg->data, request_msg->data_size);
 
     gint err = zmq_msg_send (&request, priv->zmq_socket, 0);
@@ -213,9 +216,8 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
     result = reply_msg;
     goto finalize;
 
-    finalize:
-        return result;
-
+finalize:
+    return result;
 }
 
 /**
@@ -264,8 +266,8 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
     result = msg;
     goto finalize;
 
-    finalize:
-        return result;
+finalize:
+    return result;
 }
 
 gpointer
@@ -292,7 +294,6 @@ ufo_messenger_interface_init (UfoMessengerIface *iface)
     iface->get_profiler = ufo_zmq_messenger_get_profiler;
     iface->set_profiler = ufo_zmq_messenger_set_profiler;
 }
-
 
 static void
 ufo_zmq_messenger_dispose (GObject *object)

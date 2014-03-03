@@ -80,7 +80,6 @@ ufo_remote_node_new (const gchar *address)
     gchar *addr = g_strdup (address);
     ufo_messenger_connect (priv->msger, addr, UFO_MESSENGER_CLIENT);
     priv->addr = addr;
-    // g_free(addr);
 
     return UFO_NODE (node);
 }
@@ -126,16 +125,7 @@ ufo_remote_node_get_num_cpus (UfoRemoteNode *node)
 void
 ufo_remote_node_request_setup (UfoRemoteNode *node)
 {
-    // TODO setup isn't in use, remove it
-    //g_assert (FALSE);
-
-    // g_return_if_fail (UFO_IS_REMOTE_NODE (node));
-    // UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
-
-    // UfoMessage *request;
-    // request = ufo_message_new (UFO_MESSAGE_SETUP, 0);
-    // ufo_message_send_blocking (request);
-    // ufo_message_free (request);
+    /* TODO setup isn't in use, remove it */
 }
 
 void
@@ -218,10 +208,10 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
 
     priv = node->priv;
 
-    // we currently only support one input
+    /* we currently only support one input */
     g_assert (priv->n_inputs == 1);
 
-    // first, send the requisition of the input
+    /* first, send the requisition of the input */
     UfoRequisition requisition;
     ufo_buffer_get_requisition (inputs[0], &requisition);
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_SEND_INPUTS_REQUISITION, 0);
@@ -230,34 +220,12 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
     ufo_messenger_send_blocking (priv->msger, request, NULL);
     g_free (request);
     
-    // second, send the input payload
+    /* second, send the input payload */
     request = ufo_message_new (UFO_MESSAGE_SEND_INPUTS_DATA, 0);
     request->data_size = ufo_buffer_get_size (inputs[0]);
     request->data = ufo_buffer_get_host_array (inputs[0], NULL);
     ufo_messenger_send_blocking (priv->msger, request, NULL);
     g_free (request);
-
-    // for (guint i = 0; i < priv->n_inputs; i++) {
-    //     struct _Header *header = g_new0 (struct _Header, 1);
-    //     guint64 size = sizeof (struct _Header) + ufo_buffer_get_size (inputs[i]);
-    //     ufo_buffer_get_requisition (inputs[i], &header->requisition);
-
-    //     memcpy (base, header, sizeof (struct _Header));
-    //     base += sizeof (struct _Header);
-    // 	TraceHandle *th = trace_start ("GET_HOSTARRAY_SEND_INPUT_BUFFER");
-    //     gpointer host_array = ufo_buffer_get_host_array (inputs[i], NULL);
-    // 	trace_stop (th);
-    // 	th = trace_start ("MEMCPY_SEND_INPUT_BUFFER");
-    //     memcpy (base, host_array, header->buffer_size);
-    // 	trace_stop (th);
-    //     base += header->buffer_size;
-    // }
-    // request = ufo_message_new (UFO_MESSAGE_SEND_INPUTS, size);
-    // g_free (request->data);
-    // request->data = buffer;
-    // send as a single message
-    // ufo_messenger_send_blocking (priv->msger, request, NULL);
-
 }
 
 void
@@ -274,7 +242,7 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
     request = ufo_message_new (UFO_MESSAGE_GET_RESULT, 0);
     response = ufo_messenger_send_blocking (priv->msger, request, NULL);
 
-    // ufo_buffer_discard_location (buffer);
+    /* ufo_buffer_discard_location (buffer); */
     g_assert (ufo_buffer_get_size (buffer) == response->data_size);
     ufo_buffer_set_host_array (buffer, (gfloat *) response->data, TRUE);
     ufo_message_free (request);

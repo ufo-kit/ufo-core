@@ -285,23 +285,8 @@ ufo_config_class_init (UfoConfigClass *klass)
                               FALSE,
                               G_PARAM_READWRITE);
 
-    /**
-     * UfoConfig:disable-gpu
-     *
-     * Let the user select whether the main machine is used for gpu computing.
-     *
-     */
-    properties[PROP_DISABLE_GPU] =
-        g_param_spec_boolean ("disable-gpu",
-                              "Don't use local machine for GPU computing",
-                              "Don't use local machine for GPU computing",
-                              FALSE,
-                              G_PARAM_READWRITE);
-
     g_object_class_install_property (oclass, PROP_PATHS,
                                      properties[PROP_PATHS]);
-    g_object_class_install_property (oclass, PROP_DISABLE_GPU,
-                                     properties[PROP_DISABLE_GPU]);
     g_object_class_install_property (oclass, PROP_DEVICE_TYPE,
                                      properties[PROP_DEVICE_TYPE]);
     g_object_class_install_property (oclass, PROP_DISABLE_GPU,

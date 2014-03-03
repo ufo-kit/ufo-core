@@ -44,15 +44,16 @@ struct _UfoMpiMessengerPrivate {
     gpointer profiler;
 };
 
-/* C99 allows flexible length structs that we use to map
-* arbitrary frame lengths that are transferred via mpi.
-* Note: Sizes of datatypes should be fixed and equal on all plattforms
-* (i.e. don't use a gsize as it has different size on x86 & x86_64)
-*/
+/*
+ * C99 allows flexible length structs that we use to map arbitrary frame lengths
+ * that are transferred via mpi.  Note: Sizes of datatypes should be fixed and
+ * equal on all plattforms (i.e. don't use a gsize as it has different size on
+ * x86 & x86_64)
+ */
 typedef struct _DataFrame {
     UfoMessageType type;
     guint64 data_size;
-    // variable length data field, goes to the stack
+    /* variable length data field, goes to the stack */
     char data[];
 } DataFrame;
 
@@ -122,16 +123,16 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
     g_assert (priv->connected == TRUE);
 
-    // we send in two phases: first send the data frame of fixed size
-    // then the receiver knows how much bytes will follow in the second send
+    /* we send in two phases: first send the data frame of fixed size */
+    /* then the receiver knows how much bytes will follow in the second send */
     DataFrame *request_frame = g_malloc (sizeof (DataFrame));
     request_frame->type = request_msg->type;
     request_frame->data_size = request_msg->data_size;
 
-    // send preflight
+    /* send preflight */
     MPI_Ssend (request_frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD);
 
-    // send payload
+    /* send payload */
     if (request_msg->data_size > 0) {
         int err = MPI_Ssend (request_msg->data, request_msg->data_size, MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD);
         if (err != MPI_SUCCESS) {
@@ -150,15 +151,15 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
 
     MPI_Status status;
 
-    // reuse the buffer
+    /* reuse the buffer */
     DataFrame *response_frame = request_frame;
-    // receive the response preflight
+    /* receive the response preflight */
     MPI_Recv (response_frame, sizeof (DataFrame), MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
 
     response->type = response_frame->type;
     response->data_size = response_frame->data_size;
 
-    // receive the response payload (if any)
+    /* receive the response payload (if any) */
     if (response_frame->data_size > 0) {
         gpointer buff = g_malloc (response_frame->data_size);
         MPI_Recv (buff, response_frame->data_size, MPI_CHAR, priv->remote_rank, 0, MPI_COMM_WORLD, &status);
