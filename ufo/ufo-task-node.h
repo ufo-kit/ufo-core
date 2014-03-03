@@ -80,6 +80,7 @@ gint            ufo_task_node_get_num_expected      (UfoTaskNode    *node,
 void            ufo_task_node_set_out_group         (UfoTaskNode    *node,
                                                      UfoGroup       *group);
 UfoGroup       *ufo_task_node_get_out_group         (UfoTaskNode    *node);
+GList          *ufo_task_node_get_in_groups         (UfoTaskNode    *node);
 void            ufo_task_node_add_in_group          (UfoTaskNode    *node,
                                                      guint           pos,
                                                      UfoGroup       *group);
@@ -87,12 +88,17 @@ UfoGroup       *ufo_task_node_get_current_in_group  (UfoTaskNode    *node,
                                                      guint           pos);
 void            ufo_task_node_switch_in_group       (UfoTaskNode    *node,
                                                      guint           pos);
+void            ufo_task_node_set_own_group         (UfoTaskNode *node,
+                                                     UfoGroup *group);
+UfoGroup       *ufo_task_node_get_own_group         (UfoTaskNode *node);
 void            ufo_task_node_set_proc_node         (UfoTaskNode    *task_node,
                                                      UfoNode        *proc_node);
 UfoNode        *ufo_task_node_get_proc_node         (UfoTaskNode    *node);
 void            ufo_task_node_set_partition         (UfoTaskNode    *node,
                                                      guint           index,
                                                      guint           total);
+GAsyncQueue    *ufo_task_node_get_input_queue       (UfoTaskNode *node);
+GAsyncQueue    *ufo_task_node_get_output_queue      (UfoTaskNode *node);
 void            ufo_task_node_get_partition         (UfoTaskNode    *node,
                                                      guint          *index,
                                                      guint          *total);

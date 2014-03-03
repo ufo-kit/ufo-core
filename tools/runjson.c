@@ -95,11 +95,14 @@ execute_json (const gchar *filename,
 }
 
 #ifdef MPI
+static GStaticMutex static_mutex = G_STATIC_MUTEX_INIT;
 
 static void
 mpi_terminate_processes (gint global_size)
 {
+    GMutex *mutex = g_static_mutex_get_mutex (&static_mutex);
     for (int i = 1; i < global_size; i++) {
+        g_mutex_lock (mutex);
         gchar *addr = g_strdup_printf ("%d", i);
         UfoMessage *poisonpill = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
         UfoMessenger *msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
@@ -108,6 +111,7 @@ mpi_terminate_processes (gint global_size)
         ufo_messenger_send_blocking (msger, poisonpill, NULL);
         ufo_message_free (poisonpill);
         ufo_messenger_disconnect (msger);
+        g_mutex_unlock (mutex);
     }
 }
 
@@ -129,8 +133,7 @@ static void
 mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
 {
     gint provided;
-    MPI_Init_thread (argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-   
+    MPI_Init_thread (argc, &argv, MPI_THREAD_SERIALIZED, &provided);
     MPI_Comm_rank (MPI_COMM_WORLD, rank);
     MPI_Comm_size (MPI_COMM_WORLD, global_size);
 
@@ -142,25 +145,23 @@ mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
 #ifdef DEBUG
     // get us some time to attach a gdb session to the pids
     g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
-             getpid(), rank, *global_size - 1);
+             getpid(), *rank, *global_size - 1);
 
-    sleep (3);
+    //sleep (5);
 #endif
 
 }
 
 #endif
 
-#ifdef DEBUG
 static void
-ignore_log (const gchar     *domain,
+log_handler (const gchar     *domain,
             GLogLevelFlags   flags,
             const gchar     *message,
             gpointer         data)
 {
     g_print ("%s\n",message);
 }
-#endif
 
 int main(int argc, char *argv[])
 {
@@ -168,7 +169,10 @@ int main(int argc, char *argv[])
     GError *error = NULL;
     gchar **paths = NULL;
     gchar **addresses = NULL;
+    gboolean network_writer = FALSE;
+    gboolean debug = FALSE;
     gboolean show_version = FALSE;
+    gboolean disable_gpu = FALSE;
     UfoConfig *config = NULL;
 
     GOptionEntry entries[] = {
@@ -178,16 +182,19 @@ int main(int argc, char *argv[])
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
           "Address of remote server running `ufod'", NULL },
 #endif
+        { "disable-gpu", 'n', 0, G_OPTION_ARG_NONE, &disable_gpu,
+          "Don't use local system for GPU computations", NULL },
         { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
           "Show version information", NULL },
+        { "network-writer", 'w', 0, G_OPTION_ARG_NONE, &network_writer,
+          "Assign the writer task to last remote node", NULL },
+        { "debug", 'd', 0, G_OPTION_ARG_NONE, &debug,
+          "Print debug log messages", NULL },
         { NULL }
     };
 
     g_type_init();
 
-#ifdef DEBUG
-    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
-#endif
 
     context = g_option_context_new ("FILE");
     g_option_context_add_main_entries (context, entries, NULL);
@@ -210,16 +217,27 @@ int main(int argc, char *argv[])
         g_free (help);
         return 1;
     }
-
+    g_debug ("get_config");
     config = get_config (paths);
+    g_object_set (G_OBJECT (config), "disable-gpu", disable_gpu, NULL);
+
+    g_object_set (G_OBJECT (config), "disable-gpu", disable_gpu, NULL);
+    g_object_set (G_OBJECT (config), "network-writer", network_writer, NULL);
+    g_object_set (G_OBJECT (config), "debug", debug, NULL);
+    g_debug ("end option set");
+
+    g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, log_handler, NULL);
 
 #ifdef MPI
     gint rank, size;
+    g_debug ("initing mpi");
     mpi_init (&argc, argv, &rank, &size);
 
     if (rank == 0) {
+    	g_object_set (G_OBJECT (config), "disable-gpu", TRUE, NULL);
         addresses = mpi_build_addresses (size);
     } else {
+    	g_object_set (G_OBJECT (config), "disable-gpu", FALSE, NULL);
         gchar *addr = g_strdup_printf("%d", rank);
         UfoDaemon *daemon = ufo_daemon_new (config, addr);
         ufo_daemon_start (daemon);

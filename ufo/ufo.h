@@ -24,6 +24,7 @@
 
 #include <ufo/ufo-arch-graph.h>
 #include <ufo/ufo-buffer.h>
+#include <ufo/ufo-buffer-pool.h>
 #include <ufo/ufo-config.h>
 #include <ufo/ufo-configurable.h>
 #include <ufo/ufo-cpu-node.h>

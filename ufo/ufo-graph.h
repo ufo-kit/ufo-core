@@ -110,6 +110,9 @@ guint       ufo_graph_get_num_successors    (UfoGraph       *graph,
                                              UfoNode        *node);
 GList      *ufo_graph_get_successors        (UfoGraph       *graph,
                                              UfoNode        *node);
+void        ufo_graph_replace_node         (UfoGraph        *graph,
+                                            UfoNode         *oldnode,
+                                            UfoNode         *newnode);
 GList      *ufo_graph_get_paths             (UfoGraph       *graph,
                                              UfoFilterPredicate pred);
 GList      *ufo_graph_flatten               (UfoGraph       *graph);
@@ -117,6 +120,8 @@ void        ufo_graph_expand                (UfoGraph       *graph,
                                              GList          *path);
 UfoGraph   *ufo_graph_copy                  (UfoGraph       *graph,
                                              GError        **error);
+void        ufo_graph_remove_node           (UfoGraph       *graph,
+                                             UfoNode        *node);
 void        ufo_graph_dump_dot              (UfoGraph       *graph,
                                              const gchar    *filename);
 GType       ufo_graph_get_type              (void);

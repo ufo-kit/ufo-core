@@ -5,6 +5,7 @@ set(ufocore_SRCS
     compat.c
     ufo-arch-graph.c
     ufo-buffer.c
+    ufo-buffer-pool.c
     ufo-configurable.c
     ufo-config.c
     ufo-cpu-node.c
@@ -37,6 +38,7 @@ set(ufocore_SRCS
 set(ufocore_HDRS
     ufo-arch-graph.h
     ufo-buffer.h
+    ufo-buffer-pool.h
     ufo-configurable.h
     ufo-config.h
     ufo-cpu-node.h

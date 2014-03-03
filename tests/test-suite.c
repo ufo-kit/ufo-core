@@ -40,8 +40,11 @@ int main(int argc, char *argv[])
 
     g_log_set_handler ("Ufo", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
     g_log_set_handler ("ocl", G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG, ignore_log, NULL);
-
+    g_log_set_fatal_mask ("Ufo", 0);
     test_add_buffer ();
+    g_test_run();
+    return 0;
+    test_add_remote_node ();
     test_add_config ();
     test_add_graph ();
     test_add_profiler ();

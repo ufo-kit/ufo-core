@@ -12,6 +12,7 @@ ufo_sources = \
     compat.c \
     ufo-arch-graph.c \
     ufo-buffer.c \
+    ufo-buffer-pool.c \
     ufo-configurable.c \
     ufo-config.c \
     ufo-cpu-node.c \

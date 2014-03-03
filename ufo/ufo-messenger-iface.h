@@ -25,6 +25,7 @@
 #endif
 
 #include <ufo/ufo-remote-node.h>
+#include <ufo/ufo-profiler.h>
 
 G_BEGIN_DECLS
 
@@ -65,11 +66,13 @@ typedef enum {
     UFO_MESSAGE_STREAM_JSON = 0,
     UFO_MESSAGE_REPLICATE_JSON,
     UFO_MESSAGE_GET_NUM_DEVICES,
+    UFO_MESSAGE_GET_NUM_CPUS,
     UFO_MESSAGE_GET_STRUCTURE,
     UFO_MESSAGE_STRUCTURE,
     UFO_MESSAGE_GET_REQUISITION,
     UFO_MESSAGE_REQUISITION,
-    UFO_MESSAGE_SEND_INPUTS,
+    UFO_MESSAGE_SEND_INPUTS_REQUISITION,
+    UFO_MESSAGE_SEND_INPUTS_DATA,
     UFO_MESSAGE_GET_RESULT,
     UFO_MESSAGE_RESULT,
     UFO_MESSAGE_CLEANUP,
@@ -112,6 +115,18 @@ typedef enum {
     UFO_MESSENGER_SERVER
 } UfoMessengerRole;
 
+typedef struct {
+    gdouble timestamp_start;
+    gdouble timestamp_end;
+    gdouble duration;
+    gsize size_req;
+    gsize size_resp;
+    UfoMessageType type;
+    gchar   *role;
+} NetworkEvent;
+
+gchar * ufo_message_type_to_char (UfoMessageType);
+
 struct _UfoMessengerIface {
     /*< private >*/
     GTypeInterface parent_iface;
@@ -128,6 +143,8 @@ struct _UfoMessengerIface {
 
     UfoMessage * (*recv_blocking)           (UfoMessenger *msger,
                                              GError **error);
+    gpointer      (*get_profiler)           (UfoMessenger *msger);
+    void          (*set_profiler)           (UfoMessenger *msger, gpointer data);
 };
 
 
@@ -143,9 +160,13 @@ UfoMessage *ufo_messenger_send_blocking     (UfoMessenger     *msger,
 
 UfoMessage *ufo_messenger_recv_blocking     (UfoMessenger     *msger,
                                              GError          **error);
-
+gpointer    ufo_messenger_get_profiler     (UfoMessenger     *msger);
+void        ufo_messenger_set_profiler     (UfoMessenger *msger, gpointer data);
 GQuark      ufo_messenger_error_quark       (void);
 GType       ufo_messenger_get_type          (void);
+
+NetworkEvent * start_trace_event (UfoMessenger *msger, UfoMessage *msg, const gchar *topic);
+void stop_trace_event (UfoMessenger *msger, UfoMessage *msg, NetworkEvent *ev);
 
 G_END_DECLS
 

@@ -57,6 +57,8 @@ if (WITH_MPI)
     
     if (NOT MPICC)
         message (FATAL_ERROR "No mpicc compiler be found but MPI was explicitly enabled")
+    else ()
+        message ("Using mpicc found at ${MPICC}")
     endif ()
 
     set(CMAKE_C_COMPILER ${MPICC})
@@ -115,6 +117,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
                      -Wmissing-prototypes
                      -Wnested-externs
                      -Wno-deprecated-declarations
+                     -Wno-unused
                      -Wno-long-long
                      -Wno-missing-field-initializers
                      -Wno-unused-parameter

@@ -39,7 +39,7 @@ setup (Fixture *fixture, gconstpointer data)
         .dims[0] = 8,
     };
 
-    fixture->buffer = ufo_buffer_new (&requisition, NULL);
+    fixture->buffer = ufo_buffer_new (&requisition, NULL, NULL);
     fixture->data8 = data8;
     fixture->data16 = data16;
     fixture->n_data = 8;
@@ -51,6 +51,55 @@ teardown (Fixture *fixture, gconstpointer data)
     g_object_unref (fixture->buffer);
 }
 
+static void
+test_create_lots_of_buffers (Fixture *fixture,
+                             gconstpointer unused)
+{
+    gint num_buffers = 10000;
+    UfoConfig *config = ufo_config_new ();
+    UfoResources *resources = ufo_resources_new (config, NULL);
+    gpointer context = ufo_resources_get_context (resources);
+
+    UfoRequisition requisition = {
+        .n_dims = 2,
+        .dims[0] = 800,
+        .dims[1] = 800
+    };
+
+    while (num_buffers-- > 0) {
+        UfoBuffer *buffer = ufo_buffer_new (&requisition, NULL, context);
+        gpointer device_array = ufo_buffer_get_device_array (buffer, NULL);
+        ufo_buffer_discard_location (buffer);
+        g_assert (device_array != NULL);
+        g_object_unref (buffer);
+    }
+}
+
+static void
+test_copy_lots_of_buffers (Fixture *fixture,
+                           gconstpointer *unused)
+{
+    gint num_buffers = 10000;
+    UfoConfig *config = ufo_config_new ();
+    UfoResources *resources = ufo_resources_new (config, NULL);
+    gpointer context = ufo_resources_get_context (resources);
+
+    UfoRequisition requisition = {
+        .n_dims = 2,
+        .dims[0] = 800,
+        .dims[1] = 800
+    };
+
+    // TODO enforce copy between GPUs
+    UfoBuffer *src = ufo_buffer_new (&requisition, NULL, context);
+    UfoBuffer *dest = ufo_buffer_new (&requisition, NULL, context);
+
+    while (num_buffers-- > 0) {
+        g_debug("copy");
+        ufo_buffer_copy (src, dest);
+    }
+
+}
 static void
 test_convert_8 (Fixture *fixture,
                 gconstpointer unused)
@@ -112,7 +161,10 @@ test_convert_16_from_data (Fixture *fixture,
 void
 test_add_buffer (void)
 {
-    g_test_add ("/no-opencl/buffer/convert/8/host",
+    g_test_add ("/buffer/create",
+                Fixture, NULL,
+                setup, test_create_lots_of_buffers, teardown);
+    g_test_add ("/buffer/convert/8/host",
                 Fixture, NULL,
                 setup, test_convert_8, teardown);
 

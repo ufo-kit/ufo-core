@@ -1,24 +1,75 @@
 {
-     "type" : "sequence",
-     "elements" : [
-         {
-             "type" : "filter",
-             "plugin" : "uca"
-         },
-         {
-             "type" : "filter",
-             "plugin" : "scale",
-             "properties" : {
-                 "scale" : 0.5
-             }
-         },
-         {
-             "type" : "filter",
-             "plugin" : "raw",
-             "properties" : {
-                 "prefix" : "foo"
-             }
-         }
-     ]
-}
+   "version":"1.1",
+   "nodes":[
+      {
+         "plugin":"fft",
+         "name":"fft-0x1594010",
+         "properties":{
+            "graph":{
 
+            }
+         }
+      },
+      {
+         "plugin":"filter",
+         "name":"filter-0x1594230",
+         "properties":{
+            "graph":{
+
+            }
+         }
+      },
+      {
+         "plugin":"ifft",
+         "name":"ifft-0x1594450",
+         "properties":{
+            "graph":{
+
+            },
+            "crop-width":1088
+         }
+      },
+      {
+         "plugin":"backproject",
+         "name":"backproject-0x15ca110",
+         "properties":{
+            "graph":{
+
+            },
+            "axis-pos":413,
+            "angle-step":0.012566369958221912
+         }
+      }
+   ],
+   "edges":[
+      {
+         "to":{
+            "name":"filter-0x1594230",
+            "input":0
+         },
+         "from":{
+            "name":"fft-0x1594010"
+         }
+      },
+      {
+         "to":{
+            "name":"ifft-0x1594450",
+            "input":0
+         },
+         "from":{
+            "name":"filter-0x1594230"
+         }
+      },
+      {
+         "to":{
+            "name":"backproject-0x15ca110",
+            "input":0
+         },
+         "from":{
+            "name":"ifft-0x1594450"
+         }
+      }
+   ],
+   "index":0,
+   "total":1
+}
