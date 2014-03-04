@@ -756,6 +756,12 @@ get_sorted_event_trace (TaskLocalData **tlds,
 }
 
 static void
+write_opencl_row (const gchar *row, FILE *fp)
+{
+    fprintf (fp, "%s\n", row);
+}
+
+static void
 write_traces (TaskLocalData **tlds,
               guint n_nodes)
 {
@@ -765,8 +771,24 @@ write_traces (TaskLocalData **tlds,
     GList *sorted;
     GList *it;
 
-    sorted = get_sorted_event_trace (tlds, n_nodes);
     pid = (guint) getpid ();
+
+    /* Write OpenCL events */
+    filename = g_strdup_printf (".opencl.%i.txt", pid);
+    fp = fopen (filename, "w");
+
+    for (guint i = 0; i < n_nodes; i++) {
+        UfoProfiler *profiler;
+
+        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (tlds[i]->task));
+        ufo_profiler_foreach (profiler, (UfoProfilerFunc) write_opencl_row, fp);
+    }
+
+    fclose (fp);
+    g_free (filename);
+
+    /* Write trace events */
+    sorted = get_sorted_event_trace (tlds, n_nodes);
     filename = g_strdup_printf (".trace.%i.json", pid);
     fp = fopen (filename, "w");
     fprintf (fp, "{ \"traceEvents\": [");
