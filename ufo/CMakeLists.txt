@@ -249,12 +249,12 @@ if(GTK_DOC_FOUND)
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --ignore-headers=ufo-mpi-messenger.h
-                    DEPENDS ${ufocore_SRCS}
+                    DEPENDS ufo
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_out}/Ufo.args
             COMMAND sh scangobj.sh
-            DEPENDS ${ufocore_SRCS} ${docs_out}/Ufo-decl.txt
+            DEPENDS ${docs_out}/Ufo-decl.txt
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_out}/sgml.stamp
@@ -263,7 +263,7 @@ if(GTK_DOC_FOUND)
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --sgml-mode
                     --output-format=xml
-            DEPENDS ${docs_out}/Ufo.args ${docs_out}/Ufo-sections.txt ${ufocore_SRCS}
+            DEPENDS ${docs_out}/Ufo.args ${docs_out}/Ufo-sections.txt
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_dir}/html.stamp
