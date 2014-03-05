@@ -27,6 +27,16 @@ struct _UfoTwoWayQueue {
     guint capacity;
 };
 
+/**
+ * ufo_two_way_queue_new: (skip)
+ * @init: (element-type gpointer): List with elements inserted into
+ *  consumer queue
+ *
+ * Create a new two-way queue and optionally initialize the consumer queue with
+ * elements from @init.
+ *
+ * Returns: A new #UfoTwoWayQueue.
+ */
 UfoTwoWayQueue *
 ufo_two_way_queue_new (GList *init)
 {
@@ -52,6 +62,14 @@ ufo_two_way_queue_free (UfoTwoWayQueue *queue)
     g_free (queue);
 }
 
+/**
+ * ufo_two_way_queue_consumer_pop:
+ * @queue: A #UfoTwoWayQueue
+ *
+ * Fetch an item for consumption.
+ *
+ * Returns: (transfer none): A consumable item.
+ */
 gpointer
 ufo_two_way_queue_consumer_pop (UfoTwoWayQueue *queue)
 {
@@ -64,6 +82,14 @@ ufo_two_way_queue_consumer_push (UfoTwoWayQueue *queue, gpointer data)
     g_async_queue_push (queue->producer_queue, data);
 }
 
+/**
+ * ufo_two_way_queue_producer_pop:
+ * @queue: A #UfoTwoWayQueue
+ *
+ * Fetch an item for production.
+ *
+ * Returns: (transfer none): A producable item.
+ */
 gpointer
 ufo_two_way_queue_producer_pop (UfoTwoWayQueue *queue)
 {
