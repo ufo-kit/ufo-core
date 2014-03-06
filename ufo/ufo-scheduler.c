@@ -831,6 +831,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                    GError **error)
 {
     UfoSchedulerPrivate *priv;
+    UfoTaskGraph *copy;
     UfoArchGraph *arch_graph;
     GList *groups;
     guint n_nodes;
@@ -855,30 +856,35 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                                                          priv->remotes));
     }
 
+    copy = UFO_TASK_GRAPH (ufo_graph_copy (UFO_GRAPH (task_graph), error));
+
+    if (copy == NULL)
+        return;
+
     if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
-        replicate_task_graph (task_graph, arch_graph);
+        replicate_task_graph (copy, arch_graph);
     }
 
     if (priv->expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
-        ufo_task_graph_expand (task_graph, arch_graph, expand_remote);
+        ufo_task_graph_expand (copy, arch_graph, expand_remote);
     }
 
-    propagate_partition (task_graph);
-    ufo_task_graph_map (task_graph, arch_graph);
+    propagate_partition (copy);
+    ufo_task_graph_map (copy, arch_graph);
 
     /* Prepare task structures */
-    tlds = setup_tasks (priv, task_graph, error);
+    tlds = setup_tasks (priv, copy, error);
 
     if (tlds == NULL)
         return;
 
-    groups = setup_groups (priv, task_graph);
+    groups = setup_groups (priv, copy);
 
-    if (!correct_connections (task_graph, error))
+    if (!correct_connections (copy, error))
         return;
 
-    n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (task_graph));
+    n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (copy));
     threads = g_new0 (GThread *, n_nodes);
     timer = g_timer_new ();
 
@@ -921,6 +927,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_list_foreach (groups, (GFunc) g_object_unref, NULL);
     g_list_free (groups);
     g_free (threads);
+
+    g_object_unref (copy);
 
     if (priv->arch_graph == NULL)
         g_object_unref (arch_graph);
