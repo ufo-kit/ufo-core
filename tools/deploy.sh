@@ -41,7 +41,6 @@ function build_package() {
 }
 
 build_package "ufo-core" http://github.com/ufo-kit/ufo-core
-build_package "oclfft" http://ufo.kit.edu/git/oclfft
 build_package "ufo-filters" http://github.com/ufo-kit/ufo-filters
 
 # Link the typelib because the girepository framework is not searching

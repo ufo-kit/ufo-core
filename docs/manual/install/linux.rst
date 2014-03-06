@@ -56,7 +56,6 @@ unstable version of the source::
 
     $ git clone https://github.com/ufo-kit/ufo-core
     $ git clone https://github.com/ufo-kit/ufo-filters
-    $ git clone http://ufo.kit.edu/git/oclfft
 
 The latter is used for developers who have write-access to the corresponding
 repositories. All stable versions are tagged. To see a list of all releases
