@@ -8,7 +8,7 @@ before_install:
   # Hijacking the crystfel repos for OpenCL headers and ICD
   - sudo add-apt-repository ppa:valmar-lp/crystfel-releases -y
   - sudo apt-get update -qq -y
-  - sudo apt-get install opencl-headers ocl-icd-opencl-dev libjson-glib-dev libzmq3-dev autoconf-archive gtk-doc-tools
+  - sudo apt-get install gobject-introspection opencl-headers ocl-icd-opencl-dev libjson-glib-dev libzmq3-dev autoconf-archive gtk-doc-tools
 
 before_script:
   # Configure with Autotools
