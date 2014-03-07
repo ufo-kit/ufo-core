@@ -22,7 +22,7 @@ More information can be found at various locations:
 
 * [User manual](http://ufo-core.readthedocs.org)
 * [API reference](http://ufo.kit.edu/extra/reference/)
-* [Task reference](http://ufo.kit.edu/extra/filters/reference/)
+* [Task reference](http://ufo-filters.readthedocs.org)
 
 
 ## License
