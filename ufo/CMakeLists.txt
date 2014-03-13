@@ -263,7 +263,7 @@ if(GTK_DOC_FOUND)
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --sgml-mode
                     --output-format=xml
-            DEPENDS ${docs_out}/Ufo.args ${docs_out}/Ufo-sections.txt
+            DEPENDS ${docs_out}/Ufo.args
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_dir}/html.stamp
