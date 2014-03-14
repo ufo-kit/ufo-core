@@ -79,6 +79,8 @@ struct _UfoSchedulerPrivate {
     UfoRemoteMode    mode;
     gboolean         expand;
     gboolean         trace;
+    gboolean         rerun;
+    gboolean         ran;
     gdouble          time;
 };
 
@@ -87,6 +89,7 @@ enum {
     PROP_EXPAND,
     PROP_REMOTES,
     PROP_ENABLE_TRACING,
+    PROP_ENABLE_RERUNS,
     PROP_TIME,
     N_PROPERTIES,
 
@@ -831,8 +834,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                    GError **error)
 {
     UfoSchedulerPrivate *priv;
-    UfoTaskGraph *copy;
     UfoArchGraph *arch_graph;
+    UfoTaskGraph *graph;
     GList *groups;
     guint n_nodes;
     GThread **threads;
@@ -856,35 +859,47 @@ ufo_scheduler_run (UfoScheduler *scheduler,
                                                          priv->remotes));
     }
 
-    copy = UFO_TASK_GRAPH (ufo_graph_copy (UFO_GRAPH (task_graph), error));
+    if (priv->rerun) {
+        graph = UFO_TASK_GRAPH (ufo_graph_copy (UFO_GRAPH (task_graph), error));
+    }
+    else {
+        if (priv->ran) {
+            g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
+                         "UfoScheduler::run called for second time but ::enable-reruns is set to FALSE");
+            return;
+        }
 
-    if (copy == NULL)
+        graph = task_graph;
+    }
+
+
+    if (graph == NULL)
         return;
 
     if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
-        replicate_task_graph (copy, arch_graph);
+        replicate_task_graph (graph, arch_graph);
     }
 
     if (priv->expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
-        ufo_task_graph_expand (copy, arch_graph, expand_remote);
+        ufo_task_graph_expand (graph, arch_graph, expand_remote);
     }
 
-    propagate_partition (copy);
-    ufo_task_graph_map (copy, arch_graph);
+    propagate_partition (graph);
+    ufo_task_graph_map (graph, arch_graph);
 
     /* Prepare task structures */
-    tlds = setup_tasks (priv, copy, error);
+    tlds = setup_tasks (priv, graph, error);
 
     if (tlds == NULL)
         return;
 
-    groups = setup_groups (priv, copy);
+    groups = setup_groups (priv, graph);
 
-    if (!correct_connections (copy, error))
+    if (!correct_connections (graph, error))
         return;
 
-    n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (copy));
+    n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (graph));
     threads = g_new0 (GThread *, n_nodes);
     timer = g_timer_new ();
 
@@ -928,10 +943,14 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_list_free (groups);
     g_free (threads);
 
-    g_object_unref (copy);
+    /* The graph is a copy which we do not need anymore */
+    if (priv->rerun)
+        g_object_unref (graph);
 
     if (priv->arch_graph == NULL)
         g_object_unref (arch_graph);
+
+    priv->ran = TRUE;
 }
 
 static void
@@ -985,6 +1004,10 @@ ufo_scheduler_set_property (GObject      *object,
             priv->trace = g_value_get_boolean (value);
             break;
 
+        case PROP_ENABLE_RERUNS:
+            priv->rerun = g_value_get_boolean (value);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -1006,6 +1029,10 @@ ufo_scheduler_get_property (GObject      *object,
 
         case PROP_ENABLE_TRACING:
             g_value_set_boolean (value, priv->trace);
+            break;
+
+        case PROP_ENABLE_RERUNS:
+            g_value_set_boolean (value, priv->rerun);
             break;
 
         case PROP_TIME:
@@ -1127,6 +1154,13 @@ ufo_scheduler_class_init (UfoSchedulerClass *klass)
                               FALSE,
                               G_PARAM_READWRITE);
 
+    properties[PROP_ENABLE_RERUNS] =
+        g_param_spec_boolean ("enable-reruns",
+                              "Enable additional runs of the scheduler",
+                              "Enable additional runs of the scheduler",
+                              FALSE,
+                              G_PARAM_READWRITE);
+
     properties[PROP_REMOTES] =
         g_param_spec_value_array ("remotes",
                                   "List containing remote addresses",
@@ -1161,6 +1195,8 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
     priv->expand = TRUE;
     priv->trace = FALSE;
+    priv->rerun = FALSE;
+    priv->ran = FALSE;
     priv->config = NULL;
     priv->resources = NULL;
     priv->arch_graph = NULL;
