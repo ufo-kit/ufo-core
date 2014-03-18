@@ -832,11 +832,14 @@ handle_json_single_prop (JsonObject *object,
                          JsonNode *node,
                          gpointer user)
 {
-    GValue val = {0,};
-    if (!JSON_NODE_HOLDS_NULL (node)) {
+    if (JSON_NODE_HOLDS_VALUE (node)) {
+        GValue val = {0,};
         json_node_get_value (node, &val);
         g_object_set_property (G_OBJECT(user), name, &val);
         g_value_unset (&val);
+    }
+    else {
+        g_warning ("`%s' is not a primitive value!", name);
     }
 }
 
