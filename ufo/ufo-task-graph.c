@@ -836,6 +836,7 @@ handle_json_single_prop (JsonObject *object,
     if (!JSON_NODE_HOLDS_NULL (node)) {
         json_node_get_value (node, &val);
         g_object_set_property (G_OBJECT(user), name, &val);
+        g_value_unset (&val);
     }
 }
 
