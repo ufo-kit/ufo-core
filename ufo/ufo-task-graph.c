@@ -838,8 +838,11 @@ handle_json_single_prop (JsonObject *object,
         g_object_set_property (G_OBJECT(user), name, &val);
         g_value_unset (&val);
     }
+    else if (JSON_NODE_HOLDS_OBJECT (node)) {
+        ufo_task_set_json_object_property (UFO_TASK (user), name, json_node_get_object (node));
+    }
     else {
-        g_warning ("`%s' is not a primitive value!", name);
+        g_warning ("`%s' is neither a primitive value nor an object!", name);
     }
 }
 
@@ -853,7 +856,7 @@ add_task_node_to_json_array (UfoTaskNode *node, JsonArray *array)
     const gchar *plugin_name = ufo_task_node_get_plugin_name (node);
     g_assert (plugin_name != NULL);
     json_object_set_string_member (node_object, "plugin", plugin_name);
-                                   
+
     const gchar *name = ufo_task_node_get_unique_name (node);
     g_assert (name != NULL);
     json_object_set_string_member (node_object, "name", name);

@@ -58,6 +58,22 @@ ufo_task_get_structure (UfoTask *task,
     UFO_TASK_GET_IFACE (task)->get_structure (task, n_inputs, in_params, mode);
 }
 
+void
+ufo_task_set_json_object_property (UfoTask *task,
+                                   const gchar *prop_name,
+                                   JsonObject *object)
+{
+    UFO_TASK_GET_IFACE (task)->set_json_object_property (task, prop_name, object);
+}
+
+static void
+ufo_task_set_json_object_property_real (UfoTask *task,
+                                        const gchar *prop_name,
+                                        JsonObject *object)
+{
+    g_warning ("`set_json_object_property' not implemented");
+}
+
 static void
 ufo_task_setup_real (UfoTask *task,
                      UfoResources *resources,
@@ -89,4 +105,5 @@ ufo_task_default_init (UfoTaskInterface *iface)
     iface->setup = ufo_task_setup_real;
     iface->get_requisition = ufo_task_get_requisition_real;
     iface->get_structure = ufo_task_get_structure_real;
+    iface->set_json_object_property = ufo_task_set_json_object_property_real;
 }

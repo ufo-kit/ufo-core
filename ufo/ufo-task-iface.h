@@ -24,6 +24,7 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
+#include <json-glib/json-glib.h>
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-resources.h>
 
@@ -91,18 +92,26 @@ struct _UfoTaskIface {
     void (*get_requisition) (UfoTask        *task,
                              UfoBuffer     **inputs,
                              UfoRequisition *requisition);
+    void (*set_json_object_property)
+                            (UfoTask        *task,
+                             const gchar    *prop_name,
+                             JsonObject     *object);
 };
 
-void   ufo_task_setup           (UfoTask          *task,
-                                 UfoResources     *resources,
-                                 GError          **error);
-void   ufo_task_get_requisition (UfoTask          *task,
-                                 UfoBuffer       **inputs,
-                                 UfoRequisition   *requisition);
-void   ufo_task_get_structure   (UfoTask          *task,
-                                 guint            *n_inputs,
-                                 UfoInputParam  **in_params,
-                                 UfoTaskMode      *mode);
+void ufo_task_setup             (UfoTask        *task,
+                                 UfoResources   *resources,
+                                 GError        **error);
+void ufo_task_get_requisition   (UfoTask        *task,
+                                 UfoBuffer     **inputs,
+                                 UfoRequisition *requisition);
+void ufo_task_get_structure     (UfoTask        *task,
+                                 guint          *n_inputs,
+                                 UfoInputParam **in_params,
+                                 UfoTaskMode    *mode);
+void ufo_task_set_json_object_property
+                                (UfoTask        *task,
+                                 const gchar    *prop_name,
+                                 JsonObject     *object);
 
 GQuark ufo_task_error_quark     (void);
 GType  ufo_task_get_type        (void);
