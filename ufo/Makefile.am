@@ -114,7 +114,9 @@ CLEANFILES = ufo-enums.c ufo-enums.h stamp-ufo-enums.h
 INTROSPECTION_GIRS =
 INTROSPECTION_SCANNER_ARGS = \
         --add-include-path=$(srcdir) \
-        --add-include-path=. \
+        --add-include-path=$(srcdir) \
+        --add-include-path=$(JSON_GLIB_CFLAGS) \
+        --include=Json-1.0 \
         --warn-all
 INTROSPECTION_COMPILER_ARGS = \
         --includedir=$(srcdir) \

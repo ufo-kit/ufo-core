@@ -1,5 +1,5 @@
 AM_CFLAGS = -I$(top_builddir)/common/autotools -I$(top_srcdir)\
-	$(GLIB_CFLAGS) $(OPENCL_CFLAGS)
+	$(GLIB_CFLAGS) $(JSON_GLIB_CFLAGS) $(OPENCL_CFLAGS)
 LDADD = $(top_builddir)/ufo/libufo.la \
 	$(GLIB_LIBS) $(JSON_GLIB_LIBS) $(ZMQ3_LIBS) $(OPENCL_LIBS)
 

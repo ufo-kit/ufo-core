@@ -29,7 +29,7 @@
 #include <string.h>
 #include <ufo/ufo.h>
 
-static UfoDaemon *daemon;
+static UfoDaemon *global_daemon;
 
 typedef struct {
     gchar **paths;
@@ -113,9 +113,9 @@ terminate (int signum)
     if (signum == SIGINT)
         g_print ("Received SIGINT, exiting...\n");
 
-    if (daemon != NULL) {
-        ufo_daemon_stop(daemon);
-        g_object_unref (daemon);
+    if (global_daemon != NULL) {
+        ufo_daemon_stop(global_daemon);
+        g_object_unref (global_daemon);
     }
     exit (EXIT_SUCCESS);
 }
@@ -137,8 +137,8 @@ main (int argc, char * argv[])
 
     UfoConfig *config = opts_new_config (opts);
 
-    daemon = ufo_daemon_new (config, opts->addr);
-    ufo_daemon_start(daemon);
+    global_daemon = ufo_daemon_new (config, opts->addr);
+    ufo_daemon_start(global_daemon);
     g_print ("ufod %s - waiting for requests on %s ...\n", UFO_VERSION,
                                                            opts->addr);
 
