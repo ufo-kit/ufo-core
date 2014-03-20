@@ -142,9 +142,6 @@ read_json (UfoTaskGraph *graph,
         guint total = (guint) json_object_get_int_member (object, "total");
         ufo_task_graph_set_partition (graph, index, total);
     }
-    else {
-        g_warning ("JSON does not define `index' and `total' keys");
-    }
 
     add_nodes_from_json (graph, json_root, error);
     g_object_unref (json_parser);
