@@ -18,7 +18,7 @@ before_script:
   # Configure with CMake
   - mkdir build
   - cd build
-  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_GIR=ON -DWITH_GTK_DOC=ON -DWITH_PYTHON=OFF
+  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_GIR=OFF -DWITH_GTK_DOC=ON -DWITH_PYTHON=OFF
 
 script:
   # Build with Autotools
