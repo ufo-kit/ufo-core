@@ -872,7 +872,6 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         graph = task_graph;
     }
 
-
     if (graph == NULL)
         return;
 
@@ -924,10 +923,6 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     }
 #else
     join_threads (threads, n_nodes);
-#endif
-
-#ifdef HAVE_PYTHON
-    if (Py_IsInitialized ())
 #endif
 
     priv->time = g_timer_elapsed (timer, NULL);
