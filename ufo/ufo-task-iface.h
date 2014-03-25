@@ -53,16 +53,18 @@ typedef enum {
  * @UFO_TASK_MODE_REDUCTOR: receive fininite stream and generate a reduced stream
  * @UFO_TASK_MODE_GPU: runs on GPU
  * @UFO_TASK_MODE_CPU: runs on CPU
+ * @UFO_TASK_MODE_SHARE_DATA: sibling tasks share the same input data
  *
  * Task modes describe how a task operates considering the input data.
  */
 typedef enum {
-    UFO_TASK_MODE_INVALID   = 0,
-    UFO_TASK_MODE_PROCESSOR = 1 << 0,
-    UFO_TASK_MODE_GENERATOR = 1 << 1,
-    UFO_TASK_MODE_REDUCTOR  = 1 << 2,
-    UFO_TASK_MODE_CPU       = 1 << 3,
-    UFO_TASK_MODE_GPU       = 1 << 4,
+    UFO_TASK_MODE_INVALID       = 0,
+    UFO_TASK_MODE_PROCESSOR     = 1 << 0,
+    UFO_TASK_MODE_GENERATOR     = 1 << 1,
+    UFO_TASK_MODE_REDUCTOR      = 1 << 2,
+    UFO_TASK_MODE_CPU           = 1 << 3,
+    UFO_TASK_MODE_GPU           = 1 << 4,
+    UFO_TASK_MODE_SHARE_DATA    = 1 << 5,
 
     UFO_TASK_MODE_TYPE_MASK = UFO_TASK_MODE_PROCESSOR | UFO_TASK_MODE_GENERATOR | UFO_TASK_MODE_REDUCTOR,
 } UfoTaskMode;
@@ -110,7 +112,7 @@ guint   ufo_task_get_num_inputs     (UfoTask        *task);
 guint   ufo_task_get_num_dimensions (UfoTask        *task,
                                      guint           input);
 UfoTaskMode
-        ufo_task_get_mode           (UfoTask   *task);
+        ufo_task_get_mode           (UfoTask        *task);
 void    ufo_task_get_requisition    (UfoTask        *task,
                                      UfoBuffer     **inputs,
                                      UfoRequisition *requisition);
