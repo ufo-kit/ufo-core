@@ -41,7 +41,6 @@ G_BEGIN_DECLS
 
 typedef struct _UfoTask         UfoTask;
 typedef struct _UfoTaskIface    UfoTaskIface;
-typedef struct _UfoInputParam   UfoInputParam;
 
 typedef enum {
     UFO_TASK_ERROR_SETUP
@@ -52,13 +51,20 @@ typedef enum {
  * @UFO_TASK_MODE_PROCESSOR: one-by-one processing
  * @UFO_TASK_MODE_GENERATOR: do not receive any data but produce a stream.
  * @UFO_TASK_MODE_REDUCTOR: receive fininite stream and generate a reduced stream
+ * @UFO_TASK_MODE_GPU: runs on GPU
+ * @UFO_TASK_MODE_CPU: runs on CPU
  *
  * Task modes describe how a task operates considering the input data.
  */
 typedef enum {
-    UFO_TASK_MODE_PROCESSOR,
-    UFO_TASK_MODE_GENERATOR,
-    UFO_TASK_MODE_REDUCTOR,
+    UFO_TASK_MODE_INVALID   = 0,
+    UFO_TASK_MODE_PROCESSOR = 1 << 0,
+    UFO_TASK_MODE_GENERATOR = 1 << 1,
+    UFO_TASK_MODE_REDUCTOR  = 1 << 2,
+    UFO_TASK_MODE_CPU       = 1 << 3,
+    UFO_TASK_MODE_GPU       = 1 << 4,
+
+    UFO_TASK_MODE_TYPE_MASK = UFO_TASK_MODE_PROCESSOR | UFO_TASK_MODE_GENERATOR | UFO_TASK_MODE_REDUCTOR,
 } UfoTaskMode;
 
 typedef gboolean (*UfoTaskProcessFunc) (UfoTask *task,
@@ -70,48 +76,57 @@ typedef gboolean (*UfoTaskGenerateFunc) (UfoTask *task,
                                          UfoBuffer *output,
                                          UfoRequisition *requisition);
 
-/**
- * UfoInputParam:
- * @n_dims: Number of dimensions
- */
-struct _UfoInputParam {
-    guint n_dims;
-};
-
 struct _UfoTaskIface {
     /*< private >*/
     GTypeInterface parent_iface;
 
-    void (*setup)           (UfoTask        *task,
-                             UfoResources   *resources,
-                             GError        **error);
-    void (*get_structure)   (UfoTask        *task,
-                             guint          *n_inputs,
-                             UfoInputParam **in_params,
-                             UfoTaskMode    *mode);
-    void (*get_requisition) (UfoTask        *task,
-                             UfoBuffer     **inputs,
-                             UfoRequisition *requisition);
-    void (*set_json_object_property)
-                            (UfoTask        *task,
-                             const gchar    *prop_name,
-                             JsonObject     *object);
+    void    (*setup)                    (UfoTask        *task,
+                                         UfoResources   *resources,
+                                         GError        **error);
+    guint   (*get_num_inputs)           (UfoTask        *task);
+    guint   (*get_num_dimensions)       (UfoTask        *task,
+                                         guint          input);
+    UfoTaskMode
+            (*get_mode)                 (UfoTask        *task);
+    void    (*get_requisition)          (UfoTask        *task,
+                                         UfoBuffer     **inputs,
+                                         UfoRequisition *requisition);
+    void    (*set_json_object_property) (UfoTask        *task,
+                                         const gchar    *prop_name,
+                                         JsonObject     *object);
+    gboolean (*process)                 (UfoTask        *task,
+                                         UfoBuffer     **inputs,
+                                         UfoBuffer      *output,
+                                         UfoRequisition *requisition);
+    gboolean (*generate)                (UfoTask        *task,
+                                         UfoBuffer      *output,
+                                         UfoRequisition *requisition);
 };
 
-void ufo_task_setup             (UfoTask        *task,
-                                 UfoResources   *resources,
-                                 GError        **error);
-void ufo_task_get_requisition   (UfoTask        *task,
-                                 UfoBuffer     **inputs,
-                                 UfoRequisition *requisition);
-void ufo_task_get_structure     (UfoTask        *task,
-                                 guint          *n_inputs,
-                                 UfoInputParam **in_params,
-                                 UfoTaskMode    *mode);
-void ufo_task_set_json_object_property
-                                (UfoTask        *task,
-                                 const gchar    *prop_name,
-                                 JsonObject     *object);
+void    ufo_task_setup              (UfoTask        *task,
+                                     UfoResources   *resources,
+                                     GError        **error);
+guint   ufo_task_get_num_inputs     (UfoTask        *task);
+guint   ufo_task_get_num_dimensions (UfoTask        *task,
+                                     guint           input);
+UfoTaskMode
+        ufo_task_get_mode           (UfoTask   *task);
+void    ufo_task_get_requisition    (UfoTask        *task,
+                                     UfoBuffer     **inputs,
+                                     UfoRequisition *requisition);
+void    ufo_task_set_json_object_property
+                                    (UfoTask        *task,
+                                     const gchar    *prop_name,
+                                     JsonObject     *object);
+gboolean ufo_task_process           (UfoTask        *task,
+                                     UfoBuffer     **inputs,
+                                     UfoBuffer      *output,
+                                     UfoRequisition *requisition);
+gboolean ufo_task_generate          (UfoTask        *task,
+                                     UfoBuffer      *output,
+                                     UfoRequisition *requisition);
+gboolean ufo_task_uses_gpu          (UfoTask        *task);
+gboolean ufo_task_uses_cpu          (UfoTask        *task);
 
 GQuark ufo_task_error_quark     (void);
 GType  ufo_task_get_type        (void);

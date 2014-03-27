@@ -128,40 +128,23 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
     ufo_messenger_send_blocking (priv->msger, request, NULL);
 }
 
-void
-ufo_remote_node_get_structure (UfoRemoteNode *node,
-                               guint *n_inputs,
-                               UfoInputParam **in_params,
-                               UfoTaskMode *mode)
+guint
+ufo_remote_node_get_num_inputs (UfoRemoteNode *node)
 {
-    UfoRemoteNodePrivate *priv;
-    UfoMessage *request, *response;
+    return 1;
+}
 
-    priv = node->priv;
+guint
+ufo_remote_node_get_num_dimensions (UfoRemoteNode *node,
+                                    guint input)
+{
+    return 2;
+}
 
-    struct _Structure {
-        guint16 n_inputs;
-        guint16 n_dims;
-    } msg_data;
-
-    g_return_if_fail (UFO_IS_REMOTE_NODE (node));
-    *mode = UFO_TASK_MODE_PROCESSOR;
-
-
-    request = ufo_message_new (UFO_MESSAGE_GET_STRUCTURE, 0);
-    response = ufo_messenger_send_blocking (priv->msger, request, NULL);
-    g_assert (response->data_size == sizeof (struct _Structure));
-
-    msg_data = *(struct _Structure *) response->data;
-
-    priv->n_inputs = msg_data.n_inputs;
-    *n_inputs = msg_data.n_inputs;
-
-    *in_params = g_new0 (UfoInputParam, 1);
-    (*in_params)[0].n_dims = msg_data.n_dims;
-
-    ufo_message_free (request);
-    ufo_message_free (response);
+UfoTaskMode
+ufo_remote_node_get_mode (UfoRemoteNode *node)
+{
+    return UFO_TASK_MODE_PROCESSOR;
 }
 
 void

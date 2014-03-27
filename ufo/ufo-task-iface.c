@@ -49,13 +49,23 @@ ufo_task_get_requisition (UfoTask *task,
     UFO_TASK_GET_IFACE (task)->get_requisition (task, inputs, requisition);
 }
 
-void
-ufo_task_get_structure (UfoTask *task,
-                        guint *n_inputs,
-                        UfoInputParam **in_params,
-                        UfoTaskMode *mode)
+guint
+ufo_task_get_num_inputs (UfoTask *task)
 {
-    UFO_TASK_GET_IFACE (task)->get_structure (task, n_inputs, in_params, mode);
+    return UFO_TASK_GET_IFACE (task)->get_num_inputs (task);
+}
+
+guint
+ufo_task_get_num_dimensions (UfoTask *task,
+                             guint input)
+{
+    return UFO_TASK_GET_IFACE (task)->get_num_dimensions (task, input);
+}
+
+UfoTaskMode
+ufo_task_get_mode (UfoTask *task)
+{
+    return UFO_TASK_GET_IFACE (task)->get_mode (task);
 }
 
 void
@@ -64,6 +74,35 @@ ufo_task_set_json_object_property (UfoTask *task,
                                    JsonObject *object)
 {
     UFO_TASK_GET_IFACE (task)->set_json_object_property (task, prop_name, object);
+}
+
+gboolean
+ufo_task_process (UfoTask *task,
+                  UfoBuffer **inputs,
+                  UfoBuffer *output,
+                  UfoRequisition *requisition)
+{
+    return UFO_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
+}
+
+gboolean
+ufo_task_generate (UfoTask *task,
+                   UfoBuffer *output,
+                   UfoRequisition *requisition)
+{
+    return UFO_TASK_GET_IFACE (task)->generate (task, output, requisition);
+}
+
+gboolean
+ufo_task_uses_gpu (UfoTask *task)
+{
+    return ufo_task_get_mode (task) & UFO_TASK_MODE_GPU;
+}
+
+gboolean
+ufo_task_uses_cpu (UfoTask *task)
+{
+    return ufo_task_get_mode (task) & UFO_TASK_MODE_CPU;
 }
 
 static void
@@ -90,20 +129,57 @@ ufo_task_get_requisition_real (UfoTask *task,
     g_warning ("`get_allocation' not implemented");
 }
 
-static void
-ufo_task_get_structure_real (UfoTask *task,
-                             guint *n_inputs,
-                             UfoInputParam **in_params,
-                             UfoTaskMode *mode)
+static guint
+ufo_task_get_num_inputs_real (UfoTask *task)
 {
-    g_warning ("`get_structure' not implemented");
+    g_warning ("`get_num_inputs' not implemented");
+    return 0;
 }
+
+static guint
+ufo_task_get_num_dimensions_real (UfoTask *task,
+                                  guint input)
+{
+    g_warning ("`get_num_dimensions' not implemented");
+    return 0;
+}
+
+static UfoTaskMode
+ufo_task_get_mode_real (UfoTask *task)
+{
+    g_warning ("`get_mode' not implemented");
+    return 0;
+}
+
+static gboolean
+ufo_task_process_real (UfoTask *task,
+                       UfoBuffer **inputs,
+                       UfoBuffer *output,
+                       UfoRequisition *requisition)
+{
+    g_warning ("`process' of UfoTaskInterface not implemented");
+    return FALSE;
+}
+
+static gboolean
+ufo_task_generate_real (UfoTask *task,
+                        UfoBuffer *output,
+                        UfoRequisition *requisition)
+{
+    g_warning ("`generate' of UfoTaskInterface not implemented");
+    return FALSE;
+}
+
 
 static void
 ufo_task_default_init (UfoTaskInterface *iface)
 {
     iface->setup = ufo_task_setup_real;
     iface->get_requisition = ufo_task_get_requisition_real;
-    iface->get_structure = ufo_task_get_structure_real;
+    iface->get_num_inputs = ufo_task_get_num_inputs_real;
+    iface->get_num_dimensions = ufo_task_get_num_dimensions_real;
+    iface->get_mode = ufo_task_get_mode_real;
     iface->set_json_object_property = ufo_task_set_json_object_property_real;
+    iface->process = ufo_task_process_real;
+    iface->generate = ufo_task_generate_real;
 }

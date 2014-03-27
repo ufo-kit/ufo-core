@@ -79,25 +79,25 @@ typedef enum {
 
 
 
-UfoNode  *ufo_remote_node_new               (const gchar    *address);
-guint     ufo_remote_node_get_num_gpus      (UfoRemoteNode  *node);
-void      ufo_remote_node_request_setup     (UfoRemoteNode  *node);
-void      ufo_remote_node_send_json         (UfoRemoteNode  *node,
-                                             UfoRemoteMode   mode,
-                                             const gchar    *json);
-void      ufo_remote_node_get_structure     (UfoRemoteNode  *node,
-                                             guint          *n_inputs,
-                                             UfoInputParam **in_params,
-                                             UfoTaskMode    *mode);
-void      ufo_remote_node_send_inputs       (UfoRemoteNode  *node,
-                                             UfoBuffer     **inputs);
-void      ufo_remote_node_get_result        (UfoRemoteNode  *node,
-                                             UfoBuffer      *result);
-void      ufo_remote_node_get_requisition   (UfoRemoteNode  *node,
-                                             UfoRequisition *requisition);
-void      ufo_remote_node_cleanup           (UfoRemoteNode  *node);
-void      ufo_remote_node_terminate         (UfoRemoteNode  *node);
-GType     ufo_remote_node_get_type          (void);
+UfoNode    *ufo_remote_node_new                 (const gchar    *address);
+guint       ufo_remote_node_get_num_gpus        (UfoRemoteNode  *node);
+void        ufo_remote_node_request_setup       (UfoRemoteNode  *node);
+void        ufo_remote_node_send_json           (UfoRemoteNode  *node,
+                                                 UfoRemoteMode   mode,
+                                                 const gchar    *json);
+guint       ufo_remote_node_get_num_inputs      (UfoRemoteNode  *node);
+guint       ufo_remote_node_get_num_dimensions  (UfoRemoteNode  *node,
+                                                 guint           input);
+UfoTaskMode ufo_remote_node_get_mode            (UfoRemoteNode  *node);
+void        ufo_remote_node_send_inputs         (UfoRemoteNode  *node,
+                                                 UfoBuffer     **inputs);
+void        ufo_remote_node_get_result          (UfoRemoteNode  *node,
+                                                 UfoBuffer      *result);
+void        ufo_remote_node_get_requisition     (UfoRemoteNode  *node,
+                                                 UfoRequisition *requisition);
+void        ufo_remote_node_cleanup             (UfoRemoteNode  *node);
+void        ufo_remote_node_terminate           (UfoRemoteNode  *node);
+GType       ufo_remote_node_get_type            (void);
 
 G_END_DECLS
 
