@@ -17,14 +17,10 @@ Writing a task in C
 
 Writing a new UFO filter is simple and by calling ::
 
-    ./mkfilter.py --name AwesomeFoo --type TYPE
+    ./mkfilter.py AwesomeFoo
 
 in the ``tools/`` directory, you can avoid writing that tedious GObject boiler
 plate code on your own. The name is a camel-cased version of your new filter.
-Type must be one of
-
-* ``cpu``: For a CPU-based task
-* ``gpu``: For a CPU-based task
 
 You are now left with two files ``ufo-awesome-foo-task.c`` and
 ``ufo-awesome-foo-task.h``. If you intend to distribute that filter with the
@@ -57,28 +53,33 @@ The ``ufo__awesome_foo_task_class_init()`` method on the other hand ist the
 *class constructor* that is used to *override* virtual methods by setting
 function pointers in each classes' vtable.
 
-You *must* override the following methods: ``ufo_awesome_task_get_structure``,
+You *must* override the following methods: ``ufo_awesome_task_get_inum_inputs``,
+``ufo_awesome_task_get_num_dimensions``, ``ufo_awesome_task_get_mode``,
 ``ufo_awesome_task_setup``, ``ufo_awesome_task_get_requisition`` and
 ``ufo_awesome_task_process``.
 
-``get_structure`` is called by the run-time in order to determine how many
-inputs your task expects, which dimensions are allowed on each input and what
-processing mode your task runs ::
+``get_num_inputs``, ``get_num_dimensions`` and ``get_mode`` are called by the
+run-time in order to determine how many inputs your task expects, which
+dimensions are allowed on each input and what processing mode your task runs ::
 
-    static void
-    ufo_awesome_task_get_structure (UfoTask *task,
-                                    guint *n_inputs,
-                                    UfoInputParam **in_params,
-                                    UfoTaskMode *mode)
+    static guint
+    ufo_awesome_task_get_num_inputs (UfoTask *task)
     {
-        *mode = UFO_TASK_MODE_PROCESSOR;
-        *n_inputs = 1;
-        *in_params = g_new0 (UfoInputParam, 1);
-        (*in_params)[0].n_dims = 2;
+        return 1;   /* We expect only one input */
     }
 
-This task expects one two-dimensional input. Be aware, that the callee must
-allocate memory for the ``in_params`` data structure.
+    static guint
+    ufo_awesome_task_get_num_dimensions (UfoTask *task, guint input)
+    {
+        return 2;   /* We ignore "input" and always expect 2 dimensions */
+    }
+
+    static UfoTaskMode
+    ufo_awesome_task_get_mode (UfoTask *task)
+    {
+        /* We process one item after another */
+        return UFO_TASK_MODE_PROCESSOR;
+    }
 
 The mode decides which functions of a task are called. Each task can provide a
 ``process`` function that takes input data and optionally writes output data and
@@ -126,11 +127,10 @@ specify ::
         ufo_buffer_get_requisition (inputs[0], requisition);
     }
 
-Finally, you have to override the ``process`` method. Note, that the function
-signatures is essentially the same for GPU and CPU tasks ::
+Finally, you have to override the ``process`` method ::
 
     static gboolean
-    ufo_awesome_task_process (UfoGpuTask *task,
+    ufo_awesome_task_process (UfoTask *task,
                               UfoBuffer **inputs,
                               UfoBuffer *output,
                               UfoRequisition *requisition)

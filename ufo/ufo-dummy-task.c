@@ -59,20 +59,32 @@ ufo_dummy_task_get_requisition (UfoTask *task,
 {
 }
 
-static void
-ufo_dummy_task_get_structure (UfoTask *task,
-                              guint *n_inputs,
-                              UfoInputParam **in_params,
-                              UfoTaskMode *mode)
+static guint
+ufo_dummy_task_get_num_inputs (UfoTask *task)
 {
+    return 0;
 }
 
+static guint
+ufo_dummy_task_get_num_dimensions (UfoTask *task,
+                                   guint input)
+{
+    return 0;
+}
+
+static UfoTaskMode
+ufo_dummy_task_get_mode (UfoTask *task)
+{
+    return UFO_TASK_MODE_PROCESSOR | UFO_TASK_MODE_CPU;
+}
 
 static void
 ufo_task_interface_init (UfoTaskIface *iface)
 {
     iface->setup = ufo_dummy_task_setup;
-    iface->get_structure = ufo_dummy_task_get_structure;
+    iface->get_num_inputs = ufo_dummy_task_get_num_inputs;
+    iface->get_num_dimensions = ufo_dummy_task_get_num_dimensions;
+    iface->get_mode = ufo_dummy_task_get_mode;
     iface->get_requisition = ufo_dummy_task_get_requisition;
 }
 

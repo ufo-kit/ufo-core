@@ -15,11 +15,9 @@ ufo_sources = \
     ufo-configurable.c \
     ufo-config.c \
     ufo-cpu-node.c \
-    ufo-cpu-task-iface.c \
     ufo-daemon.c \
     ufo-dummy-task.c \
     ufo-gpu-node.c \
-    ufo-gpu-task-iface.c \
     ufo-graph.c \
     ufo-group.c \
     ufo-input-task.c \
@@ -45,11 +43,9 @@ ufo_headers = \
     ufo-configurable.h \
     ufo-config.h \
     ufo-cpu-node.h \
-    ufo-cpu-task-iface.h \
     ufo-daemon.h \
     ufo-dummy-task.h \
     ufo-gpu-node.h \
-    ufo-gpu-task-iface.h \
     ufo-graph.h \
     ufo-group.h \
     ufo-input-task.h \

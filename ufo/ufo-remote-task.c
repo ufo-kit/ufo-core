@@ -26,7 +26,6 @@
 
 #include <ufo/ufo-remote-task.h>
 #include <ufo/ufo-remote-node.h>
-#include <ufo/ufo-cpu-task-iface.h>
 
 /**
  * SECTION:ufo-remote-task
@@ -39,13 +38,10 @@ struct _UfoRemoteTaskPrivate {
 };
 
 static void ufo_task_interface_init (UfoTaskIface *iface);
-static void ufo_cpu_task_interface_init (UfoCpuTaskIface *iface);
 
 G_DEFINE_TYPE_WITH_CODE (UfoRemoteTask, ufo_remote_task, UFO_TYPE_TASK_NODE,
                          G_IMPLEMENT_INTERFACE (UFO_TYPE_TASK,
-                                                ufo_task_interface_init)
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CPU_TASK,
-                                                ufo_cpu_task_interface_init))
+                                                ufo_task_interface_init))
 
 #define UFO_REMOTE_TASK_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_REMOTE_TASK, UfoRemoteTaskPrivate))
 
@@ -92,20 +88,30 @@ ufo_remote_task_get_requisition (UfoTask *task,
     ufo_remote_node_get_requisition (priv->remote, requisition);
 }
 
-static void
-ufo_remote_task_get_structure (UfoTask *task,
-                               guint *n_inputs,
-                               UfoInputParam **in_params,
-                               UfoTaskMode *mode)
+static guint
+ufo_remote_task_get_num_inputs (UfoTask *task)
 {
-    UfoRemoteTaskPrivate *priv;
+    ufo_remote_node_get_num_inputs (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote);
+    return 0;
+}
 
-    priv = UFO_REMOTE_TASK_GET_PRIVATE (UFO_REMOTE_TASK (task));
-    ufo_remote_node_get_structure (priv->remote, n_inputs, in_params, mode);
+static guint
+ufo_remote_task_get_num_dimensions (UfoTask *task,
+                                    guint input)
+{
+    ufo_remote_node_get_num_dimensions (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote, input);
+    return 0;
+}
+
+static guint
+ufo_remote_task_get_mode (UfoTask *task)
+{
+    ufo_remote_node_get_mode (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote);
+    return UFO_TASK_MODE_INVALID;
 }
 
 static gboolean
-ufo_remote_task_process (UfoCpuTask *task,
+ufo_remote_task_process (UfoTask *task,
                          UfoBuffer **inputs,
                          UfoBuffer *output,
                          UfoRequisition *requisition)
@@ -147,13 +153,10 @@ static void
 ufo_task_interface_init (UfoTaskIface *iface)
 {
     iface->setup = ufo_remote_task_setup;
-    iface->get_structure = ufo_remote_task_get_structure;
+    iface->get_num_inputs = ufo_remote_task_get_num_inputs;
+    iface->get_num_dimensions = ufo_remote_task_get_num_dimensions;
+    iface->get_mode = ufo_remote_task_get_mode;
     iface->get_requisition = ufo_remote_task_get_requisition;
-}
-
-static void
-ufo_cpu_task_interface_init (UfoCpuTaskIface *iface)
-{
     iface->process = ufo_remote_task_process;
 }
 

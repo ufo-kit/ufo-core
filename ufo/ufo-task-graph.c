@@ -22,8 +22,6 @@
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-remote-node.h>
-#include <ufo/ufo-cpu-task-iface.h>
-#include <ufo/ufo-gpu-task-iface.h>
 #include <ufo/ufo-input-task.h>
 #include <ufo/ufo-dummy-task.h>
 #include <ufo/ufo-remote-task.h>
@@ -307,9 +305,9 @@ ufo_task_graph_get_json_data (UfoTaskGraph *graph,
 }
 
 static gboolean
-is_gpu_task (UfoNode *node, gpointer user_data)
+is_gpu_task (UfoTask *task, gpointer user_data)
 {
-    return UFO_IS_GPU_TASK (node);
+    return ufo_task_uses_gpu (task);
 }
 
 static UfoTaskNode *
@@ -475,7 +473,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
     g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
-    paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), is_gpu_task);
+    paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), (UfoFilterPredicate) is_gpu_task);
     g_debug ("Number of identified paths: %i", g_list_length (paths));
     paths = remove_common_ancestry_paths (paths);
     g_debug ("Number of cleaned paths: %i", g_list_length (paths));
@@ -536,7 +534,7 @@ map_proc_node (UfoGraph *graph,
 
     proc_node = UFO_NODE (g_list_nth_data (gpu_nodes, proc_index));
 
-    if ((UFO_IS_GPU_TASK (node) || UFO_IS_INPUT_TASK (node)) &&
+    if ((ufo_task_uses_gpu (UFO_TASK (node)) || UFO_IS_INPUT_TASK (node)) &&
         (!ufo_task_node_get_proc_node (UFO_TASK_NODE (node)))) {
 
         g_debug ("Mapping GPU %i to %s-%p",

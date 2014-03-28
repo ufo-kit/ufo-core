@@ -34,8 +34,6 @@
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-config.h>
 #include <ufo/ufo-configurable.h>
-#include <ufo/ufo-cpu-task-iface.h>
-#include <ufo/ufo-gpu-task-iface.h>
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-remote-task.h>
 #include <ufo/ufo-resources.h>
@@ -66,7 +64,7 @@ typedef struct {
     UfoTask         *task;
     UfoTaskMode      mode;
     guint            n_inputs;
-    UfoInputParam   *in_params;
+    guint           *dims;
     gboolean        *finished;
 } TaskLocalData;
 
@@ -326,51 +324,14 @@ run_remote_task (TaskLocalData *tld)
     ufo_group_finish (ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task)));
 }
 
-static gboolean
-check_implementation (UfoTaskNode *node,
-                      const gchar *func,
-                      const gchar *type,
-                      gboolean assertion)
-{
-    if (!assertion) {
-        g_error ("%s is not implemented, although %s is a %s",
-                 func, ufo_task_node_get_plugin_name (node), type);
-    }
-
-    return assertion;
-}
-
-static gboolean
-is_correctly_implemented (UfoTaskNode *node,
-                          UfoTaskMode mode,
-                          UfoTaskProcessFunc process,
-                          UfoTaskGenerateFunc generate)
-{
-    switch (mode) {
-        case UFO_TASK_MODE_GENERATOR:
-            return check_implementation (node, "generate", "generator", generate != NULL);
-
-        case UFO_TASK_MODE_PROCESSOR:
-            return check_implementation (node, "process", "processor", process != NULL);
-
-        case UFO_TASK_MODE_REDUCTOR:
-            return check_implementation (node, "process or generate", "reductor",
-                                         (process != NULL) && (generate != NULL));
-        default:
-            g_error ("Unknown mode");
-            return FALSE;
-    }
-}
-
 static gpointer
 run_task (TaskLocalData *tld)
 {
     UfoBuffer *inputs[tld->n_inputs];
     UfoBuffer *output;
     UfoTaskNode *node;
+    UfoTaskMode mode;
     UfoProfiler *profiler;
-    UfoTaskProcessFunc process;
-    UfoTaskGenerateFunc generate;
     UfoRequisition requisition;
     gboolean active;
 
@@ -384,17 +345,8 @@ run_task (TaskLocalData *tld)
         return NULL;
     }
 
-    if (UFO_IS_GPU_TASK (tld->task)) {
-        process = (UfoTaskProcessFunc) ufo_gpu_task_process;
-        generate = (UfoTaskGenerateFunc) ufo_gpu_task_generate;
-    }
-    else {
-        process = (UfoTaskProcessFunc) ufo_cpu_task_process;
-        generate = (UfoTaskGenerateFunc) ufo_cpu_task_generate;
-    }
-
-    if (!is_correctly_implemented (node, tld->mode, process, generate))
-        return NULL;
+    /* mode without CPU/GPU flag */
+    mode = tld->mode & UFO_TASK_MODE_TYPE_MASK;
 
     while (active) {
         UfoGroup *group;
@@ -422,10 +374,10 @@ run_task (TaskLocalData *tld)
         if (output != NULL)
             ufo_buffer_discard_location (output);
 
-        switch (tld->mode) {
+        switch (mode) {
             case UFO_TASK_MODE_PROCESSOR:
                 ufo_profiler_trace_event (profiler, "process", "B");
-                active = process (tld->task, inputs, output, &requisition);
+                active = ufo_task_process (tld->task, inputs, output, &requisition);
                 ufo_profiler_trace_event (profiler, "process", "E");
                 ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
                 break;
@@ -433,7 +385,7 @@ run_task (TaskLocalData *tld)
             case UFO_TASK_MODE_REDUCTOR:
                 do {
                     ufo_profiler_trace_event (profiler, "process", "B");
-                    process (tld->task, inputs, output, &requisition);
+                    ufo_task_process (tld->task, inputs, output, &requisition);
                     ufo_profiler_trace_event (profiler, "process", "E");
                     ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
 
@@ -444,22 +396,25 @@ run_task (TaskLocalData *tld)
 
             case UFO_TASK_MODE_GENERATOR:
                 ufo_profiler_trace_event (profiler, "generate", "B");
-                active = generate (tld->task, output, &requisition);
+                active = ufo_task_generate (tld->task, output, &requisition);
                 ufo_profiler_trace_event (profiler, "generate", "E");
                 break;
+
+            default:
+                g_warning ("Invalid task mode: %i\n", mode);
         }
 
-        if (active && produces && (tld->mode != UFO_TASK_MODE_REDUCTOR))
+        if (active && produces && (mode != UFO_TASK_MODE_REDUCTOR))
             ufo_group_push_output_buffer (group, output);
 
         /* Release buffers for further consumption */
         if (active)
             release_inputs (tld, inputs);
 
-        if (tld->mode == UFO_TASK_MODE_REDUCTOR) {
+        if (mode == UFO_TASK_MODE_REDUCTOR) {
             do {
                 ufo_profiler_trace_event (profiler, "generate", "B");
-                active = generate (tld->task, output, &requisition);
+                active = ufo_task_generate (tld->task, output, &requisition);
                 ufo_profiler_trace_event (profiler, "generate", "E");
 
                 if (active) {
@@ -484,7 +439,7 @@ cleanup_task_local_data (TaskLocalData **tlds,
     for (guint i = 0; i < n; i++) {
         TaskLocalData *tld = tlds[i];
 
-        g_free (tld->in_params);
+        g_free (tld->dims);
         g_free (tld->finished);
         g_free (tld);
     }
@@ -561,8 +516,13 @@ setup_tasks (UfoSchedulerPrivate *priv,
         tld->task = UFO_TASK (node);
         tlds[i] = tld;
 
-        ufo_task_setup (UFO_TASK (node), priv->resources, error);
-        ufo_task_get_structure (UFO_TASK (node), &tld->n_inputs, &tld->in_params, &tld->mode);
+        ufo_task_setup (tld->task, priv->resources, error);
+        tld->mode = ufo_task_get_mode (tld->task);
+        tld->n_inputs = ufo_task_get_num_inputs (tld->task);
+        tld->dims = g_new0 (guint, tld->n_inputs);
+
+        for (guint j = 0; j < tld->n_inputs; j++)
+            tld->dims[j] = ufo_task_get_num_dimensions (tld->task, j);
 
         if (!check_target_connections (task_graph, node, tld->n_inputs, error))
             return NULL;
@@ -641,13 +601,11 @@ correct_connections (UfoTaskGraph *graph,
 
     g_list_for (nodes, it) {
         UfoTaskNode *node;
-        UfoInputParam *in_params;
-        guint n_inputs;
         UfoTaskMode mode;
         UfoGroup *group;
 
         node = UFO_TASK_NODE (it->data);
-        ufo_task_get_structure (UFO_TASK (node), &n_inputs, &in_params, &mode);
+        mode = ufo_task_get_mode (UFO_TASK (node)) & UFO_TASK_MODE_TYPE_MASK;
         group = ufo_task_node_get_out_group (node);
 
         if (((mode == UFO_TASK_MODE_GENERATOR) || (mode == UFO_TASK_MODE_REDUCTOR)) &&
