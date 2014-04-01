@@ -493,7 +493,7 @@ handle_build_error (cl_program program,
                     cl_int errcode,
                     GError **error)
 {
-    const gsize LOG_SIZE = 4096;
+    gsize log_size;
     gchar *log;
 
     g_set_error (error,
@@ -501,10 +501,11 @@ handle_build_error (cl_program program,
                  UFO_RESOURCES_ERROR_BUILD_PROGRAM,
                  "Failed to build OpenCL program: %s", ufo_resources_clerr (errcode));
 
-    log = g_malloc0 (LOG_SIZE * sizeof (char));
+    UFO_RESOURCES_CHECK_CLERR (clGetProgramBuildInfo (program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size));
 
-    UFO_RESOURCES_CHECK_CLERR (clGetProgramBuildInfo (program, device, CL_PROGRAM_BUILD_LOG,
-                                                      LOG_SIZE, log, NULL));
+    log = g_malloc0 (log_size * sizeof (char));
+
+    UFO_RESOURCES_CHECK_CLERR (clGetProgramBuildInfo (program, device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL));
     g_print ("\n=== Build log ===%s\n\n", log);
     g_free (log);
 }
