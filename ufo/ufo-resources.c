@@ -506,7 +506,7 @@ handle_build_error (cl_program program,
     log = g_malloc0 (log_size * sizeof (char));
 
     UFO_RESOURCES_CHECK_CLERR (clGetProgramBuildInfo (program, device, CL_PROGRAM_BUILD_LOG, log_size, log, NULL));
-    g_print ("\n=== Build log ===%s\n\n", log);
+    g_printerr ("\n=== Build log ===\n%s\n", log);
     g_free (log);
 }
 
@@ -666,6 +666,10 @@ ufo_resources_get_kernel (UfoResources *resources,
     }
 
     program = add_program_from_source (priv, buffer, "", error);
+
+    if (program == NULL)
+        return NULL;
+
     g_debug ("Added program %p from `%s`", (gpointer) program, filename);
     g_free (buffer);
 
@@ -750,6 +754,10 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
 
     priv = UFO_RESOURCES_GET_PRIVATE (resources);
     program = add_program_from_source (priv, source, NULL, error);
+
+    if (program == NULL)
+        return NULL;
+
     g_debug ("Added program %p from source", (gpointer) program);
     return create_kernel (priv, program, kernel, error);
 }
