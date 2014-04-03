@@ -559,6 +559,8 @@ ufo_buffer_resize (UfoBuffer *buffer,
         priv->device_array = NULL;
     }
 
+    priv->size = compute_required_size (requisition);
+
     copy_requisition (requisition, &priv->requisition);
 }
 
