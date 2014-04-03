@@ -547,6 +547,9 @@ ufo_buffer_resize (UfoBuffer *buffer,
 
     g_return_if_fail (UFO_IS_BUFFER (buffer));
 
+    if (ufo_buffer_cmp_dimensions (buffer, requisition) == 0)
+        return;
+
     priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
     if (priv->host_array != NULL && priv->free) {
@@ -560,7 +563,6 @@ ufo_buffer_resize (UfoBuffer *buffer,
     }
 
     priv->size = compute_required_size (requisition);
-
     copy_requisition (requisition, &priv->requisition);
 }
 
