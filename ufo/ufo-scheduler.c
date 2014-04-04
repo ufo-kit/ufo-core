@@ -40,6 +40,7 @@
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-task-iface.h>
+#include "ufo-priv.h"
 #include "compat.h"
 
 /**
@@ -670,139 +671,6 @@ propagate_partition (UfoTaskGraph *graph)
 }
 
 static void
-write_opencl_row (const gchar *row, FILE *fp)
-{
-    fprintf (fp, "%s\n", row);
-}
-
-static void
-write_opencl_events (guint pid, TaskLocalData **tlds, guint n_nodes)
-{
-    FILE *fp;
-    gchar *filename;
-
-    filename = g_strdup_printf (".opencl.%i.txt", pid);
-    fp = fopen (filename, "w");
-
-    for (guint i = 0; i < n_nodes; i++) {
-        UfoProfiler *profiler;
-
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (tlds[i]->task));
-        ufo_profiler_foreach (profiler, (UfoProfilerFunc) write_opencl_row, fp);
-    }
-
-    fclose (fp);
-    g_free (filename);
-}
-
-typedef struct {
-    UfoTraceEvent *event;
-    UfoTaskNode *node;
-    gdouble timestamp;
-} SortedEvent;
-
-static gint
-compare_event (const SortedEvent *a,
-               const SortedEvent *b,
-               gpointer user_data)
-{
-    if (a->node != b->node || a->timestamp != b->timestamp)
-        return (gint) (a->timestamp - b->timestamp);
-
-    return (gint) ((a->event->type & UFO_TRACE_EVENT_TIME_MASK) - (b->event->type & UFO_TRACE_EVENT_TIME_MASK));
-}
-
-static GList *
-get_sorted_event_trace (TaskLocalData **tlds,
-                        guint n_nodes)
-{
-    GList *sorted = NULL;
-
-    for (guint i = 0; i < n_nodes; i++) {
-        UfoTaskNode *node;
-        UfoProfiler *profiler;
-        GList *events;
-        GList *it;
-
-        node = UFO_TASK_NODE (tlds[i]->task);
-        profiler = ufo_task_node_get_profiler (node);
-        events = ufo_profiler_get_trace_events (profiler);
-
-        g_list_for (events, it) {
-            UfoTraceEvent *event;
-            SortedEvent *new_event;
-
-            event = (UfoTraceEvent *) it->data;
-            new_event = g_new0 (SortedEvent, 1);
-            new_event->event = event;
-            new_event->timestamp = event->timestamp;
-            new_event->node = node;
-            sorted = g_list_insert_sorted_with_data (sorted, new_event,
-                                                     (GCompareDataFunc) compare_event, NULL);
-        }
-    }
-
-    return sorted;
-}
-
-static void
-write_trace_events (guint pid, TaskLocalData **tlds, guint n_nodes)
-{
-    FILE *fp;
-    gchar *filename;
-    GList *sorted;
-    GList *it;
-
-    const gchar *event_names[] = { "process", "generate" };
-    gchar event_times[] = { 'B', 'E' };
-
-    sorted = get_sorted_event_trace (tlds, n_nodes);
-    filename = g_strdup_printf (".trace.%i.json", pid);
-    fp = fopen (filename, "w");
-    fprintf (fp, "{ \"traceEvents\": [");
-
-    g_list_for (sorted, it) {
-        SortedEvent *sorted_event;
-        UfoTraceEvent *event;
-        const gchar *name;
-        gchar when;
-        gchar *tid;
-
-        sorted_event = (SortedEvent *) it->data;
-
-        event = sorted_event->event;
-        name = event_names[(event->type & UFO_TRACE_EVENT_TYPE_MASK) >> 1];
-        when = event_times[(event->type & UFO_TRACE_EVENT_TIME_MASK) >> 3];
-        tid = g_strdup_printf ("%s-%p", G_OBJECT_TYPE_NAME (sorted_event->node),
-                                (gpointer) sorted_event->node);
-
-        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%c\", \"ts\": %.1f, \"pid\": %i, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}\n",
-                     when, event->timestamp, pid, tid, name);
-
-        if (g_list_next (it) != NULL)
-            fprintf (fp, ",");
-
-        g_free (tid);
-    }
-
-    fprintf (fp, "] }");
-    fclose (fp);
-
-    g_list_foreach (sorted, (GFunc) g_free, NULL);
-    g_list_free (sorted);
-}
-
-static void
-write_traces (TaskLocalData **tlds,
-              guint n_nodes)
-{
-    guint pid = (guint) getpid ();
-
-    write_opencl_events (pid, tlds, n_nodes);
-    write_trace_events (pid, tlds, n_nodes);
-}
-
-static void
 join_threads (GThread **threads, guint n_threads)
 {
     for (guint i = 0; i < n_threads; i++)
@@ -911,8 +779,18 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_timer_destroy (timer);
 
     /* Cleanup */
-    if (priv->trace)
-        write_traces (tlds, n_nodes);
+    if (priv->trace) {
+        GList *nodes = NULL;
+
+        for (guint i = 0; i < n_nodes; i++) {
+            nodes = g_list_append (nodes, tlds[i]->task);
+        }
+
+        ufo_write_profile_events (nodes);
+        ufo_write_opencl_events (nodes);
+
+        g_list_free (nodes);
+    }
 
     cleanup_task_local_data (tlds, n_nodes);
     g_list_foreach (groups, (GFunc) g_object_unref, NULL);

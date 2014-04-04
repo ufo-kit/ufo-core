@@ -10,6 +10,7 @@ AM_CPPFLAGS = \
 ufo_sources = \
     compat.h \
     compat.c \
+	ufo-priv.c \
     ufo-arch-graph.c \
     ufo-buffer.c \
     ufo-configurable.c \
