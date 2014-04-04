@@ -376,17 +376,17 @@ run_task (TaskLocalData *tld)
 
         switch (mode) {
             case UFO_TASK_MODE_PROCESSOR:
-                ufo_profiler_trace_event (profiler, "process", "B");
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
                 active = ufo_task_process (tld->task, inputs, output, &requisition);
-                ufo_profiler_trace_event (profiler, "process", "E");
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
                 ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
                 break;
 
             case UFO_TASK_MODE_REDUCTOR:
                 do {
-                    ufo_profiler_trace_event (profiler, "process", "B");
+                    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
                     ufo_task_process (tld->task, inputs, output, &requisition);
-                    ufo_profiler_trace_event (profiler, "process", "E");
+                    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
                     ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
 
                     release_inputs (tld, inputs);
@@ -395,9 +395,9 @@ run_task (TaskLocalData *tld)
                 break;
 
             case UFO_TASK_MODE_GENERATOR:
-                ufo_profiler_trace_event (profiler, "generate", "B");
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_BEGIN);
                 active = ufo_task_generate (tld->task, output, &requisition);
-                ufo_profiler_trace_event (profiler, "generate", "E");
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
                 break;
 
             default:
@@ -413,9 +413,9 @@ run_task (TaskLocalData *tld)
 
         if (mode == UFO_TASK_MODE_REDUCTOR) {
             do {
-                ufo_profiler_trace_event (profiler, "generate", "B");
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_BEGIN);
                 active = ufo_task_generate (tld->task, output, &requisition);
-                ufo_profiler_trace_event (profiler, "generate", "E");
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
 
                 if (active) {
                     ufo_group_push_output_buffer (group, output);
@@ -669,6 +669,32 @@ propagate_partition (UfoTaskGraph *graph)
     g_list_free (nodes);
 }
 
+static void
+write_opencl_row (const gchar *row, FILE *fp)
+{
+    fprintf (fp, "%s\n", row);
+}
+
+static void
+write_opencl_events (guint pid, TaskLocalData **tlds, guint n_nodes)
+{
+    FILE *fp;
+    gchar *filename;
+
+    filename = g_strdup_printf (".opencl.%i.txt", pid);
+    fp = fopen (filename, "w");
+
+    for (guint i = 0; i < n_nodes; i++) {
+        UfoProfiler *profiler;
+
+        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (tlds[i]->task));
+        ufo_profiler_foreach (profiler, (UfoProfilerFunc) write_opencl_row, fp);
+    }
+
+    fclose (fp);
+    g_free (filename);
+}
+
 typedef struct {
     UfoTraceEvent *event;
     UfoTaskNode *node;
@@ -680,7 +706,10 @@ compare_event (const SortedEvent *a,
                const SortedEvent *b,
                gpointer user_data)
 {
-    return (gint) (a->timestamp - b->timestamp);
+    if (a->node != b->node || a->timestamp != b->timestamp)
+        return (gint) (a->timestamp - b->timestamp);
+
+    return (gint) ((a->event->type & UFO_TRACE_EVENT_TIME_MASK) - (b->event->type & UFO_TRACE_EVENT_TIME_MASK));
 }
 
 static GList *
@@ -717,38 +746,16 @@ get_sorted_event_trace (TaskLocalData **tlds,
 }
 
 static void
-write_opencl_row (const gchar *row, FILE *fp)
-{
-    fprintf (fp, "%s\n", row);
-}
-
-static void
-write_traces (TaskLocalData **tlds,
-              guint n_nodes)
+write_trace_events (guint pid, TaskLocalData **tlds, guint n_nodes)
 {
     FILE *fp;
     gchar *filename;
-    guint pid;
     GList *sorted;
     GList *it;
 
-    pid = (guint) getpid ();
+    const gchar *event_names[] = { "process", "generate" };
+    gchar event_times[] = { 'B', 'E' };
 
-    /* Write OpenCL events */
-    filename = g_strdup_printf (".opencl.%i.txt", pid);
-    fp = fopen (filename, "w");
-
-    for (guint i = 0; i < n_nodes; i++) {
-        UfoProfiler *profiler;
-
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (tlds[i]->task));
-        ufo_profiler_foreach (profiler, (UfoProfilerFunc) write_opencl_row, fp);
-    }
-
-    fclose (fp);
-    g_free (filename);
-
-    /* Write trace events */
     sorted = get_sorted_event_trace (tlds, n_nodes);
     filename = g_strdup_printf (".trace.%i.json", pid);
     fp = fopen (filename, "w");
@@ -757,19 +764,25 @@ write_traces (TaskLocalData **tlds,
     g_list_for (sorted, it) {
         SortedEvent *sorted_event;
         UfoTraceEvent *event;
-        gchar *name;
+        const gchar *name;
+        gchar when;
+        gchar *tid;
 
         sorted_event = (SortedEvent *) it->data;
+
         event = sorted_event->event;
-        name = g_strdup_printf ("%s-%p", G_OBJECT_TYPE_NAME (sorted_event->node),
+        name = event_names[(event->type & UFO_TRACE_EVENT_TYPE_MASK) >> 1];
+        when = event_times[(event->type & UFO_TRACE_EVENT_TIME_MASK) >> 3];
+        tid = g_strdup_printf ("%s-%p", G_OBJECT_TYPE_NAME (sorted_event->node),
                                 (gpointer) sorted_event->node);
 
-        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%s\", \"ts\": %.1f, \"pid\": %i, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}\n",
-                     event->type, event->timestamp, pid, name, event->name);
+        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%c\", \"ts\": %.1f, \"pid\": %i, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}\n",
+                     when, event->timestamp, pid, tid, name);
+
         if (g_list_next (it) != NULL)
             fprintf (fp, ",");
 
-        g_free (name);
+        g_free (tid);
     }
 
     fprintf (fp, "] }");
@@ -777,6 +790,16 @@ write_traces (TaskLocalData **tlds,
 
     g_list_foreach (sorted, (GFunc) g_free, NULL);
     g_list_free (sorted);
+}
+
+static void
+write_traces (TaskLocalData **tlds,
+              guint n_nodes)
+{
+    guint pid = (guint) getpid ();
+
+    write_opencl_events (pid, tlds, n_nodes);
+    write_trace_events (pid, tlds, n_nodes);
 }
 
 static void

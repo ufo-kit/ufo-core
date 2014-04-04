@@ -71,6 +71,16 @@ struct _UfoProfilerClass {
     GObjectClass parent_class;
 };
 
+typedef enum {
+    UFO_TRACE_EVENT_PROCESS     = 1 << 0,
+    UFO_TRACE_EVENT_GENERATE    = 1 << 1,
+    UFO_TRACE_EVENT_BEGIN       = 1 << 2,
+    UFO_TRACE_EVENT_END         = 1 << 3,
+} UfoTraceEventType;
+
+#define UFO_TRACE_EVENT_TYPE_MASK   (UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_GENERATE)
+#define UFO_TRACE_EVENT_TIME_MASK   (UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_END)
+
 /**
  * UfoTraceEvent:
  * @name: Name of the event
@@ -79,8 +89,7 @@ struct _UfoProfilerClass {
  * @timestamp: Arbitrary timestamp of the event
  */
 typedef struct {
-    const gchar *name;
-    const gchar *type;
+    UfoTraceEventType type;
     gpointer     thread_id;
     gdouble      timestamp;
 } UfoTraceEvent;
@@ -109,8 +118,7 @@ void         ufo_profiler_start         (UfoProfiler        *profiler,
 void         ufo_profiler_stop          (UfoProfiler        *profiler,
                                          UfoProfilerTimer    timer);
 void         ufo_profiler_trace_event   (UfoProfiler        *profiler,
-                                         const gchar        *name,
-                                         const gchar        *type);
+                                         UfoTraceEventType   type);
 void         ufo_profiler_enable_tracing
                                         (UfoProfiler        *profiler,
                                          gboolean            enable);

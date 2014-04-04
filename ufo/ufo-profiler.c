@@ -178,8 +178,7 @@ ufo_profiler_stop (UfoProfiler       *profiler,
 
 void
 ufo_profiler_trace_event (UfoProfiler *profiler,
-                          const gchar *name,
-                          const gchar *type)
+                          UfoTraceEventType type)
 {
     UfoTraceEvent *event;
     gulong timestamp;
@@ -191,7 +190,6 @@ ufo_profiler_trace_event (UfoProfiler *profiler,
     g_timer_elapsed (global_clock, &timestamp);
 
     event = g_malloc0 (sizeof(UfoTraceEvent));
-    event->name = name;
     event->type = type;
     event->thread_id = g_thread_self ();
     event->timestamp = (gdouble) timestamp;
