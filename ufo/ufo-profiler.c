@@ -122,26 +122,27 @@ ufo_profiler_call (UfoProfiler    *profiler,
                    const gsize    *local_work_size)
 {
     UfoProfilerPrivate *priv;
-    cl_event            event;
     cl_int              cl_err;
-    struct EventRow     row;
 
     g_return_if_fail (UFO_IS_PROFILER (profiler));
     priv = profiler->priv;
 
-    cl_err = clEnqueueNDRangeKernel (command_queue,
-                                     kernel,
-                                     work_dim,
-                                     NULL,
-                                     global_work_size,
-                                     local_work_size,
-                                     0, NULL, &event);
-    UFO_RESOURCES_CHECK_CLERR (cl_err);
+    if (priv->trace) {
+        cl_event event;
+        struct EventRow row;
 
-    row.event = event;
-    row.kernel = kernel;
-    row.queue = command_queue;
-    g_array_append_val (priv->event_array, row);
+        cl_err = clEnqueueNDRangeKernel (command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, &event);
+
+        row.event = event;
+        row.kernel = kernel;
+        row.queue = command_queue;
+        g_array_append_val (priv->event_array, row);
+    }
+    else {
+        cl_err = clEnqueueNDRangeKernel (command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+    }
+
+    UFO_RESOURCES_CHECK_CLERR (cl_err);
 }
 
 /**
