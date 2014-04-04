@@ -315,23 +315,16 @@ ufo_profiler_foreach (UfoProfiler    *profiler,
 
     for (guint i = 0; i < priv->event_array->len; i++) {
         cl_command_queue queue;
-        gulong queued, submitted, start, end;
         gchar *kernel_name;
-        gchar *row_string;
+        gulong queued, submitted, start, end;
 
         row = &g_array_index (priv->event_array, struct EventRow, i);
 
         kernel_name = get_kernel_name (row->kernel);
         clGetEventInfo (row->event, CL_EVENT_COMMAND_QUEUE, sizeof (cl_command_queue), &queue, NULL);
         get_time_stamps (row->event, &queued, &submitted, &start, &end);
+        func (kernel_name, queue, queued, submitted, start, end, user_data);
 
-        row_string = g_strdup_printf ("%s %p %lu %lu %lu %lu",
-                                      kernel_name,
-                                      (gpointer) queue,
-                                      queued, submitted, start, end);
-        func (row_string, user_data);
-
-        g_free (row_string);
         g_free (kernel_name);
     }
 }

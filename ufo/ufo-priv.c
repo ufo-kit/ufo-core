@@ -6,25 +6,33 @@
 
 
 typedef struct {
-    UfoTraceEvent *event;
-    UfoTaskNode *node;
+    const gchar *name;
+    gchar *tid;
+    gsize pid;
+    gchar type;
     gdouble timestamp;
-} SortedEvent;
+    gconstpointer data;
+} Event;
+
+typedef struct {
+    GList *events;
+} EventContainer;
 
 
 static gint
-compare_event (const SortedEvent *a,
-               const SortedEvent *b,
-               gpointer user_data)
+compare_events (const Event *a,
+                const Event *b)
 {
-    if (a->node != b->node || a->timestamp != b->timestamp)
+    if (a->timestamp != b->timestamp)
         return (gint) (a->timestamp - b->timestamp);
 
-    return (gint) ((a->event->type & UFO_TRACE_EVENT_TIME_MASK) - (b->event->type & UFO_TRACE_EVENT_TIME_MASK));
+    /* Check that 'B' < 'E' */
+    return (a->type - b->type);
 }
 
+
 static GList *
-get_sorted_events (GList *nodes)
+get_sorted_trace_events (GList *nodes)
 {
     GList *it;
     GList *sorted = NULL;
@@ -40,30 +48,61 @@ get_sorted_events (GList *nodes)
         events = ufo_profiler_get_trace_events (profiler);
 
         g_list_for (events, jt) {
-            UfoTraceEvent *event;
-            SortedEvent *new_event;
+            UfoTraceEvent *trace_event;
+            Event *event;
 
-            event = (UfoTraceEvent *) jt->data;
-            new_event = g_new0 (SortedEvent, 1);
-            new_event->event = event;
-            new_event->timestamp = event->timestamp;
-            new_event->node = node;
-            sorted = g_list_insert_sorted_with_data (sorted, new_event,
-                                                     (GCompareDataFunc) compare_event, NULL);
+            trace_event = (UfoTraceEvent *) jt->data;
+
+            event = g_new0 (Event, 1);
+            event->timestamp = trace_event->timestamp;
+
+            if (trace_event->type & UFO_TRACE_EVENT_BEGIN)
+                event->type = 'B';
+
+            if (trace_event->type & UFO_TRACE_EVENT_END)
+                event->type = 'E';
+
+            if (trace_event->type & UFO_TRACE_EVENT_PROCESS)
+                event->name = "process";
+
+            if (trace_event->type & UFO_TRACE_EVENT_GENERATE)
+                event->name = "generate";
+
+            event->pid = 1;
+            event->tid = g_strdup_printf ("%s-%p", G_OBJECT_TYPE_NAME (node), (gpointer) node);
+            sorted = g_list_insert_sorted (sorted, event, (GCompareFunc) compare_events);
         }
     }
 
     return sorted;
 }
 
-static void
-write_opencl_row (const gchar *row, FILE *fp)
+static Event *
+make_event (const gchar *kernel, gconstpointer queue, gchar type, gulong timestamp)
 {
-    fprintf (fp, "%s\n", row);
+    Event *event;
+
+    event = g_new0 (Event, 1);
+    event->name = g_strdup (kernel);
+    event->tid = g_strdup (kernel);
+    event->pid = (gsize) queue;
+    event->type = type;
+    event->timestamp = timestamp / 1000.0;
+
+    return event;
 }
 
-void
-ufo_write_opencl_events (GList *nodes)
+static void
+add_events (const gchar *kernel, gconstpointer queue,
+            gulong queued, gulong submitted, gulong start, gulong end,
+            EventContainer *c)
+{
+    c->events = g_list_append (c->events, make_event (kernel, queue, 'B', start));
+    c->events = g_list_append (c->events, make_event (kernel, queue, 'E', end));
+}
+
+static void
+write_trace_json (const gchar *filename_template, GList *events)
 {
     FILE *fp;
     gchar *filename;
@@ -71,66 +110,52 @@ ufo_write_opencl_events (GList *nodes)
     guint pid;
 
     pid = (guint) getpid ();
+    filename = g_strdup_printf (filename_template, pid);
 
-    filename = g_strdup_printf (".opencl.%i.txt", pid);
     fp = fopen (filename, "w");
+    fprintf (fp, "{ \"traceEvents\": [");
 
-    g_list_for (nodes, it) {
-        UfoProfiler *profiler;
+    g_list_for (events, it) {
+        Event *event = (Event *) it->data;
+        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%c\", \"ts\": %.1f, \"pid\": %zu, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}",
+                     event->type, event->timestamp, event->pid, event->tid, event->name);
 
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (it->data));
-        ufo_profiler_foreach (profiler, (UfoProfilerFunc) write_opencl_row, fp);
+        if (g_list_next (it) != NULL)
+            fprintf (fp, ",");
     }
 
+    fprintf (fp, "] }");
     fclose (fp);
     g_free (filename);
 }
 
 void
-ufo_write_profile_events (GList *nodes)
+ufo_write_opencl_events (GList *nodes)
 {
-    FILE *fp;
-    gchar *filename;
-    GList *sorted;
     GList *it;
-    guint pid;
+    EventContainer container;
 
-    const gchar *event_names[] = { "process", "generate" };
-    gchar event_times[] = { 'B', 'E' };
-    pid = (guint) getpid ();
+    container.events = NULL;
 
-    sorted = get_sorted_events (nodes);
-    filename = g_strdup_printf (".trace.%i.json", pid);
-    fp = fopen (filename, "w");
-    fprintf (fp, "{ \"traceEvents\": [");
+    g_list_for (nodes, it) {
+        UfoProfiler *profiler;
 
-    g_list_for (sorted, it) {
-        SortedEvent *sorted_event;
-        UfoTraceEvent *event;
-        const gchar *name;
-        gchar when;
-        gchar *tid;
-
-        sorted_event = (SortedEvent *) it->data;
-
-        event = sorted_event->event;
-        name = event_names[(event->type & UFO_TRACE_EVENT_TYPE_MASK) >> 1];
-        when = event_times[(event->type & UFO_TRACE_EVENT_TIME_MASK) >> 3];
-        tid = g_strdup_printf ("%s-%p", G_OBJECT_TYPE_NAME (sorted_event->node),
-                                (gpointer) sorted_event->node);
-
-        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%c\", \"ts\": %.1f, \"pid\": %i, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}\n",
-                     when, event->timestamp, pid, tid, name);
-
-        if (g_list_next (it) != NULL)
-            fprintf (fp, ",");
-
-        g_free (tid);
+        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (it->data));
+        ufo_profiler_foreach (profiler, (UfoProfilerFunc) add_events, &container);
     }
 
-    fprintf (fp, "] }");
-    fclose (fp);
+    container.events = g_list_sort (container.events, (GCompareFunc) compare_events);
+    write_trace_json (".opencl.%i.json", container.events);
+    g_list_free (container.events);
+}
 
+void
+ufo_write_profile_events (GList *nodes)
+{
+    GList *sorted;
+
+    sorted = get_sorted_trace_events (nodes);
+    write_trace_json (".trace.%i.json", sorted);
     g_list_foreach (sorted, (GFunc) g_free, NULL);
     g_list_free (sorted);
 }

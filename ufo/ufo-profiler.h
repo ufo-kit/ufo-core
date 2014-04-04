@@ -54,12 +54,23 @@ struct _UfoProfiler {
 
 /**
  * UfoProfilerFunc:
- * @row: A string with profiling information for a certain event.
+ * @kernel: Kernel name
+ * @queue: OpenCL command queue
+ * @queued: Queuing timestamp in ns
+ * @submitted: Submit timestamp in ns
+ * @queued: Start timestamp in ns
+ * @queued: End timestamp in ns
  * @user_data: User data passed to ufo_profiler_foreach().
  *
  * Specifies the type of functions passed to ufo_profiler_foreach().
  */
-typedef void (*UfoProfilerFunc) (const gchar *row, gpointer user_data);
+typedef void (*UfoProfilerFunc) (const gchar *kernel,
+                                 gconstpointer queue,
+                                 gulong queued,
+                                 gulong submitted,
+                                 gulong start,
+                                 gulong end,
+                                 gpointer user_data);
 
 /**
  * UfoProfilerClass:
