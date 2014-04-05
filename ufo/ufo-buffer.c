@@ -728,6 +728,114 @@ ufo_buffer_get_device_array (UfoBuffer *buffer, gpointer cmd_queue)
 }
 
 /**
+ * ufo_buffer_get_device_array_view:
+ *
+ * This method creates a new memory buffer that must be freed by the user.
+ * Moreover, the original @buffer is kept intact.
+ *
+ * Returns: (transfer full): A newly allocated cl_mem that the user must release
+ * himself with clReleaseMemObject().
+ */
+gpointer
+ufo_buffer_get_device_array_view (UfoBuffer *buffer,
+                                  gpointer cmd_queue,
+                                  UfoRegion *region)
+{
+    UfoBufferPrivate *priv;
+    gsize size;
+    gsize src_row_pitch;
+    gsize src_slice_pitch;
+    gsize dst_row_pitch;
+    gsize dst_slice_pitch;
+    cl_mem mem;
+    cl_int errcode;
+    gsize dst_origin[] = {0, 0, 0};
+
+    g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
+    priv = buffer->priv;
+
+    if (region->origin[0] + region->size[0] > priv->requisition.dims[0] ||
+        (priv->requisition.n_dims == 2 && region->origin[1] + region->size[1] > priv->requisition.dims[1]) ||
+        (priv->requisition.n_dims == 3 && region->origin[2] + region->size[2] > priv->requisition.dims[2])) {
+        g_error ("Requested view exceeds buffer size");
+        return NULL;
+    }
+
+    update_last_queue (priv, cmd_queue);
+
+    size = region->size[0] * region->size[1] * region->size[2] * sizeof(float);
+    src_row_pitch = sizeof(float) * priv->requisition.dims[0];
+    src_slice_pitch = sizeof(float) * priv->requisition.dims[1];
+    dst_row_pitch = sizeof(float) * region->size[0];
+    dst_slice_pitch = sizeof(float) * region->size[1];
+
+    mem = clCreateBuffer (priv->context, CL_MEM_READ_WRITE, size, NULL, &errcode);
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+
+    if (priv->location == UFO_LOCATION_HOST && priv->host_array) {
+        if (priv->requisition.n_dims == 1) {
+            UFO_RESOURCES_CHECK_CLERR (clEnqueueWriteBuffer (cmd_queue, mem, CL_TRUE,
+                                                             region->origin[0] * sizeof (float), size,
+                                                             priv->host_array,
+                                                             0, NULL, NULL));
+        }
+        else if (priv->requisition.n_dims == 2) {
+            if (region->size[0] == priv->requisition.dims[0]) {
+                /* If our region is as wide as our buffer, we can simply copy
+                 * with a fixed offset */
+                gsize offset;
+
+                offset = region->origin[1] * src_row_pitch;
+                UFO_RESOURCES_CHECK_CLERR (clEnqueueWriteBuffer (cmd_queue, mem, CL_TRUE,
+                                                                 0, size,
+                                                                 ((gchar *) priv->host_array) + offset,
+                                                                 0, NULL, NULL));
+            }
+            else {
+                gchar *tmp;
+                gchar *dst;
+                gchar *src;
+                guint n_rows;
+
+                n_rows = region->size[1];
+                tmp = dst = g_malloc0 (size);
+                src = ((gchar *) priv->host_array) + region->origin[1] * src_row_pitch + region->origin[0] * sizeof (float);
+
+                for (guint y = 0; y < n_rows; y++) {
+                    memcpy (dst, src , dst_row_pitch);
+                    dst += dst_row_pitch;
+                    src += src_row_pitch;
+                }
+
+                UFO_RESOURCES_CHECK_CLERR (clEnqueueWriteBuffer (cmd_queue, mem, CL_TRUE,
+                                                                 0, size, tmp,
+                                                                 0, NULL, NULL));
+                g_free (tmp);
+            }
+        }
+        else {
+            g_warning ("Dimensions >= 3 not supported yet");
+        }
+    }
+
+    if (priv->location == UFO_LOCATION_DEVICE_IMAGE && priv->device_array) {
+        cl_event event;
+
+        UFO_RESOURCES_CHECK_CLERR (clEnqueueCopyBufferRect (cmd_queue,
+                                                            priv->device_array, mem,
+                                                            region->origin, dst_origin,
+                                                            region->size,
+                                                            src_row_pitch, src_slice_pitch,
+                                                            dst_row_pitch, dst_slice_pitch,
+                                                            0, NULL, &event));
+        UFO_RESOURCES_CHECK_CLERR (clWaitForEvents (1, &event));
+        UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
+    }
+
+    return mem;
+}
+
+/**
  * ufo_buffer_get_device_image:
  * @buffer: A #UfoBuffer.
  * @cmd_queue: (allow-none): A cl_command_queue object or %NULL.

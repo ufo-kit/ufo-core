@@ -44,6 +44,7 @@ typedef struct _UfoBufferClass      UfoBufferClass;
 typedef struct _UfoBufferPrivate    UfoBufferPrivate;
 typedef struct _UfoBufferParamSpec  UfoBufferParamSpec;
 typedef struct _UfoRequisition      UfoRequisition;
+typedef struct _UfoRegion           UfoRegion;
 
 /**
  * UfoBuffer:
@@ -65,7 +66,7 @@ struct _UfoBuffer {
  * of const variable because of <ulink
  * url="http://c-faq.com/ansi/constasconst.html">C constraints</ulink>.
  */
-#define UFO_BUFFER_MAX_NDIMS 8
+#define UFO_BUFFER_MAX_NDIMS 3
 
 /**
  * UfoBufferClass:
@@ -87,6 +88,11 @@ struct _UfoBufferClass {
 struct _UfoRequisition {
     guint n_dims;
     gsize dims[UFO_BUFFER_MAX_NDIMS];
+};
+
+struct _UfoRegion {
+    gsize origin[UFO_BUFFER_MAX_NDIMS];
+    gsize size[UFO_BUFFER_MAX_NDIMS];
 };
 
 /**
@@ -134,6 +140,9 @@ gfloat*     ufo_buffer_get_host_array       (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
 gpointer    ufo_buffer_get_device_array     (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
+gpointer    ufo_buffer_get_device_array_view(UfoBuffer      *buffer,
+                                             gpointer        cmd_queue,
+                                             UfoRegion      *region);
 gpointer    ufo_buffer_get_device_image     (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
 void        ufo_buffer_discard_location     (UfoBuffer      *buffer);
