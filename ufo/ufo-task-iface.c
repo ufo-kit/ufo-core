@@ -106,11 +106,18 @@ ufo_task_uses_cpu (UfoTask *task)
 }
 
 static void
+warn_unimplemented (UfoTask *task,
+                    const gchar *func)
+{
+    g_warning ("%s: `%s' not implemented", G_OBJECT_TYPE_NAME (task), func);
+}
+
+static void
 ufo_task_set_json_object_property_real (UfoTask *task,
                                         const gchar *prop_name,
                                         JsonObject *object)
 {
-    g_warning ("`set_json_object_property' not implemented");
+    warn_unimplemented (task, "set_json_object_property");
 }
 
 static void
@@ -118,7 +125,7 @@ ufo_task_setup_real (UfoTask *task,
                      UfoResources *resources,
                      GError **error)
 {
-    g_warning ("`setup' not implemented");
+    warn_unimplemented (task, "setup");
 }
 
 static void
@@ -126,13 +133,13 @@ ufo_task_get_requisition_real (UfoTask *task,
                                UfoBuffer **inputs,
                                UfoRequisition *requisition)
 {
-    g_warning ("`get_allocation' not implemented");
+    warn_unimplemented (task, "get_allocation");
 }
 
 static guint
 ufo_task_get_num_inputs_real (UfoTask *task)
 {
-    g_warning ("`get_num_inputs' not implemented");
+    warn_unimplemented (task, "get_num_inputs");
     return 0;
 }
 
@@ -140,14 +147,14 @@ static guint
 ufo_task_get_num_dimensions_real (UfoTask *task,
                                   guint input)
 {
-    g_warning ("`get_num_dimensions' not implemented");
+    warn_unimplemented (task, "get_num_dimensions");
     return 0;
 }
 
 static UfoTaskMode
 ufo_task_get_mode_real (UfoTask *task)
 {
-    g_warning ("`get_mode' not implemented");
+    warn_unimplemented (task, "get_mode");
     return 0;
 }
 
@@ -157,7 +164,7 @@ ufo_task_process_real (UfoTask *task,
                        UfoBuffer *output,
                        UfoRequisition *requisition)
 {
-    g_warning ("`process' of UfoTaskInterface not implemented");
+    warn_unimplemented (task, "process");
     return FALSE;
 }
 
@@ -166,7 +173,7 @@ ufo_task_generate_real (UfoTask *task,
                         UfoBuffer *output,
                         UfoRequisition *requisition)
 {
-    g_warning ("`generate' of UfoTaskInterface not implemented");
+    warn_unimplemented (task, "generate");
     return FALSE;
 }
 
