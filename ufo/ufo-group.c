@@ -254,6 +254,8 @@ ufo_group_finalize (GObject *object)
 
     priv = UFO_GROUP_GET_PRIVATE (object);
 
+    g_free (priv->n_expected);
+
     g_list_free (priv->targets);
     priv->targets = NULL;
 

@@ -324,6 +324,9 @@ ufo_task_node_finalize (GObject *object)
     g_free (priv->plugin);
     g_free (priv->unique);
 
+    for (guint i = 0; i < 16; i++)
+        g_list_free (priv->in_groups[i]);
+
     G_OBJECT_CLASS (ufo_task_node_parent_class)->finalize (object);
 }
 
