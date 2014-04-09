@@ -85,6 +85,7 @@ add_library(ufo SHARED
             ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 if(PYTHON_FOUND)
+    option(WITH_PYTHON "Enable Python multithreading support" ON)
     include_directories(${PYTHON_INCLUDE_DIRS})
     target_link_libraries(ufo ${PYTHON_LIBRARIES})
 endif()

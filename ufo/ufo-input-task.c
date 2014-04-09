@@ -18,7 +18,7 @@
  */
 #include "config.h"
 
-#ifdef HAVE_PYTHON
+#ifdef WITH_PYTHON
 #include <Python.h>
 #endif
 
@@ -97,7 +97,7 @@ ufo_input_task_get_input_buffer (UfoInputTask *task)
     UfoBuffer *buffer;
     g_return_val_if_fail (UFO_IS_INPUT_TASK (task), NULL);
 
-#ifdef HAVE_PYTHON
+#ifdef WITH_PYTHON
     /*
      * We have to let the Python interpreter run its threads, because this
      * function here might block before Python code can insert any buffer.
@@ -107,7 +107,7 @@ ufo_input_task_get_input_buffer (UfoInputTask *task)
 
     buffer = g_async_queue_pop (task->priv->out_queue);
 
-#ifdef HAVE_PYTHON
+#ifdef WITH_PYTHON
     Py_END_ALLOW_THREADS
 #endif
 

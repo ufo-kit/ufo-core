@@ -89,9 +89,6 @@ set(UFOCORE_DEPS
     ${JSON_GLIB_LIBRARIES}
     ${ZMQ_LIBRARIES})
 
-if(PYTHON_FOUND)
-    set(HAVE_PYTHON "1")
-endif()
 
 #{{{ Add include directories
 include_directories(

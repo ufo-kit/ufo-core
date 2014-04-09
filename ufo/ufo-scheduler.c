@@ -18,7 +18,7 @@
  */
 #include "config.h"
 
-#ifdef HAVE_PYTHON
+#ifdef WITH_PYTHON
 #include <Python.h>
 #endif
 
@@ -759,7 +759,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
             return;
     }
 
-#ifdef HAVE_PYTHON
+#ifdef WITH_PYTHON
     if (Py_IsInitialized ()) {
         Py_BEGIN_ALLOW_THREADS
 
