@@ -73,10 +73,15 @@ receive all items whereas ``in1_node`` wouldn't receive anything.
 How can I control the debug output from libufo?
 -----------------------------------------------
 
-Generally, UFO emits debug messages under the log domain ``Ufo``. To handle
-these messages you must set a log handler_ that decides what to do with the
-messages. To ignore all messages in Python, you would have to write something
-like this::
+Generally, UFO emits debug messages under the log domain ``Ufo``. If you use a
+UFO-based tool and cannot see debug messages, you might have to enable them by
+setting the ``G_MESSAGES_DEBUG`` environment variable, i.e.::
+
+    export G_MESSAGES_DEBUG=Ufo
+
+To handle these messages from within a script or program, you must set a log
+handler_ that decides what to do with the messages. To ignore all messages in
+Python, you would have to write something like this::
 
     from gi.repository import Ufo, GLib
 
