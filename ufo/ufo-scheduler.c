@@ -217,6 +217,7 @@ static gboolean
 get_inputs (TaskLocalData *tld,
             UfoBuffer **inputs)
 {
+    UfoRequisition req;
     UfoTaskNode *node = UFO_TASK_NODE (tld->task);
     guint n_finished = 0;
 
@@ -228,6 +229,16 @@ get_inputs (TaskLocalData *tld,
 
             group = ufo_task_node_get_current_in_group (node, i);
             input = ufo_group_pop_input_buffer (group, tld->task);
+
+            if (input != UFO_END_OF_STREAM) {
+                ufo_buffer_get_requisition (input, &req);
+
+                if (req.n_dims != tld->dims[i]) {
+                    g_warning ("%s: buffer from input %i provides %i dimensions but expect %i dimensions",
+                               G_OBJECT_TYPE_NAME (tld->task), i, req.n_dims, tld->dims[i]);
+                    return FALSE;
+                }
+            }
 
             if (input == UFO_END_OF_STREAM) {
                 tld->finished[i] = TRUE;
