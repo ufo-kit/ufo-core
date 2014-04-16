@@ -386,73 +386,6 @@ expand_remotes (UfoTaskGraph *task_graph,
     g_object_unref (remote_graph);
 }
 
-static gboolean
-path_unvisited (GList *path,
-                GList **visited)
-{
-    GList *head;
-    GList *tail;
-
-    head = g_list_first (path);
-    tail = g_list_last (path);
-
-    for (GList *it = g_list_first (head); it != tail; it = g_list_next (it)) {
-        UfoNode *node = (UfoNode *) it->data;
-
-        if (g_list_find (*visited, node))
-            return FALSE;
-
-        *visited = g_list_append (*visited, node);
-    }
-
-    return TRUE;
-}
-
-static GList *
-remove_common_ancestry_paths (GList *paths)
-{
-    GList *result;
-    GList *visited;
-    GList *it;
-
-    result = NULL;
-    visited = NULL;
-
-    g_list_for (paths, it) {
-        GList *path = (GList *) it->data;
-
-        if (path_unvisited (it->data, &visited))
-            result = g_list_append (result, path);
-    }
-
-    g_list_free (visited);
-    g_list_free (paths);
-    return result;
-}
-
-static GList *
-find_longest_path (GList *paths)
-{
-    GList *longest = NULL;
-    GList *it;
-    guint max_length = 0;
-
-    g_list_for (paths, it) {
-        guint length;
-        GList *path;
-
-        path = (GList *) it->data;
-        length = g_list_length (path);
-
-        if (length > max_length) {
-            max_length = length;
-            longest = path;
-        }
-    }
-
-    return longest;
-}
-
 /**
  * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
@@ -468,16 +401,13 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
                        UfoArchGraph *arch_graph,
                        gboolean expand_remote)
 {
-    GList *paths;
     GList *path;
 
     g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
-    paths = ufo_graph_get_paths (UFO_GRAPH (task_graph), (UfoFilterPredicate) is_gpu_task);
-    g_debug ("Number of identified paths: %i", g_list_length (paths));
-    paths = remove_common_ancestry_paths (paths);
-    g_debug ("Number of cleaned paths: %i", g_list_length (paths));
-    path = find_longest_path (paths);
+    path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph),
+                                        (UfoFilterPredicate) is_gpu_task,
+                                        NULL);
 
     if (path != NULL) {
         guint n_gpus;
@@ -504,8 +434,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
             ufo_graph_expand (UFO_GRAPH (task_graph), path);
     }
 
-    g_list_foreach (paths, (GFunc) g_list_free, NULL);
-    g_list_free (paths);
+    g_list_free (path);
 }
 
 /**
