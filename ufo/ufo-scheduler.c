@@ -52,12 +52,10 @@
  * on CPU and GPU hardware.
  */
 
-static void ufo_scheduler_initable_iface_init (GInitableIface *iface);
+/* static void ufo_scheduler_initable_iface_init (GInitableIface *iface); */
 
-G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL)
-                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
-                                                ufo_scheduler_initable_iface_init))
+G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, UFO_TYPE_BASE_SCHEDULER,
+                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
 
 #define UFO_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SCHEDULER, UfoSchedulerPrivate))
 
@@ -69,34 +67,12 @@ typedef struct {
     gboolean        *finished;
 } TaskLocalData;
 
+
 struct _UfoSchedulerPrivate {
-    GError          *construct_error;
-    UfoConfig       *config;
-    UfoResources    *resources;
-    UfoArchGraph    *arch_graph;
-    GList           *remotes;
     UfoRemoteMode    mode;
-    gboolean         expand;
-    gboolean         trace;
-    gboolean         rerun;
-    gboolean         ran;
-    gdouble          time;
+    gboolean ran;
 };
 
-enum {
-    PROP_0,
-    PROP_EXPAND,
-    PROP_REMOTES,
-    PROP_ENABLE_TRACING,
-    PROP_ENABLE_RERUNS,
-    PROP_TIME,
-    N_PROPERTIES,
-
-    /* Here come the overriden properties that we don't install ourselves. */
-    PROP_CONFIG,
-};
-
-static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 /**
  * UfoSchedulerError:
@@ -108,109 +84,24 @@ ufo_scheduler_error_quark (void)
     return g_quark_from_static_string ("ufo-scheduler-error-quark");
 }
 
-
 /**
  * ufo_scheduler_new:
  * @config: A #UfoConfig or %NULL
  * @remotes: (element-type utf8): A #GList with strings describing remote machines or %NULL
  *
- * Creates a new #UfoScheduler.
+ * Creates a new #UfoBaseScheduler.
  *
- * Return value: A new #UfoScheduler
+ * Return value: A new #UfoBaseScheduler
  */
-UfoScheduler *
+UfoBaseScheduler *
 ufo_scheduler_new (UfoConfig *config,
                    GList *remotes)
 {
-    UfoScheduler *sched;
-    UfoSchedulerPrivate *priv;
-    GList *it;
+    UfoBaseScheduler *sched;
 
-    sched = UFO_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER,
-                                         "config", config,
-                                         NULL));
-    priv = sched->priv;
-
-    g_list_for (remotes, it) {
-        priv->remotes = g_list_append (priv->remotes, g_strdup (it->data));
-    }
-
+    sched = UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER, "config", config, NULL));
+    ufo_base_scheduler_set_remotes (sched, remotes);
     return sched;
-}
-
-/**
- * ufo_scheduler_get_context:
- * @scheduler: A #UfoScheduler
- *
- * Get the associated OpenCL context of @scheduler.
- *
- * Return value: (transfer full): An cl_context structure or %NULL on error.
- */
-gpointer
-ufo_scheduler_get_context (UfoScheduler *scheduler)
-{
-    g_return_val_if_fail (UFO_IS_SCHEDULER (scheduler), NULL);
-    return ufo_resources_get_context (scheduler->priv->resources);
-}
-
-/**
- * ufo_scheduler_set_task_expansion:
- * @scheduler: A #UfoScheduler
- * @split: %TRUE if task graph should be split
- *
- * Sets whether the task graph should be expanded to accomodate for a multi GPU
- * system. Each suitable branch will be run on another GPU.
- */
-void
-ufo_scheduler_set_task_expansion (UfoScheduler *scheduler,
-                                  gboolean expand)
-{
-    g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
-    g_object_set (G_OBJECT (scheduler), "expand", expand, NULL);
-}
-
-/**
- * ufo_scheduler_set_remote_mode:
- * @scheduler: A #UfoScheduler
- * @mode: Mode of remote execution.
- *
- * Sets the mode of remote execution.
- *
- * See: #UfoRemoteMode.
- */
-void
-ufo_scheduler_set_remote_mode (UfoScheduler *scheduler,
-                               UfoRemoteMode mode)
-{
-    g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
-    scheduler->priv->mode = mode;
-}
-
-void
-ufo_scheduler_set_arch_graph (UfoScheduler *scheduler,
-                              UfoArchGraph *graph)
-{
-    g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
-
-    if (scheduler->priv->arch_graph != NULL)
-        g_object_unref (scheduler->priv->arch_graph);
-
-    scheduler->priv->arch_graph = g_object_ref (graph);
-}
-
-/**
- * ufo_scheduler_get_resources:
- * @scheduler: A #UfoScheduler
- *
- * Get a reference on the #UfoResources object of this scheduler.
- *
- * Return value: (transfer none): Associated #UfoResources object.
- */
-UfoResources *
-ufo_scheduler_get_resources (UfoScheduler *scheduler)
-{
-    g_return_val_if_fail (UFO_IS_SCHEDULER (scheduler), NULL);
-    return scheduler->priv->resources;
 }
 
 static gboolean
@@ -505,13 +396,18 @@ check_target_connections (UfoTaskGraph *graph,
 }
 
 static TaskLocalData **
-setup_tasks (UfoSchedulerPrivate *priv,
+setup_tasks (UfoBaseScheduler *scheduler,
              UfoTaskGraph *task_graph,
              GError **error)
 {
+    UfoResources *resources;
     TaskLocalData **tlds;
     GList *nodes;
     guint n_nodes;
+    gboolean tracing_enabled;
+
+    resources = ufo_base_scheduler_get_resources (scheduler);
+    g_object_get (scheduler, "enable-tracing", &tracing_enabled, NULL);
 
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
     n_nodes = g_list_length (nodes);
@@ -528,7 +424,7 @@ setup_tasks (UfoSchedulerPrivate *priv,
         tld->task = UFO_TASK (node);
         tlds[i] = tld;
 
-        ufo_task_setup (tld->task, priv->resources, error);
+        ufo_task_setup (tld->task, resources, error);
         tld->mode = ufo_task_get_mode (tld->task);
         tld->n_inputs = ufo_task_get_num_inputs (tld->task);
         tld->dims = g_new0 (guint, tld->n_inputs);
@@ -540,7 +436,7 @@ setup_tasks (UfoSchedulerPrivate *priv,
             return NULL;
 
         profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (node));
-        ufo_profiler_enable_tracing (profiler, priv->trace);
+        ufo_profiler_enable_tracing (profiler, tracing_enabled);
 
         tld->finished = g_new0 (gboolean, tld->n_inputs);
 
@@ -549,11 +445,12 @@ setup_tasks (UfoSchedulerPrivate *priv,
     }
 
     g_list_free (nodes);
+
     return tlds;
 }
 
 static GList *
-setup_groups (UfoSchedulerPrivate *priv,
+setup_groups (UfoBaseScheduler *scheduler,
               UfoTaskGraph *task_graph)
 {
     GList *groups;
@@ -563,7 +460,7 @@ setup_groups (UfoSchedulerPrivate *priv,
 
     groups = NULL;
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
-    context = ufo_resources_get_context (priv->resources);
+    context = ufo_base_scheduler_get_context (scheduler);
 
     g_list_for (nodes, it) {
         GList *successors;
@@ -688,38 +585,37 @@ join_threads (GThread **threads, guint n_threads)
         g_thread_join (threads[i]);
 }
 
-void
-ufo_scheduler_run (UfoScheduler *scheduler,
+static void
+ufo_scheduler_run (UfoBaseScheduler *scheduler,
                    UfoTaskGraph *task_graph,
                    GError **error)
 {
     UfoSchedulerPrivate *priv;
+    UfoResources *resources;
     UfoArchGraph *arch_graph;
+    GList *remotes;
     UfoTaskGraph *graph;
     GList *groups;
     guint n_nodes;
     GThread **threads;
     TaskLocalData **tlds;
-    GTimer *timer;
+    gboolean rerun;
+    gboolean expand;
+    gboolean trace;
 
-    g_return_if_fail (UFO_IS_SCHEDULER (scheduler));
-    priv = scheduler->priv;
+    priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
 
-    if (priv->construct_error != NULL) {
-        if (error)
-            *error = g_error_copy (priv->construct_error);
-        return;
-    }
+    resources = ufo_base_scheduler_get_resources (scheduler);
+    remotes = ufo_base_scheduler_get_remotes (scheduler);
+    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, remotes));
 
-    if (priv->arch_graph != NULL) {
-        arch_graph = priv->arch_graph;
-    }
-    else {
-        arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources,
-                                                         priv->remotes));
-    }
+    g_object_get (scheduler,
+                  "enable-reruns", &rerun,
+                  "enable-tracing", &trace,
+                  "expand", &expand,
+                  NULL);
 
-    if (priv->rerun) {
+    if (rerun) {
         graph = UFO_TASK_GRAPH (ufo_graph_copy (UFO_GRAPH (task_graph), error));
     }
     else {
@@ -739,7 +635,7 @@ ufo_scheduler_run (UfoScheduler *scheduler,
         replicate_task_graph (graph, arch_graph);
     }
 
-    if (priv->expand) {
+    if (expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
         ufo_task_graph_expand (graph, arch_graph, expand_remote);
     }
@@ -748,19 +644,18 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     ufo_task_graph_map (graph, arch_graph);
 
     /* Prepare task structures */
-    tlds = setup_tasks (priv, graph, error);
+    tlds = setup_tasks (scheduler, graph, error);
 
     if (tlds == NULL)
         return;
 
-    groups = setup_groups (priv, graph);
+    groups = setup_groups (scheduler, graph);
 
     if (!correct_connections (graph, error))
         return;
 
     n_nodes = ufo_graph_get_num_nodes (UFO_GRAPH (graph));
     threads = g_new0 (GThread *, n_nodes);
-    timer = g_timer_new ();
 
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
@@ -785,12 +680,8 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     join_threads (threads, n_nodes);
 #endif
 
-    priv->time = g_timer_elapsed (timer, NULL);
-    g_message ("Processing finished after %3.5fs", priv->time);
-    g_timer_destroy (timer);
-
     /* Cleanup */
-    if (priv->trace) {
+    if (trace) {
         GList *nodes = NULL;
 
         for (guint i = 0; i < n_nodes; i++) {
@@ -809,245 +700,22 @@ ufo_scheduler_run (UfoScheduler *scheduler,
     g_free (threads);
 
     /* The graph is a copy which we do not need anymore */
-    if (priv->rerun)
+    if (rerun)
         g_object_unref (graph);
 
-    if (priv->arch_graph == NULL)
-        g_object_unref (arch_graph);
+    g_list_free_full (remotes, g_free);
+    g_object_unref (arch_graph);
 
     priv->ran = TRUE;
 }
 
 static void
-copy_remote_list (UfoSchedulerPrivate *priv,
-                  GValueArray *array)
-{
-    if (priv->remotes != NULL) {
-        g_list_foreach (priv->remotes, (GFunc) g_free, NULL);
-        g_list_free (priv->remotes);
-        priv->remotes = NULL;
-    }
-
-    for (guint i = 0; i < array->n_values; i++) {
-        priv->remotes = g_list_append (priv->remotes,
-                                       g_strdup (g_value_get_string (g_value_array_get_nth (array, i))));
-    }
-}
-
-static void
-ufo_scheduler_set_property (GObject      *object,
-                            guint         property_id,
-                            const GValue *value,
-                            GParamSpec   *pspec)
-{
-    UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE (object);
-
-    switch (property_id) {
-        case PROP_CONFIG:
-            {
-                GObject *vobject = g_value_get_object (value);
-
-                if (vobject != NULL) {
-                    if (priv->config != NULL)
-                        g_object_unref (priv->config);
-
-                    priv->config = UFO_CONFIG (vobject);
-                    g_object_ref (priv->config);
-                }
-            }
-            break;
-
-        case PROP_REMOTES:
-            copy_remote_list (priv, g_value_get_boxed (value));
-            break;
-
-        case PROP_EXPAND:
-            priv->expand = g_value_get_boolean (value);
-            break;
-
-        case PROP_ENABLE_TRACING:
-            priv->trace = g_value_get_boolean (value);
-            break;
-
-        case PROP_ENABLE_RERUNS:
-            priv->rerun = g_value_get_boolean (value);
-            break;
-
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-            break;
-    }
-}
-
-static void
-ufo_scheduler_get_property (GObject      *object,
-                            guint         property_id,
-                            GValue       *value,
-                            GParamSpec   *pspec)
-{
-    UfoSchedulerPrivate *priv = UFO_SCHEDULER_GET_PRIVATE (object);
-
-    switch (property_id) {
-        case PROP_EXPAND:
-            g_value_set_boolean (value, priv->expand);
-            break;
-
-        case PROP_ENABLE_TRACING:
-            g_value_set_boolean (value, priv->trace);
-            break;
-
-        case PROP_ENABLE_RERUNS:
-            g_value_set_boolean (value, priv->rerun);
-            break;
-
-        case PROP_TIME:
-            g_value_set_double (value, priv->time);
-            break;
-
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-            break;
-    }
-}
-
-static void
-ufo_scheduler_constructed (GObject *object)
-{
-    UfoSchedulerPrivate *priv;
-
-    priv = UFO_SCHEDULER_GET_PRIVATE (object);
-    priv->resources = ufo_resources_new (priv->config,
-                                         &priv->construct_error);
-}
-
-static void
-ufo_scheduler_dispose (GObject *object)
-{
-    UfoSchedulerPrivate *priv;
-
-    priv = UFO_SCHEDULER_GET_PRIVATE (object);
-
-    if (priv->config != NULL) {
-        g_object_unref (priv->config);
-        priv->config = NULL;
-    }
-
-    if (priv->resources != NULL) {
-        g_object_unref (priv->resources);
-        priv->resources = NULL;
-    }
-
-    if (priv->arch_graph != NULL) {
-        g_object_unref (priv->arch_graph);
-        priv->arch_graph = NULL;
-    }
-
-    G_OBJECT_CLASS (ufo_scheduler_parent_class)->dispose (object);
-}
-
-static void
-ufo_scheduler_finalize (GObject *object)
-{
-    UfoSchedulerPrivate *priv;
-
-    priv = UFO_SCHEDULER_GET_PRIVATE (object);
-
-    g_clear_error (&priv->construct_error);
-    g_list_foreach (priv->remotes, (GFunc) g_free, NULL);
-    g_list_free (priv->remotes);
-    priv->remotes = NULL;
-
-    G_OBJECT_CLASS (ufo_scheduler_parent_class)->finalize (object);
-}
-
-static gboolean
-ufo_scheduler_initable_init (GInitable *initable,
-                             GCancellable *cancellable,
-                             GError **error)
-{
-    UfoScheduler *scheduler;
-    UfoSchedulerPrivate *priv;
-
-    g_return_val_if_fail (UFO_IS_SCHEDULER (initable), FALSE);
-
-    if (cancellable != NULL) {
-        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-                             "Cancellable initialization not supported");
-        return FALSE;
-    }
-
-    scheduler = UFO_SCHEDULER (initable);
-    priv = scheduler->priv;
-
-    if (priv->construct_error != NULL) {
-        if (error)
-            *error = g_error_copy (priv->construct_error);
-
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-static void
-ufo_scheduler_initable_iface_init (GInitableIface *iface)
-{
-    iface->init = ufo_scheduler_initable_init;
-}
-
-static void
 ufo_scheduler_class_init (UfoSchedulerClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-    gobject_class->constructed  = ufo_scheduler_constructed;
-    gobject_class->set_property = ufo_scheduler_set_property;
-    gobject_class->get_property = ufo_scheduler_get_property;
-    gobject_class->dispose      = ufo_scheduler_dispose;
-    gobject_class->finalize     = ufo_scheduler_finalize;
+    UfoBaseSchedulerClass *sclass;
 
-    properties[PROP_EXPAND] =
-        g_param_spec_boolean ("expand",
-                              "Expand the task graph for better multi GPU performance",
-                              "Expand the task graph for better multi GPU performance",
-                              TRUE,
-                              G_PARAM_READWRITE);
-
-    properties[PROP_ENABLE_TRACING] =
-        g_param_spec_boolean ("enable-tracing",
-                              "Enable and write profile traces",
-                              "Enable and write profile traces",
-                              FALSE,
-                              G_PARAM_READWRITE);
-
-    properties[PROP_ENABLE_RERUNS] =
-        g_param_spec_boolean ("enable-reruns",
-                              "Enable additional runs of the scheduler",
-                              "Enable additional runs of the scheduler",
-                              FALSE,
-                              G_PARAM_READWRITE);
-
-    properties[PROP_REMOTES] =
-        g_param_spec_value_array ("remotes",
-                                  "List containing remote addresses",
-                                  "List containing remote addresses of machines running ufod",
-                                  g_param_spec_string ("remote",
-                                                       "A remote address in the form tcp://addr:port",
-                                                       "A remote address in the form tcp://addr:port (see http://api.zeromq.org/3-2:zmq-tcp)",
-                                                       ".",
-                                                       G_PARAM_READWRITE),
-                                  G_PARAM_READWRITE);
-
-    properties[PROP_TIME] =
-        g_param_spec_double ("time",
-                             "Finished execution time",
-                             "Finished execution time in seconds",
-                              0.0, G_MAXDOUBLE, 0.0,
-                              G_PARAM_READABLE);
-
-    for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
-        g_object_class_install_property (gobject_class, i, properties[i]);
-
-    g_object_class_override_property (gobject_class, PROP_CONFIG, "config");
+    sclass = UFO_BASE_SCHEDULER_CLASS (klass);
+    sclass->run = ufo_scheduler_run;
 
     g_type_class_add_private (klass, sizeof (UfoSchedulerPrivate));
 }
@@ -1058,15 +726,6 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     UfoSchedulerPrivate *priv;
 
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
-    priv->expand = TRUE;
-    priv->trace = FALSE;
-    priv->rerun = FALSE;
-    priv->ran = FALSE;
-    priv->config = NULL;
-    priv->resources = NULL;
-    priv->arch_graph = NULL;
-    priv->remotes = NULL;
-    priv->construct_error = NULL;
     priv->mode = UFO_REMOTE_MODE_STREAM;
-    priv->time = 0.0;
+    priv->ran = FALSE;
 }

@@ -50,7 +50,7 @@ struct _UfoDaemonPrivate {
     UfoConfig *config;
     UfoPluginManager *manager;
     UfoTaskGraph *task_graph;
-    UfoScheduler *scheduler;
+    UfoBaseScheduler *scheduler;
     GThread *scheduler_thread;
     gpointer socket;
     UfoNode *input_task;
@@ -102,7 +102,7 @@ handle_get_num_devices (UfoDaemon *daemon)
 
     UfoMessage *msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (guint16));
     cl_uint *num_devices = g_malloc (sizeof (cl_uint));
-    context = ufo_scheduler_get_context (priv->scheduler);
+    context = ufo_base_scheduler_get_context (priv->scheduler);
 
     UFO_RESOURCES_CHECK_CLERR (clGetContextInfo (context,
                                CL_CONTEXT_NUM_DEVICES,
@@ -171,7 +171,7 @@ handle_replicate_json (UfoDaemon *daemon, UfoMessage *msg)
         goto replicate_json_free;
     }
 
-    ufo_scheduler_run (priv->scheduler, graph, NULL);
+    ufo_base_scheduler_run (priv->scheduler, graph, NULL);
     g_object_unref (priv->scheduler);
 
     priv->scheduler = ufo_scheduler_new (priv->config, NULL);
@@ -264,7 +264,7 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
     UfoRequisition requisition;
     gpointer context;
 
-    context = ufo_scheduler_get_context (priv->scheduler);
+    context = ufo_base_scheduler_get_context (priv->scheduler);
 
     struct _Header {
         UfoRequisition requisition;
@@ -386,7 +386,7 @@ run_scheduler (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     g_message ("Start scheduler");
-    ufo_scheduler_run (priv->scheduler, priv->task_graph, NULL);
+    ufo_base_scheduler_run (priv->scheduler, priv->task_graph, NULL);
 
     g_message ("Done");
     g_object_unref (priv->scheduler);
@@ -537,12 +537,16 @@ ufo_daemon_dispose (GObject *object)
 
     if (priv->task_graph)
         g_object_unref (priv->task_graph);
+
     if (priv->config != NULL)
         g_object_unref (priv->config);
+
     if (priv->msger != NULL)
         g_object_unref (priv->msger);
+
     if (priv->manager != NULL)
         g_object_unref (priv->manager);
+
     if (priv->scheduler != NULL)
         g_object_unref (priv->scheduler);
 

@@ -24,9 +24,8 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
+#include <ufo/ufo-base-scheduler.h>
 #include <ufo/ufo-config.h>
-#include <ufo/ufo-task-graph.h>
-#include <ufo/ufo-remote-node.h>
 
 G_BEGIN_DECLS
 
@@ -56,7 +55,7 @@ typedef enum {
  */
 struct _UfoScheduler {
     /*< private >*/
-    GObject parent_instance;
+    UfoBaseScheduler parent_instance;
 
     UfoSchedulerPrivate *priv;
 };
@@ -68,22 +67,12 @@ struct _UfoScheduler {
  */
 struct _UfoSchedulerClass {
     /*< private >*/
-    GObjectClass parent_class;
+    UfoBaseSchedulerClass parent_class;
 };
 
-UfoScheduler* ufo_scheduler_new                 (UfoConfig     *config,
+UfoBaseScheduler
+             *ufo_scheduler_new                 (UfoConfig     *config,
                                                  GList         *remotes);
-void          ufo_scheduler_run                 (UfoScheduler  *scheduler,
-                                                 UfoTaskGraph  *task_graph,
-                                                 GError**       error);
-gpointer      ufo_scheduler_get_context         (UfoScheduler  *scheduler);
-void          ufo_scheduler_set_task_expansion  (UfoScheduler  *scheduler,
-                                                 gboolean       split);
-void          ufo_scheduler_set_remote_mode     (UfoScheduler  *scheduler,
-                                                 UfoRemoteMode  mode);
-void          ufo_scheduler_set_arch_graph      (UfoScheduler  *scheduler,
-                                                 UfoArchGraph  *graph);
-UfoResources *ufo_scheduler_get_resources       (UfoScheduler  *scheduler);
 GType         ufo_scheduler_get_type            (void);
 GQuark        ufo_scheduler_error_quark         (void);
 

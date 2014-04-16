@@ -71,7 +71,7 @@ execute_json (const gchar *filename,
               gchar **addresses)
 {
     UfoTaskGraph    *task_graph;
-    UfoScheduler    *scheduler;
+    UfoBaseScheduler *scheduler;
     UfoPluginManager *manager;
     GList *address_list = NULL;
     GError *error = NULL;
@@ -86,7 +86,7 @@ execute_json (const gchar *filename,
     scheduler = ufo_scheduler_new (config, address_list);
     g_list_free (address_list);
 
-    ufo_scheduler_run (scheduler, task_graph, &error);
+    ufo_base_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
 
     g_object_unref (task_graph);
