@@ -122,6 +122,9 @@ void        ufo_graph_expand                (UfoGraph       *graph,
 UfoGraph   *ufo_graph_copy                  (UfoGraph       *graph,
                                              GError        **error);
 UfoGraph   *ufo_graph_shallow_copy          (UfoGraph       *graph);
+UfoGraph   *ufo_graph_shallow_subgraph      (UfoGraph       *graph,
+                                             UfoFilterPredicate pred,
+                                             gpointer        user_data);
 void        ufo_graph_dump_dot              (UfoGraph       *graph,
                                              const gchar    *filename);
 GType       ufo_graph_get_type              (void);

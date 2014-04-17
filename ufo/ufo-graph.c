@@ -616,8 +616,67 @@ ufo_graph_shallow_copy (UfoGraph *graph)
     }
 
     g_list_free (nodes);
-
     return copy;
+}
+
+/**
+ * ufo_graph_shallow_subgraph:
+ * @graph: A #UfoGraph
+ * @pred: (scope call): A filter predicate
+ * @user_data: User data that is passed to @pred
+ *
+ * Make a shallow subgraph of @graph that contains nodes which satisfy @pred.
+ *
+ * Returns: (transfer full): A subgraph of @graph.
+ */
+UfoGraph *
+ufo_graph_shallow_subgraph (UfoGraph *graph,
+                            UfoFilterPredicate pred,
+                            gpointer user_data)
+{
+    UfoGraph *subgraph;
+    GList *it;
+    GList *nodes;
+
+    subgraph = UFO_GRAPH (g_object_new (G_OBJECT_TYPE (graph), NULL));
+    nodes = ufo_graph_get_nodes_filtered (graph, pred, user_data);
+
+    g_list_for (nodes, it) {
+        UfoNode *current;
+        GList *predecessors;
+        GList *successors;
+        GList *jt;
+
+        current = UFO_NODE (it->data);
+        g_object_ref (current);
+
+        predecessors = ufo_graph_get_predecessors (graph, current);
+        successors = ufo_graph_get_successors (graph, current);
+
+        g_list_for (predecessors, jt) {
+            UfoNode *predecessor = UFO_NODE (jt->data);
+
+            if (g_list_find (nodes, predecessor)) {
+                gpointer label = ufo_graph_get_edge_label (graph, predecessor, current);
+                ufo_graph_connect_nodes (subgraph, predecessor, current, label);
+            }
+        }
+
+        g_list_for (successors, jt) {
+            UfoNode *successor = UFO_NODE (jt->data);
+
+            if (g_list_find (nodes, successor)) {
+                gpointer label = ufo_graph_get_edge_label (graph, current, successor);
+                ufo_graph_connect_nodes (subgraph, current, successor, label);
+            }
+        }
+
+        g_list_free (predecessors);
+        g_list_free (successors);
+    }
+
+    g_list_free (nodes);
+    return subgraph;
 }
 
 static GList *
