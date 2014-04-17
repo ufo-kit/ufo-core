@@ -409,8 +409,26 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
                                         (UfoFilterPredicate) is_gpu_task,
                                         NULL);
 
-    if (path != NULL) {
+    if (path != NULL && g_list_length (path) > 1) {
+        GList *predecessors;
+        GList *successors;
         guint n_gpus;
+
+        g_object_unref (UFO_NODE (g_list_first(path)->data));
+        g_object_unref (UFO_NODE (g_list_last(path)->data));
+
+        /* Add predecessor and successor nodes to path */
+        predecessors = ufo_graph_get_predecessors (UFO_GRAPH (task_graph),
+                                                   UFO_NODE (g_list_first (path)->data));
+
+        successors = ufo_graph_get_successors (UFO_GRAPH (task_graph),
+                                               UFO_NODE (g_list_last (path)->data));
+
+        path = g_list_prepend (path, g_list_first (predecessors)->data);
+        path = g_list_append (path, g_list_first (successors)->data);
+
+        g_list_free (predecessors);
+        g_list_free (successors);
 
         if (expand_remote) {
             GList *remotes;

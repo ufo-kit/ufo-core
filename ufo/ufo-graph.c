@@ -754,7 +754,9 @@ ufo_graph_expand (UfoGraph *graph,
 
     head = g_list_first (path);
     tail = g_list_last (path);
-    g_assert (head != tail);
+
+    if (head == tail)
+        return;
 
     orig = UFO_NODE (head->data);
 
@@ -794,141 +796,6 @@ ufo_graph_expand (UfoGraph *graph,
     }
 }
 
-static void
-pickup_paths (UfoGraph *graph,
-              UfoFilterPredicate pred,
-              UfoNode *current,
-              UfoNode *last,
-              GList  *current_path,
-              GList **paths,
-              gpointer user)
-{
-    GList *successors;
-    GList *it;
-
-    if (pred (current, user)) {
-        if (!pred (last, user))
-            current_path = g_list_append (current_path, last);
-
-        current_path = g_list_append (current_path, current);
-    }
-    else {
-        if (current_path != NULL) {
-            current_path = g_list_append (current_path, current);
-            *paths = g_list_append (*paths, current_path);
-        }
-
-        current_path = NULL;
-    }
-
-    successors = ufo_graph_get_successors (graph, current);
-
-    g_list_for (successors, it) {
-        pickup_paths (graph, pred, it->data, current, g_list_copy (current_path), paths, user);
-    }
-
-    g_list_free (successors);
-}
-
-/**
- * ufo_graph_get_paths:
- * @graph: A #UfoGraph
- * @pred: (scope call): A predicate function
- * @user_data: User-data passed to @pred
- *
- * Compute a list of lists that contain complete paths with nodes that match a
- * predicate function.
- *
- * Returns: (element-type GLib.GList) (transfer full): A list of lists with paths
- * that match @pred.
- */
-GList *
-ufo_graph_get_paths (UfoGraph *graph,
-                     UfoFilterPredicate pred,
-                     gpointer user_data)
-{
-    GList *roots;
-    GList *it;
-    GList *paths = NULL;
-
-    roots = ufo_graph_get_roots (graph);
-
-    g_list_for (roots, it) {
-        UfoNode *node = UFO_NODE (it->data);
-        pickup_paths (graph, pred, node, node, NULL, &paths, user_data);
-    }
-
-    g_list_free (roots);
-    return paths;
-}
-
-static gboolean
-path_unvisited (GList *path,
-                GList **visited)
-{
-    GList *head;
-    GList *tail;
-
-    head = g_list_first (path);
-    tail = g_list_last (path);
-
-    for (GList *it = g_list_first (head); it != tail; it = g_list_next (it)) {
-        UfoNode *node = (UfoNode *) it->data;
-
-        if (g_list_find (*visited, node))
-            return FALSE;
-
-        *visited = g_list_append (*visited, node);
-    }
-
-    return TRUE;
-}
-
-static GList *
-remove_common_ancestry_paths (GList *paths)
-{
-    GList *result;
-    GList *visited;
-    GList *it;
-
-    result = NULL;
-    visited = NULL;
-
-    g_list_for (paths, it) {
-        GList *path = (GList *) it->data;
-
-        if (path_unvisited (it->data, &visited))
-            result = g_list_append (result, path);
-    }
-
-    g_list_free (visited);
-    g_list_free (paths);
-    return result;
-}
-
-static GList *
-find_longest_path (GList *paths)
-{
-    GList *longest = NULL;
-    GList *it;
-    guint max_length = 0;
-
-    g_list_for (paths, it) {
-        guint length;
-        GList *path;
-
-        path = (GList *) it->data;
-        length = g_list_length (path);
-
-        if (length > max_length) {
-            max_length = length;
-            longest = path;
-        }
-    }
-
-    return longest;
-}
-
 /**
  * ufo_graph_find_longest_path:
  * @graph: A #UfoGraph
@@ -946,18 +813,112 @@ ufo_graph_find_longest_path (UfoGraph *graph,
                              UfoFilterPredicate pred,
                              gpointer user_data)
 {
+    UfoGraph *subgraph;
     GList *it;
-    GList *paths;
-    GList *result;
+    UfoNode *last = NULL;
+    GList *sorted = NULL;
+    GList *no_incoming = NULL;
+    GList *result = NULL;
+    GHashTable *lengths;
 
-    paths = ufo_graph_get_paths (graph, pred, user_data);
-    paths = remove_common_ancestry_paths (paths);
-    result = find_longest_path (paths);
+    subgraph = ufo_graph_shallow_subgraph (graph, pred, user_data);
+    no_incoming = ufo_graph_get_roots (subgraph);
 
-    g_list_for (paths, it) {
-        if (it->data != result)
-            g_list_free (it->data);
+    /* Topologically sort, see Kahn (1962) */
+
+    while (g_list_length (no_incoming) > 0) {
+        UfoNode *current;
+        GList *current_link;
+        GList *targets;
+        GList *jt;
+
+        current_link = g_list_first (no_incoming);
+        current = UFO_NODE (current_link->data);
+        no_incoming = g_list_delete_link (no_incoming, current_link);
+
+        sorted = g_list_append (sorted, current);
+        targets = ufo_graph_get_successors (subgraph, current);
+
+        g_list_for (targets, jt) {
+            UfoNode *target;
+
+            target = UFO_NODE (jt->data);
+            ufo_graph_remove_edge (subgraph, current, target);
+
+            if (ufo_graph_get_num_predecessors (subgraph, target) == 0)
+                no_incoming = g_list_append (no_incoming, target);
+        }
+
+        g_list_free (targets);
     }
+
+    lengths = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+    /* Record path lengths for each node */
+
+    g_list_for (sorted, it) {
+        UfoNode *current;
+        GList *predecessors;
+
+        current = UFO_NODE (it->data);
+        predecessors = ufo_graph_get_predecessors (graph, current);
+
+        if (predecessors == NULL) {
+            g_hash_table_insert (lengths, current, GINT_TO_POINTER (0));
+        }
+        else {
+            GList *jt;
+            gint max_length = 0;
+
+            g_list_for (predecessors, jt) {
+                gint length;
+
+                length = GPOINTER_TO_INT (g_hash_table_lookup (lengths, jt->data));
+
+                if (length > max_length)
+                    max_length = length;
+            }
+
+            g_hash_table_insert (lengths, current, GINT_TO_POINTER (max_length + 1));
+            last = current;
+        }
+
+        g_list_free (predecessors);
+    }
+
+    /* Traverse back to find longest path */
+
+    while (last != NULL) {
+        GList *predecessors;
+        GList *jt;
+        gint max_length = 0;
+
+        result = g_list_prepend (result, last);
+        predecessors = ufo_graph_get_predecessors (graph, last);
+
+        if (predecessors == NULL)
+            break;
+
+        g_list_for (predecessors, jt) {
+            gint length = GPOINTER_TO_INT (g_hash_table_lookup (lengths, jt->data));
+
+            if (length == 0) {
+                last = NULL;
+            }
+            else if (length > max_length) {
+                max_length = length;
+                last = UFO_NODE (jt->data);
+            }
+        }
+
+        g_list_free (predecessors);
+    }
+
+    g_list_free (sorted);
+    g_list_free (no_incoming);
+
+    g_object_unref (subgraph);
+    g_hash_table_destroy (lengths);
 
     return result;
 }
