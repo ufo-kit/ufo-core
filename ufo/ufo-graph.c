@@ -563,6 +563,63 @@ ufo_graph_copy (UfoGraph *graph,
     return copy;
 }
 
+/**
+ * ufo_graph_shallow_copy:
+ * @graph: A #UfoGraph
+ *
+ * Make a shallow copy of @graph, which means both graphs share the same nodes.
+ *
+ * Returns: (transfer full): A copy of @graph.
+ */
+UfoGraph *
+ufo_graph_shallow_copy (UfoGraph *graph)
+{
+    UfoGraph *copy;
+    GList *nodes;
+    GList *it;
+
+    copy = UFO_GRAPH (g_object_new (G_OBJECT_TYPE (graph), NULL));
+    nodes = ufo_graph_get_nodes (graph);
+
+    g_list_for (nodes, it) {
+        UfoNode *current;
+        GList *predecessors;
+        GList *successors;
+        GList *jt;
+
+        current = UFO_NODE (it->data);
+        g_object_ref (current);
+
+        predecessors = ufo_graph_get_predecessors (graph, current);
+        successors = ufo_graph_get_successors (graph, current);
+
+        g_list_for (predecessors, jt) {
+            UfoNode *predecessor;
+            gpointer label;
+
+            predecessor = UFO_NODE (jt->data);
+            label = ufo_graph_get_edge_label (graph, predecessor, current);
+            ufo_graph_connect_nodes (copy, predecessor, current, label);
+        }
+
+        g_list_for (successors, jt) {
+            UfoNode *successor;
+            gpointer label;
+
+            successor = UFO_NODE (jt->data);
+            label = ufo_graph_get_edge_label (graph, current, successor);
+            ufo_graph_connect_nodes (copy, current, successor, label);
+        }
+
+        g_list_free (predecessors);
+        g_list_free (successors);
+    }
+
+    g_list_free (nodes);
+
+    return copy;
+}
+
 static GList *
 append_level (UfoGraph *graph,
               GList *current_level,

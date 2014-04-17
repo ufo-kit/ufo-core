@@ -316,6 +316,49 @@ test_copy (Fixture *fixture, gconstpointer data)
     g_object_unref (copy);
 }
 
+static void
+test_shallow_copy (Fixture *fixture, gconstpointer data)
+{
+    UfoGraph *copy;
+    GList *roots;
+    GList *successors;
+    GError *error = NULL;
+
+    copy = ufo_graph_shallow_copy (fixture->graph);
+    g_assert (copy != NULL);
+    g_assert_no_error (error);
+    g_assert (ufo_graph_get_num_edges (copy) == 2);
+    g_assert (ufo_graph_get_num_nodes (copy) == 3);
+
+    /* Check that copying preserved the order */
+    roots = ufo_graph_get_roots (copy);
+    g_assert (ufo_node_get_label (g_list_nth_data (roots, 0)) == FOO_LABEL);
+
+    successors = ufo_graph_get_successors (copy,
+                                           g_list_nth_data (roots, 0));
+
+    g_assert (ufo_node_get_label (g_list_nth_data (successors, 0)) == BAR_LABEL);
+    g_assert (ufo_node_get_label (g_list_nth_data (successors, 1)) == BAZ_LABEL);
+    g_list_free (successors);
+    g_list_free (roots);
+    g_object_unref (copy);
+
+    copy = ufo_graph_shallow_copy (fixture->sequence);
+    g_assert (copy != NULL);
+    g_assert_no_error (error);
+    g_assert (ufo_graph_get_num_edges (copy) == 2);
+    g_assert (ufo_graph_get_num_nodes (copy) == 3);
+    g_object_unref (copy);
+
+    copy = ufo_graph_shallow_copy (fixture->diamond);
+    g_assert (copy != NULL);
+    g_assert_no_error (error);
+    g_assert (ufo_graph_get_num_edges (copy) == 4);
+    g_assert (ufo_graph_get_num_nodes (copy) == 4);
+    g_object_unref (copy);
+
+}
+
 static gboolean
 always_true (UfoNode *node, gpointer user_data)
 {
@@ -383,6 +426,7 @@ test_add_graph (void)
         { "/no-opencl/graph/labels",                  test_get_labels },
         { "/no-opencl/graph/expansion",               test_expansion },
         { "/no-opencl/graph/copy",                    test_copy },
+        { "/no-opencl/graph/copy/shallow",            test_shallow_copy },
         { "/no-opencl/graph/flatten",                 test_flatten },
         { NULL, NULL }
     };
