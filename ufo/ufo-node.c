@@ -30,9 +30,9 @@ G_DEFINE_TYPE (UfoNode, ufo_node, G_TYPE_OBJECT)
 #define UFO_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_NODE, UfoNodePrivate))
 
 struct _UfoNodePrivate {
-    UfoNode  *copied_from;
-    guint     index;
+    UfoNode  *orig;
     guint     total;
+    guint     index;
     gpointer  label;
 };
 
@@ -67,7 +67,7 @@ ufo_node_get_label (UfoNode *node)
 }
 
 static void
-copy_properties (GObject *dst,
+bind_properties (GObject *dst,
                  GObject *src)
 {
     GParamSpec **props;
@@ -77,11 +77,9 @@ copy_properties (GObject *dst,
 
     for (guint i = 0; i < n_props; i++) {
         if (props[i]->flags & G_PARAM_WRITABLE) {
-            GValue value = {0};
-
-            g_value_init (&value, props[i]->value_type);
-            g_object_get_property (G_OBJECT (src), props[i]->name, &value);
-            g_object_set_property (G_OBJECT (dst), props[i]->name, &value);
+            g_object_bind_property (src, props[i]->name,
+                                    dst, props[i]->name,
+                                    G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
         }
     }
 
@@ -92,11 +90,20 @@ static UfoNode *
 ufo_node_copy_real (UfoNode *node,
                     GError **error)
 {
-    GObject *copy;
+    UfoNode *orig;
+    UfoNode *copy;
 
-    copy = g_object_new (G_OBJECT_TYPE (node), NULL);
-    copy_properties (copy, G_OBJECT (node));
-    return UFO_NODE (copy);
+    copy = UFO_NODE (g_object_new (G_OBJECT_TYPE (node), NULL));
+    orig = node->priv->orig;
+
+    bind_properties (G_OBJECT (copy), G_OBJECT (orig));
+
+    copy->priv->orig = orig;
+    copy->priv->label = orig->priv->label;
+    copy->priv->index = orig->priv->total;
+    orig->priv->total++;
+
+    return copy;
 }
 
 static gboolean
@@ -106,20 +113,7 @@ ufo_node_equal_real (UfoNode *n1,
     g_return_val_if_fail (UFO_IS_NODE (n1) && UFO_IS_NODE (n2), FALSE);
 
     /* FIXME: When done we should just check if the types match */
-    return n1 == n2 ||
-           n1->priv->copied_from == n2 ||
-           n2->priv->copied_from == n1;
-}
-
-static void
-update_total (UfoNode *node,
-              guint total)
-{
-    node->priv = UFO_NODE_GET_PRIVATE (node);
-    node->priv->total = total;
-
-    if (node->priv->copied_from != NULL)
-        update_total (node->priv->copied_from, total);
+    return n1 == n2;
 }
 
 /**
@@ -137,17 +131,7 @@ UfoNode *
 ufo_node_copy (UfoNode *node,
                GError **error)
 {
-    UfoNode *offspring;
-
-    offspring = UFO_NODE_GET_CLASS (node)->copy (node, error);
-    offspring->priv->label = node->priv->label;
-    offspring->priv->copied_from = node;
-    offspring->priv->index = node->priv->total;
-    offspring->priv->total = offspring->priv->index + 1;
-
-    update_total (node, offspring->priv->total);
-
-    return offspring;
+    return UFO_NODE_GET_CLASS (node)->copy (node, error);
 }
 
 /**
@@ -180,7 +164,7 @@ guint
 ufo_node_get_total (UfoNode *node)
 {
     g_return_val_if_fail (UFO_IS_NODE (node), 0);
-    return node->priv->total;
+    return node->priv->orig->priv->total;
 }
 
 gboolean
@@ -196,7 +180,7 @@ ufo_node_class_init (UfoNodeClass *klass)
     klass->copy = ufo_node_copy_real;
     klass->equal = ufo_node_equal_real;
 
-    g_type_class_add_private(klass, sizeof(UfoNodePrivate));
+    g_type_class_add_private (klass, sizeof(UfoNodePrivate));
 }
 
 static void
@@ -204,9 +188,8 @@ ufo_node_init (UfoNode *self)
 {
     UfoNodePrivate *priv;
     self->priv = priv = UFO_NODE_GET_PRIVATE (self);
-
-    priv->copied_from = NULL;
-    priv->index = 0;
-    priv->total = 1;
+    priv->orig = self;
     priv->label = NULL;
+    priv->total = 1;
+    priv->index = 0;
 }
