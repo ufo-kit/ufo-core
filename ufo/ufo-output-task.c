@@ -51,8 +51,11 @@ G_DEFINE_TYPE_WITH_CODE (UfoOutputTask, ufo_output_task, UFO_TYPE_TASK_NODE,
 
 enum {
     PROP_0,
+    PROP_NUM_DIMS,
     N_PROPERTIES
 };
+
+static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 UfoNode *
 ufo_output_task_new (guint n_dims)
@@ -166,21 +169,33 @@ ufo_output_task_process (UfoTask *task,
 }
 
 static void
-ufo_output_task_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
+ufo_output_task_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
+    UfoOutputTaskPrivate *priv;
+
+    priv = UFO_OUTPUT_TASK_GET_PRIVATE (object);
+
     switch (property_id) {
+        case PROP_NUM_DIMS:
+            priv->n_dims = g_value_get_uint (value);
+            break;
+
         default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
     }
 }
 
 static void
-ufo_output_task_get_property(GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
+ufo_output_task_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
     switch (property_id) {
+        case PROP_NUM_DIMS:
+            g_value_set_uint (value, UFO_OUTPUT_TASK_GET_PRIVATE (object)->n_dims);
+            break;
+
         default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
     }
 }
@@ -222,14 +237,22 @@ ufo_task_interface_init (UfoTaskIface *iface)
 static void
 ufo_output_task_class_init (UfoOutputTaskClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+    GObjectClass *oclass = G_OBJECT_CLASS (klass);
 
-    gobject_class->set_property = ufo_output_task_set_property;
-    gobject_class->get_property = ufo_output_task_get_property;
-    gobject_class->dispose = ufo_output_task_dispose;
-    gobject_class->finalize = ufo_output_task_finalize;
+    oclass->set_property = ufo_output_task_set_property;
+    oclass->get_property = ufo_output_task_get_property;
+    oclass->dispose = ufo_output_task_dispose;
+    oclass->finalize = ufo_output_task_finalize;
 
-    g_type_class_add_private (gobject_class, sizeof(UfoOutputTaskPrivate));
+    properties[PROP_NUM_DIMS] =
+        g_param_spec_uint ("num-dims",
+                           "Number of expected dimensions",
+                           "Number of expected dimensions",
+                           1, 3, 2, G_PARAM_READWRITE);
+
+    g_object_class_install_property (oclass, PROP_NUM_DIMS, properties[PROP_NUM_DIMS]);
+
+    g_type_class_add_private (oclass, sizeof(UfoOutputTaskPrivate));
 }
 
 static void
@@ -240,6 +263,7 @@ ufo_output_task_init (UfoOutputTask *task)
     task->priv->in_queue = g_async_queue_new ();
     task->priv->n_copies = 0;
     task->priv->copies = NULL;
+    task->priv->n_dims = 2;
 
     ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "output-task");
 }
