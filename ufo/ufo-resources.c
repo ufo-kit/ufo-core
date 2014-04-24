@@ -969,7 +969,6 @@ ufo_resources_finalize (GObject *object)
     priv->devices = NULL;
 
     G_OBJECT_CLASS (ufo_resources_parent_class)->finalize (object);
-    g_debug ("UfoResources: finalized");
 }
 
 static gboolean

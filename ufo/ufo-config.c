@@ -191,18 +191,13 @@ static void
 ufo_config_dispose (GObject *object)
 {
     G_OBJECT_CLASS (ufo_config_parent_class)->finalize (object);
-    g_debug ("UfoConfig: disposed");
 }
 
 static void
 ufo_config_finalize (GObject *object)
 {
-    UfoConfigPrivate *priv = UFO_CONFIG_GET_PRIVATE (object);
-
-    g_value_array_free (priv->path_array);
-
+    g_value_array_free (UFO_CONFIG_GET_PRIVATE (object)->path_array);
     G_OBJECT_CLASS (ufo_config_parent_class)->finalize (object);
-    g_debug ("UfoConfig: finalized");
 }
 
 static void

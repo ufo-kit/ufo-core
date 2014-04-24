@@ -301,13 +301,6 @@ ufo_plugin_manager_constructed (GObject *object)
 }
 
 static void
-ufo_plugin_manager_dispose (GObject *object)
-{
-    G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->dispose (object);
-    g_debug ("UfoPluginManager: disposed");
-}
-
-static void
 ufo_plugin_manager_finalize (GObject *gobject)
 {
     UfoPluginManager *manager = UFO_PLUGIN_MANAGER (gobject);
@@ -328,7 +321,6 @@ ufo_plugin_manager_finalize (GObject *gobject)
 
     g_hash_table_destroy (priv->new_funcs);
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);
-    g_debug ("UfoPluginManager: finalized");
 }
 
 static void
@@ -338,7 +330,6 @@ ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
     gobject_class->get_property = ufo_plugin_manager_get_property;
     gobject_class->set_property = ufo_plugin_manager_set_property;
     gobject_class->constructed  = ufo_plugin_manager_constructed;
-    gobject_class->dispose      = ufo_plugin_manager_dispose;
     gobject_class->finalize     = ufo_plugin_manager_finalize;
 
     g_object_class_override_property (gobject_class, PROP_CONFIG, "config");
