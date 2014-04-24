@@ -11,6 +11,7 @@ test_suite_SOURCES = \
     test-buffer.c \
     test-config.c \
     test-graph.c \
+    test-node.c \
     test-profiler.c \
     test-remote-node.c \
     test-mpi-remote-node.c \
