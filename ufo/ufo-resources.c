@@ -321,6 +321,8 @@ get_device_type (UfoResourcesPrivate *priv)
             return CL_DEVICE_TYPE_CPU;
         case UFO_DEVICE_GPU:
             return CL_DEVICE_TYPE_GPU;
+        case UFO_DEVICE_ACC:
+            return CL_DEVICE_TYPE_ACCELERATOR;
         case UFO_DEVICE_ALL:
             return CL_DEVICE_TYPE_ALL;
     }
