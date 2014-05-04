@@ -67,6 +67,7 @@ typedef enum {
     UFO_TASK_MODE_SHARE_DATA    = 1 << 5,
 
     UFO_TASK_MODE_TYPE_MASK = UFO_TASK_MODE_PROCESSOR | UFO_TASK_MODE_GENERATOR | UFO_TASK_MODE_REDUCTOR,
+    UFO_TASK_MODE_PROCESSOR_MASK = UFO_TASK_MODE_CPU | UFO_TASK_MODE_GPU,
 } UfoTaskMode;
 
 typedef gboolean (*UfoTaskProcessFunc) (UfoTask *task,
