@@ -65,6 +65,7 @@ typedef struct {
     guint            n_inputs;
     guint           *dims;
     gboolean        *finished;
+    gboolean         strict;
 } TaskLocalData;
 
 
@@ -121,7 +122,7 @@ get_inputs (TaskLocalData *tld,
             group = ufo_task_node_get_current_in_group (node, i);
             input = ufo_group_pop_input_buffer (group, tld->task);
 
-            if (input != UFO_END_OF_STREAM) {
+            if (tld->strict && input != UFO_END_OF_STREAM) {
                 ufo_buffer_get_requisition (input, &req);
 
                 if (req.n_dims != tld->dims[i]) {
@@ -428,6 +429,9 @@ setup_tasks (UfoBaseScheduler *scheduler,
         tld->mode = ufo_task_get_mode (tld->task);
         tld->n_inputs = ufo_task_get_num_inputs (tld->task);
         tld->dims = g_new0 (guint, tld->n_inputs);
+
+        /* TODO: make this configurable from outside */
+        tld->strict = FALSE;
 
         for (guint j = 0; j < tld->n_inputs; j++)
             tld->dims[j] = ufo_task_get_num_dimensions (tld->task, j);
