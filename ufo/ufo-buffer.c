@@ -254,6 +254,33 @@ ufo_buffer_new_with_size (GList *dims,
 }
 
 /**
+ * ufo_buffer_new_with_data:
+ * @requisition: size requisition
+ * @data: Pointer to host memory that will be used by
+ *
+ * Create a new buffer using existing host memory.
+ */
+UfoBuffer *
+ufo_buffer_new_with_data (UfoRequisition *requisition,
+                          gpointer data,
+                          gpointer context)
+{
+    UfoBuffer *buffer;
+    UfoBufferPrivate *priv;
+
+    g_return_val_if_fail ((requisition->n_dims <= UFO_BUFFER_MAX_NDIMS) &&
+                          (requisition->n_dims > 0), NULL);
+
+    buffer = ufo_buffer_new (requisition, context);
+    priv = buffer->priv;
+
+    priv->free = FALSE;
+    priv->host_array = data;
+
+    return buffer;
+}
+
+/**
  * ufo_buffer_get_size:
  * @buffer: A #UfoBuffer
  *

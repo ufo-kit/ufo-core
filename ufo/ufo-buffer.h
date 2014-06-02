@@ -123,6 +123,9 @@ UfoBuffer*  ufo_buffer_new                  (UfoRequisition *requisition,
                                              gpointer        context);
 UfoBuffer*  ufo_buffer_new_with_size        (GList          *dims,
                                              gpointer        context);
+UfoBuffer*  ufo_buffer_new_with_data        (UfoRequisition *requisition,
+                                             gpointer        data,
+                                             gpointer        context);
 void        ufo_buffer_resize               (UfoBuffer      *buffer,
                                              UfoRequisition *requisition);
 gint        ufo_buffer_cmp_dimensions       (UfoBuffer      *buffer,
