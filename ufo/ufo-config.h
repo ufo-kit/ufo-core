@@ -66,6 +66,7 @@ struct _UfoConfigClass {
  * @UFO_DEVICE_ALL: All devices
  * @UFO_DEVICE_CPU: Only CPU devices
  * @UFO_DEVICE_GPU: Only GPU devices
+ * @UFO_DEVICE_ACC: Only accelerator devices such as Xeon Phi
  *
  * Types of OpenCL devices to query for. See UfoConfig:"device-type".
  */

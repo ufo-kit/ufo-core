@@ -59,7 +59,7 @@ struct _UfoBufferPrivate {
     cl_mem              device_image;
     cl_context          context;
     cl_command_queue    last_queue;
-    gsize               size;   /**< size of buffer in bytes */
+    gsize               size;           /* size of buffer in bytes */
     UfoMemLocation      location;
     UfoMemLocation      last_location;
 };
@@ -257,6 +257,7 @@ ufo_buffer_new_with_size (GList *dims,
  * ufo_buffer_new_with_data:
  * @requisition: size requisition
  * @data: Pointer to host memory that will be used by
+ * @context: OpenCL context for this buffer
  *
  * Create a new buffer using existing host memory.
  */
@@ -756,6 +757,9 @@ ufo_buffer_get_device_array (UfoBuffer *buffer, gpointer cmd_queue)
 
 /**
  * ufo_buffer_get_device_array_view:
+ * @buffer: A #UfoBuffer
+ * @cmd_queue: A cl_command_queue object
+ * @region: A #UfoRegion specifying the view of the sub buffer
  *
  * This method creates a new memory buffer that must be freed by the user.
  * Moreover, the original @buffer is kept intact.

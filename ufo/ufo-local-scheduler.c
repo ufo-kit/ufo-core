@@ -43,7 +43,7 @@
 #include "compat.h"
 
 /**
- * SECTION:ufo-scheduler
+ * SECTION:ufo-local-scheduler
  * @Short_description: Schedule the execution of a graph of nodes
  * @Title: UfoLocalScheduler
  *

@@ -58,8 +58,8 @@ struct _UfoProfiler {
  * @queue: OpenCL command queue
  * @queued: Queuing timestamp in ns
  * @submitted: Submit timestamp in ns
- * @queued: Start timestamp in ns
- * @queued: End timestamp in ns
+ * @start: Start timestamp in ns
+ * @end: End timestamp in ns
  * @user_data: User data passed to ufo_profiler_foreach().
  *
  * Specifies the type of functions passed to ufo_profiler_foreach().
@@ -94,7 +94,6 @@ typedef enum {
 
 /**
  * UfoTraceEvent:
- * @name: Name of the event
  * @type: Type of the event
  * @thread_id: ID of thread in which the event was issued
  * @timestamp: Arbitrary timestamp of the event

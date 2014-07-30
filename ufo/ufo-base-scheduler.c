@@ -80,6 +80,7 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 /**
  * UfoBaseSchedulerError:
  * @UFO_BASE_SCHEDULER_ERROR_SETUP: Could not start scheduler due to error
+ * @UFO_BASE_SCHEDULER_ERROR_EXECUTION: Error occured during execution
  */
 GQuark
 ufo_base_scheduler_error_quark (void)
@@ -144,7 +145,8 @@ ufo_base_scheduler_get_resources (UfoBaseScheduler *scheduler)
  * @scheduler: A #UfoBaseScheduler
  *
  * Returns: (transfer full) (element-type utf8): List with strings that the user
- * must free with g_list_free_full */
+ * must free with g_list_free_full
+ */
 GList *
 ufo_base_scheduler_get_remotes (UfoBaseScheduler *scheduler)
 {

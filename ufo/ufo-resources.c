@@ -74,12 +74,12 @@ struct _UfoResourcesPrivate {
 
     cl_platform_id   platform;
     cl_context       context;
-    cl_uint          n_devices;         /**< Number of OpenCL devices per platform id */
-    cl_device_id     *devices;          /**< Array of OpenCL devices per platform id */
-    cl_command_queue *command_queues;   /**< Array of command queues per device */
+    cl_uint          n_devices;         /* Number of OpenCL devices per platform id */
+    cl_device_id     *devices;          /* Array of OpenCL devices per platform id */
+    cl_command_queue *command_queues;   /* Array of command queues per device */
 
-    GList       *include_paths;         /**< List of include paths for kernel includes >*/
-    GList       *kernel_paths;          /**< Colon-separated string with paths to kernel files */
+    GList       *include_paths;         /* List of include paths for kernel includes */
+    GList       *kernel_paths;          /* Colon-separated string with paths to kernel files */
     GHashTable  *kernel_cache;
     GList       *programs;
     GList       *kernels;

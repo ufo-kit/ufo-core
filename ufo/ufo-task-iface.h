@@ -48,12 +48,15 @@ typedef enum {
 
 /**
  * UfoTaskMode:
+ * @UFO_TASK_MODE_INVALID: invalid
  * @UFO_TASK_MODE_PROCESSOR: one-by-one processing
  * @UFO_TASK_MODE_GENERATOR: do not receive any data but produce a stream.
  * @UFO_TASK_MODE_REDUCTOR: receive fininite stream and generate a reduced stream
  * @UFO_TASK_MODE_GPU: runs on GPU
  * @UFO_TASK_MODE_CPU: runs on CPU
  * @UFO_TASK_MODE_SHARE_DATA: sibling tasks share the same input data
+ * @UFO_TASK_MODE_TYPE_MASK: mask to get type from UfoTaskMode
+ * @UFO_TASK_MODE_PROCESSOR_MASK: mask to get processor from UfoTaskMode
  *
  * Task modes describe how a task operates considering the input data.
  */

@@ -102,8 +102,8 @@ typedef enum {
 
 /**
  * UfoMessengerRole:
- * @UFO_MESSENGER_CLIENT: (insert)
- * @UFO_MESSENGER_SERVER: (insert)
+ * @UFO_MESSENGER_CLIENT: insert
+ * @UFO_MESSENGER_SERVER: insert
  *
  * The role of an connection endpoint.
  */
