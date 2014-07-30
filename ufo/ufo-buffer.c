@@ -114,7 +114,7 @@ alloc_device_array (UfoBufferPrivate *priv)
     priv->device_array = mem;
 }
 
-#ifdef CL_VERSION_1_2
+#if 0
 static void
 alloc_device_image (UfoBufferPrivate *priv)
 {
