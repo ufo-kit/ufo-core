@@ -91,23 +91,20 @@ ufo_remote_task_get_requisition (UfoTask *task,
 static guint
 ufo_remote_task_get_num_inputs (UfoTask *task)
 {
-    ufo_remote_node_get_num_inputs (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote);
-    return 0;
+    return ufo_remote_node_get_num_inputs (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote);
 }
 
 static guint
 ufo_remote_task_get_num_dimensions (UfoTask *task,
                                     guint input)
 {
-    ufo_remote_node_get_num_dimensions (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote, input);
-    return 0;
+    return ufo_remote_node_get_num_dimensions (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote, input);
 }
 
 static guint
 ufo_remote_task_get_mode (UfoTask *task)
 {
-    ufo_remote_node_get_mode (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote);
-    return UFO_TASK_MODE_INVALID;
+    return ufo_remote_node_get_mode (UFO_REMOTE_TASK_GET_PRIVATE (task)->remote);
 }
 
 static gboolean
