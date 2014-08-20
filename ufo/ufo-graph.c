@@ -220,7 +220,7 @@ ufo_graph_get_nodes_filtered (UfoGraph *graph,
     g_list_for (priv->nodes, it) {
         UfoNode *node = UFO_NODE (it->data);
 
-        if (func (node, user_data))
+        if (func (node, user_data)) 
             result = g_list_append (result, node);
     }
 

@@ -336,7 +336,7 @@ build_remote_graph (UfoTaskGraph *remote_graph,
 static void
 create_remote_tasks (UfoTaskGraph *task_graph,
                      UfoTaskGraph *remote_graph,
-                     UfoTaskNode *first,
+		     GList *first, //since there can be more than one predecessor
                      UfoTaskNode *last,
                      UfoRemoteNode *remote)
 {
@@ -352,7 +352,18 @@ create_remote_tasks (UfoTaskGraph *task_graph,
     priv->remote_tasks = g_list_append (priv->remote_tasks, task);
     ufo_task_node_set_proc_node (task, UFO_NODE (remote));
 
-    ufo_task_graph_connect_nodes (task_graph, first, task);
+    //Setting the remote's # of inputs to the # of inputs of the corresponding task
+    GList *roots = ufo_graph_get_roots (UFO_GRAPH (remote_graph));
+    guint root_num_inputs = ufo_task_get_num_inputs (UFO_TASK (roots->data));
+    ufo_remote_node_set_num_inputs (remote, root_num_inputs);
+
+    //Connect all predecessors
+    GList *pred;
+    int i = 0;
+    g_list_for (first->data, pred) {
+	ufo_task_graph_connect_nodes_full (task_graph, pred->data, task, i);
+	i++;
+    }
     ufo_task_graph_connect_nodes (task_graph, task, last);
 
     g_free (json);
@@ -382,7 +393,7 @@ expand_remotes (UfoTaskGraph *task_graph,
 
     g_list_for (remotes, it) {
         create_remote_tasks (task_graph, remote_graph,
-                             first->data, last->data, it->data);
+                             first, last->data, it->data);
     }
 
     g_object_unref (remote_graph);
@@ -446,11 +457,10 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
         successors = ufo_graph_get_successors (UFO_GRAPH (task_graph),
                                                UFO_NODE (g_list_last (path)->data));
-
-        path = g_list_prepend (path, g_list_first (predecessors)->data);
+        
+        path = g_list_prepend (path, predecessors);
         path = g_list_append (path, g_list_first (successors)->data);
 
-        g_list_free (predecessors);
         g_list_free (successors);
 
         if (expand_remote) {
@@ -468,6 +478,8 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
             g_list_free (remotes);
         }
 
+        g_list_free (predecessors);
+        n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
         g_debug ("Expand for %i GPU nodes", n_gpus);
 
         for (guint i = 1; i < n_gpus; i++)
