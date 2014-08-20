@@ -307,6 +307,6 @@ ufo_remote_node_init (UfoRemoteNode *self)
 {
     UfoRemoteNodePrivate *priv;
     self->priv = priv = UFO_REMOTE_NODE_GET_PRIVATE (self);
-    priv->n_inputs = 0;
+    priv->n_inputs = ufo_remote_node_get_num_inputs (self);
     priv->terminated = FALSE;
 }
