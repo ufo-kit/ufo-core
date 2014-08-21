@@ -117,8 +117,9 @@ write_trace_json (const gchar *filename_template, GList *events)
 
     g_list_for (events, it) {
         Event *event = (Event *) it->data;
-        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%c\", \"ts\": %.1f, \"pid\": %zu, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}",
-                     event->type, event->timestamp, event->pid, event->tid, event->name);
+        gdouble timestamp = event->timestamp * 1000 * 1000;
+        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%c\", \"ts\": %.0f, \"pid\": %zu, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}",
+                     event->type, timestamp, event->pid, event->tid, event->name);
 
         if (g_list_next (it) != NULL)
             fprintf (fp, ",");
