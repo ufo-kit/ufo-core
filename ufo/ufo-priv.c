@@ -24,7 +24,7 @@ compare_events (const Event *a,
                 const Event *b)
 {
     if (a->timestamp != b->timestamp)
-        return (gint) (a->timestamp - b->timestamp);
+        return a->timestamp < b->timestamp ? -1 : 1;
 
     /* Check that 'B' < 'E' */
     return (a->type - b->type);
