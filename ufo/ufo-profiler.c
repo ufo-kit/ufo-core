@@ -305,26 +305,33 @@ ufo_profiler_foreach (UfoProfiler    *profiler,
                       gpointer        user_data)
 {
     UfoProfilerPrivate *priv;
+    GHashTable *names;
     struct EventRow *row;
 
     g_return_if_fail (UFO_IS_PROFILER (profiler));
 
     priv = profiler->priv;
+    names = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_free);
 
     for (guint i = 0; i < priv->event_array->len; i++) {
         cl_command_queue queue;
-        gchar *kernel_name;
+        gchar *name;
         gulong queued, submitted, start, end;
 
         row = &g_array_index (priv->event_array, struct EventRow, i);
+        name = g_hash_table_lookup (names, row->kernel);
 
-        kernel_name = get_kernel_name (row->kernel);
+        if (name == NULL) {
+            name = get_kernel_name (row->kernel);
+            g_hash_table_insert (names, row->kernel, name);
+        }
+
         clGetEventInfo (row->event, CL_EVENT_COMMAND_QUEUE, sizeof (cl_command_queue), &queue, NULL);
         get_time_stamps (row->event, &queued, &submitted, &start, &end);
-        func (kernel_name, queue, queued, submitted, start, end, user_data);
-
-        g_free (kernel_name);
+        func (name, queue, queued, submitted, start, end, user_data);
     }
+
+    g_hash_table_destroy (names);
 }
 
 static void
