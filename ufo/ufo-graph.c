@@ -920,6 +920,18 @@ ufo_graph_find_longest_path (UfoGraph *graph,
     g_object_unref (subgraph);
     g_hash_table_destroy (lengths);
 
+    /* Last resort: try to find a single node */
+    if (result == NULL) {
+        GList *nodes = NULL;
+
+        nodes = ufo_graph_get_nodes_filtered (graph, pred, user_data);
+
+        if (nodes != NULL) {
+            result = g_list_append (result, g_list_nth_data (nodes, 0));
+            g_list_free (nodes);
+        }
+    }
+
     return result;
 }
 
