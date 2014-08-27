@@ -763,6 +763,15 @@ ufo_graph_expand (UfoGraph *graph,
     /* The first link goes from the original head */
     current = orig;
 
+    /*
+     * Fix for #33: In case we duplicate a single node we have to reference the
+     * to-be-copied object a second time. It is still not clear _why_ it is
+     * unreffed twice.
+     */
+    if (g_list_length (path) == 3) {
+        g_object_ref (G_OBJECT (g_list_next (head)->data));
+    }
+
     for (GList *it = g_list_next (head); it != tail; it = g_list_next (it)) {
         UfoNode *next;
         UfoNode *copy;
