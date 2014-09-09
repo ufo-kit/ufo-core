@@ -105,7 +105,7 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
 static void
 copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfig *config)
 {
-    priv->search_paths = g_list_concat (ufo_config_get_paths (config), priv->search_paths);
+    priv->search_paths = g_list_concat (priv->search_paths, ufo_config_get_paths (config));
 }
 
 /**
@@ -293,11 +293,10 @@ ufo_plugin_manager_constructed (GObject *object)
 {
     UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (object);
 
-    if (priv->search_paths == NULL) {
-        UfoConfig *config = ufo_config_new ();
-        copy_config_paths (priv, config);
-        g_object_unref (config);
-    }
+    /* Always add default directories at end of search path */
+    UfoConfig *config = ufo_config_new ();
+    copy_config_paths (priv, config);
+    g_object_unref (config);
 }
 
 static void
@@ -338,6 +337,20 @@ ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
 }
 
 static void
+add_environment_paths(UfoPluginManagerPrivate *priv, const gchar *env)
+{
+    if (!env)
+        return;
+    gchar **paths = g_strsplit(env, ":", -1);
+    for (unsigned idx = 0; paths[idx]; ++idx) {
+        /* Ignore empty paths */
+        if (*paths[idx])
+            priv->search_paths = g_list_append (priv->search_paths, paths[idx]);
+    }
+    g_free(paths);
+}
+
+static void
 ufo_plugin_manager_init (UfoPluginManager *manager)
 {
     static const gchar *PATH_VAR = "UFO_PLUGIN_PATH";
@@ -348,11 +361,7 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
     priv->search_paths = NULL;
     priv->new_funcs = g_hash_table_new_full (g_str_hash, g_str_equal,
                                              g_free, g_free);
-
-    if (g_getenv (PATH_VAR)) {
-        priv->search_paths = g_list_append (priv->search_paths,
-                                            g_strdup (g_getenv (PATH_VAR)));
-    }
+    add_environment_paths (priv, g_getenv (PATH_VAR));
 }
 
 
