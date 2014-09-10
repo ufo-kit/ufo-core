@@ -409,7 +409,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
                                         (UfoFilterPredicate) is_gpu_task,
                                         NULL);
 
-    if (path != NULL && g_list_length (path) > 0) {
+    if (path != NULL && g_list_length (path) > 1) {
         GList *predecessors;
         GList *successors;
         guint n_gpus;
