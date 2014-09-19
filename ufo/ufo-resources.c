@@ -257,15 +257,26 @@ platform_has_gpus (cl_platform_id platform)
 }
 
 static cl_platform_id
-get_preferably_gpu_based_platform (void)
+get_preferably_gpu_based_platform (UfoResourcesPrivate *priv)
 {
     cl_platform_id *platforms;
     cl_uint n_platforms;
     cl_platform_id candidate = 0;
+    gint user_platform;
 
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (0, NULL, &n_platforms));
     platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
+
+    /* Check if user set a preferred platform */
+    if (priv->config != NULL) {
+        user_platform = ufo_config_get_platform (priv->config);
+
+        if (user_platform >= 0 && user_platform < (gint) n_platforms) {
+            candidate = platforms[user_platform];
+            goto platform_found;
+        }
+    }
 
     if (n_platforms > 0)
         candidate = platforms[0];
@@ -277,6 +288,7 @@ get_preferably_gpu_based_platform (void)
         }
     }
 
+platform_found:
     g_free (platforms);
     return candidate;
 }
@@ -370,7 +382,7 @@ initialize_opencl (UfoResourcesPrivate *priv,
     cl_device_type device_type;
     cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
 
-    priv->platform = get_preferably_gpu_based_platform ();
+    priv->platform = get_preferably_gpu_based_platform (priv);
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
     device_type = get_device_type (priv);
 
