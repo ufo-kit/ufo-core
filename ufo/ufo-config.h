@@ -83,6 +83,7 @@ void          ufo_config_add_paths          (UfoConfig *config,
                                              GList     *paths);
 GList       * ufo_config_get_paths          (UfoConfig *config);
 UfoDeviceType ufo_config_get_device_type    (UfoConfig *config);
+gint          ufo_config_get_platform       (UfoConfig *config);
 GType         ufo_config_get_type           (void);
 
 G_END_DECLS
