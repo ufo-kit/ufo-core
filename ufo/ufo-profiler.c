@@ -145,6 +145,25 @@ ufo_profiler_call (UfoProfiler    *profiler,
     UFO_RESOURCES_CHECK_CLERR (cl_err);
 }
 
+void
+ufo_profiler_register_event (UfoProfiler *profiler,
+                             gpointer command_queue,
+                             gpointer kernel,
+                             gpointer event)
+{
+    UfoProfilerPrivate *priv;
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    priv = profiler->priv;
+
+    if (priv->trace) {
+        struct EventRow row;
+        row.event = event;
+        row.kernel = kernel;
+        row.queue = command_queue;
+        g_array_append_val (priv->event_array, row);
+    }
+}
+
 /**
  * ufo_profiler_start:
  * @profiler: A #UfoProfiler object.

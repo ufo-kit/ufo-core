@@ -120,6 +120,11 @@ void         ufo_profiler_call          (UfoProfiler        *profiler,
                                          guint               work_dim,
                                          const gsize        *global_work_size,
                                          const gsize        *local_work_size);
+void         ufo_profiler_register_event
+                                        (UfoProfiler *profiler,
+                                         gpointer command_queue,
+                                         gpointer kernel,
+                                         gpointer event);
 void         ufo_profiler_foreach       (UfoProfiler        *profiler,
                                          UfoProfilerFunc     func,
                                          gpointer            user_data);

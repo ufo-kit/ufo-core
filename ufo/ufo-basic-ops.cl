@@ -7,7 +7,7 @@ void operation_set (__write_only image2d_t out,
 {
   const uint X = get_global_id(0);
   const uint Y = get_global_id(1);
- 
+
   int2 coord_w;
   coord_w.x = X;
   coord_w.y = Y;
@@ -21,11 +21,11 @@ void operation_inv (__read_only image2d_t in,
 {
 	const uint X = get_global_id(0);
 	const uint Y = get_global_id(1);
- 
+
  	float2 coord_r;
 	coord_r.x = (float)X + 0.5f;
 	coord_r.y = (float)Y + 0.5f;
-	
+
 	int2 coord_w;
 	coord_w.x = X;
 	coord_w.y = Y;
@@ -46,12 +46,12 @@ void operation_mul (__read_only image2d_t arg1_r,
   float2 coord_r;
   coord_r.x = (float)X + 0.5f;
   coord_r.y = (float)Y + 0.5f;
-  
+
   int2 coord_w;
   coord_w.x = X;
   coord_w.y = Y;
 
-  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 * 
+  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 *
                 read_imagef(arg2_r, imageSampler, coord_r).s0;
 
   write_imagef(out, coord_w, value);
@@ -68,12 +68,12 @@ void operation_add (__read_only image2d_t arg1_r,
   float2 coord_r;
   coord_r.x = (float)X + 0.5f;
   coord_r.y = (float)Y + 0.5f;
-  
+
   int2 coord_w;
   coord_w.x = X;
   coord_w.y = Y;
 
-  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 + 
+  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 +
                 read_imagef(arg2_r, imageSampler, coord_r).s0;
 
   write_imagef(out, coord_w, value);
@@ -90,12 +90,12 @@ void operation_deduction (__read_only image2d_t arg1_r,
   float2 coord_r;
   coord_r.x = (float)X + 0.5f;
   coord_r.y = (float)Y + 0.5f;
-  
+
   int2 coord_w;
   coord_w.x = X;
   coord_w.y = Y;
 
-  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 - 
+  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 -
                 read_imagef(arg2_r, imageSampler, coord_r).s0;
 
   write_imagef(out, coord_w, value);
@@ -113,12 +113,12 @@ void operation_deduction2 (__read_only image2d_t arg1_r,
   float2 coord_r;
   coord_r.x = (float)X + 0.5f;
   coord_r.y = (float)Y + 0.5f;
-  
+
   int2 coord_w;
   coord_w.x = X;
   coord_w.y = Y;
 
-  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 - 
+  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 -
                 modifier * read_imagef(arg2_r, imageSampler, coord_r).s0;
 
   write_imagef(out, coord_w, value);
@@ -136,12 +136,12 @@ void operation_add2 (__read_only image2d_t arg1_r,
   float2 coord_r;
   coord_r.x = (float)X + 0.5f;
   coord_r.y = (float)Y + 0.5f;
-  
+
   int2 coord_w;
   coord_w.x = X;
   coord_w.y = Y;
 
-  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 + 
+  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 +
                 modifier * read_imagef(arg2_r, imageSampler, coord_r).s0;
 
   write_imagef(out, coord_w, value);
@@ -159,12 +159,12 @@ void op_mulRows (__read_only  image2d_t arg1_r,
   float2 coord_r;
   coord_r.x = (float)X + 0.5f;
   coord_r.y = (float)offset + (float)Y + 0.5f;
-  
+
   int2 coord_w;
   coord_w.x = X;
   coord_w.y = offset + Y;
 
-  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 * 
+  float value = read_imagef(arg1_r, imageSampler, coord_r).s0 *
                 read_imagef(arg2_r, imageSampler, coord_r).s0;
 
   write_imagef(out, coord_w, value);
@@ -308,7 +308,7 @@ void descent_grad (__read_only image2d_t arg_r,
   values[4] = read_imagef(arg_r, imageSampler2, coord_r[4]).s0;
   values[5] = read_imagef(arg_r, imageSampler2, coord_r[5]).s0;
   values[6] = read_imagef(arg_r, imageSampler2, coord_r[6]).s0;
-  
+
   float t1, t2;
   float part[3];
   t1 = values[0] - values[1];

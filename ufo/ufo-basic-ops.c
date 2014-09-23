@@ -533,7 +533,7 @@ ufo_op_l1_norm (UfoBuffer *arg,
 
     for (guint i = 0; i < arg_requisition.dims[0]; ++i) {
         for (guint j = 0; j < arg_requisition.dims[1]; ++j) {
-            norm += (gfloat) fabs (values[i * arg_requisition.dims[0] + j]);
+            norm += (gfloat) fabs (values[i * arg_requisition.dims[1] + j]);
         }
     }
 
