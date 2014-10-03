@@ -94,7 +94,12 @@ set(UFOCORE_DEPS
     ${JSON_GLIB_LIBRARIES}
     ${ZMQ_LIBRARIES})
 
-
+#{{{ Link dirs of dependencies
+link_directories(
+    ${GLIB2_LIBRARY_DIRS}
+    ${JSON_GLIB_LIBRARY_DIRS}
+    ${ZMQ_LIBRARY_DIRS})
+#}}}
 #{{{ Add include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
