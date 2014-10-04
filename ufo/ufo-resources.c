@@ -635,10 +635,11 @@ create_cache_key (const gchar *filename,
 }
 
 /**
- * ufo_resources_get_kernel:
+ * ufo_resources_get_kernel_with_opts:
  * @resources: A #UfoResources object
  * @filename: Name of the .cl kernel file
  * @kernel: Name of a kernel, or %NULL
+ * @options: Options passed to the OpenCL compiler
  * @error: Return location for a GError from #UfoResourcesError, or %NULL
  *
  * Loads a and builds a kernel from a file. The file is searched in the current
@@ -648,10 +649,11 @@ create_cache_key (const gchar *filename,
  * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
  */
 gpointer
-ufo_resources_get_kernel (UfoResources *resources,
-                          const gchar *filename,
-                          const gchar *kernelname,
-                          GError **error)
+ufo_resources_get_kernel_with_opts (UfoResources   *resources,
+                                    const gchar    *filename,
+                                    const gchar    *kernel,
+                                    const gchar    *options,
+                                    GError        **error)
 {
     UfoResourcesPrivate *priv;
     gchar *path;
@@ -679,7 +681,7 @@ ufo_resources_get_kernel (UfoResources *resources,
         return NULL;
     }
 
-    program = add_program_from_source (priv, buffer, "", error);
+    program = add_program_from_source (priv, buffer, options, error);
 
     if (program == NULL)
         return NULL;
@@ -687,7 +689,29 @@ ufo_resources_get_kernel (UfoResources *resources,
     g_debug ("Added program %p from `%s`", (gpointer) program, filename);
     g_free (buffer);
 
-    return create_kernel (priv, program, kernelname, error);
+    return create_kernel (priv, program, kernel, error);
+}
+
+/**
+ * ufo_resources_get_kernel:
+ * @resources: A #UfoResources object
+ * @filename: Name of the .cl kernel file
+ * @kernel: Name of a kernel, or %NULL
+ * @error: Return location for a GError from #UfoResourcesError, or %NULL
+ *
+ * Loads a and builds a kernel from a file. The file is searched in the current
+ * working directory and all paths added through ufo_resources_add_paths (). If
+ * @kernel is %NULL, the first encountered kernel is returned.
+ *
+ * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
+ */
+gpointer
+ufo_resources_get_kernel (UfoResources *resources,
+                          const gchar *filename,
+                          const gchar *kernel,
+                          GError **error)
+{
+    return ufo_resources_get_kernel_with_opts (resources, filename, kernel, "", error);
 }
 
 /**
