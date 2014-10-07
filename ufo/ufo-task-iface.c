@@ -23,6 +23,15 @@ typedef UfoTaskIface UfoTaskInterface;
 
 G_DEFINE_INTERFACE (UfoTask, ufo_task, G_TYPE_OBJECT)
 
+enum {
+    PROCESSED,
+    GENERATED,
+    LAST_SIGNAL
+};
+
+
+static guint signals[LAST_SIGNAL] = { 0 };
+
 /**
  * UfoTaskError:
  * @UFO_TASK_ERROR_SETUP: Error during setup of a task.
@@ -82,7 +91,11 @@ ufo_task_process (UfoTask *task,
                   UfoBuffer *output,
                   UfoRequisition *requisition)
 {
-    return UFO_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
+    gboolean result;
+    result = UFO_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
+    g_signal_emit (task, signals[PROCESSED], 0);
+
+    return result;
 }
 
 gboolean
@@ -90,7 +103,11 @@ ufo_task_generate (UfoTask *task,
                    UfoBuffer *output,
                    UfoRequisition *requisition)
 {
-    return UFO_TASK_GET_IFACE (task)->generate (task, output, requisition);
+    gboolean result;
+    result = UFO_TASK_GET_IFACE (task)->generate (task, output, requisition);
+    g_signal_emit (task, signals[GENERATED], 0);
+
+    return result;
 }
 
 gboolean
@@ -177,7 +194,6 @@ ufo_task_generate_real (UfoTask *task,
     return FALSE;
 }
 
-
 static void
 ufo_task_default_init (UfoTaskInterface *iface)
 {
@@ -189,4 +205,20 @@ ufo_task_default_init (UfoTaskInterface *iface)
     iface->set_json_object_property = ufo_task_set_json_object_property_real;
     iface->process = ufo_task_process_real;
     iface->generate = ufo_task_generate_real;
+
+    signals[PROCESSED] =
+        g_signal_new ("processed",
+                      G_TYPE_FROM_INTERFACE (iface),
+                      G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                      0,
+                      NULL, NULL, g_cclosure_marshal_VOID__VOID,
+                      G_TYPE_NONE, 0);
+
+    signals[GENERATED] =
+        g_signal_new ("generated",
+                      G_TYPE_FROM_INTERFACE (iface),
+                      G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                      0,
+                      NULL, NULL, g_cclosure_marshal_VOID__VOID,
+                      G_TYPE_NONE, 0);
 }
