@@ -121,7 +121,6 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
     (*klass->run)(scheduler, graph, error);
     scheduler->priv->time = g_timer_elapsed (timer, NULL);
 
-    g_message ("Processing finished after %3.5fs", scheduler->priv->time);
     g_timer_destroy (timer);
 }
 
