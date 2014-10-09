@@ -191,12 +191,11 @@ writing a full-fledged C filter. We create a new file ``simple.cl``, that
 contains a simple kernel that inverts our normalized input (you can silently
 ignore the ``scratch`` parameter for now)::
 
-    __kernel void invert(__global float *data, __local float *scratch)
+    kernel void invert(global float *input, global float *output)
     {
         /* where are we? */
         int index = get_global_id(1) * get_global_size(0) + get_global_id(0);
-        float inverted_value = 1.0f - data[index];
-        data[index] = inverted_value;
+        output[index] = 1.0f - input[index];
     }
 
 .. highlight:: python
