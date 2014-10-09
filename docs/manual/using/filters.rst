@@ -210,11 +210,11 @@ We wire this small kernel into this short Python script::
 
     # this filter applies the kernel
     cl = pm.get_filter('opencl')
-    cl.set_properties(file='simple.cl', kernel='invert')
+    cl.set_properties(filename='simple.cl', kernel='invert')
 
-    g = Ufo.Graph()
-    g.connect_filters(reader, cl)
-    g.connect_filters(cl, writer)
+    g = Ufo.TaskGraph()
+    g.connect_nodes(reader, cl)
+    g.connect_nodes(cl, writer)
 
     s = Ufo.Scheduler()
     s.run(g)
