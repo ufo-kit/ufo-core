@@ -304,11 +304,31 @@ run_task (TaskLocalData *tld)
                 ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
                 break;
 
+            case UFO_TASK_MODE_REDUCTOR_GENERATOR:
+                do {
+                    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
+                    active = ufo_task_process (tld->task, inputs, output, &requisition);
+                    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
+                    ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
+
+                    if (!active) {
+                        active = ufo_task_generate (tld->task, output, &requisition);
+                        if (active) {
+                            ufo_group_push_output_buffer (group, output);
+                        }
+                    }
+
+                    release_inputs (tld, inputs);
+                    gboolean b = get_inputs (tld, inputs);
+                    active = active && b;
+                } while (active);
+                break;
+
             default:
                 g_warning ("Invalid task mode: %i\n", mode);
         }
 
-        if (active && produces && (mode != UFO_TASK_MODE_REDUCTOR))
+        if (active && produces && (mode != UFO_TASK_MODE_REDUCTOR) && (mode != UFO_TASK_MODE_REDUCTOR_GENERATOR))
             ufo_group_push_output_buffer (group, output);
 
         /* Release buffers for further consumption */
