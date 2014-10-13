@@ -109,6 +109,36 @@ test_convert_16_from_data (Fixture *fixture,
         g_assert (host_data[i] == ((gfloat) fixture->data16[i]));
 }
 
+static void
+test_metadata (Fixture *fixture,
+                gconstpointer unused)
+{
+    GValue value = G_VALUE_INIT;
+    GValue *other;
+
+    g_assert (ufo_buffer_get_metadata (fixture->buffer, "bar") == NULL);
+
+    /* Insert data */
+    g_value_init (&value, G_TYPE_INT);
+    g_value_set_int (&value, -123);
+
+    ufo_buffer_set_metadata (fixture->buffer, "foo", &value);
+    other = ufo_buffer_get_metadata (fixture->buffer, "foo");
+
+    g_assert (other != NULL);
+    g_assert (g_value_get_int (other) == -123);
+
+    /* Overwrite data */
+    g_value_unset (&value);
+    g_value_init (&value, G_TYPE_FLOAT);
+    g_value_set_float (&value, 3.14f);
+    ufo_buffer_set_metadata (fixture->buffer, "foo", &value);
+
+    other = ufo_buffer_get_metadata (fixture->buffer, "foo");
+    g_assert (other != NULL);
+    g_assert (g_value_get_float (other) == 3.14f);
+}
+
 void
 test_add_buffer (void)
 {
@@ -127,4 +157,8 @@ test_add_buffer (void)
     g_test_add ("/no-opencl/buffer/convert/16/data",
                 Fixture, NULL,
                 setup, test_convert_16_from_data, teardown);
+
+    g_test_add ("/no-opencl/buffer/metadata",
+                Fixture, NULL,
+                setup, test_metadata, teardown);
 }
