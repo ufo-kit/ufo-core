@@ -62,6 +62,7 @@ struct _UfoBufferPrivate {
     gsize               size;           /* size of buffer in bytes */
     UfoMemLocation      location;
     UfoMemLocation      last_location;
+    GHashTable         *metadata;
 };
 
 static void
@@ -996,6 +997,56 @@ ufo_buffer_convert_from_data (UfoBuffer *buffer,
 }
 
 /**
+ * ufo_buffer_get_metadata:
+ * @buffer: A #UfoBuffer
+ * @name: Name of the associated meta data
+ *
+ * Returns: (transfer: none) previously defined meta data for this buffer.
+ */
+GValue *
+ufo_buffer_get_metadata (UfoBuffer *buffer,
+                         const gchar *name)
+{
+    g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
+    return g_hash_table_lookup (buffer->priv->metadata, name);
+}
+
+/**
+ * ufo_buffer_get_metadata:
+ * @buffer: A #UfoBuffer
+ * @name: Name of the associated meta data
+ * @value: #GValue of the meta data
+ *
+ * Associates a key-value pair with @buffer.
+ */
+void
+ufo_buffer_set_metadata (UfoBuffer *buffer,
+                         const gchar *name,
+                         GValue *value)
+{
+    UfoBufferPrivate *priv;
+    GValue *old;
+    GValue *new;
+
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+    priv = buffer->priv;
+
+    old = g_hash_table_lookup (priv->metadata, name);
+
+    if (old != NULL) {
+        g_print ("unsetting old\n");
+        g_value_unset (old);
+    }
+
+    g_print ("here\n");
+    new = g_malloc0 (sizeof (GValue));
+    g_value_init (new, G_VALUE_TYPE (value));
+    g_value_copy (value, new);
+
+    g_hash_table_insert (priv->metadata, g_strdup (name), new);
+}
+
+/**
  * ufo_buffer_param_spec:
  * @name: canonical name of the property specified
  * @nick: nick name for the property specified
@@ -1046,6 +1097,8 @@ ufo_buffer_finalize (GObject *gobject)
     free_cl_mem (&priv->device_array);
     free_cl_mem (&priv->device_image);
 
+    g_hash_table_destroy (priv->metadata);
+
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
 
@@ -1072,6 +1125,7 @@ ufo_buffer_init (UfoBuffer *buffer)
     priv->location = UFO_LOCATION_INVALID;
     priv->last_location = UFO_LOCATION_INVALID;
     priv->requisition.n_dims = 0;
+    priv->metadata = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 }
 
 static void
