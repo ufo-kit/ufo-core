@@ -102,13 +102,18 @@ ufo_input_task_get_input_buffer (UfoInputTask *task)
      * We have to let the Python interpreter run its threads, because this
      * function here might block before Python code can insert any buffer.
      */
-    Py_BEGIN_ALLOW_THREADS
-#endif
+    if (Py_IsInitialized ()) {
+        Py_BEGIN_ALLOW_THREADS
 
+        buffer = g_async_queue_pop (task->priv->out_queue);
+
+        Py_END_ALLOW_THREADS
+    }
+    else {
+        buffer = g_async_queue_pop (task->priv->out_queue);
+    }
+#else
     buffer = g_async_queue_pop (task->priv->out_queue);
-
-#ifdef WITH_PYTHON
-    Py_END_ALLOW_THREADS
 #endif
 
     return buffer;
