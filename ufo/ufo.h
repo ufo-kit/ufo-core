@@ -26,6 +26,7 @@
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-config.h>
 #include <ufo/ufo-configurable.h>
+#include <ufo/ufo-copy-task.h>
 #include <ufo/ufo-cpu-node.h>
 #include <ufo/ufo-dummy-task.h>
 #include <ufo/ufo-daemon.h>

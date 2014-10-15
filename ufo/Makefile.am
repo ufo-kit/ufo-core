@@ -17,6 +17,7 @@ ufo_sources = \
     ufo-configurable.c \
     ufo-config.c \
     ufo-copyable-iface.c \
+    ufo-copy-task.c \
     ufo-cpu-node.c \
     ufo-daemon.c \
     ufo-dummy-task.c \
@@ -53,6 +54,7 @@ ufo_headers = \
     ufo-configurable.h \
     ufo-config.h \
     ufo-copyable-iface.h \
+    ufo-copy-task.h \
     ufo-cpu-node.h \
     ufo-daemon.h \
     ufo-dummy-task.h \
