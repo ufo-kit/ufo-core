@@ -20,6 +20,7 @@ ufo_sources = \
     ufo-cpu-node.c \
     ufo-daemon.c \
     ufo-dummy-task.c \
+    ufo-fixed-scheduler.c \
     ufo-gpu-node.c \
     ufo-graph.c \
     ufo-group.c \
@@ -55,6 +56,7 @@ ufo_headers = \
     ufo-cpu-node.h \
     ufo-daemon.h \
     ufo-dummy-task.h \
+    ufo-fixed-scheduler.h \
     ufo-gpu-node.h \
     ufo-graph.h \
     ufo-group.h \

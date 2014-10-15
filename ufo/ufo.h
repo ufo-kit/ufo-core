@@ -30,6 +30,7 @@
 #include <ufo/ufo-dummy-task.h>
 #include <ufo/ufo-daemon.h>
 #include <ufo/ufo-enums.h>
+#include <ufo/ufo-fixed-scheduler.h>
 #include <ufo/ufo-gpu-node.h>
 #include <ufo/ufo-graph.h>
 #include <ufo/ufo-group.h>
