@@ -357,7 +357,6 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
     UfoArchGraph *arch;
     ProcessorPool *pp;
     GHashTable *task_data;
-    GList *remotes;
     GList *local_data;
     GList *threads;
     GList *it;
@@ -366,8 +365,7 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
     g_return_if_fail (UFO_IS_LOCAL_SCHEDULER (scheduler));
 
     resources = ufo_base_scheduler_get_resources (scheduler);
-    remotes = ufo_base_scheduler_get_remotes (scheduler);
-    arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, remotes));
+    arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, NULL));
     gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch);
     pp = ufo_pp_new (gpu_nodes);
     g_list_free (gpu_nodes);
@@ -400,7 +398,6 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
 #endif
 
     ufo_pp_destroy (pp);
-    g_list_free_full (remotes, g_free);
     g_object_unref (arch);
     g_list_free (threads);
     g_hash_table_destroy (task_data);

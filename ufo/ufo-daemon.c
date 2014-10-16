@@ -85,7 +85,7 @@ ufo_daemon_new (UfoConfig *config, gchar *listen_address)
     priv->config = config;
     priv->listen_address = listen_address;
     priv->manager = ufo_plugin_manager_new (priv->config);
-    priv->scheduler = ufo_scheduler_new (priv->config, NULL);
+    priv->scheduler = ufo_scheduler_new (priv->config);
 #ifdef MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
 #else
@@ -174,7 +174,7 @@ handle_replicate_json (UfoDaemon *daemon, UfoMessage *msg)
     ufo_base_scheduler_run (priv->scheduler, graph, NULL);
     g_object_unref (priv->scheduler);
 
-    priv->scheduler = ufo_scheduler_new (priv->config, NULL);
+    priv->scheduler = ufo_scheduler_new (priv->config);
 
 replicate_json_free:
     g_object_unref (graph);
@@ -391,7 +391,7 @@ run_scheduler (UfoDaemon *daemon)
     g_message ("Done");
     g_object_unref (priv->scheduler);
 
-    priv->scheduler = ufo_scheduler_new (priv->config, NULL);
+    priv->scheduler = ufo_scheduler_new (priv->config);
     return NULL;
 }
 

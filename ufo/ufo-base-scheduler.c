@@ -28,6 +28,7 @@
 #include <CL/cl.h>
 #endif
 
+#include <ufo/ufo-arch-graph.h>
 #include <ufo/ufo-base-scheduler.h>
 #include <ufo/ufo-config.h>
 #include <ufo/ufo-configurable.h>
@@ -54,7 +55,7 @@ struct _UfoBaseSchedulerPrivate {
     GError          *construct_error;
     UfoConfig       *config;
     UfoResources    *resources;
-    GList           *remotes;
+    UfoArchGraph    *arch;
     gboolean         expand;
     gboolean         trace;
     gboolean         rerun;
@@ -65,7 +66,6 @@ struct _UfoBaseSchedulerPrivate {
 enum {
     PROP_0,
     PROP_EXPAND,
-    PROP_REMOTES,
     PROP_ENABLE_TRACING,
     PROP_ENABLE_RERUNS,
     PROP_TIME,
@@ -139,52 +139,6 @@ ufo_base_scheduler_get_resources (UfoBaseScheduler *scheduler)
     return scheduler->priv->resources;
 }
 
-/**
- * ufo_base_scheduler_get_remotes:
- * @scheduler: A #UfoBaseScheduler
- *
- * Returns: (transfer full) (element-type utf8): List with strings that the user
- * must free with g_list_free_full
- */
-GList *
-ufo_base_scheduler_get_remotes (UfoBaseScheduler *scheduler)
-{
-    GList *it;
-    GList *remotes = NULL;
-
-    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
-
-    g_list_for (scheduler->priv->remotes, it) {
-        remotes = g_list_append (remotes, g_strdup (it->data));
-    }
-
-    return remotes;
-}
-
-/**
- * ufo_base_scheduler_set_remotes:
- * @scheduler: A #UfoBaseScheduler
- * @remotes: (element-type utf8): List with remote addresses
- *
- * Set the used remotes for @scheduler.
- */
-void
-ufo_base_scheduler_set_remotes (UfoBaseScheduler *scheduler,
-                                GList *remotes)
-{
-    UfoBaseSchedulerPrivate *priv;
-    GList *it;
-
-    g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
-
-    priv = scheduler->priv;
-    g_list_free_full (priv->remotes, g_free);
-
-    g_list_for (remotes, it) {
-        priv->remotes = g_list_append (priv->remotes, g_strdup (it->data));
-    }
-}
-
 static void
 ufo_base_scheduler_run_real (UfoBaseScheduler *scheduler,
                              UfoTaskGraph *graph,
@@ -192,22 +146,6 @@ ufo_base_scheduler_run_real (UfoBaseScheduler *scheduler,
 {
     g_set_error (error, UFO_BASE_SCHEDULER_ERROR, UFO_BASE_SCHEDULER_ERROR_EXECUTION,
                  "UfoBaseScheduler::run not implemented");
-}
-
-static void
-copy_remote_list (UfoBaseSchedulerPrivate *priv,
-                  GValueArray *array)
-{
-    if (priv->remotes != NULL) {
-        g_list_foreach (priv->remotes, (GFunc) g_free, NULL);
-        g_list_free (priv->remotes);
-        priv->remotes = NULL;
-    }
-
-    for (guint i = 0; i < array->n_values; i++) {
-        priv->remotes = g_list_append (priv->remotes,
-                                       g_strdup (g_value_get_string (g_value_array_get_nth (array, i))));
-    }
 }
 
 static void
@@ -231,10 +169,6 @@ ufo_base_scheduler_set_property (GObject *object,
                     g_object_ref (priv->config);
                 }
             }
-            break;
-
-        case PROP_REMOTES:
-            copy_remote_list (priv, g_value_get_boxed (value));
             break;
 
         case PROP_EXPAND:
@@ -324,9 +258,6 @@ ufo_base_scheduler_finalize (GObject *object)
     priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
 
     g_clear_error (&priv->construct_error);
-    g_list_free_full (priv->remotes, g_free);
-
-    priv->remotes = NULL;
 
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->finalize (object);
 }
@@ -399,17 +330,6 @@ ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
                               FALSE,
                               G_PARAM_READWRITE);
 
-    properties[PROP_REMOTES] =
-        g_param_spec_value_array ("remotes",
-                                  "List containing remote addresses",
-                                  "List containing remote addresses of machines running ufod",
-                                  g_param_spec_string ("remote",
-                                                       "A remote address in the form tcp://addr:port",
-                                                       "A remote address in the form tcp://addr:port (see http://api.zeromq.org/3-2:zmq-tcp)",
-                                                       ".",
-                                                       G_PARAM_READWRITE),
-                                  G_PARAM_READWRITE);
-
     properties[PROP_TIME] =
         g_param_spec_double ("time",
                              "Finished execution time",
@@ -437,6 +357,5 @@ ufo_base_scheduler_init (UfoBaseScheduler *scheduler)
     priv->ran = FALSE;
     priv->config = NULL;
     priv->resources = NULL;
-    priv->remotes = NULL;
     priv->time = 0.0;
 }

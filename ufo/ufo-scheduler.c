@@ -88,20 +88,17 @@ ufo_scheduler_error_quark (void)
 /**
  * ufo_scheduler_new:
  * @config: A #UfoConfig or %NULL
- * @remotes: (element-type utf8): A #GList with strings describing remote machines or %NULL
  *
  * Creates a new #UfoBaseScheduler.
  *
  * Return value: A new #UfoBaseScheduler
  */
 UfoBaseScheduler *
-ufo_scheduler_new (UfoConfig *config,
-                   GList *remotes)
+ufo_scheduler_new (UfoConfig *config)
 {
     UfoBaseScheduler *sched;
 
     sched = UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER, "config", config, NULL));
-    ufo_base_scheduler_set_remotes (sched, remotes);
     return sched;
 }
 
@@ -597,7 +594,6 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     UfoSchedulerPrivate *priv;
     UfoResources *resources;
     UfoArchGraph *arch_graph;
-    GList *remotes;
     UfoTaskGraph *graph;
     GList *groups;
     guint n_nodes;
@@ -610,8 +606,7 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
 
     resources = ufo_base_scheduler_get_resources (scheduler);
-    remotes = ufo_base_scheduler_get_remotes (scheduler);
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, remotes));
+    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, NULL));
 
     g_object_get (scheduler,
                   "enable-reruns", &rerun,
@@ -707,7 +702,6 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     if (rerun)
         g_object_unref (graph);
 
-    g_list_free_full (remotes, g_free);
     g_object_unref (arch_graph);
 
     priv->ran = TRUE;

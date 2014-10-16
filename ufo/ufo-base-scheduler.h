@@ -78,9 +78,6 @@ void            ufo_base_scheduler_run              (UfoBaseScheduler   *schedul
                                                      GError            **error);
 UfoResources   *ufo_base_scheduler_get_resources    (UfoBaseScheduler   *scheduler);
 gpointer        ufo_base_scheduler_get_context      (UfoBaseScheduler   *scheduler);
-GList          *ufo_base_scheduler_get_remotes      (UfoBaseScheduler   *scheduler);
-void            ufo_base_scheduler_set_remotes      (UfoBaseScheduler   *scheduler,
-                                                     GList              *remotes);
 GType           ufo_base_scheduler_get_type         (void);
 GQuark          ufo_base_scheduler_error_quark      (void);
 

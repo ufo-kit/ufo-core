@@ -83,8 +83,9 @@ execute_json (const gchar *filename,
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
     address_list = string_array_to_list (addresses);
-    scheduler = ufo_scheduler_new (config, address_list);
     g_list_free (address_list);
+
+    scheduler = ufo_scheduler_new (config);
 
     ufo_base_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));

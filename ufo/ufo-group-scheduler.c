@@ -454,7 +454,6 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
     UfoResources *resources;
     UfoArchGraph *arch_graph;
     UfoGraph *group_graph;
-    GList *remotes;
     GList *threads;
     GList *groups;
     GList *tasks;
@@ -463,8 +462,7 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
     g_return_if_fail (UFO_IS_GROUP_SCHEDULER (scheduler));
 
     resources = ufo_base_scheduler_get_resources (scheduler);
-    remotes = ufo_base_scheduler_get_remotes (scheduler);
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, remotes));
+    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, NULL));
     group_graph = build_group_graph (scheduler, task_graph, arch_graph, error);
 
     if (group_graph == NULL)
@@ -521,7 +519,6 @@ cleanup_run:
     g_list_free (tasks);
     g_list_free (groups);
 
-    g_list_free_full (remotes, g_free);
     g_object_unref (group_graph);
     g_object_unref (arch_graph);
 }
