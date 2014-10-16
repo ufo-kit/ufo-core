@@ -16,6 +16,7 @@ ufo_sources = \
     ufo-buffer.c \
     ufo-configurable.c \
     ufo-config.c \
+    ufo-copyable-iface.c \
     ufo-cpu-node.c \
     ufo-daemon.c \
     ufo-dummy-task.c \
@@ -23,12 +24,15 @@ ufo_sources = \
     ufo-graph.c \
     ufo-group.c \
     ufo-input-task.c \
+    ufo-json-routines.c \
     ufo-local-scheduler.c \
     ufo-messenger-iface.c \
+    ufo-method-iface.c \
     ufo-node.c \
     ufo-output-task.c \
     ufo-plugin-manager.c \
     ufo-profiler.c \
+    ufo-processor.c \
     ufo-remote-node.c \
     ufo-remote-task.c \
     ufo-resources.c \
@@ -36,6 +40,7 @@ ufo_sources = \
     ufo-task-iface.c \
     ufo-task-graph.c \
     ufo-task-node.c \
+    ufo-transform-iface \
     ufo-two-way-queue.c \
     ufo-basic-ops.c \
     ufo-zmq-messenger.c
@@ -46,6 +51,7 @@ ufo_headers = \
     ufo-buffer.h \
     ufo-configurable.h \
     ufo-config.h \
+    ufo-copyable-iface.h \
     ufo-cpu-node.h \
     ufo-daemon.h \
     ufo-dummy-task.h \
@@ -53,12 +59,15 @@ ufo_headers = \
     ufo-graph.h \
     ufo-group.h \
     ufo-input-task.h \
+    ufo-json-routines.h \
     ufo-local-scheduler.h \
     ufo-messenger-iface.h \
+    ufo-method-iface.h \
     ufo-node.h \
     ufo-output-task.h \
     ufo-plugin-manager.h \
     ufo-profiler.h \
+    ufo-processor.h \
     ufo-remote-node.h \
     ufo-remote-task.h \
     ufo-resources.h \
@@ -66,6 +75,7 @@ ufo_headers = \
     ufo-task-iface.h \
     ufo-task-graph.h \
     ufo-task-node.h \
+    ufo-transform-iface.h \
     ufo-two-way-queue.h \
     ufo-basic-ops.h \
     ufo-zmq-messenger.h

@@ -89,6 +89,7 @@ ufo_messenger_disconnect (UfoMessenger *msger)
  * @msger: The messenger object
  * @request: (transfer none): The request #UfoMessage.
  * @error: A #GError
+ *
  * Returns: (allow-none) : A #UfoMessage response to the sent request.
  *
  * Sends a #UfoMessage request to the connected

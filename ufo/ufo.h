@@ -48,6 +48,11 @@
 #include <ufo/ufo-two-way-queue.h>
 #include <ufo/ufo-basic-ops.h>
 #include <ufo/ufo-messenger-iface.h>
+#include <ufo/ufo-processor.h>
+#include <ufo/ufo-method-iface.h>
+#include <ufo/ufo-transform-iface.h>
+#include <ufo/ufo-copyable-iface.h>
+#include <ufo/ufo-json-routines.h>
 
 #undef __UFO_H_INSIDE__
 

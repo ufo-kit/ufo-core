@@ -24,6 +24,7 @@
 #include <ufo/ufo-configurable.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-dummy-task.h>
+#include <ufo/ufo-json-routines.h>
 #include "compat.h"
 
 /**
@@ -364,26 +365,6 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
     add_environment_paths (priv, g_getenv (PATH_VAR));
 }
 
-
-
-static gchar *
-transform_string (const gchar *pattern,
-                  const gchar *s,
-                  const gchar *separator)
-{
-    gchar **sv;
-    gchar *transformed;
-    gchar *result;
-
-    sv = g_strsplit_set (s, "-_ ", -1);
-    transformed = g_strjoinv (separator, sv);
-    result = g_strdup_printf (pattern, transformed);
-
-    g_strfreev (sv);
-    g_free (transformed);
-    return result;
-}
-
 /**
  * ufo_plugin_manager_get_task:
  * @manager: A #UfoPluginManager
@@ -406,8 +387,8 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     if (!g_strcmp0 (name, "[dummy]"))
         return UFO_TASK_NODE (ufo_dummy_task_new ());
 
-    gchar *module_name = transform_string ("libufofilter%s.so", name, NULL);
-    gchar *func_name = transform_string ("ufo_%s_task_new", name, "_");
+    gchar *module_name = ufo_transform_string ("libufofilter%s.so", name, NULL);
+    gchar *func_name = ufo_transform_string ("ufo_%s_task_new", name, "_");
     node = UFO_TASK_NODE (ufo_plugin_manager_get_plugin (manager,
                                           func_name,
                                           module_name,
