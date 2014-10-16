@@ -1034,11 +1034,9 @@ ufo_buffer_set_metadata (UfoBuffer *buffer,
     old = g_hash_table_lookup (priv->metadata, name);
 
     if (old != NULL) {
-        g_print ("unsetting old\n");
         g_value_unset (old);
     }
 
-    g_print ("here\n");
     new = g_malloc0 (sizeof (GValue));
     g_value_init (new, G_VALUE_TYPE (value));
     g_value_copy (value, new);
