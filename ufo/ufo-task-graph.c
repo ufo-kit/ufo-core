@@ -390,6 +390,7 @@ expand_remotes (UfoTaskGraph *task_graph,
  * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
  * @arch_graph: A #UfoArchGraph
+ * @n_gpus: Number of GPUs to expand the graph for
  * @expand_remote: %TRUE if remote nodes should be inserted
  *
  * Expands @task_graph in a way that most of the resources in @arch_graph can be

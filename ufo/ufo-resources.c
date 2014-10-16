@@ -428,7 +428,6 @@ initialize_opencl (UfoResourcesPrivate *priv,
 
 /**
  * ufo_resources_new:
- * @config: A #UfoConfiguration object or %NULL
  * @error: Location of a #GError or %NULL
  *
  * Create a new #UfoResources instance.
