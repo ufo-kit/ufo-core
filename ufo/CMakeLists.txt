@@ -6,6 +6,7 @@ set(ufocore_SRCS
     ufo-priv.c
     ufo-arch-graph.c
     ufo-base-scheduler.c
+    ufo-copy-task.c
     ufo-buffer.c
     ufo-configurable.c
     ufo-config.c
@@ -13,6 +14,7 @@ set(ufocore_SRCS
     ufo-cpu-node.c
     ufo-daemon.c
     ufo-dummy-task.c
+    ufo-fixed-scheduler.c
     ufo-gpu-node.c
     ufo-graph.c
     ufo-group.c
@@ -44,6 +46,7 @@ set(ufocore_SRCS
 set(ufocore_HDRS
     ufo-arch-graph.h
     ufo-base-scheduler.h
+    ufo-copy-task.h
     ufo-buffer.h
     ufo-configurable.h
     ufo-config.h
@@ -51,6 +54,7 @@ set(ufocore_HDRS
     ufo-cpu-node.h
     ufo-daemon.h
     ufo-dummy-task.h
+    ufo-fixed-scheduler.h
     ufo-gpu-node.h
     ufo-graph.h
     ufo-group.h
