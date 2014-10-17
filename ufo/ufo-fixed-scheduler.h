@@ -71,10 +71,9 @@ struct _UfoFixedSchedulerClass {
     UfoBaseSchedulerClass parent_class;
 };
 
-UfoBaseScheduler    *ufo_fixed_scheduler_new            (UfoConfig  *config);
-UfoArchGraph        *ufo_fixed_scheduler_get_arch       (UfoFixedScheduler *sched);
-GType                ufo_fixed_scheduler_get_type       (void);
-GQuark               ufo_fixed_scheduler_error_quark    (void);
+UfoBaseScheduler *ufo_fixed_scheduler_new            (UfoConfig  *config);
+GType             ufo_fixed_scheduler_get_type       (void);
+GQuark            ufo_fixed_scheduler_error_quark    (void);
 
 G_END_DECLS
 

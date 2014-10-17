@@ -71,7 +71,7 @@ struct _UfoSchedulerClass {
 };
 
 UfoBaseScheduler
-        *ufo_scheduler_new          (UfoConfig *config);
+        *ufo_scheduler_new          (void);
 GType    ufo_scheduler_get_type     (void);
 GQuark   ufo_scheduler_error_quark  (void);
 

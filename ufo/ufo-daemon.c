@@ -56,7 +56,7 @@ struct _UfoDaemonPrivate {
     UfoNode *input_task;
     UfoNode *output_task;
     UfoBuffer *input;
-    gpointer context;
+    cl_context context;
     gchar *listen_address;
     GThread *thread;
     GMutex *startstop_lock;
@@ -85,7 +85,7 @@ ufo_daemon_new (UfoConfig *config, gchar *listen_address)
     priv->config = config;
     priv->listen_address = listen_address;
     priv->manager = ufo_plugin_manager_new (priv->config);
-    priv->scheduler = ufo_scheduler_new (priv->config);
+    priv->scheduler = ufo_scheduler_new ();
 #ifdef MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
 #else
@@ -97,12 +97,17 @@ ufo_daemon_new (UfoConfig *config, gchar *listen_address)
 static void
 handle_get_num_devices (UfoDaemon *daemon)
 {
-    UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    UfoDaemonPrivate *priv;
+    UfoMessage *msg;
+    UfoResources *resources;
+    cl_uint *num_devices;
     cl_context context;
 
-    UfoMessage *msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (guint16));
-    cl_uint *num_devices = g_malloc (sizeof (cl_uint));
-    context = ufo_base_scheduler_get_context (priv->scheduler);
+    priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    msg = ufo_message_new (UFO_MESSAGE_ACK, sizeof (guint16));
+    num_devices = g_malloc (sizeof (cl_uint));
+    resources = ufo_arch_graph_get_resources (ufo_base_scheduler_get_arch (priv->scheduler));
+    context = ufo_resources_get_context (resources);
 
     UFO_RESOURCES_CHECK_CLERR (clGetContextInfo (context,
                                CL_CONTEXT_NUM_DEVICES,
@@ -174,7 +179,7 @@ handle_replicate_json (UfoDaemon *daemon, UfoMessage *msg)
     ufo_base_scheduler_run (priv->scheduler, graph, NULL);
     g_object_unref (priv->scheduler);
 
-    priv->scheduler = ufo_scheduler_new (priv->config);
+    priv->scheduler = ufo_scheduler_new ();
 
 replicate_json_free:
     g_object_unref (graph);
@@ -184,7 +189,7 @@ replicate_json_free:
 static void
 handle_stream_json (UfoDaemon *daemon, UfoMessage *msg)
 {
-    UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    UfoDaemonPrivate *priv;
     gchar *json;
     GList *roots;
     GList *leaves;
@@ -192,7 +197,9 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *msg)
     UfoNode *last;
     GError *error = NULL;
 
+    priv = UFO_DAEMON_GET_PRIVATE (daemon);
     json = read_json (daemon, msg);
+
     // send ack
     UfoMessage *response = ufo_message_new (UFO_MESSAGE_ACK, 0);
     ufo_messenger_send_blocking (priv->msger, response, NULL);
@@ -260,11 +267,18 @@ handle_get_structure (UfoDaemon *daemon)
 static void
 handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
 {
-    UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    UfoDaemonPrivate *priv;
+    UfoArchGraph *arch;
+    UfoResources *resources;
     UfoRequisition requisition;
     gpointer context;
 
-    context = ufo_base_scheduler_get_context (priv->scheduler);
+    priv = UFO_DAEMON_GET_PRIVATE (daemon);
+
+    /* TODO: We should store the context */
+    arch = ufo_base_scheduler_get_arch (priv->scheduler);
+    resources = ufo_arch_graph_get_resources (arch);
+    context = ufo_resources_get_context (resources);
 
     struct _Header {
         UfoRequisition requisition;
@@ -276,6 +290,7 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
 
     /* Receive buffer size */
     requisition = header->requisition;
+
     if (priv->input == NULL) {
         priv->input = ufo_buffer_new (&requisition, context);
     }
@@ -283,9 +298,11 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
         if (ufo_buffer_cmp_dimensions (priv->input, &requisition))
             ufo_buffer_resize (priv->input, &requisition);
     }
+
     memcpy (ufo_buffer_get_host_array (priv->input, NULL),
             base + sizeof (struct _Header),
             ufo_buffer_get_size (priv->input));
+
     ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task), priv->input);
 
     UfoMessage *response = ufo_message_new (UFO_MESSAGE_ACK, 0);
@@ -391,7 +408,7 @@ run_scheduler (UfoDaemon *daemon)
     g_message ("Done");
     g_object_unref (priv->scheduler);
 
-    priv->scheduler = ufo_scheduler_new (priv->config);
+    priv->scheduler = ufo_scheduler_new ();
     return NULL;
 }
 

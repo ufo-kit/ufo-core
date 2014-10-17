@@ -150,11 +150,13 @@ cleanup:
 }
 
 static GHashTable *
-build_task_groups (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, GList *nodes)
+build_task_groups (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, UfoArchGraph *arch, GList *nodes)
 {
+    UfoResources *resources;
     GHashTable *tasks_to_groups;
     GList *it;
 
+    resources = ufo_arch_graph_get_resources (arch);
     tasks_to_groups = g_hash_table_new (g_direct_hash, g_direct_equal);
 
     /* Create a group with a single member for each node */
@@ -165,7 +167,7 @@ build_task_groups (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, GList *node
 
         task = UFO_NODE (it->data);
         group = g_new0 (TaskGroup, 1);
-        group->context = ufo_base_scheduler_get_context (scheduler);
+        group->context = ufo_resources_get_context (resources);
         group->parents = NULL;
         group->tasks = g_list_append (NULL, it->data);
         group->queue = ufo_two_way_queue_new (NULL);
@@ -195,7 +197,7 @@ build_group_graph (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, UfoArchGrap
 
     result = ufo_graph_new ();
     nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
-    tasks_to_groups = build_task_groups (scheduler, graph, nodes);
+    tasks_to_groups = build_task_groups (scheduler, graph, arch, nodes);
 
     /* Link groups */
     g_list_for (nodes, it) {
@@ -451,8 +453,8 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
                          UfoTaskGraph *task_graph,
                          GError **error)
 {
+    UfoArchGraph *arch;
     UfoResources *resources;
-    UfoArchGraph *arch_graph;
     UfoGraph *group_graph;
     GList *threads;
     GList *groups;
@@ -461,9 +463,9 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (UFO_IS_GROUP_SCHEDULER (scheduler));
 
-    resources = ufo_base_scheduler_get_resources (scheduler);
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, NULL));
-    group_graph = build_group_graph (scheduler, task_graph, arch_graph, error);
+    arch = ufo_base_scheduler_get_arch (scheduler);
+    resources = ufo_arch_graph_get_resources (arch);
+    group_graph = build_group_graph (scheduler, task_graph, arch, error);
 
     if (group_graph == NULL)
         return;
@@ -520,7 +522,6 @@ cleanup_run:
     g_list_free (groups);
 
     g_object_unref (group_graph);
-    g_object_unref (arch_graph);
 }
 
 static void

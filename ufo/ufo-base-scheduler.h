@@ -76,8 +76,7 @@ struct _UfoBaseSchedulerClass {
 void            ufo_base_scheduler_run              (UfoBaseScheduler   *scheduler,
                                                      UfoTaskGraph       *task_graph,
                                                      GError            **error);
-UfoResources   *ufo_base_scheduler_get_resources    (UfoBaseScheduler   *scheduler);
-gpointer        ufo_base_scheduler_get_context      (UfoBaseScheduler   *scheduler);
+UfoArchGraph   *ufo_base_scheduler_get_arch         (UfoBaseScheduler   *scheduler);
 GType           ufo_base_scheduler_get_type         (void);
 GQuark          ufo_base_scheduler_error_quark      (void);
 

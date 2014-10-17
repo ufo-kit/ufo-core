@@ -30,9 +30,6 @@
 
 #include <ufo/ufo-arch-graph.h>
 #include <ufo/ufo-base-scheduler.h>
-#include <ufo/ufo-config.h>
-#include <ufo/ufo-configurable.h>
-#include <ufo/ufo-resources.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-task-iface.h>
 #include "ufo-priv.h"
@@ -43,7 +40,6 @@ static void ufo_base_scheduler_initable_iface_init (GInitableIface *iface);
 
 
 G_DEFINE_TYPE_WITH_CODE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL)
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                 ufo_base_scheduler_initable_iface_init))
 
@@ -53,8 +49,6 @@ G_DEFINE_TYPE_WITH_CODE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT,
 
 struct _UfoBaseSchedulerPrivate {
     GError          *construct_error;
-    UfoConfig       *config;
-    UfoResources    *resources;
     UfoArchGraph    *arch;
     gboolean         expand;
     gboolean         trace;
@@ -70,9 +64,6 @@ enum {
     PROP_ENABLE_RERUNS,
     PROP_TIME,
     N_PROPERTIES,
-
-    /* Here come the overriden properties that we don't install ourselves. */
-    PROP_CONFIG,
 };
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
@@ -86,21 +77,6 @@ GQuark
 ufo_base_scheduler_error_quark (void)
 {
     return g_quark_from_static_string ("ufo-scheduler-error-quark");
-}
-
-/**
- * ufo_base_scheduler_get_context:
- * @scheduler: A #UfoBaseScheduler
- *
- * Get the associated OpenCL context of @scheduler.
- *
- * Return value: (transfer full): An cl_context structure or %NULL on error.
- */
-gpointer
-ufo_base_scheduler_get_context (UfoBaseScheduler *scheduler)
-{
-    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
-    return ufo_resources_get_context (scheduler->priv->resources);
 }
 
 void
@@ -125,18 +101,22 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
 }
 
 /**
- * ufo_base_scheduler_get_resources:
+ * ufo_base_scheduler_get_arch:
  * @scheduler: A #UfoBaseScheduler
  *
- * Get resources associated with @scheduler.
+ * Get arch graph associated with this scheduler.
  *
- * Returns: (transfer none): The #UfoResources object
+ * Returns: (transfer none): The #UfoArchGraph object.
  */
-UfoResources *
-ufo_base_scheduler_get_resources (UfoBaseScheduler *scheduler)
+UfoArchGraph *
+ufo_base_scheduler_get_arch (UfoBaseScheduler *scheduler)
 {
     g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
-    return scheduler->priv->resources;
+
+    if (scheduler->priv->arch == NULL)
+        scheduler->priv->arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL));
+
+    return scheduler->priv->arch;
 }
 
 static void
@@ -157,20 +137,6 @@ ufo_base_scheduler_set_property (GObject *object,
     UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
 
     switch (property_id) {
-        case PROP_CONFIG:
-            {
-                GObject *vobject = g_value_get_object (value);
-
-                if (vobject != NULL) {
-                    if (priv->config != NULL)
-                        g_object_unref (priv->config);
-
-                    priv->config = UFO_CONFIG (vobject);
-                    g_object_ref (priv->config);
-                }
-            }
-            break;
-
         case PROP_EXPAND:
             priv->expand = g_value_get_boolean (value);
             break;
@@ -221,30 +187,15 @@ ufo_base_scheduler_get_property (GObject *object,
 }
 
 static void
-ufo_base_scheduler_constructed (GObject *object)
-{
-    UfoBaseSchedulerPrivate *priv;
-
-    priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
-    priv->resources = ufo_resources_new (priv->config,
-                                         &priv->construct_error);
-}
-
-static void
 ufo_base_scheduler_dispose (GObject *object)
 {
     UfoBaseSchedulerPrivate *priv;
 
     priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
 
-    if (priv->config != NULL) {
-        g_object_unref (priv->config);
-        priv->config = NULL;
-    }
-
-    if (priv->resources != NULL) {
-        g_object_unref (priv->resources);
-        priv->resources = NULL;
+    if (priv->arch != NULL) {
+        g_object_unref (priv->arch);
+        priv->arch = NULL;
     }
 
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->dispose (object);
@@ -303,7 +254,6 @@ ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
     GObjectClass *oclass = G_OBJECT_CLASS (klass);
 
     klass->run = ufo_base_scheduler_run_real;
-    oclass->constructed  = ufo_base_scheduler_constructed;
     oclass->set_property = ufo_base_scheduler_set_property;
     oclass->get_property = ufo_base_scheduler_get_property;
     oclass->dispose = ufo_base_scheduler_dispose;
@@ -340,8 +290,6 @@ ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
         g_object_class_install_property (oclass, i, properties[i]);
 
-    g_object_class_override_property (oclass, PROP_CONFIG, "config");
-
     g_type_class_add_private (klass, sizeof (UfoBaseSchedulerPrivate));
 }
 
@@ -355,7 +303,5 @@ ufo_base_scheduler_init (UfoBaseScheduler *scheduler)
     priv->trace = FALSE;
     priv->rerun = FALSE;
     priv->ran = FALSE;
-    priv->config = NULL;
-    priv->resources = NULL;
     priv->time = 0.0;
 }
