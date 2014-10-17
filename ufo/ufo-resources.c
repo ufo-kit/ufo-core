@@ -80,8 +80,7 @@ struct _UfoResourcesPrivate {
     cl_device_id     *devices;          /* Array of OpenCL devices per platform id */
     cl_command_queue *command_queues;   /* Array of command queues per device */
 
-    GList       *include_paths;         /* List of include paths for kernel includes */
-    GList       *kernel_paths;          /* Colon-separated string with paths to kernel files */
+    GList       *paths;         /* List of paths containing kernels and header files */
     GHashTable  *kernel_cache;
     GList       *programs;
     GList       *kernels;
@@ -231,7 +230,7 @@ lookup_kernel_path (UfoResourcesPrivate *priv,
             return NULL;
     }
 
-    g_list_for (priv->kernel_paths, it) {
+    g_list_for (priv->paths, it) {
         gchar *path;
 
         path = g_build_filename ((gchar *) it->data, filename, NULL);
@@ -418,6 +417,16 @@ ufo_resources_new (GError **error)
     return g_initable_new (UFO_TYPE_RESOURCES, NULL, error, NULL);
 }
 
+void
+ufo_resources_add_path (UfoResources *resources,
+                        const gchar *path)
+{
+    g_return_if_fail (UFO_IS_RESOURCES (resources));
+    g_return_if_fail (path != NULL);
+
+    resources->priv->paths = g_list_append (resources->priv->paths, g_strdup (path));
+}
+
 static gchar *
 escape_device_name (gchar *name)
 {
@@ -470,7 +479,7 @@ get_device_build_options (UfoResourcesPrivate *priv,
     g_string_append_printf (opts, " -DDEVICE=%s", escape_device_name (name));
     g_free (name);
 
-    g_list_foreach (priv->include_paths, (GFunc) append_include_path, opts);
+    g_list_foreach (priv->paths, (GFunc) append_include_path, opts);
 
     return g_string_free (opts, FALSE);
 }
@@ -674,7 +683,7 @@ ufo_resources_get_kernel_with_opts (UfoResources   *resources,
  * @error: Return location for a GError from #UfoResourcesError, or %NULL
  *
  * Loads a and builds a kernel from a file. The file is searched in the current
- * working directory and all paths added through ufo_resources_add_paths (). If
+ * working directory and all paths added through ufo_resources_add_path (). If
  * @kernel is %NULL, the first encountered kernel is returned.
  *
  * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
@@ -696,7 +705,7 @@ ufo_resources_get_kernel (UfoResources *resources,
  * @error: Return location for a GError from #UfoResourcesError, or %NULL
  *
  * Loads a and builds a kernel from a file. The file is searched in the current
- * working directory and all paths added through ufo_resources_add_paths (). If
+ * working directory and all paths added through ufo_resources_add_path (). If
  * @kernel is %NULL, the first encountered kernel is returned. The kernel object
  * is cached and should not be used by two threads concurrently.
  *
@@ -931,8 +940,7 @@ ufo_resources_finalize (GObject *object)
     g_clear_error (&priv->construct_error);
     g_hash_table_destroy (priv->kernel_cache);
 
-    list_free_full (&priv->kernel_paths, (GFunc) g_free);
-    list_free_full (&priv->include_paths, (GFunc) g_free);
+    list_free_full (&priv->paths, (GFunc) g_free);
     list_free_full (&priv->kernels, (GFunc) release_kernel);
     list_free_full (&priv->programs, (GFunc) release_program);
 
@@ -1038,11 +1046,9 @@ ufo_resources_init (UfoResources *self)
     priv->kernels = NULL;
     priv->kernel_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->build_opts = g_string_new ("-cl-mad-enable ");
-    priv->include_paths = g_list_append (NULL, g_strdup ("."));
-    priv->include_paths = g_list_append (priv->include_paths, g_strdup (UFO_KERNEL_DIR));
 
-    priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
-    priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_KERNEL_DIR));
+    priv->paths = g_list_append (NULL, g_strdup ("."));
+    priv->paths = g_list_append (priv->paths, g_strdup (UFO_KERNEL_DIR));
 
     priv->device_type = UFO_DEVICE_GPU;
     priv->platform_index = 0;

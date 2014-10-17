@@ -114,6 +114,8 @@ struct _UfoResourcesClass {
 };
 
 UfoResources   * ufo_resources_new                      (GError        **error);
+void             ufo_resources_add_path                 (UfoResources   *resources,
+                                                         const gchar    *path);
 gpointer         ufo_resources_get_kernel               (UfoResources   *resources,
                                                          const gchar    *filename,
                                                          const gchar    *kernel,
