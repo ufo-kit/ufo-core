@@ -219,6 +219,7 @@ ufo_arch_graph_constructed (GObject *object)
 
     for (guint i = 0; i < priv->n_gpus; i++) {
         priv->gpu_nodes[i] = ufo_gpu_node_new (g_list_nth_data (cmd_queues, i));
+        g_debug ("Create new UfoGpuNode-%p", (gpointer) priv->gpu_nodes[i]);
     }
 
     /* Create remote nodes */

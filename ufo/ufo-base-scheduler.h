@@ -76,6 +76,10 @@ void            ufo_base_scheduler_run              (UfoBaseScheduler   *schedul
                                                      UfoTaskGraph       *task_graph,
                                                      GError            **error);
 UfoArchGraph   *ufo_base_scheduler_get_arch         (UfoBaseScheduler   *scheduler);
+void            ufo_base_scheduler_set_gpu_nodes    (UfoBaseScheduler   *scheduler,
+                                                     UfoArchGraph       *arch,
+                                                     GList              *gpu_nodes);
+GList          *ufo_base_scheduler_get_gpu_nodes    (UfoBaseScheduler   *scheduler);
 GType           ufo_base_scheduler_get_type         (void);
 GQuark          ufo_base_scheduler_error_quark      (void);
 

@@ -591,6 +591,7 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     UfoSchedulerPrivate *priv;
     UfoArchGraph *arch;
     UfoTaskGraph *graph;
+    GList *gpu_nodes;
     GList *groups;
     guint n_nodes;
     GThread **threads;
@@ -624,6 +625,7 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
         return;
 
     arch = ufo_base_scheduler_get_arch (scheduler);
+    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
 
     if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
         replicate_task_graph (graph, arch);
@@ -631,11 +633,11 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
 
     if (expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
-        ufo_task_graph_expand (graph, arch, expand_remote);
+        ufo_task_graph_expand (graph, arch, g_list_length (gpu_nodes), expand_remote);
     }
 
     propagate_partition (graph);
-    ufo_task_graph_map (graph, arch);
+    ufo_task_graph_map (graph, gpu_nodes);
 
     /* Prepare task structures */
     tlds = setup_tasks (scheduler, graph, error);

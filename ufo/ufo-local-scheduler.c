@@ -362,7 +362,7 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
 
     arch = ufo_base_scheduler_get_arch (scheduler);
     resources = ufo_arch_graph_get_resources (arch);
-    gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch);
+    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
     pp = ufo_pp_new (gpu_nodes);
     g_list_free (gpu_nodes);
 

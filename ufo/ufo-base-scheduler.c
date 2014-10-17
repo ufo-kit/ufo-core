@@ -50,6 +50,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT,
 struct _UfoBaseSchedulerPrivate {
     GError          *construct_error;
     UfoArchGraph    *arch;
+    GList           *gpu_nodes;
     gboolean         expand;
     gboolean         trace;
     gboolean         rerun;
@@ -117,6 +118,50 @@ ufo_base_scheduler_get_arch (UfoBaseScheduler *scheduler)
         scheduler->priv->arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL));
 
     return scheduler->priv->arch;
+}
+
+/**
+ * ufo_base_scheduler_set_gpu_nodes:
+ * @scheduler: A #UfoBaseScheduler
+ * @arch: A #UfoArchGraph from which the nodes come from
+ * @gpu_nodes: (element-type Ufo.GpuNode): A list of #UfoGpuNode objects.
+ *
+ * Sets the GPU nodes that @scheduler can only use. Note, that the #UfoGpuNode
+ * objects must be from the same #UfoArchGraph that is returned by
+ * ufo_base_scheduler_get_arch.
+ */
+void
+ufo_base_scheduler_set_gpu_nodes (UfoBaseScheduler *scheduler,
+                                  UfoArchGraph *arch,
+                                  GList *gpu_nodes)
+{
+    g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
+    g_return_if_fail (arch != NULL);
+
+    if (scheduler->priv->arch != NULL)
+        g_object_unref (scheduler->priv->arch);
+
+    scheduler->priv->arch = g_object_ref (arch);
+    scheduler->priv->gpu_nodes = g_list_copy (gpu_nodes);
+}
+
+/**
+ * ufo_base_scheduler_get_gpu_nodes:
+ * @scheduler: A #UfoBaseScheduler
+ *
+ * Get the GPU nodes that @scheduler can use for execution.
+ *
+ * Returns: (transfer none) (element-type Ufo.GpuNode): A list of #UfoGpuNode objects.
+ */
+GList *
+ufo_base_scheduler_get_gpu_nodes (UfoBaseScheduler *scheduler)
+{
+    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
+
+    if (scheduler->priv->gpu_nodes != NULL)
+        return scheduler->priv->gpu_nodes;
+
+    return ufo_arch_graph_get_gpu_nodes (ufo_base_scheduler_get_arch (scheduler));
 }
 
 static void
@@ -304,4 +349,5 @@ ufo_base_scheduler_init (UfoBaseScheduler *scheduler)
     priv->rerun = FALSE;
     priv->ran = FALSE;
     priv->time = 0.0;
+    priv->gpu_nodes = NULL;
 }

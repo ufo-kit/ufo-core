@@ -407,7 +407,7 @@ append_if_not_existing (GList *list, UfoTask *task)
 
 static ProcessData *
 setup_tasks (UfoGraph *graph,
-             UfoArchGraph *arch,
+             UfoBaseScheduler *scheduler,
              UfoResources *resources,
              GError **error)
 {
@@ -422,7 +422,7 @@ setup_tasks (UfoGraph *graph,
     data->tasks = NULL;
 
     nodes = ufo_graph_get_nodes (graph);
-    gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch);
+    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
 
     g_list_for (nodes, it) {
         UfoNode *source_node;
@@ -502,7 +502,7 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 
     arch = ufo_base_scheduler_get_arch (scheduler);
     resources = ufo_arch_graph_get_resources (arch);
-    pdata = setup_tasks (UFO_GRAPH (task_graph), arch, resources, &tmp_error);
+    pdata = setup_tasks (UFO_GRAPH (task_graph), scheduler, resources, &tmp_error);
 
     if (tmp_error != NULL) {
         g_propagate_error (error, tmp_error);

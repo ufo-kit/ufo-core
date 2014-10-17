@@ -100,7 +100,7 @@ ufo_group_scheduler_new (void)
 }
 
 static gboolean
-expand_group_graph (UfoGraph *graph, UfoArchGraph *arch, GError **error)
+expand_group_graph (UfoBaseScheduler *scheduler, UfoGraph *graph, GError **error)
 {
     GList *nodes;
     GList *it;
@@ -108,7 +108,7 @@ expand_group_graph (UfoGraph *graph, UfoArchGraph *arch, GError **error)
     guint n_gpus;
     gboolean success = TRUE;
 
-    gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch);
+    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
     n_gpus = g_list_length (gpu_nodes);
 
     nodes = ufo_graph_get_nodes (graph);
@@ -225,7 +225,7 @@ build_group_graph (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, UfoArchGrap
     g_list_free (nodes);
     g_hash_table_destroy (tasks_to_groups);
 
-    if (!expand_group_graph (result, arch, error)) {
+    if (!expand_group_graph (scheduler, result, error)) {
         g_object_unref (result);
         return NULL;
     }
