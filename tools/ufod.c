@@ -78,25 +78,6 @@ opts_parse (gint *argc, gchar ***argv)
     return opts;
 }
 
-static UfoConfig *
-opts_new_config (const Options *opts)
-{
-    UfoConfig *config;
-    GList *paths = NULL;
-
-    config = ufo_config_new ();
-
-    if (opts->paths != NULL) {
-        for (guint i = 0; opts->paths[i] != NULL; i++)
-            paths = g_list_append (paths, g_strdup (opts->paths[i]));
-
-        ufo_config_add_paths (config, paths);
-        g_list_free (paths);
-    }
-
-    return config;
-}
-
 static void
 opts_free (Options *opts)
 {
@@ -135,9 +116,7 @@ main (int argc, char * argv[])
     (void) signal (SIGTERM, terminate);
     (void) signal (SIGINT, terminate);
 
-    UfoConfig *config = opts_new_config (opts);
-
-    global_daemon = ufo_daemon_new (config, opts->addr);
+    global_daemon = ufo_daemon_new (opts->addr);
     ufo_daemon_start(global_daemon);
     g_print ("ufod %s - waiting for requests on %s ...\n", UFO_VERSION,
                                                            opts->addr);

@@ -8,8 +8,6 @@ set(ufocore_SRCS
     ufo-base-scheduler.c
     ufo-copy-task.c
     ufo-buffer.c
-    ufo-configurable.c
-    ufo-config.c
     ufo-copyable-iface.c
     ufo-cpu-node.c
     ufo-daemon.c
@@ -48,8 +46,6 @@ set(ufocore_HDRS
     ufo-base-scheduler.h
     ufo-copy-task.h
     ufo-buffer.h
-    ufo-configurable.h
-    ufo-config.h
     ufo-copyable-iface.h
     ufo-cpu-node.h
     ufo-daemon.h

@@ -25,7 +25,6 @@
 #endif
 
 #include <ufo/ufo-base-scheduler.h>
-#include <ufo/ufo-config.h>
 
 G_BEGIN_DECLS
 

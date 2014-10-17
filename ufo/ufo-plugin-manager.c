@@ -21,7 +21,6 @@
 #include <gmodule.h>
 #include <glob.h>
 #include <ufo/ufo-plugin-manager.h>
-#include <ufo/ufo-configurable.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-dummy-task.h>
 #include <ufo/ufo-json-routines.h>
@@ -43,22 +42,20 @@
  * UFO_PLUGIN_PATH environment variable.
  */
 
-G_DEFINE_TYPE_WITH_CODE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
+G_DEFINE_TYPE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT)
 
 #define UFO_PLUGIN_MANAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_PLUGIN_MANAGER, UfoPluginManagerPrivate))
 
 typedef UfoNode* (* NewFunc) (void);
 
 struct _UfoPluginManagerPrivate {
-    GList       *search_paths;
+    GList       *paths;
     GSList      *modules;
     GHashTable  *new_funcs;     /* maps from gchar* to NewFunc* */
 };
 
 enum {
     PROP_0,
-    PROP_CONFIG,
     N_PROPERTIES
 };
 
@@ -91,7 +88,7 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
     }
 
     /* If it is not a path, search in all known paths */
-    g_list_for (priv->search_paths, it) {
+    g_list_for (priv->paths, it) {
         gchar *path = g_build_filename ((gchar *) it->data, name, NULL);
 
         if (g_file_test (path, G_FILE_TEST_EXISTS))
@@ -103,34 +100,18 @@ plugin_manager_get_path (UfoPluginManagerPrivate *priv, const gchar *name)
     return NULL;
 }
 
-static void
-copy_config_paths (UfoPluginManagerPrivate *priv, UfoConfig *config)
-{
-    priv->search_paths = g_list_concat (priv->search_paths, ufo_config_get_paths (config));
-}
-
 /**
  * ufo_plugin_manager_new:
- * @config: (allow-none): A #UfoConfig object or %NULL.
  *
- * Create a plugin manager object to instantiate filter objects. When a config
- * object is passed to the constructor, its search-path property is added to the
- * internal search paths.
+ * Create a plugin manager object to instantiate filter objects.
  *
- * Return value: A new plugin manager object.
+ * Return value: A new #UfoPluginManager object.
  */
 UfoPluginManager *
-ufo_plugin_manager_new (UfoConfig *config)
+ufo_plugin_manager_new (void)
 {
-    UfoPluginManager *manager;
-
-    manager = UFO_PLUGIN_MANAGER (g_object_new (UFO_TYPE_PLUGIN_MANAGER,
-                                                "config", config,
-                                                NULL));
-
-    return manager;
+    return UFO_PLUGIN_MANAGER (g_object_new (UFO_TYPE_PLUGIN_MANAGER, NULL));
 }
-
 
 /**
  * ufo_plugin_manager_get_plugin:
@@ -144,7 +125,7 @@ ufo_plugin_manager_new (UfoConfig *config)
  * Returns: (transfer full): (allow-none): #gpointer or %NULL if module cannot be found
  */
 gpointer
-ufo_plugin_manager_get_plugin (UfoPluginManager *manager, 
+ufo_plugin_manager_get_plugin (UfoPluginManager *manager,
                               const gchar *func_name,
                               const gchar *module_name,
                               GError **error)
@@ -229,7 +210,7 @@ ufo_plugin_get_all_plugin_names (UfoPluginManager *manager,
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
     priv = manager->priv;
 
-    g_list_for (priv->search_paths, it) {
+    g_list_for (priv->paths, it) {
         glob_t glob_vector;
         gchar *pattern;
 
@@ -255,52 +236,6 @@ ufo_plugin_get_all_plugin_names (UfoPluginManager *manager,
 }
 
 static void
-ufo_plugin_manager_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
-{
-    switch (property_id) {
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-            break;
-    }
-}
-
-static void
-ufo_plugin_manager_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
-{
-    switch (property_id) {
-        case PROP_CONFIG:
-            {
-                GObject *value_object;
-
-                value_object = g_value_get_object (value);
-
-                if (value_object != NULL) {
-                    UfoConfig *config;
-
-                    config = UFO_CONFIG (value_object);
-                    copy_config_paths (UFO_PLUGIN_MANAGER_GET_PRIVATE (object), config);
-                }
-            }
-            break;
-
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-            break;
-    }
-}
-
-static void
-ufo_plugin_manager_constructed (GObject *object)
-{
-    UfoPluginManagerPrivate *priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (object);
-
-    /* Always add default directories at end of search path */
-    UfoConfig *config = ufo_config_new ();
-    copy_config_paths (priv, config);
-    g_object_unref (config);
-}
-
-static void
 ufo_plugin_manager_finalize (GObject *gobject)
 {
     UfoPluginManager *manager = UFO_PLUGIN_MANAGER (gobject);
@@ -313,11 +248,8 @@ ufo_plugin_manager_finalize (GObject *gobject)
      * manager is destroy before the graph which in turn would unref invalid
      * objects. So, we just don't close the modules and hope for the best.
      */
-    /* g_slist_foreach (priv->modules, (GFunc) g_module_close, NULL); */
-    /* g_slist_free (priv->modules); */
 
-    g_list_foreach (priv->search_paths, (GFunc) g_free, NULL);
-    g_list_free (priv->search_paths);
+    g_list_free_full (priv->paths, g_free);
 
     g_hash_table_destroy (priv->new_funcs);
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);
@@ -326,28 +258,30 @@ ufo_plugin_manager_finalize (GObject *gobject)
 static void
 ufo_plugin_manager_class_init (UfoPluginManagerClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-    gobject_class->get_property = ufo_plugin_manager_get_property;
-    gobject_class->set_property = ufo_plugin_manager_set_property;
-    gobject_class->constructed  = ufo_plugin_manager_constructed;
-    gobject_class->finalize     = ufo_plugin_manager_finalize;
+    GObjectClass *oclass;
 
-    g_object_class_override_property (gobject_class, PROP_CONFIG, "config");
+    oclass = G_OBJECT_CLASS (klass);
+    oclass->finalize = ufo_plugin_manager_finalize;
 
     g_type_class_add_private (klass, sizeof (UfoPluginManagerPrivate));
 }
 
 static void
-add_environment_paths(UfoPluginManagerPrivate *priv, const gchar *env)
+add_environment_paths (UfoPluginManagerPrivate *priv, const gchar *env)
 {
-    if (!env)
+    gchar **paths;
+
+    if (env == NULL)
         return;
-    gchar **paths = g_strsplit(env, ":", -1);
+
+    paths = g_strsplit(env, ":", -1);
+
     for (unsigned idx = 0; paths[idx]; ++idx) {
         /* Ignore empty paths */
         if (*paths[idx])
-            priv->search_paths = g_list_append (priv->search_paths, paths[idx]);
+            priv->paths = g_list_append (priv->paths, paths[idx]);
     }
+
     g_free(paths);
 }
 
@@ -359,9 +293,8 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
 
     manager->priv = priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     priv->modules = NULL;
-    priv->search_paths = NULL;
-    priv->new_funcs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                             g_free, g_free);
+    priv->new_funcs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    priv->paths = g_list_append (priv->paths, g_strdup (UFO_PLUGIN_DIR));
     add_environment_paths (priv, g_getenv (PATH_VAR));
 }
 

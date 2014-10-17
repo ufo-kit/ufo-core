@@ -32,8 +32,6 @@
 #include <string.h>
 
 #include <ufo/ufo-buffer.h>
-#include <ufo/ufo-config.h>
-#include <ufo/ufo-configurable.h>
 #include <ufo/ufo-fixed-scheduler.h>
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-task-node.h>
@@ -89,16 +87,15 @@ ufo_fixed_scheduler_error_quark (void)
 
 /**
  * ufo_fixed_scheduler_new:
- * @config: A #UfoConfig or %NULL
  *
  * Creates a new #UfoFixedScheduler.
  *
  * Return value: A new #UfoFixedScheduler
  */
 UfoBaseScheduler *
-ufo_fixed_scheduler_new (UfoConfig *config)
+ufo_fixed_scheduler_new (void)
 {
-    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_FIXED_SCHEDULER, "config", config, NULL));
+    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_FIXED_SCHEDULER, NULL));
 }
 
 static gboolean

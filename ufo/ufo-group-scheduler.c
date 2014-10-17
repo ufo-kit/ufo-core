@@ -32,8 +32,6 @@
 #include <string.h>
 
 #include <ufo/ufo-buffer.h>
-#include <ufo/ufo-config.h>
-#include <ufo/ufo-configurable.h>
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-group-scheduler.h>
 #include <ufo/ufo-task-node.h>
@@ -51,8 +49,7 @@
  * on CPU and GPU hardware.
  */
 
-G_DEFINE_TYPE_WITH_CODE (UfoGroupScheduler, ufo_group_scheduler, UFO_TYPE_BASE_SCHEDULER,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
+G_DEFINE_TYPE (UfoGroupScheduler, ufo_group_scheduler, UFO_TYPE_BASE_SCHEDULER)
 
 #define UFO_GROUP_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_GROUP_SCHEDULER, UfoGroupSchedulerPrivate))
 
@@ -91,16 +88,15 @@ ufo_group_scheduler_error_quark (void)
 
 /**
  * ufo_group_scheduler_new:
- * @config: A #UfoConfig or %NULL
  *
  * Creates a new #UfoGroupScheduler.
  *
  * Return value: A new #UfoGroupScheduler
  */
 UfoBaseScheduler *
-ufo_group_scheduler_new (UfoConfig *config)
+ufo_group_scheduler_new (void)
 {
-    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_GROUP_SCHEDULER, "config", config, NULL));
+    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_GROUP_SCHEDULER, NULL));
 }
 
 static gboolean

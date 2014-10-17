@@ -14,8 +14,6 @@ ufo_sources = \
     ufo-arch-graph.c \
     ufo-base-scheduler.c \
     ufo-buffer.c \
-    ufo-configurable.c \
-    ufo-config.c \
     ufo-copyable-iface.c \
     ufo-copy-task.c \
     ufo-cpu-node.c \
@@ -51,8 +49,6 @@ ufo_headers = \
     ufo-arch-graph.h \
     ufo-base-scheduler.h \
     ufo-buffer.h \
-    ufo-configurable.h \
-    ufo-config.h \
     ufo-copyable-iface.h \
     ufo-copy-task.h \
     ufo-cpu-node.h \

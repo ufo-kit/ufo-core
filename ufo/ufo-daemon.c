@@ -31,7 +31,6 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ufo/ufo-config.h>
 #include <ufo/ufo-daemon.h>
 #include <ufo/ufo-dummy-task.h>
 #include <ufo/ufo-input-task.h>
@@ -47,7 +46,6 @@ G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)
 #define UFO_DAEMON_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_DAEMON, UfoDaemonPrivate))
 
 struct _UfoDaemonPrivate {
-    UfoConfig *config;
     UfoPluginManager *manager;
     UfoTaskGraph *task_graph;
     UfoBaseScheduler *scheduler;
@@ -72,19 +70,17 @@ struct _UfoDaemonPrivate {
 static gpointer run_scheduler (UfoDaemon *daemon);
 
 UfoDaemon *
-ufo_daemon_new (UfoConfig *config, gchar *listen_address)
+ufo_daemon_new (const gchar *listen_address)
 {
     UfoDaemon *daemon;
 
     g_return_val_if_fail (listen_address != NULL, NULL);
-    g_return_val_if_fail (config != NULL, NULL);
 
     daemon = UFO_DAEMON (g_object_new (UFO_TYPE_DAEMON, NULL));
 
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
-    priv->config = config;
-    priv->listen_address = listen_address;
-    priv->manager = ufo_plugin_manager_new (priv->config);
+    priv->listen_address = g_strdup (listen_address);
+    priv->manager = ufo_plugin_manager_new ();
     priv->scheduler = ufo_scheduler_new ();
 #ifdef MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
@@ -555,9 +551,6 @@ ufo_daemon_dispose (GObject *object)
     if (priv->task_graph)
         g_object_unref (priv->task_graph);
 
-    if (priv->config != NULL)
-        g_object_unref (priv->config);
-
     if (priv->msger != NULL)
         g_object_unref (priv->msger);
 
@@ -576,6 +569,7 @@ ufo_daemon_finalize (GObject *object)
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (object);
     g_mutex_free (priv->startstop_lock);
     g_cond_free (priv->started_cond);
+    g_free (priv->listen_address);
 
     G_OBJECT_CLASS (ufo_daemon_parent_class)->finalize (object);
 }
