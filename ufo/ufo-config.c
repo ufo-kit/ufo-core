@@ -42,15 +42,11 @@ static void add_path (const gchar *path, UfoConfigPrivate *priv);
 enum {
     PROP_0,
     PROP_PATHS,
-    PROP_DEVICE_TYPE,
-    PROP_PLATFORM,
     N_PROPERTIES
 };
 
 struct _UfoConfigPrivate {
     GValueArray     *path_array;
-    UfoDeviceType    device_type;
-    gint             platform;
 };
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
@@ -96,20 +92,6 @@ ufo_config_get_paths (UfoConfig *config)
     }
 
     return paths;
-}
-
-UfoDeviceType
-ufo_config_get_device_type (UfoConfig *config)
-{
-    g_return_val_if_fail (UFO_IS_CONFIG (config), 0);
-    return config->priv->device_type;
-}
-
-gint
-ufo_config_get_platform (UfoConfig *config)
-{
-    g_return_val_if_fail (UFO_IS_CONFIG (config), 0);
-    return config->priv->platform;
 }
 
 /**
@@ -163,14 +145,6 @@ ufo_config_set_property (GObject      *object,
             }
             break;
 
-        case PROP_DEVICE_TYPE:
-            priv->device_type = g_value_get_flags (value);
-            break;
-
-        case PROP_PLATFORM:
-            priv->platform = g_value_get_int (value);
-            break;
-
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -188,14 +162,6 @@ ufo_config_get_property (GObject      *object,
     switch (property_id) {
         case PROP_PATHS:
             g_value_set_boxed (value, priv->path_array);
-            break;
-
-        case PROP_DEVICE_TYPE:
-            g_value_set_flags (value, priv->device_type);
-            break;
-
-        case PROP_PLATFORM:
-            g_value_set_int (value, priv->platform);
             break;
 
         default:
@@ -242,43 +208,9 @@ ufo_config_class_init (UfoConfigClass *klass)
                                                        ".",
                                                        G_PARAM_READWRITE),
                                   G_PARAM_READWRITE);
-    /**
-     * UfoConfig:platform:
-     *
-     * Let the user select which device class to use for execution.
-     *
-     * See: #UfoDeviceType for the device classes.
-     */
-    properties[PROP_PLATFORM] =
-        g_param_spec_int ("platform",
-                          "Platform index",
-                          "Platform index, -1 denotes any",
-                           -1, 16, -1,
-                           G_PARAM_READWRITE);
-
-    /**
-     * UfoConfig:device-class:
-     *
-     * Let the user select which device class to use for execution.
-     *
-     * See: #UfoDeviceType for the device classes.
-     */
-    properties[PROP_DEVICE_TYPE] =
-        g_param_spec_flags ("device-type",
-                            "Device type to use",
-                            "Device type to use",
-                            UFO_TYPE_DEVICE_TYPE,
-                            UFO_DEVICE_ALL,
-                            G_PARAM_READWRITE);
 
     g_object_class_install_property (oclass, PROP_PATHS,
                                      properties[PROP_PATHS]);
-
-    g_object_class_install_property (oclass, PROP_PLATFORM,
-                                     properties[PROP_PLATFORM]);
-
-    g_object_class_install_property (oclass, PROP_DEVICE_TYPE,
-                                     properties[PROP_DEVICE_TYPE]);
 
     g_type_class_add_private(klass, sizeof (UfoConfigPrivate));
 }
@@ -290,8 +222,6 @@ ufo_config_init (UfoConfig *config)
 
     config->priv = priv = UFO_CONFIG_GET_PRIVATE (config);
     priv->path_array = g_value_array_new (0);
-    priv->device_type = UFO_DEVICE_GPU;
-    priv->platform = -1;
 
     add_path ("/usr/local/lib64/ufo", priv);
     add_path ("/usr/local/lib/ufo", priv);

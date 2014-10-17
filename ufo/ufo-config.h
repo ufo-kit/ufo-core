@@ -61,29 +61,11 @@ struct _UfoConfigClass {
     GObjectClass parent_class;
 };
 
-/**
- * UfoDeviceType:
- * @UFO_DEVICE_ALL: All devices
- * @UFO_DEVICE_CPU: Only CPU devices
- * @UFO_DEVICE_GPU: Only GPU devices
- * @UFO_DEVICE_ACC: Only accelerator devices such as Xeon Phi
- *
- * Types of OpenCL devices to query for. See UfoConfig:"device-type".
- */
-typedef enum {
-    UFO_DEVICE_CPU = 1 << 0,
-    UFO_DEVICE_GPU = 1 << 1,
-    UFO_DEVICE_ACC = 1 << 2,
-    UFO_DEVICE_ALL = UFO_DEVICE_CPU | UFO_DEVICE_GPU | UFO_DEVICE_ACC,
-} UfoDeviceType;
-
 
 UfoConfig   * ufo_config_new                (void);
 void          ufo_config_add_paths          (UfoConfig *config,
                                              GList     *paths);
 GList       * ufo_config_get_paths          (UfoConfig *config);
-UfoDeviceType ufo_config_get_device_type    (UfoConfig *config);
-gint          ufo_config_get_platform       (UfoConfig *config);
 GType         ufo_config_get_type           (void);
 
 G_END_DECLS

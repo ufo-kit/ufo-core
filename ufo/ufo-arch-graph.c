@@ -203,7 +203,7 @@ ufo_arch_graph_constructed (GObject *object)
     if (priv->resources == NULL) {
         GError *error = NULL;
 
-        priv->resources = ufo_resources_new (NULL, &error);
+        priv->resources = ufo_resources_new (&error);
 
         if (error != NULL) {
             g_error ("Could not initialize resources: %s", error->message);

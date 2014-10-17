@@ -29,7 +29,7 @@
 #endif
 
 #include <ufo/ufo-resources.h>
-#include <ufo/ufo-configurable.h>
+#include <ufo/ufo-enums.h>
 #include "compat.h"
 
 /**
@@ -44,7 +44,6 @@
 static void ufo_resources_initable_iface_init (GInitableIface *iface);
 
 G_DEFINE_TYPE_WITH_CODE (UfoResources, ufo_resources, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL)
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                 ufo_resources_initable_iface_init))
 
@@ -70,7 +69,10 @@ ufo_resources_error_quark (void)
 
 struct _UfoResourcesPrivate {
     GError          *construct_error;
-    UfoConfig       *config;
+
+    /* Property storage */
+    UfoDeviceType    device_type;
+    gint             platform_index;
 
     cl_platform_id   platform;
     cl_context       context;
@@ -88,9 +90,12 @@ struct _UfoResourcesPrivate {
 
 enum {
     PROP_0,
-    PROP_CONFIG,
+    PROP_PLATFORM_INDEX,
+    PROP_DEVICE_TYPE,
     N_PROPERTIES
 };
+
+static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 const gchar *opencl_error_msgs[] = {
     "CL_SUCCESS",
@@ -262,20 +267,15 @@ get_preferably_gpu_based_platform (UfoResourcesPrivate *priv)
     cl_platform_id *platforms;
     cl_uint n_platforms;
     cl_platform_id candidate = 0;
-    gint user_platform;
 
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (0, NULL, &n_platforms));
     platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
 
     /* Check if user set a preferred platform */
-    if (priv->config != NULL) {
-        user_platform = ufo_config_get_platform (priv->config);
-
-        if (user_platform >= 0 && user_platform < (gint) n_platforms) {
-            candidate = platforms[user_platform];
-            goto platform_found;
-        }
+    if (priv->platform_index >= 0 && priv->platform_index < (gint) n_platforms) {
+        candidate = platforms[priv->platform_index];
+        goto platform_found;
     }
 
     if (n_platforms > 0)
@@ -322,26 +322,6 @@ add_vendor_to_build_opts (GString *opts,
         g_string_append (opts, "-DVENDOR=AMD");
 }
 
-static cl_device_type
-get_device_type (UfoResourcesPrivate *priv)
-{
-    if (priv->config == NULL)
-        return CL_DEVICE_TYPE_ALL;
-
-    switch (ufo_config_get_device_type (priv->config)) {
-        case UFO_DEVICE_CPU:
-            return CL_DEVICE_TYPE_CPU;
-        case UFO_DEVICE_GPU:
-            return CL_DEVICE_TYPE_GPU;
-        case UFO_DEVICE_ACC:
-            return CL_DEVICE_TYPE_ACCELERATOR;
-        case UFO_DEVICE_ALL:
-            return CL_DEVICE_TYPE_ALL;
-    }
-
-    return CL_DEVICE_TYPE_ALL;
-}
-
 static void
 restrict_to_gpu_subset (UfoResourcesPrivate *priv)
 {
@@ -379,14 +359,12 @@ initialize_opencl (UfoResourcesPrivate *priv,
                    GError **error)
 {
     cl_int errcode = CL_SUCCESS;
-    cl_device_type device_type;
     cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
 
     priv->platform = get_preferably_gpu_based_platform (priv);
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
-    device_type = get_device_type (priv);
 
-    errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
+    errcode = clGetDeviceIDs (priv->platform, priv->device_type, 0, NULL, &priv->n_devices);
     UFO_RESOURCES_CHECK_AND_SET (errcode, error);
 
     if (errcode != CL_SUCCESS)
@@ -394,7 +372,7 @@ initialize_opencl (UfoResourcesPrivate *priv,
 
     priv->devices = g_malloc0 (priv->n_devices * sizeof (cl_device_id));
 
-    errcode = clGetDeviceIDs (priv->platform, device_type, priv->n_devices, priv->devices, NULL);
+    errcode = clGetDeviceIDs (priv->platform, priv->device_type, priv->n_devices, priv->devices, NULL);
     UFO_RESOURCES_CHECK_AND_SET (errcode, error);
 
     if (errcode != CL_SUCCESS)
@@ -435,12 +413,9 @@ initialize_opencl (UfoResourcesPrivate *priv,
  * Returns: (transfer none): A new #UfoResources
  */
 UfoResources *
-ufo_resources_new (UfoConfig *config,
-                   GError **error)
+ufo_resources_new (GError **error)
 {
-    return g_initable_new (UFO_TYPE_RESOURCES, NULL, error,
-                           "config", config,
-                           NULL);
+    return g_initable_new (UFO_TYPE_RESOURCES, NULL, error, NULL);
 }
 
 static gchar *
@@ -890,15 +865,6 @@ ufo_resources_get_mapped_cmd_queues (UfoResources *resources)
     return result;
 }
 
-static GList *
-append_config_paths (GList *list, UfoConfig *config)
-{
-    GList *paths;
-
-    paths = ufo_config_get_paths (config);
-    return g_list_concat (list, paths);
-}
-
 static void
 ufo_resources_set_property (GObject *object,
                             guint property_id,
@@ -908,24 +874,12 @@ ufo_resources_set_property (GObject *object,
     UfoResourcesPrivate *priv = UFO_RESOURCES_GET_PRIVATE (object);
 
     switch (property_id) {
-        case PROP_CONFIG:
-            {
-                GObject *value_object = g_value_get_object (value);
+        case PROP_PLATFORM_INDEX:
+            priv->platform_index = g_value_get_int (value);
+            break;
 
-                if (priv->config)
-                    g_object_unref (priv->config);
-
-                if (value_object != NULL) {
-                    UfoConfig *config;
-
-                    config = UFO_CONFIG (value_object);
-                    priv->kernel_paths = append_config_paths (priv->kernel_paths, config);
-                    priv->include_paths = append_config_paths (priv->include_paths, config);
-
-                    g_object_ref (config);
-                    priv->config = config;
-                }
-            }
+        case PROP_DEVICE_TYPE:
+            priv->device_type = g_value_get_flags (value);
             break;
 
         default:
@@ -943,27 +897,18 @@ ufo_resources_get_property (GObject *object,
     UfoResourcesPrivate *priv = UFO_RESOURCES_GET_PRIVATE (object);
 
     switch (property_id) {
-        case PROP_CONFIG:
-            g_value_set_object (value, priv->config);
+        case PROP_PLATFORM_INDEX:
+            g_value_set_int (value, priv->platform_index);
+            break;
+
+        case PROP_DEVICE_TYPE:
+            g_value_set_flags (value, priv->device_type);
             break;
 
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
     }
-}
-
-static void
-ufo_resources_dispose (GObject *object)
-{
-    UfoResourcesPrivate *priv = UFO_RESOURCES_GET_PRIVATE (object);
-
-    if (priv->config) {
-        g_object_unref (priv->config);
-        priv->config = NULL;
-    }
-
-    G_OBJECT_CLASS (ufo_resources_parent_class)->dispose (object);
 }
 
 static void
@@ -1042,14 +987,42 @@ ufo_resources_initable_iface_init (GInitableIface *iface)
 static void
 ufo_resources_class_init (UfoResourcesClass *klass)
 {
-    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+    GObjectClass *oclass = G_OBJECT_CLASS (klass);
 
-    gobject_class->set_property = ufo_resources_set_property;
-    gobject_class->get_property = ufo_resources_get_property;
-    gobject_class->dispose      = ufo_resources_dispose;
-    gobject_class->finalize     = ufo_resources_finalize;
+    oclass->set_property = ufo_resources_set_property;
+    oclass->get_property = ufo_resources_get_property;
+    oclass->finalize = ufo_resources_finalize;
 
-    g_object_class_override_property (gobject_class, PROP_CONFIG, "config");
+    /**
+     * UfoResources:platform:
+     *
+     * Let the user select which device class to use for execution.
+     *
+     * See: #UfoDeviceType for the device classes.
+     */
+    properties[PROP_PLATFORM_INDEX] =
+        g_param_spec_int ("platform-index",
+                          "Platform index to use",
+                          "Platform index, -1 denotes any platform",
+                           -1, 16, 0,
+                           G_PARAM_READWRITE);
+
+    /**
+     * UfoResources:device-type:
+     *
+     * Type of the devices that should be used exclusively for computation.
+     *
+     * See: #UfoDeviceType for the device classes.
+     */
+    properties[PROP_DEVICE_TYPE] =
+        g_param_spec_flags ("device-type",
+                            "Device type for all employed devices",
+                            "Device type for all employed devices",
+                            UFO_TYPE_DEVICE_TYPE, UFO_DEVICE_ALL,
+                            G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+
+    for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
+        g_object_class_install_property (oclass, i, properties[i]);
 
     g_type_class_add_private (klass, sizeof (UfoResourcesPrivate));
 }
@@ -1061,7 +1034,6 @@ ufo_resources_init (UfoResources *self)
 
     self->priv = priv = UFO_RESOURCES_GET_PRIVATE (self);
 
-    priv->config = NULL;
     priv->programs = NULL;
     priv->kernels = NULL;
     priv->kernel_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
@@ -1071,4 +1043,7 @@ ufo_resources_init (UfoResources *self)
 
     priv->kernel_paths = g_list_append (NULL, g_strdup ("."));
     priv->kernel_paths = g_list_append (priv->kernel_paths, g_strdup (UFO_KERNEL_DIR));
+
+    priv->device_type = UFO_DEVICE_GPU;
+    priv->platform_index = 0;
 }

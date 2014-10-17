@@ -24,7 +24,6 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#include <ufo/ufo-config.h>
 #include <ufo/ufo-buffer.h>
 
 G_BEGIN_DECLS
@@ -50,6 +49,22 @@ typedef enum {
     UFO_RESOURCES_ERROR_BUILD_PROGRAM,
     UFO_RESOURCES_ERROR_CREATE_KERNEL
 } UfoResourcesError;
+
+/**
+ * UfoDeviceType:
+ * @UFO_DEVICE_ALL: All devices
+ * @UFO_DEVICE_CPU: Only CPU devices
+ * @UFO_DEVICE_GPU: Only GPU devices
+ * @UFO_DEVICE_ACC: Only accelerator devices such as Xeon Phi
+ *
+ * Types of OpenCL devices to query for. See UfoConfig:"device-type".
+ */
+typedef enum {
+    UFO_DEVICE_CPU = 1 << 0,
+    UFO_DEVICE_GPU = 1 << 1,
+    UFO_DEVICE_ACC = 1 << 2,
+    UFO_DEVICE_ALL = UFO_DEVICE_CPU | UFO_DEVICE_GPU | UFO_DEVICE_ACC,
+} UfoDeviceType;
 
 /**
  * UFO_RESOURCES_CHECK_CLERR:
@@ -98,8 +113,7 @@ struct _UfoResourcesClass {
     GObjectClass parent_class;
 };
 
-UfoResources   * ufo_resources_new                      (UfoConfig      *config,
-                                                         GError        **error);
+UfoResources   * ufo_resources_new                      (GError        **error);
 gpointer         ufo_resources_get_kernel               (UfoResources   *resources,
                                                          const gchar    *filename,
                                                          const gchar    *kernel,
