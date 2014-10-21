@@ -59,13 +59,6 @@ struct _UfoBuffer {
     UfoBufferPrivate *priv;
 };
 
-/**
- * UFO_BUFFER_MAX_NDIMS:
- *
- * Maximum number of allowed dimensions. This is a pre-processor macro instead
- * of const variable because of <ulink
- * url="http://c-faq.com/ansi/constasconst.html">C constraints</ulink>.
- */
 #define UFO_BUFFER_MAX_NDIMS 3
 
 /**
@@ -76,23 +69,6 @@ struct _UfoBuffer {
 struct _UfoBufferClass {
     /*< private >*/
     GObjectClass parent_class;
-};
-
-/**
- * UfoRequisition:
- * @n_dims: Number of dimensions
- * @dims: Size of dimension
- *
- * Used to specify buffer size requirements.
- */
-struct _UfoRequisition {
-    guint n_dims;
-    gsize dims[UFO_BUFFER_MAX_NDIMS];
-};
-
-struct _UfoRegion {
-    gsize origin[UFO_BUFFER_MAX_NDIMS];
-    gsize size[UFO_BUFFER_MAX_NDIMS];
 };
 
 /**
@@ -107,13 +83,16 @@ struct _UfoBufferParamSpec {
     UfoBuffer   *default_value;
 };
 
-/**
- * UfoBufferDepth:
- * @UFO_BUFFER_DEPTH_8U: 8 bit unsigned
- * @UFO_BUFFER_DEPTH_16U: 16 bit unsigned
- *
- * Source depth of data as used in ufo_buffer_convert().
- */
+struct _UfoRequisition {
+    guint n_dims;
+    gsize dims[UFO_BUFFER_MAX_NDIMS];
+};
+
+struct _UfoRegion {
+    gsize origin[UFO_BUFFER_MAX_NDIMS];
+    gsize size[UFO_BUFFER_MAX_NDIMS];
+};
+
 typedef enum {
     UFO_BUFFER_DEPTH_8U,
     UFO_BUFFER_DEPTH_16U

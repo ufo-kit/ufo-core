@@ -734,8 +734,7 @@ ufo_graph_flatten (UfoGraph *graph)
 /**
  * ufo_graph_expand:
  * @graph: A #UfoGraph
- * @path: (element-type UfoNode): A path of nodes, preferably created with
- * ufo_graph_get_paths().
+ * @path: (element-type UfoNode): A path of nodes.
  *
  * Duplicate nodes between head and tail of path and insert at the exact the
  * position of where path started and ended.

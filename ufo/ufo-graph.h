@@ -110,9 +110,6 @@ guint       ufo_graph_get_num_successors    (UfoGraph       *graph,
                                              UfoNode        *node);
 GList      *ufo_graph_get_successors        (UfoGraph       *graph,
                                              UfoNode        *node);
-GList      *ufo_graph_get_paths             (UfoGraph       *graph,
-                                             UfoFilterPredicate pred,
-                                             gpointer        user_data);
 GList      *ufo_graph_find_longest_path     (UfoGraph       *graph,
                                              UfoFilterPredicate pred,
                                              gpointer        user_data);

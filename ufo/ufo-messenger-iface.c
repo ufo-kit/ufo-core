@@ -53,8 +53,9 @@ ufo_message_new (UfoMessageType type, guint64 data_size)
 G_DEFINE_INTERFACE (UfoMessenger, ufo_messenger, G_TYPE_OBJECT)
 
 /**
- * UfoTaskError:
- * @UFO_TASK_ERROR_SETUP: Error during setup of a task.
+ * UfoMessengerError:
+ * @UFO_MESSENGER_BUFFER_FULL: Buffer is filled up completely
+ * @UFO_MESSENGER_SIZE_MISSMATCH: Size mismatch
  */
 GQuark
 ufo_messenger_error_quark ()

@@ -53,7 +53,7 @@ typedef UfoNode* (* NewFunc) (void);
 struct _UfoPluginManagerPrivate {
     GList       *search_paths;
     GSList      *modules;
-    GHashTable  *new_funcs;  /**< maps from gchar* to NewFunc* */
+    GHashTable  *new_funcs;     /* maps from gchar* to NewFunc* */
 };
 
 enum {

@@ -33,6 +33,39 @@
  * @Title: UfoBuffer
  */
 
+/**
+ * UFO_BUFFER_MAX_NDIMS:
+ *
+ * Maximum number of allowed dimensions. This is a pre-processor macro instead
+ * of const variable because of <ulink
+ * url="http://c-faq.com/ansi/constasconst.html">C constraints</ulink>.
+ */
+
+/**
+ * UfoRequisition:
+ * @n_dims: Number of dimensions
+ * @dims: Size of dimension
+ *
+ * Used to specify buffer size requirements.
+ */
+
+/**
+ * UfoRegion
+ * @origin: n-dimensional origin of the region
+ * @size: n-dimensional size of the region
+ *
+ * Defines a region with at most #UFO_BUFFER_MAX_NDIMS dimensions for use with
+ * ufo_buffer_get_device_array_view().
+ */
+
+/**
+ * UfoBufferDepth:
+ * @UFO_BUFFER_DEPTH_8U: 8 bit unsigned
+ * @UFO_BUFFER_DEPTH_16U: 16 bit unsigned
+ *
+ * Source depth of data as used in ufo_buffer_convert().
+ */
+
 G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT)
 
 #define UFO_BUFFER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BUFFER, UfoBufferPrivate))
@@ -1001,7 +1034,9 @@ ufo_buffer_convert_from_data (UfoBuffer *buffer,
  * @buffer: A #UfoBuffer
  * @name: Name of the associated meta data
  *
- * Returns: (transfer: none) previously defined meta data for this buffer.
+ * Retrieve meta data.
+ *
+ * Returns: previously defined metadata #GValue for this buffer.
  */
 GValue *
 ufo_buffer_get_metadata (UfoBuffer *buffer,
@@ -1012,7 +1047,7 @@ ufo_buffer_get_metadata (UfoBuffer *buffer,
 }
 
 /**
- * ufo_buffer_get_metadata:
+ * ufo_buffer_set_metadata:
  * @buffer: A #UfoBuffer
  * @name: Name of the associated meta data
  * @value: #GValue of the meta data
