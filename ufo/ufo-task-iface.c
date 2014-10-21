@@ -18,6 +18,7 @@
  */
 
 #include <ufo/ufo-task-iface.h>
+#include <ufo/ufo-task-node.h>
 
 typedef UfoTaskIface UfoTaskInterface;
 
@@ -47,7 +48,11 @@ ufo_task_setup (UfoTask *task,
                 UfoResources *resources,
                 GError **error)
 {
-    UFO_TASK_GET_IFACE (task)->setup (task, resources, error);
+    GError *tmp_error = NULL;
+
+    UFO_TASK_GET_IFACE (task)->setup (task, resources, &tmp_error);
+    g_propagate_prefixed_error (error, tmp_error,
+                                "%s: ", ufo_task_node_get_plugin_name (UFO_TASK_NODE (task)));
 }
 
 void
