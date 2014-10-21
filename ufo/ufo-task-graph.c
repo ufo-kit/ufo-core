@@ -507,7 +507,7 @@ map_proc_node (UfoGraph *graph,
 /**
  * ufo_task_graph_map:
  * @task_graph: A #UfoTaskGraph
- * @gpu_nodes: List of #UfoGpuNode objects
+ * @gpu_nodes: (transfer none) (element-type Ufo.GpuNode): List of #UfoGpuNode objects
  *
  * Map task nodes of @task_graph to the processing nodes of @arch_graph. Not
  * doing this could break execution of @task_graph.
