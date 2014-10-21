@@ -165,14 +165,19 @@ release_input_data (UfoTwoWayQueue **in_queues, UfoBuffer **inputs, guint n_inpu
 static UfoBuffer *
 pop_output_data (UfoTwoWayQueue *queue, UfoRequisition *requisition, cl_context context)
 {
-    if (ufo_two_way_queue_get_capacity (queue) < 2) {
-        UfoBuffer *buffer;
+    UfoBuffer *buffer;
 
+    if (ufo_two_way_queue_get_capacity (queue) < 2) {
         buffer = ufo_buffer_new (requisition, context);
         ufo_two_way_queue_insert (queue, buffer);
     }
 
-    return ufo_two_way_queue_producer_pop (queue);
+    buffer = ufo_two_way_queue_producer_pop (queue);
+
+    if (ufo_buffer_cmp_dimensions (buffer, requisition))
+        ufo_buffer_resize (buffer, requisition);
+
+    return buffer;
 }
 
 static GList *
