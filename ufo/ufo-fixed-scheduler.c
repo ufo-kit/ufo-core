@@ -233,11 +233,10 @@ generate_loop (TaskData *data)
     out_queues = get_output_queue_list (data);
 
     while (active) {
-        ufo_task_get_requisition (data->task, NULL, &requisition);
-
         g_list_for (out_queues, it) {
             UfoTwoWayQueue *out_queue = (UfoTwoWayQueue *) it->data;
 
+            ufo_task_get_requisition (data->task, NULL, &requisition);
             output = pop_output_data (out_queue, &requisition, data->context);
             active = ufo_task_generate (data->task, output, &requisition);
 
