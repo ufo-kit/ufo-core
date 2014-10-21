@@ -127,16 +127,32 @@ ufo_fixed_scheduler_get_arch (UfoFixedScheduler *sched)
 }
 
 static gboolean
-pop_input_data (UfoTwoWayQueue **in_queues, UfoBuffer **inputs, guint n_inputs)
+pop_input_data (UfoTwoWayQueue **in_queues, gboolean *finished, UfoBuffer **inputs, guint n_inputs)
 {
-    for (guint i = 0; i < n_inputs; i++) {
-        inputs[i] = ufo_two_way_queue_consumer_pop (in_queues[i]);
+    guint n_finished;
 
-        if (inputs[i] == POISON_PILL)
-            return FALSE;
+    n_finished = 0;
+
+    for (guint i = 0; i < n_inputs; i++) {
+        if (!finished[i]) {
+            UfoBuffer *input;
+
+            input = ufo_two_way_queue_consumer_pop (in_queues[i]);
+
+            if (input == POISON_PILL) {
+                finished[i] = TRUE;
+                n_finished++;
+            }
+            else {
+                inputs[i] = input;
+            }
+        }
+        else {
+            n_finished++;
+        }
     }
 
-    return TRUE;
+    return n_finished < n_inputs;
 }
 
 static void
@@ -243,6 +259,7 @@ process_loop (TaskData *data)
     UfoBuffer **inputs;
     UfoBuffer *output;
     UfoTwoWayQueue **in_queues;
+    gboolean *finished;
     GList *out_queues;
     GList *it;
     guint n_inputs;
@@ -252,10 +269,11 @@ process_loop (TaskData *data)
     in_queues = get_input_queues (data, &n_inputs);
     out_queues = get_output_queue_list (data);
     inputs = g_new0 (UfoBuffer *, n_inputs);
+    finished = g_new0 (gboolean, n_inputs);
     is_sink = g_list_length (out_queues) == 0;
 
     while (active) {
-        active = pop_input_data (in_queues, inputs, n_inputs);
+        active = pop_input_data (in_queues, finished, inputs, n_inputs);
 
         if (!active)
             break;
@@ -286,6 +304,7 @@ process_loop (TaskData *data)
 
     g_free (in_queues);
     g_free (inputs);
+    g_free (finished);
     g_list_free (out_queues);
 }
 
@@ -297,6 +316,7 @@ reduce_loop (TaskData *data)
     UfoTwoWayQueue **output_queues;
     UfoBuffer **inputs;
     UfoBuffer **outputs;
+    gboolean *finished;
     GList *it;
     GList *out_queues;
     guint n_inputs;
@@ -306,6 +326,7 @@ reduce_loop (TaskData *data)
     in_queues = get_input_queues (data, &n_inputs);
     out_queues = get_output_queue_list (data);
     inputs = g_new0 (UfoBuffer *, n_inputs);
+    finished = g_new0 (gboolean, n_inputs);
 
     n_outputs = g_list_length (out_queues);
     outputs = g_new0 (UfoBuffer *, n_outputs);
@@ -317,7 +338,7 @@ reduce_loop (TaskData *data)
     }
 
     /* Read first input item */
-    if (!pop_input_data (in_queues, inputs, n_inputs))
+    if (!pop_input_data (in_queues, finished, inputs, n_inputs))
         return;
 
     ufo_task_get_requisition (data->task, inputs, &requisition);
@@ -332,7 +353,7 @@ reduce_loop (TaskData *data)
         for (guint i = 0; i < n_outputs; i++) {
             active = ufo_task_process (data->task, inputs, outputs[i], &requisition);
             release_input_data (in_queues, inputs, n_inputs);
-            active = pop_input_data (in_queues, inputs, n_inputs);
+            active = pop_input_data (in_queues, finished, inputs, n_inputs);
         }
     } while (active);
 
@@ -355,6 +376,7 @@ reduce_loop (TaskData *data)
 
     g_free (outputs);
     g_free (output_queues);
+    g_free (finished);
     g_list_free (out_queues);
 }
 
