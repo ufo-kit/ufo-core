@@ -86,7 +86,7 @@ typedef enum {
     UFO_TRACE_EVENT_PROCESS     = 1 << 0,
     UFO_TRACE_EVENT_GENERATE    = 1 << 1,
     UFO_TRACE_EVENT_BEGIN       = 1 << 2,
-    UFO_TRACE_EVENT_END         = 1 << 3,
+    UFO_TRACE_EVENT_END         = 1 << 3
 } UfoTraceEventType;
 
 #define UFO_TRACE_EVENT_TYPE_MASK   (UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_GENERATE)
@@ -110,7 +110,7 @@ typedef enum {
     UFO_PROFILER_TIMER_GPU,
     UFO_PROFILER_TIMER_FETCH,
     UFO_PROFILER_TIMER_RELEASE,
-    UFO_PROFILER_TIMER_LAST,
+    UFO_PROFILER_TIMER_LAST
 } UfoProfilerTimer;
 
 UfoProfiler *ufo_profiler_new           (void);

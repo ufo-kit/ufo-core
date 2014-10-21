@@ -44,7 +44,7 @@ typedef struct _UfoBaseSchedulerPrivate    UfoBaseSchedulerPrivate;
 
 typedef enum {
     UFO_BASE_SCHEDULER_ERROR_SETUP,
-    UFO_BASE_SCHEDULER_ERROR_EXECUTION,
+    UFO_BASE_SCHEDULER_ERROR_EXECUTION
 } UfoBaseSchedulerError;
 
 /**
