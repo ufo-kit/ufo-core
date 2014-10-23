@@ -32,8 +32,6 @@
 #include <string.h>
 
 #include <ufo/ufo-buffer.h>
-#include <ufo/ufo-config.h>
-#include <ufo/ufo-configurable.h>
 #include <ufo/ufo-fixed-scheduler.h>
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-task-node.h>
@@ -43,8 +41,7 @@
 #include "compat.h"
 
 
-G_DEFINE_TYPE_WITH_CODE (UfoFixedScheduler, ufo_fixed_scheduler, UFO_TYPE_BASE_SCHEDULER,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
+G_DEFINE_TYPE (UfoFixedScheduler, ufo_fixed_scheduler, UFO_TYPE_BASE_SCHEDULER)
 
 #define UFO_FIXED_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FIXED_SCHEDULER, UfoFixedSchedulerPrivate))
 
@@ -90,40 +87,15 @@ ufo_fixed_scheduler_error_quark (void)
 
 /**
  * ufo_fixed_scheduler_new:
- * @config: A #UfoConfig or %NULL
  *
  * Creates a new #UfoFixedScheduler.
  *
  * Return value: A new #UfoFixedScheduler
  */
 UfoBaseScheduler *
-ufo_fixed_scheduler_new (UfoConfig *config)
+ufo_fixed_scheduler_new (void)
 {
-    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_FIXED_SCHEDULER, "config", config, NULL));
-}
-
-/**
- * ufo_fixed_scheduler_get_arch:
- * @sched: A #UfoFixedScheduler object
- *
- * Get a #UfoArchGraph object to get GPU nodes for manual assignment to tasks.
- * If it does not exist, it is created on the fly.
- *
- * Returns: (transfer none): An #UfoArchGraph object to retrieve GPU nodes.
- */
-UfoArchGraph *
-ufo_fixed_scheduler_get_arch (UfoFixedScheduler *sched)
-{
-
-    g_return_val_if_fail (UFO_IS_FIXED_SCHEDULER (sched), NULL);
-
-    if (sched->priv->arch == NULL) {
-        UfoResources *resources;
-        resources = ufo_base_scheduler_get_resources (UFO_BASE_SCHEDULER (sched));
-        sched->priv->arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, NULL));
-    }
-
-    return sched->priv->arch;
+    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_FIXED_SCHEDULER, NULL));
 }
 
 static gboolean
@@ -435,7 +407,7 @@ append_if_not_existing (GList *list, UfoTask *task)
 
 static ProcessData *
 setup_tasks (UfoGraph *graph,
-             UfoArchGraph *arch,
+             UfoBaseScheduler *scheduler,
              UfoResources *resources,
              GError **error)
 {
@@ -450,7 +422,7 @@ setup_tasks (UfoGraph *graph,
     data->tasks = NULL;
 
     nodes = ufo_graph_get_nodes (graph);
-    gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch);
+    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
 
     g_list_for (nodes, it) {
         UfoNode *source_node;
@@ -528,9 +500,9 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (UFO_IS_FIXED_SCHEDULER (scheduler));
 
-    resources = ufo_base_scheduler_get_resources (scheduler);
-    arch = ufo_fixed_scheduler_get_arch (UFO_FIXED_SCHEDULER (scheduler));
-    pdata = setup_tasks (UFO_GRAPH (task_graph), arch, resources, &tmp_error);
+    arch = ufo_base_scheduler_get_arch (scheduler);
+    resources = ufo_arch_graph_get_resources (arch);
+    pdata = setup_tasks (UFO_GRAPH (task_graph), scheduler, resources, &tmp_error);
 
     if (tmp_error != NULL) {
         g_propagate_error (error, tmp_error);

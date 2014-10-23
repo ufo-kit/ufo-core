@@ -32,8 +32,6 @@
 #include <string.h>
 
 #include <ufo/ufo-buffer.h>
-#include <ufo/ufo-config.h>
-#include <ufo/ufo-configurable.h>
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-local-scheduler.h>
 #include <ufo/ufo-task-node.h>
@@ -51,8 +49,7 @@
  * on CPU and GPU hardware.
  */
 
-G_DEFINE_TYPE_WITH_CODE (UfoLocalScheduler, ufo_local_scheduler, UFO_TYPE_BASE_SCHEDULER,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
+G_DEFINE_TYPE (UfoLocalScheduler, ufo_local_scheduler, UFO_TYPE_BASE_SCHEDULER)
 
 #define UFO_LOCAL_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_LOCAL_SCHEDULER, UfoLocalSchedulerPrivate))
 
@@ -127,16 +124,15 @@ ufo_pp_next (ProcessorPool *pp)
 
 /**
  * ufo_local_scheduler_new:
- * @config: A #UfoConfig or %NULL
  *
  * Creates a new #UfoLocalScheduler.
  *
  * Return value: A new #UfoLocalScheduler
  */
 UfoBaseScheduler *
-ufo_local_scheduler_new (UfoConfig *config)
+ufo_local_scheduler_new (void)
 {
-    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_LOCAL_SCHEDULER, "config", config, NULL));
+    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_LOCAL_SCHEDULER, NULL));
 }
 
 static gboolean
@@ -357,7 +353,6 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
     UfoArchGraph *arch;
     ProcessorPool *pp;
     GHashTable *task_data;
-    GList *remotes;
     GList *local_data;
     GList *threads;
     GList *it;
@@ -365,10 +360,9 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (UFO_IS_LOCAL_SCHEDULER (scheduler));
 
-    resources = ufo_base_scheduler_get_resources (scheduler);
-    remotes = ufo_base_scheduler_get_remotes (scheduler);
-    arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, remotes));
-    gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch);
+    arch = ufo_base_scheduler_get_arch (scheduler);
+    resources = ufo_arch_graph_get_resources (arch);
+    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
     pp = ufo_pp_new (gpu_nodes);
     g_list_free (gpu_nodes);
 
@@ -400,7 +394,6 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
 #endif
 
     ufo_pp_destroy (pp);
-    g_list_free_full (remotes, g_free);
     g_object_unref (arch);
     g_list_free (threads);
     g_hash_table_destroy (task_data);

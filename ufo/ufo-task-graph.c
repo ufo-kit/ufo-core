@@ -390,6 +390,7 @@ expand_remotes (UfoTaskGraph *task_graph,
  * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
  * @arch_graph: A #UfoArchGraph
+ * @n_gpus: Number of GPUs to expand the graph for
  * @expand_remote: %TRUE if remote nodes should be inserted
  *
  * Expands @task_graph in a way that most of the resources in @arch_graph can be
@@ -399,6 +400,7 @@ expand_remotes (UfoTaskGraph *task_graph,
 void
 ufo_task_graph_expand (UfoTaskGraph *task_graph,
                        UfoArchGraph *arch_graph,
+                       guint n_gpus,
                        gboolean expand_remote)
 {
     GList *path;
@@ -412,7 +414,6 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     if (path != NULL && g_list_length (path) > 1) {
         GList *predecessors;
         GList *successors;
-        guint n_gpus;
 
         g_object_unref (UFO_NODE (g_list_first(path)->data));
         g_object_unref (UFO_NODE (g_list_last(path)->data));
@@ -445,7 +446,6 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
             g_list_free (remotes);
         }
 
-        n_gpus = ufo_arch_graph_get_num_gpus (arch_graph);
         g_debug ("Expand for %i GPU nodes", n_gpus);
 
         for (guint i = 1; i < n_gpus; i++)
@@ -484,9 +484,9 @@ map_proc_node (UfoGraph *graph,
     if ((ufo_task_uses_gpu (UFO_TASK (node)) || UFO_IS_INPUT_TASK (node)) &&
         (!ufo_task_node_get_proc_node (UFO_TASK_NODE (node)))) {
 
-        g_debug ("Mapping GPU %i to %s-%p",
-                 proc_index, G_OBJECT_TYPE_NAME (node),
-                 (gpointer) node);
+        g_debug ("Mapping UfoGpuNode-%p to %s-%p",
+                 (gpointer) proc_node,
+                 G_OBJECT_TYPE_NAME (node), (gpointer) node);
 
         ufo_task_node_set_proc_node (UFO_TASK_NODE (node), proc_node);
     }
@@ -504,24 +504,21 @@ map_proc_node (UfoGraph *graph,
     g_list_free (successors);
 }
 
-
 /**
  * ufo_task_graph_map:
  * @task_graph: A #UfoTaskGraph
- * @arch_graph: A #UfoArchGraph to which @task_graph's nodes are mapped onto
+ * @gpu_nodes: (transfer none) (element-type Ufo.GpuNode): List of #UfoGpuNode objects
  *
  * Map task nodes of @task_graph to the processing nodes of @arch_graph. Not
  * doing this could break execution of @task_graph.
  */
 void
 ufo_task_graph_map (UfoTaskGraph *task_graph,
-                    UfoArchGraph *arch_graph)
+                    GList *gpu_nodes)
 {
-    GList *gpu_nodes;
     GList *roots;
     GList *it;
 
-    gpu_nodes = ufo_arch_graph_get_gpu_nodes (arch_graph);
     roots = ufo_graph_get_roots (UFO_GRAPH (task_graph));
 
     g_list_for (roots, it) {
@@ -529,7 +526,6 @@ ufo_task_graph_map (UfoTaskGraph *task_graph,
     }
 
     g_list_free (roots);
-    g_list_free (gpu_nodes);
 }
 
 /**
@@ -876,6 +872,7 @@ ufo_task_graph_init (UfoTaskGraph *self)
 
     priv->manager = NULL;
     priv->remote_tasks = NULL;
+
     priv->json_nodes = g_hash_table_new_full (g_str_hash, g_str_equal,
                                               g_free, NULL);
 

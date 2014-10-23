@@ -61,7 +61,7 @@ struct _UfoDaemonClass {
     GObjectClass parent_class;
 };
 
-UfoDaemon *  ufo_daemon_new               (UfoConfig *config, gchar *listen_addr);
+UfoDaemon *  ufo_daemon_new               (const gchar *listen_addr);
 void         ufo_daemon_start             (UfoDaemon *daemon);
 void         ufo_daemon_stop              (UfoDaemon *daemon);
 void         ufo_daemon_wait_finish       (UfoDaemon *daemon);

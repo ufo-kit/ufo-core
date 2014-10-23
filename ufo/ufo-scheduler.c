@@ -32,8 +32,6 @@
 #include <string.h>
 
 #include <ufo/ufo-buffer.h>
-#include <ufo/ufo-config.h>
-#include <ufo/ufo-configurable.h>
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-remote-task.h>
 #include <ufo/ufo-resources.h>
@@ -54,8 +52,7 @@
 
 /* static void ufo_scheduler_initable_iface_init (GInitableIface *iface); */
 
-G_DEFINE_TYPE_WITH_CODE (UfoScheduler, ufo_scheduler, UFO_TYPE_BASE_SCHEDULER,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL))
+G_DEFINE_TYPE (UfoScheduler, ufo_scheduler, UFO_TYPE_BASE_SCHEDULER)
 
 #define UFO_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_SCHEDULER, UfoSchedulerPrivate))
 
@@ -87,22 +84,15 @@ ufo_scheduler_error_quark (void)
 
 /**
  * ufo_scheduler_new:
- * @config: A #UfoConfig or %NULL
- * @remotes: (element-type utf8): A #GList with strings describing remote machines or %NULL
  *
  * Creates a new #UfoBaseScheduler.
  *
  * Return value: A new #UfoBaseScheduler
  */
 UfoBaseScheduler *
-ufo_scheduler_new (UfoConfig *config,
-                   GList *remotes)
+ufo_scheduler_new (void)
 {
-    UfoBaseScheduler *sched;
-
-    sched = UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER, "config", config, NULL));
-    ufo_base_scheduler_set_remotes (sched, remotes);
-    return sched;
+    return UFO_BASE_SCHEDULER (g_object_new (UFO_TYPE_SCHEDULER, NULL));
 }
 
 static gboolean
@@ -401,13 +391,15 @@ setup_tasks (UfoBaseScheduler *scheduler,
              UfoTaskGraph *task_graph,
              GError **error)
 {
+    UfoArchGraph *arch;
     UfoResources *resources;
     TaskLocalData **tlds;
     GList *nodes;
     guint n_nodes;
     gboolean tracing_enabled;
 
-    resources = ufo_base_scheduler_get_resources (scheduler);
+    arch = ufo_base_scheduler_get_arch (scheduler);
+    resources = ufo_arch_graph_get_resources (arch);
     g_object_get (scheduler, "enable-tracing", &tracing_enabled, NULL);
 
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
@@ -457,6 +449,7 @@ static GList *
 setup_groups (UfoBaseScheduler *scheduler,
               UfoTaskGraph *task_graph)
 {
+    UfoResources *resources;
     GList *groups;
     GList *nodes;
     GList *it;
@@ -464,7 +457,8 @@ setup_groups (UfoBaseScheduler *scheduler,
 
     groups = NULL;
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
-    context = ufo_base_scheduler_get_context (scheduler);
+    resources = ufo_arch_graph_get_resources (ufo_base_scheduler_get_arch (scheduler));
+    context = ufo_resources_get_context (resources);
 
     g_list_for (nodes, it) {
         GList *successors;
@@ -595,10 +589,9 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
                    GError **error)
 {
     UfoSchedulerPrivate *priv;
-    UfoResources *resources;
-    UfoArchGraph *arch_graph;
-    GList *remotes;
+    UfoArchGraph *arch;
     UfoTaskGraph *graph;
+    GList *gpu_nodes;
     GList *groups;
     guint n_nodes;
     GThread **threads;
@@ -608,10 +601,6 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     gboolean trace;
 
     priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
-
-    resources = ufo_base_scheduler_get_resources (scheduler);
-    remotes = ufo_base_scheduler_get_remotes (scheduler);
-    arch_graph = UFO_ARCH_GRAPH (ufo_arch_graph_new (resources, remotes));
 
     g_object_get (scheduler,
                   "enable-reruns", &rerun,
@@ -635,17 +624,20 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     if (graph == NULL)
         return;
 
+    arch = ufo_base_scheduler_get_arch (scheduler);
+    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
+
     if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
-        replicate_task_graph (graph, arch_graph);
+        replicate_task_graph (graph, arch);
     }
 
     if (expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
-        ufo_task_graph_expand (graph, arch_graph, expand_remote);
+        ufo_task_graph_expand (graph, arch, g_list_length (gpu_nodes), expand_remote);
     }
 
     propagate_partition (graph);
-    ufo_task_graph_map (graph, arch_graph);
+    ufo_task_graph_map (graph, gpu_nodes);
 
     /* Prepare task structures */
     tlds = setup_tasks (scheduler, graph, error);
@@ -706,9 +698,6 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     /* The graph is a copy which we do not need anymore */
     if (rerun)
         g_object_unref (graph);
-
-    g_list_free_full (remotes, g_free);
-    g_object_unref (arch_graph);
 
     priv->ran = TRUE;
 }

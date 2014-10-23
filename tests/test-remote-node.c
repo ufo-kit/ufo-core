@@ -23,7 +23,6 @@
 
 typedef struct {
     UfoDaemon *daemon;
-    UfoConfig *config;
     UfoRemoteNode *remote_node;
 } Fixture;
 
@@ -31,9 +30,7 @@ static void
 setup (Fixture *fixture, gconstpointer data)
 {
     gchar *addr = g_strdup ("tcp://127.0.0.1:5555");
-    fixture->config = ufo_config_new ();
-
-    fixture->daemon = ufo_daemon_new (fixture->config, addr);
+    fixture->daemon = ufo_daemon_new (addr);
     ufo_daemon_start (fixture->daemon);
 
     fixture->remote_node = (UfoRemoteNode *) ufo_remote_node_new (addr);

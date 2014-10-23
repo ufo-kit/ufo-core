@@ -24,7 +24,6 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#include <ufo/ufo-config.h>
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-base-scheduler.h>
 
@@ -71,7 +70,7 @@ struct _UfoLocalSchedulerClass {
     UfoBaseSchedulerClass parent_class;
 };
 
-UfoBaseScheduler    *ufo_local_scheduler_new            (UfoConfig  *config);
+UfoBaseScheduler    *ufo_local_scheduler_new            (void);
 GType                ufo_local_scheduler_get_type       (void);
 GQuark               ufo_local_scheduler_error_quark    (void);
 

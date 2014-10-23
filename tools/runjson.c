@@ -51,23 +51,8 @@ string_array_to_list (gchar **array)
     return result;
 }
 
-static UfoConfig *
-get_config (gchar **paths)
-{
-    GList *path_list = NULL;
-    UfoConfig *config;
-
-    config = ufo_config_new ();
-    path_list = string_array_to_list (paths);
-    ufo_config_add_paths (config, path_list);
-
-    g_list_free (path_list);
-    return config;
-}
-
 static void
 execute_json (const gchar *filename,
-              UfoConfig *config,
               gchar **addresses)
 {
     UfoTaskGraph    *task_graph;
@@ -76,15 +61,16 @@ execute_json (const gchar *filename,
     GList *address_list = NULL;
     GError *error = NULL;
 
-    manager = ufo_plugin_manager_new (config);
+    manager = ufo_plugin_manager_new ();
 
     task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
     ufo_task_graph_read_from_file (task_graph, manager, filename, &error);
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
     address_list = string_array_to_list (addresses);
-    scheduler = ufo_scheduler_new (config, address_list);
     g_list_free (address_list);
+
+    scheduler = ufo_scheduler_new ();
 
     ufo_base_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
@@ -169,7 +155,6 @@ int main(int argc, char *argv[])
     gchar **paths = NULL;
     gchar **addresses = NULL;
     gboolean show_version = FALSE;
-    UfoConfig *config = NULL;
 
     GOptionEntry entries[] = {
         { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths,
@@ -211,8 +196,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    config = get_config (paths);
-
 #ifdef MPI
     gint rank, size;
     mpi_init (&argc, argv, &rank, &size);
@@ -221,7 +204,7 @@ int main(int argc, char *argv[])
         addresses = mpi_build_addresses (size);
     } else {
         gchar *addr = g_strdup_printf("%d", rank);
-        UfoDaemon *daemon = ufo_daemon_new (config, addr);
+        UfoDaemon *daemon = ufo_daemon_new (addr);
         ufo_daemon_start (daemon);
         ufo_daemon_wait_finish (daemon);
         MPI_Finalize ();
@@ -229,7 +212,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    execute_json (argv[argc-1], config, addresses);
+    execute_json (argv[argc-1], addresses);
 
 #ifdef MPI
     if (rank == 0) {
@@ -241,7 +224,6 @@ int main(int argc, char *argv[])
     g_strfreev (paths);
     g_strfreev (addresses);
     g_option_context_free (context);
-    g_object_unref (config);
 
     return 0;
 }

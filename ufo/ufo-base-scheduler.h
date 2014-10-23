@@ -24,7 +24,6 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#include <ufo/ufo-config.h>
 #include <ufo/ufo-task-graph.h>
 
 G_BEGIN_DECLS
@@ -76,11 +75,11 @@ struct _UfoBaseSchedulerClass {
 void            ufo_base_scheduler_run              (UfoBaseScheduler   *scheduler,
                                                      UfoTaskGraph       *task_graph,
                                                      GError            **error);
-UfoResources   *ufo_base_scheduler_get_resources    (UfoBaseScheduler   *scheduler);
-gpointer        ufo_base_scheduler_get_context      (UfoBaseScheduler   *scheduler);
-GList          *ufo_base_scheduler_get_remotes      (UfoBaseScheduler   *scheduler);
-void            ufo_base_scheduler_set_remotes      (UfoBaseScheduler   *scheduler,
-                                                     GList              *remotes);
+UfoArchGraph   *ufo_base_scheduler_get_arch         (UfoBaseScheduler   *scheduler);
+void            ufo_base_scheduler_set_gpu_nodes    (UfoBaseScheduler   *scheduler,
+                                                     UfoArchGraph       *arch,
+                                                     GList              *gpu_nodes);
+GList          *ufo_base_scheduler_get_gpu_nodes    (UfoBaseScheduler   *scheduler);
 GType           ufo_base_scheduler_get_type         (void);
 GQuark          ufo_base_scheduler_error_quark      (void);
 

@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.6)
 set(TEST_SRCS
     test-suite.c
     test-buffer.c
-    test-config.c
     test-graph.c
     test-node.c
     test-profiler.c

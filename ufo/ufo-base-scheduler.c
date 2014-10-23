@@ -28,10 +28,8 @@
 #include <CL/cl.h>
 #endif
 
+#include <ufo/ufo-arch-graph.h>
 #include <ufo/ufo-base-scheduler.h>
-#include <ufo/ufo-config.h>
-#include <ufo/ufo-configurable.h>
-#include <ufo/ufo-resources.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-task-iface.h>
 #include "ufo-priv.h"
@@ -42,7 +40,6 @@ static void ufo_base_scheduler_initable_iface_init (GInitableIface *iface);
 
 
 G_DEFINE_TYPE_WITH_CODE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT,
-                         G_IMPLEMENT_INTERFACE (UFO_TYPE_CONFIGURABLE, NULL)
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                 ufo_base_scheduler_initable_iface_init))
 
@@ -52,9 +49,8 @@ G_DEFINE_TYPE_WITH_CODE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT,
 
 struct _UfoBaseSchedulerPrivate {
     GError          *construct_error;
-    UfoConfig       *config;
-    UfoResources    *resources;
-    GList           *remotes;
+    UfoArchGraph    *arch;
+    GList           *gpu_nodes;
     gboolean         expand;
     gboolean         trace;
     gboolean         rerun;
@@ -65,14 +61,10 @@ struct _UfoBaseSchedulerPrivate {
 enum {
     PROP_0,
     PROP_EXPAND,
-    PROP_REMOTES,
     PROP_ENABLE_TRACING,
     PROP_ENABLE_RERUNS,
     PROP_TIME,
     N_PROPERTIES,
-
-    /* Here come the overriden properties that we don't install ourselves. */
-    PROP_CONFIG,
 };
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
@@ -86,21 +78,6 @@ GQuark
 ufo_base_scheduler_error_quark (void)
 {
     return g_quark_from_static_string ("ufo-scheduler-error-quark");
-}
-
-/**
- * ufo_base_scheduler_get_context:
- * @scheduler: A #UfoBaseScheduler
- *
- * Get the associated OpenCL context of @scheduler.
- *
- * Return value: (transfer full): An cl_context structure or %NULL on error.
- */
-gpointer
-ufo_base_scheduler_get_context (UfoBaseScheduler *scheduler)
-{
-    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
-    return ufo_resources_get_context (scheduler->priv->resources);
 }
 
 void
@@ -125,64 +102,66 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
 }
 
 /**
- * ufo_base_scheduler_get_resources:
+ * ufo_base_scheduler_get_arch:
  * @scheduler: A #UfoBaseScheduler
  *
- * Get resources associated with @scheduler.
+ * Get arch graph associated with this scheduler.
  *
- * Returns: (transfer none): The #UfoResources object
+ * Returns: (transfer none): The #UfoArchGraph object.
  */
-UfoResources *
-ufo_base_scheduler_get_resources (UfoBaseScheduler *scheduler)
+UfoArchGraph *
+ufo_base_scheduler_get_arch (UfoBaseScheduler *scheduler)
 {
     g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
-    return scheduler->priv->resources;
+
+    if (scheduler->priv->arch == NULL)
+        scheduler->priv->arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL));
+
+    return scheduler->priv->arch;
 }
 
 /**
- * ufo_base_scheduler_get_remotes:
+ * ufo_base_scheduler_set_gpu_nodes:
  * @scheduler: A #UfoBaseScheduler
+ * @arch: A #UfoArchGraph from which the nodes come from
+ * @gpu_nodes: (element-type Ufo.GpuNode): A list of #UfoGpuNode objects.
  *
- * Returns: (transfer full) (element-type utf8): List with strings that the user
- * must free with g_list_free_full
- */
-GList *
-ufo_base_scheduler_get_remotes (UfoBaseScheduler *scheduler)
-{
-    GList *it;
-    GList *remotes = NULL;
-
-    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
-
-    g_list_for (scheduler->priv->remotes, it) {
-        remotes = g_list_append (remotes, g_strdup (it->data));
-    }
-
-    return remotes;
-}
-
-/**
- * ufo_base_scheduler_set_remotes:
- * @scheduler: A #UfoBaseScheduler
- * @remotes: (element-type utf8): List with remote addresses
- *
- * Set the used remotes for @scheduler.
+ * Sets the GPU nodes that @scheduler can only use. Note, that the #UfoGpuNode
+ * objects must be from the same #UfoArchGraph that is returned by
+ * ufo_base_scheduler_get_arch.
  */
 void
-ufo_base_scheduler_set_remotes (UfoBaseScheduler *scheduler,
-                                GList *remotes)
+ufo_base_scheduler_set_gpu_nodes (UfoBaseScheduler *scheduler,
+                                  UfoArchGraph *arch,
+                                  GList *gpu_nodes)
 {
-    UfoBaseSchedulerPrivate *priv;
-    GList *it;
-
     g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
+    g_return_if_fail (arch != NULL);
 
-    priv = scheduler->priv;
-    g_list_free_full (priv->remotes, g_free);
+    if (scheduler->priv->arch != NULL)
+        g_object_unref (scheduler->priv->arch);
 
-    g_list_for (remotes, it) {
-        priv->remotes = g_list_append (priv->remotes, g_strdup (it->data));
-    }
+    scheduler->priv->arch = g_object_ref (arch);
+    scheduler->priv->gpu_nodes = g_list_copy (gpu_nodes);
+}
+
+/**
+ * ufo_base_scheduler_get_gpu_nodes:
+ * @scheduler: A #UfoBaseScheduler
+ *
+ * Get the GPU nodes that @scheduler can use for execution.
+ *
+ * Returns: (transfer none) (element-type Ufo.GpuNode): A list of #UfoGpuNode objects.
+ */
+GList *
+ufo_base_scheduler_get_gpu_nodes (UfoBaseScheduler *scheduler)
+{
+    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
+
+    if (scheduler->priv->gpu_nodes != NULL)
+        return scheduler->priv->gpu_nodes;
+
+    return ufo_arch_graph_get_gpu_nodes (ufo_base_scheduler_get_arch (scheduler));
 }
 
 static void
@@ -195,22 +174,6 @@ ufo_base_scheduler_run_real (UfoBaseScheduler *scheduler,
 }
 
 static void
-copy_remote_list (UfoBaseSchedulerPrivate *priv,
-                  GValueArray *array)
-{
-    if (priv->remotes != NULL) {
-        g_list_foreach (priv->remotes, (GFunc) g_free, NULL);
-        g_list_free (priv->remotes);
-        priv->remotes = NULL;
-    }
-
-    for (guint i = 0; i < array->n_values; i++) {
-        priv->remotes = g_list_append (priv->remotes,
-                                       g_strdup (g_value_get_string (g_value_array_get_nth (array, i))));
-    }
-}
-
-static void
 ufo_base_scheduler_set_property (GObject *object,
                                  guint property_id,
                                  const GValue *value,
@@ -219,24 +182,6 @@ ufo_base_scheduler_set_property (GObject *object,
     UfoBaseSchedulerPrivate *priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
 
     switch (property_id) {
-        case PROP_CONFIG:
-            {
-                GObject *vobject = g_value_get_object (value);
-
-                if (vobject != NULL) {
-                    if (priv->config != NULL)
-                        g_object_unref (priv->config);
-
-                    priv->config = UFO_CONFIG (vobject);
-                    g_object_ref (priv->config);
-                }
-            }
-            break;
-
-        case PROP_REMOTES:
-            copy_remote_list (priv, g_value_get_boxed (value));
-            break;
-
         case PROP_EXPAND:
             priv->expand = g_value_get_boolean (value);
             break;
@@ -287,30 +232,15 @@ ufo_base_scheduler_get_property (GObject *object,
 }
 
 static void
-ufo_base_scheduler_constructed (GObject *object)
-{
-    UfoBaseSchedulerPrivate *priv;
-
-    priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
-    priv->resources = ufo_resources_new (priv->config,
-                                         &priv->construct_error);
-}
-
-static void
 ufo_base_scheduler_dispose (GObject *object)
 {
     UfoBaseSchedulerPrivate *priv;
 
     priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
 
-    if (priv->config != NULL) {
-        g_object_unref (priv->config);
-        priv->config = NULL;
-    }
-
-    if (priv->resources != NULL) {
-        g_object_unref (priv->resources);
-        priv->resources = NULL;
+    if (priv->arch != NULL) {
+        g_object_unref (priv->arch);
+        priv->arch = NULL;
     }
 
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->dispose (object);
@@ -324,9 +254,6 @@ ufo_base_scheduler_finalize (GObject *object)
     priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
 
     g_clear_error (&priv->construct_error);
-    g_list_free_full (priv->remotes, g_free);
-
-    priv->remotes = NULL;
 
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->finalize (object);
 }
@@ -372,7 +299,6 @@ ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
     GObjectClass *oclass = G_OBJECT_CLASS (klass);
 
     klass->run = ufo_base_scheduler_run_real;
-    oclass->constructed  = ufo_base_scheduler_constructed;
     oclass->set_property = ufo_base_scheduler_set_property;
     oclass->get_property = ufo_base_scheduler_get_property;
     oclass->dispose = ufo_base_scheduler_dispose;
@@ -399,17 +325,6 @@ ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
                               FALSE,
                               G_PARAM_READWRITE);
 
-    properties[PROP_REMOTES] =
-        g_param_spec_value_array ("remotes",
-                                  "List containing remote addresses",
-                                  "List containing remote addresses of machines running ufod",
-                                  g_param_spec_string ("remote",
-                                                       "A remote address in the form tcp://addr:port",
-                                                       "A remote address in the form tcp://addr:port (see http://api.zeromq.org/3-2:zmq-tcp)",
-                                                       ".",
-                                                       G_PARAM_READWRITE),
-                                  G_PARAM_READWRITE);
-
     properties[PROP_TIME] =
         g_param_spec_double ("time",
                              "Finished execution time",
@@ -419,8 +334,6 @@ ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
 
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
         g_object_class_install_property (oclass, i, properties[i]);
-
-    g_object_class_override_property (oclass, PROP_CONFIG, "config");
 
     g_type_class_add_private (klass, sizeof (UfoBaseSchedulerPrivate));
 }
@@ -435,8 +348,6 @@ ufo_base_scheduler_init (UfoBaseScheduler *scheduler)
     priv->trace = FALSE;
     priv->rerun = FALSE;
     priv->ran = FALSE;
-    priv->config = NULL;
-    priv->resources = NULL;
-    priv->remotes = NULL;
     priv->time = 0.0;
+    priv->gpu_nodes = NULL;
 }
