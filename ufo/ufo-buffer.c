@@ -627,6 +627,11 @@ ufo_buffer_resize (UfoBuffer *buffer,
         priv->device_array = NULL;
     }
 
+    if (priv->device_image != NULL) {
+        UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_image));
+        priv->device_image = NULL;
+    }
+
     priv->size = compute_required_size (requisition);
     copy_requisition (requisition, &priv->requisition);
 }
