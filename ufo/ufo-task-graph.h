@@ -86,8 +86,6 @@ void         ufo_task_graph_save_to_json        (UfoTaskGraph       *graph,
                                                  GError            **error);
 gchar       *ufo_task_graph_get_json_data       (UfoTaskGraph       *graph,
                                                  GError            **error);
-void         ufo_task_graph_set_gpu_nodes       (UfoTaskGraph       *task_graph,
-                                                 GList              *gpu_nodes);
 void         ufo_task_graph_map                 (UfoTaskGraph       *task_graph,
                                                  GList              *gpu_nodes);
 void         ufo_task_graph_expand              (UfoTaskGraph       *task_graph,
