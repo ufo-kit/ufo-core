@@ -554,11 +554,11 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 
 #ifdef WITH_PYTHON
     if (Py_IsInitialized ()) {
-        Py_BEGIN_ALLOW_THREADS
+        PyGILState_STATE state = PyGILState_Ensure ();
 
         join_threads (threads);
 
-        Py_END_ALLOW_THREADS
+        PyGILState_Release (state);
     }
     else {
         join_threads (threads);
