@@ -551,7 +551,9 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
     AllocFunc alloc[3] = { alloc_host_mem, alloc_device_array, alloc_device_image };
 
     g_return_if_fail (UFO_IS_BUFFER (src) && UFO_IS_BUFFER (dst));
-    g_return_if_fail (src->priv->size == dst->priv->size);
+
+    if (ufo_buffer_cmp_dimensions (dst, &src->priv->requisition) != 0)
+        ufo_buffer_resize (dst, &src->priv->requisition);
 
     spriv = src->priv;
     dpriv = dst->priv;
@@ -562,7 +564,8 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
         spriv->location = UFO_LOCATION_HOST;
     }
 
-    if (dpriv->location == UFO_LOCATION_INVALID) {
+    if (dpriv->location == UFO_LOCATION_INVALID ||
+        (!dpriv->host_array && !dpriv->device_array && !dpriv->device_image)) {
         alloc[spriv->location](dpriv);
         dpriv->location = spriv->location;
     }
