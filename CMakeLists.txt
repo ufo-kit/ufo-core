@@ -112,7 +112,7 @@ include_directories(
 #}}}
 #}}}
 #{{{ Definitions
-add_definitions("-std=c99 -pedantic -Wall -Wextra -Werror -fPIC")
+add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
 
 if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
     add_definitions("-Wcast-align
