@@ -109,6 +109,9 @@ ufo_output_task_get_output_buffer (UfoOutputTask *task)
 
         Py_END_ALLOW_THREADS
     }
+    else {
+        buffer = g_async_queue_pop (task->priv->out_queue);
+    }
 #else
     buffer = g_async_queue_pop (task->priv->out_queue);
 #endif
