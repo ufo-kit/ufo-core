@@ -17,7 +17,12 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gmodule.h>
+#include "config.h"
+
+#ifdef WITH_PYTHON
+#include <Python.h>
+#endif
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
@@ -92,8 +97,23 @@ ufo_output_task_get_output_requisition (UfoOutputTask *task,
 UfoBuffer *
 ufo_output_task_get_output_buffer (UfoOutputTask *task)
 {
+    UfoBuffer *buffer;
+
     g_return_val_if_fail (UFO_IS_OUTPUT_TASK (task), NULL);
-    return g_object_ref (g_async_queue_pop (task->priv->out_queue));
+
+#ifdef WITH_PYTHON
+    if (Py_IsInitialized ()) {
+        Py_BEGIN_ALLOW_THREADS
+
+        buffer = g_async_queue_pop (task->priv->out_queue);
+
+        Py_END_ALLOW_THREADS
+    }
+#else
+    buffer = g_async_queue_pop (task->priv->out_queue);
+#endif
+
+    return g_object_ref (buffer);
 }
 
 void
