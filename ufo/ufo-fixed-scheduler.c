@@ -462,7 +462,6 @@ setup_tasks (UfoGraph *graph,
 
         /* Set a default GPU if not assigned by user */
         if (ufo_task_get_mode (task) & UFO_TASK_MODE_GPU) {
-
             if (ufo_task_node_get_proc_node (UFO_TASK_NODE (task)) == NULL) {
                 if (g_list_length (gpu_nodes) == 0) {
                     g_set_error_literal (error, UFO_BASE_SCHEDULER_ERROR, UFO_BASE_SCHEDULER_ERROR_SETUP,
@@ -470,7 +469,10 @@ setup_tasks (UfoGraph *graph,
                     break;
                 }
 
-                g_debug ("Setting default GPU for %s-%p\n", ufo_task_node_get_plugin_name (UFO_TASK_NODE (task)), (gpointer) task);
+                g_debug ("Setting default GPU %p for %s-%p",
+                         g_list_nth_data (gpu_nodes, 0),
+                         ufo_task_node_get_plugin_name (UFO_TASK_NODE (task)), (gpointer) task);
+
                 ufo_task_node_set_proc_node (UFO_TASK_NODE (task), g_list_nth_data (gpu_nodes, 0));
             }
         }
