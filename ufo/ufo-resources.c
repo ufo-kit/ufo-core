@@ -651,7 +651,7 @@ ufo_resources_get_kernel_with_opts (UfoResources   *resources,
 
     if (path == NULL) {
         g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
-                     "Could not find `%s'. Maybe you forgot to pass a configuration?", filename);
+                     "Could not find `%s'. Use add_paths() to add additional kernel paths", filename);
         return NULL;
     }
 
