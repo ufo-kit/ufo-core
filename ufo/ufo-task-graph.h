@@ -46,7 +46,8 @@ typedef struct _UfoTaskGraphPrivate    UfoTaskGraphPrivate;
 
 
 typedef enum {
-    UFO_TASK_GRAPH_ERROR_JSON_KEY
+    UFO_TASK_GRAPH_ERROR_JSON_KEY,
+    UFO_TASK_GRAPH_ERROR_BAD_INPUTS,
 } UfoTaskGraphError;
 
 /**
@@ -85,6 +86,8 @@ void         ufo_task_graph_save_to_json        (UfoTaskGraph       *graph,
                                                  const gchar        *filename,
                                                  GError            **error);
 gchar       *ufo_task_graph_get_json_data       (UfoTaskGraph       *graph,
+                                                 GError            **error);
+gboolean     ufo_task_graph_is_alright          (UfoTaskGraph       *task_graph,
                                                  GError            **error);
 void         ufo_task_graph_map                 (UfoTaskGraph       *task_graph,
                                                  GList              *gpu_nodes);

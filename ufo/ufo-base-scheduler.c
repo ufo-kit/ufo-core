@@ -94,6 +94,9 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (klass->run != NULL);
 
+    if (!ufo_task_graph_is_alright (graph, error))
+        return;
+
     timer = g_timer_new ();
     (*klass->run)(scheduler, graph, error);
     scheduler->priv->time = g_timer_elapsed (timer, NULL);

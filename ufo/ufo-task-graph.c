@@ -69,6 +69,8 @@ static const gchar *JSON_API_VERSION = "1.1";
 /**
  * UfoTaskGraphError:
  * @UFO_TASK_GRAPH_ERROR_JSON_KEY: Key is not found in JSON
+ * @UFO_TASK_GRAPH_ERROR_BAD_INPUTS: Inputs of a task do not play well with each
+ *  other.
  *
  * Task graph errors
  */
@@ -502,6 +504,53 @@ map_proc_node (UfoGraph *graph,
     }
 
     g_list_free (successors);
+}
+
+/**
+ * ufo_task_graph_is_alright:
+ * @task_graph: A #UfoTaskGraph
+ * @error: Location for a GError or %NULL
+ *
+ * Check if nodes int the task graph are properly connected.
+ *
+ * Returns: %TRUE if everything is alright, %FALSE else.
+ */
+gboolean
+ufo_task_graph_is_alright (UfoTaskGraph *task_graph,
+                           GError **error)
+{
+    GList *nodes;
+    GList *it;
+
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
+
+    g_list_for (nodes, it) {
+        GList *predecessors;
+
+        predecessors = ufo_graph_get_predecessors (UFO_GRAPH (task_graph), UFO_NODE (it->data));
+
+        if (g_list_length (predecessors) > 1) {
+            GList *jt;
+            UfoTaskMode combined_modes = UFO_TASK_MODE_INVALID;
+
+            g_list_for (predecessors, jt)
+                combined_modes |= ufo_task_get_mode (UFO_TASK (jt->data));
+
+            if ((combined_modes & UFO_TASK_MODE_PROCESSOR) && (combined_modes & UFO_TASK_MODE_REDUCTOR)) {
+                g_set_error (error, UFO_TASK_GRAPH_ERROR, UFO_TASK_GRAPH_ERROR_BAD_INPUTS,
+                             "`%s' receives both processor and reductor inputs which may deadlock.",
+                             ufo_task_node_get_plugin_name (UFO_TASK_NODE (it->data)));
+                g_list_free (predecessors);
+                g_list_free (nodes);
+                return FALSE;
+            }
+        }
+
+        g_list_free (predecessors);
+    }
+
+    g_list_free (nodes);
+    return TRUE;
 }
 
 /**
