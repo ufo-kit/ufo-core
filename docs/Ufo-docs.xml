@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd"
+[
+  <!ENTITY % local.common.attrib "xmlns:xi  CDATA  #FIXED 'http://www.w3.org/2003/XInclude'">
+]>
+<book id="index">
+  <bookinfo>
+    <title>UFO Reference Manual</title>
+    <releaseinfo>
+      The latest version of this documentation can be found on-line at
+      <ulink role="online-location" url="http://ufo.kit.edu/ufo">http://ufo.kit.edu/ufo/</ulink>.
+    </releaseinfo>
+  </bookinfo>
+
+  <part>
+  <title>API Reference</title>
+    <chapter id="graphs">
+      <title>Graph structures</title>
+      <xi:include href="xml/ufo-graph.xml"/>
+      <xi:include href="xml/ufo-node.xml"/>
+    </chapter>
+    <chapter id="tasks">
+      <title>Tasks</title>
+      <xi:include href="xml/ufo-plugin-manager.xml"/>
+      <xi:include href="xml/ufo-task-graph.xml"/>
+      <xi:include href="xml/ufo-task-node.xml"/>
+      <xi:include href="xml/ufo-task-iface.xml"/>
+      <xi:include href="xml/ufo-copy-task.xml"/>
+      <xi:include href="xml/ufo-input-task.xml"/>
+      <xi:include href="xml/ufo-output-task.xml"/>
+    </chapter>
+    <chapter id="device_resources">
+      <title>Device Resources</title>
+      <xi:include href="xml/ufo-arch-graph.xml"/>
+      <xi:include href="xml/ufo-cpu-node.xml"/>
+      <xi:include href="xml/ufo-gpu-node.xml"/>
+      <xi:include href="xml/ufo-resources.xml"/>
+      <xi:include href="xml/ufo-buffer.xml"/>
+      <xi:include href="xml/ufo-profiler.xml"/>
+    </chapter>
+    <chapter id="schedulers">
+      <title>Schedulers</title>
+      <xi:include href="xml/ufo-base-scheduler.xml"/>
+      <xi:include href="xml/ufo-scheduler.xml"/>
+      <xi:include href="xml/ufo-fixed-scheduler.xml"/>
+      <xi:include href="xml/ufo-group-scheduler.xml"/>
+      <xi:include href="xml/ufo-local-scheduler.xml"/>
+    </chapter>
+    <chapter id="networking">
+      <title>Networking</title>
+      <xi:include href="xml/ufo-messenger-iface.xml"/>
+      <xi:include href="xml/ufo-zmq-messenger.xml"/>
+    </chapter>
+  </part>
+
+  <index id="api-index-full">
+    <title>API Index</title>
+    <xi:include href="xml/api-index-full.xml"><xi:fallback /></xi:include>
+  </index>
+
+  <xi:include href="xml/annotation-glossary.xml"><xi:fallback /></xi:include>
+</book>

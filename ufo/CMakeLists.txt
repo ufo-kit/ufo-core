@@ -95,10 +95,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_definitions(-DG_DISABLE_ASSERT)
 endif()
 
-add_library(ufo SHARED
-            ${ufocore_SRCS}
-            ${ufocore_NODOC_SRCS}
-            ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
+add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 if(PYTHON_FOUND)
     option(WITH_PYTHON "Enable Python multithreading support" ON)
@@ -212,25 +209,25 @@ pkg_check_modules(GTK_DOC gtk-doc)
 if(GTK_DOC_FOUND)
     option(WITH_GTK_DOC "Build API reference" ON)
     if (WITH_GTK_DOC)
+        find_program(GTK_DOC_SCAN gtkdoc-scan REQUIRED)
+        find_program(GTK_DOC_SCANGOBJ gtkdoc-scangobj REQUIRED)
+        find_program(GTK_DOC_MKDB gtkdoc-mkdb REQUIRED)
+        find_program(GTK_DOC_MKHTML gtkdoc-mkhtml REQUIRED)
+
         set(docs_dir "${CMAKE_CURRENT_BINARY_DIR}/../docs")
         set(docs_out "${docs_dir}/reference")
-        set(_xml_doc_input)
+        set(docs_xml_in "${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml")
+        set(docs_xml_out "${docs_out}/Ufo-docs.xml")
 
-        # Create xml entries for Ufo-docs.xml.in
-        foreach(_src ${ufocore_SRCS})
-            string(REPLACE ".c" ".xml" _xml_doc ${_src})
-            list(APPEND _xml_doc_input "<xi:include href=\"xml/${_xml_doc}\"/>")
-        endforeach()
-
-        string(REPLACE ";" "\n" _xml_doc_input ${_xml_doc_input})
+        set(GTK_DOC_CFLAGS)
+        set(GTK_DOC_LDFLAGS)
 
         get_directory_property(_current_include_dirs INCLUDE_DIRECTORIES)
-        set(GTK_DOC_CFLAGS)
+
         foreach(_incl ${_current_include_dirs})
             set(GTK_DOC_CFLAGS "-I${_incl} ${GTK_DOC_CFLAGS}")
         endforeach()
 
-        set(GTK_DOC_LDFLAGS)
         foreach(_lib ${UFOCORE_DEPS})
             if (NOT ${_lib} MATCHES "^[/]")
                 set(GTK_DOC_LDFLAGS "-l${_lib} ${GTK_DOC_LDFLAGS}")
@@ -238,38 +235,32 @@ if(GTK_DOC_FOUND)
         endforeach()
 
         get_directory_property(_current_link_dirs LINK_DIRECTORIES)
+
         foreach(_linkdir ${_current_link_dirs})
             set(GTK_DOC_LDFLAGS "-L${_linkdir} ${GTK_DOC_LDFLAGS}")
         endforeach()
 
-        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in" "${docs_out}/Ufo-docs.xml")
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/scangobj.sh.in" "${docs_out}/scangobj.sh")
 
-        file(GLOB reference_files "${docs_out}/*.html")
-        list(APPEND reference_files
-            "${docs_out}/style.css"
-            "${docs_out}/Ufo.devhelp2"
-            "${docs_out}/home.png"
-            "${docs_out}/left.png"
-            "${docs_out}/right.png"
-            "${docs_out}/up.png")
-
-        find_program(GTK_DOC_SCAN gtkdoc-scan REQUIRED)
-        find_program(GTK_DOC_SCANGOBJ gtkdoc-scangobj REQUIRED)
-        find_program(GTK_DOC_MKDB gtkdoc-mkdb REQUIRED)
-        find_program(GTK_DOC_MKHTML gtkdoc-mkhtml REQUIRED)
+        add_custom_target(docbook)
+        add_custom_command(TARGET docbook PRE_BUILD
+                           COMMAND ${CMAKE_COMMAND} -E
+                                   copy ${docs_xml_in} ${docs_xml_out}
+                                   DEPENDS ${docs_xml_out})
 
         add_custom_command(OUTPUT ${docs_out}/Ufo-decl.txt
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --ignore-headers=ufo-mpi-messenger.h
-                    DEPENDS ufo
+            DEPENDS ufo
+            COMMENT "Running gtkdoc-scan"
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_out}/Ufo.args
             COMMAND sh scangobj.sh
-            DEPENDS ${docs_out}/Ufo-decl.txt
+            DEPENDS ufo ${docs_out}/Ufo-decl.txt
+            COMMENT "Running gtkdoc-scangobj"
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_out}/sgml.stamp
@@ -279,19 +270,23 @@ if(GTK_DOC_FOUND)
                     --sgml-mode
                     --output-format=xml
             DEPENDS ${docs_out}/Ufo.args
+            COMMENT "Running gtkdoc-mkdb"
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_command(OUTPUT ${docs_dir}/html.stamp
             COMMAND ${GTK_DOC_MKHTML}
+                    --path="${CMAKE_CURRENT_BINARY_DIR}/../docs/reference"
                     Ufo
-                    ${docs_out}/Ufo-docs.xml
-            DEPENDS ${docs_out}/sgml.stamp
+                    ${docs_xml_out}
+            DEPENDS ${docs_out}/sgml.stamp docbook
+            COMMENT "Running gtkdoc-mkhtml"
             WORKING_DIRECTORY ${docs_out})
 
         add_custom_target(reference ALL DEPENDS ${docs_dir}/html.stamp)
 
-        install(FILES ${reference_files}
-                DESTINATION ${UFO_DATADIR}/gtk-doc/html/Ufo)
+        install(DIRECTORY ${docs_out}/
+                DESTINATION ${UFO_DATADIR}/gtk-doc/html/Ufo
+                FILES_MATCHING REGEX ".*\\.(html|png|devhelp2|css)$")
     endif()
 endif(GTK_DOC_FOUND)
 #}}}
