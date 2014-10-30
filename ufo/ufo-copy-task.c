@@ -33,6 +33,14 @@
 
 #include "compat.h"
 
+/**
+ * SECTION:ufo-copy-task
+ * @Short_description: Copy data from input to output
+ * @Title: UfoCopyTask
+ *
+ * Copies input to output. This is useful in combination with a
+ * #UfoFixedScheduler in order to emulate broadcasting behaviour.
+ */
 
 static void ufo_task_interface_init (UfoTaskIface *iface);
 

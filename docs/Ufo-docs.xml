@@ -29,9 +29,11 @@
       <xi:include href="xml/ufo-copy-task.xml"/>
       <xi:include href="xml/ufo-input-task.xml"/>
       <xi:include href="xml/ufo-output-task.xml"/>
+      <xi:include href="xml/ufo-dummy-task.xml"/>
+      <xi:include href="xml/ufo-remote-task.xml"/>
     </chapter>
     <chapter id="device_resources">
-      <title>Device Resources</title>
+      <title>Resources</title>
       <xi:include href="xml/ufo-arch-graph.xml"/>
       <xi:include href="xml/ufo-cpu-node.xml"/>
       <xi:include href="xml/ufo-gpu-node.xml"/>

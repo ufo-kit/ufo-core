@@ -36,8 +36,12 @@
 
 /**
  * SECTION:ufo-input-task
- * @Short_description: An input task
+ * @Short_description: Input task
  * @Title: UfoInputTask
+ *
+ * Task to interface arbitrary C code with the execution. The input task
+ * receives data and pushes into the data stream. The #UfoOutputTask is the
+ * symmetric cousin.
  */
 
 struct _UfoInputTaskPrivate {

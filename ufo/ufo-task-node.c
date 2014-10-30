@@ -21,6 +21,14 @@
 #include <sched.h>
 #include <ufo/ufo-task-node.h>
 
+/**
+ * SECTION:ufo-task-node
+ * @Short_description: Node type for tasks
+ * @Title: UfoTaskNode
+ *
+ * The node type that is inserted into a #UfoTaskGraph and keeps common data.
+ */
+
 G_DEFINE_TYPE (UfoTaskNode, ufo_task_node, UFO_TYPE_NODE)
 
 #define UFO_TASK_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_TASK_NODE, UfoTaskNodePrivate))

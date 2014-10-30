@@ -29,7 +29,7 @@
 
 /**
  * SECTION:ufo-task-graph
- * @Short_description: Hold and manage #UfoTaskNode elements.
+ * @Short_description: Hold task nodes
  * @Title: UfoTaskGraph
  */
 

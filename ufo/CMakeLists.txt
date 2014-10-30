@@ -269,7 +269,7 @@ if(GTK_DOC_FOUND)
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
                     --sgml-mode
                     --output-format=xml
-            DEPENDS ${docs_out}/Ufo.args
+            DEPENDS ufo ${docs_out}/Ufo.args
             COMMENT "Running gtkdoc-mkdb"
             WORKING_DIRECTORY ${docs_out})
 
@@ -278,7 +278,7 @@ if(GTK_DOC_FOUND)
                     --path="${CMAKE_CURRENT_BINARY_DIR}/../docs/reference"
                     Ufo
                     ${docs_xml_out}
-            DEPENDS ${docs_out}/sgml.stamp docbook
+            DEPENDS ufo ${docs_out}/sgml.stamp docbook
             COMMENT "Running gtkdoc-mkhtml"
             WORKING_DIRECTORY ${docs_out})
 

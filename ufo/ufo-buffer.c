@@ -29,7 +29,7 @@
 
 /**
  * SECTION:ufo-buffer
- * @Short_description: Represents n-dimensional data
+ * @Short_description: Manages and represents n-dimensional data
  * @Title: UfoBuffer
  */
 
@@ -994,8 +994,6 @@ convert_data (UfoBufferPrivate *priv,
  *
  * Convert host data according to its @depth to the internal 32-bit floating
  * point representation.
- *
- * Deprecated: 0.4: Use ufo_buffer_convert_from_data() instead.
  */
 void
 ufo_buffer_convert (UfoBuffer *buffer,

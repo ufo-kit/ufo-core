@@ -42,11 +42,12 @@
 
 /**
  * SECTION:ufo-local-scheduler
- * @Short_description: Schedule the execution of a graph of nodes
+ * @Short_description: Schedule each task independently
  * @Title: UfoLocalScheduler
  *
- * A scheduler object uses a graphs information to schedule the contained nodes
- * on CPU and GPU hardware.
+ * This scheduler schedules each task autonomously without taking relations
+ * between tasks into account. It is not recommended to use this scheduler in
+ * production.
  */
 
 G_DEFINE_TYPE (UfoLocalScheduler, ufo_local_scheduler, UFO_TYPE_BASE_SCHEDULER)

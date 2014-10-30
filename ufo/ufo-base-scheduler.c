@@ -36,6 +36,15 @@
 #include "compat.h"
 
 
+/**
+ * SECTION:ufo-base-scheduler
+ * @Short_description: Common scheduler functionality
+ * @Title: UfoBaseScheduler
+ *
+ * This is the base interface of a scheduler. By itself, it cannot execute any
+ * #UfoTaskGraph.
+ */
+
 static void ufo_base_scheduler_initable_iface_init (GInitableIface *iface);
 
 

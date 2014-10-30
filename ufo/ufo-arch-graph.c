@@ -28,8 +28,7 @@
 
 /**
  * SECTION:ufo-arch-graph
- * @Short_description: Describe and hold #UfoGpuNode, #UfoCpuNode and
- * #UfoRemoteNode
+ * @Short_description: Describe relationship between hardware resources
  * @Title: UfoArchGraph
  */
 

@@ -37,8 +37,9 @@
  * @Short_description: Manage OpenCL resources
  * @Title: UfoResources
  *
- * The #UfoResources creates the OpenCL environment and loads OpenCL
- * kernels from text files.
+ * The #UfoResources creates the OpenCL environment and loads OpenCL kernels
+ * from text files. Users should in general not create a resources object
+ * themselves but use one that is created automatically by #UfoArchGraph.
  */
 
 static void ufo_resources_initable_iface_init (GInitableIface *iface);

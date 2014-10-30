@@ -28,18 +28,14 @@
 
 /**
  * SECTION:ufo-plugin-manager
- * @Short_description: Load an #UfoFilter from a shared object
+ * @Short_description: Load a task from a shared object
  * @Title: UfoPluginManager
  *
- * The plugin manager opens shared object modules searched for in locations
- * specified with ufo_plugin_manager_add_paths(). An #UfoFilter can be
- * instantiated with ufo_plugin_manager_get_task() with a one-to-one mapping
- * between filter name xyz and module name libufofilterxyz.so. Any errors are
- * reported as one of #UfoPluginManagerError codes.
- *
- * Apart from standard locations and paths passed through the #UfoConfig object,
- * #UfoPluginManager also looks into the path that is specified in the
- * UFO_PLUGIN_PATH environment variable.
+ * The plugin manager opens and loads #UfoTaskNode objects using
+ * ufo_plugin_manager_get_task() from shared objects.  The libraries are
+ * searched for in the path configured at build time and in paths provided by
+ * the UFO_PLUGIN_PATH environment variable. The name of the plugin xyz maps to
+ * the library name libufofilterxyz.so.
  */
 
 G_DEFINE_TYPE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT)
@@ -66,7 +62,7 @@ enum {
  * @UFO_PLUGIN_MANAGER_ERROR_SYMBOL_NOT_FOUND: Necessary entry symbol was not
  *      found
  *
- * Possible errors that ufo_plugin_manager_get_filter() can return.
+ * Possible errors that ufo_plugin_manager_get_task() can return.
  */
 GQuark
 ufo_plugin_manager_error_quark (void)

@@ -42,11 +42,12 @@
 
 /**
  * SECTION:ufo-group-scheduler
- * @Short_description: Schedule the execution of a graph of nodes
+ * @Short_description: Schedule according to a grouping policy
  * @Title: UfoGroupScheduler
  *
- * A scheduler object uses a graphs information to schedule the contained nodes
- * on CPU and GPU hardware.
+ * Unlike the #UfoLocalScheduler, the #UfoGroupScheduler groups the same node
+ * types together and assigns resources in a user-defined fashion. It is not
+ * recommended to use this scheduler in production.
  */
 
 G_DEFINE_TYPE (UfoGroupScheduler, ufo_group_scheduler, UFO_TYPE_BASE_SCHEDULER)

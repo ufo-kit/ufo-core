@@ -82,6 +82,13 @@ struct _UfoProfilerClass {
     GObjectClass parent_class;
 };
 
+/**
+ * UfoTraceEventType:
+ * @UFO_TRACE_EVENT_PROCESS: A process event
+ * @UFO_TRACE_EVENT_GENERATE: A generate event
+ * @UFO_TRACE_EVENT_BEGIN: Beginning of an event
+ * @UFO_TRACE_EVENT_END: End of an event
+ */
 typedef enum {
     UFO_TRACE_EVENT_PROCESS     = 1 << 0,
     UFO_TRACE_EVENT_GENERATE    = 1 << 1,

@@ -20,6 +20,19 @@
 #include <ufo/ufo-task-iface.h>
 #include <ufo/ufo-task-node.h>
 
+/**
+ * SECTION:ufo-task-iface
+ * @Short_description: Base interface of all tasks
+ * @Title: UfoTaskIface
+ *
+ * Interface that defines the behaviour of all tasks. Each scheduler uses the
+ * same policy to run a task: First, ufo_task_setup(), ufo_task_get_num_inputs()
+ * and ufo_task_get_num_dimensions() is called for each tasks. Then in each
+ * iteration the task is asked about its size requirements using
+ * ufo_task_get_requisition() and then executed using ufo_task_process() and/or
+ * ufo_task_generate().
+ */
+
 typedef UfoTaskIface UfoTaskInterface;
 
 G_DEFINE_INTERFACE (UfoTask, ufo_task, G_TYPE_OBJECT)
@@ -29,7 +42,6 @@ enum {
     GENERATED,
     LAST_SIGNAL
 };
-
 
 static guint signals[LAST_SIGNAL] = { 0 };
 

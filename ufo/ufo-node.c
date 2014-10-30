@@ -21,7 +21,7 @@
 
 /**
  * SECTION:ufo-node
- * @Short_description: Generic node that can be connected in a #UfoGraph
+ * @Short_description: Generic node type
  * @Title: UfoNode
  */
 

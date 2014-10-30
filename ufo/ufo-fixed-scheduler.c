@@ -40,6 +40,14 @@
 #include "ufo-priv.h"
 #include "compat.h"
 
+/**
+ * SECTION:ufo-fixed-scheduler
+ * @Short_description: Simple fixed scheduler
+ * @Title: UfoFixedScheduler
+ *
+ * This scheduler has only minimal automatisms. It does not attempt to
+ * distribute work among multiple GPUs, which is left to do by the user.
+ */
 
 G_DEFINE_TYPE (UfoFixedScheduler, ufo_fixed_scheduler, UFO_TYPE_BASE_SCHEDULER)
 

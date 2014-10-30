@@ -43,14 +43,13 @@
 
 /**
  * SECTION:ufo-scheduler
- * @Short_description: Schedule the execution of a graph of nodes
+ * @Short_description: Expansion-based scheduler
  * @Title: UfoScheduler
  *
- * A scheduler object uses a graphs information to schedule the contained nodes
- * on CPU and GPU hardware.
+ * A scheduler that automatically distributes data according to an expansion
+ * policy among different hardware resources. For that, paths of large work are
+ * duplicated inside the #UfoTaskGraph and assigned to distinct GPUs.
  */
-
-/* static void ufo_scheduler_initable_iface_init (GInitableIface *iface); */
 
 G_DEFINE_TYPE (UfoScheduler, ufo_scheduler, UFO_TYPE_BASE_SCHEDULER)
 
