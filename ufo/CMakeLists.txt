@@ -245,9 +245,8 @@ if(GTK_DOC_FOUND)
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml.in" "${docs_out}/Ufo-docs.xml")
         configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../docs/scangobj.sh.in" "${docs_out}/scangobj.sh")
 
-        set(reference_files
-            "${docs_out}/index.html"
-            "${docs_out}/UfoScheduler.html"
+        file(GLOB reference_files "${docs_out}/*.html")
+        list(APPEND reference_files
             "${docs_out}/style.css"
             "${docs_out}/Ufo.devhelp2"
             "${docs_out}/home.png"
