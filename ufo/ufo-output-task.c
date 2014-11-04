@@ -103,11 +103,13 @@ ufo_output_task_get_output_buffer (UfoOutputTask *task)
 
 #ifdef WITH_PYTHON
     if (Py_IsInitialized ()) {
+        PyGILState_STATE state = PyGILState_Ensure ();
         Py_BEGIN_ALLOW_THREADS
 
         buffer = g_async_queue_pop (task->priv->out_queue);
 
         Py_END_ALLOW_THREADS
+        PyGILState_Release (state);
     }
     else {
         buffer = g_async_queue_pop (task->priv->out_queue);
