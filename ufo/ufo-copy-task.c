@@ -48,8 +48,6 @@ G_DEFINE_TYPE_WITH_CODE (UfoCopyTask, ufo_copy_task, UFO_TYPE_TASK_NODE,
                          G_IMPLEMENT_INTERFACE (UFO_TYPE_TASK,
                                                 ufo_task_interface_init))
 
-#define UFO_COPY_TASK_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_COPY_TASK, UfoCopyTaskPrivate))
-
 enum {
     PROP_0,
     N_PROPERTIES
@@ -124,6 +122,5 @@ ufo_copy_task_class_init (UfoCopyTaskClass *klass)
 static void
 ufo_copy_task_init (UfoCopyTask *task)
 {
-    task->priv = UFO_COPY_TASK_GET_PRIVATE (task);
     ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "broadcast-task");
 }

@@ -37,7 +37,6 @@ G_BEGIN_DECLS
 
 typedef struct _UfoCopyTask           UfoCopyTask;
 typedef struct _UfoCopyTaskClass      UfoCopyTaskClass;
-typedef struct _UfoCopyTaskPrivate    UfoCopyTaskPrivate;
 
 /**
  * UfoCopyTask:
@@ -48,8 +47,6 @@ typedef struct _UfoCopyTaskPrivate    UfoCopyTaskPrivate;
 struct _UfoCopyTask {
     /*< private >*/
     UfoTaskNode parent_instance;
-
-    UfoCopyTaskPrivate *priv;
 };
 
 /**
