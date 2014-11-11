@@ -272,6 +272,8 @@ get_preferably_gpu_based_platform (UfoResourcesPrivate *priv)
     platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
 
+    g_debug ("Found %i OpenCL platforms %i", n_platforms, priv->platform_index);
+
     /* Check if user set a preferred platform */
     if (priv->platform_index >= 0 && priv->platform_index < (gint) n_platforms) {
         candidate = platforms[priv->platform_index];
@@ -333,14 +335,17 @@ restrict_to_gpu_subset (UfoResourcesPrivate *priv)
      */
 
     const gchar* env_gpu = g_getenv ("UFO_USE_GPU");
+
     if (env_gpu == NULL || g_strcmp0 (env_gpu, "") == 0)
         return;
 
     guint device_index = (guint) g_ascii_strtoull (env_gpu, NULL, 0);
+
     if (device_index == 0) {
         g_error ("Unrecognized format for env var UFO_USE_GPU");
         return;
     }
+
     if (device_index > priv->n_devices) {
         g_error ("Can't select UFO_USE_GPU=%d gpus as it exceeds number of available devices", device_index);
         return;
@@ -355,25 +360,32 @@ restrict_to_gpu_subset (UfoResourcesPrivate *priv)
 }
 
 static gboolean
-initialize_opencl (UfoResourcesPrivate *priv,
-                   GError **error)
+initialize_opencl (UfoResourcesPrivate *priv)
 {
+    cl_device_type device_type;
     cl_int errcode = CL_SUCCESS;
     cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
 
     priv->platform = get_preferably_gpu_based_platform (priv);
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
 
-    errcode = clGetDeviceIDs (priv->platform, priv->device_type, 0, NULL, &priv->n_devices);
-    UFO_RESOURCES_CHECK_AND_SET (errcode, error);
+    device_type = 0;
+    device_type |= priv->device_type && UFO_DEVICE_CPU ? CL_DEVICE_TYPE_CPU : 0;
+    device_type |= priv->device_type && UFO_DEVICE_GPU ? CL_DEVICE_TYPE_GPU : 0;
+    device_type |= priv->device_type && UFO_DEVICE_ACC ? CL_DEVICE_TYPE_ACCELERATOR : 0;
+
+    errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
+    UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
+
+    g_debug ("Platform `%p' has %i devices", (gpointer) priv->platform, priv->n_devices);
 
     if (errcode != CL_SUCCESS)
         return FALSE;
 
     priv->devices = g_malloc0 (priv->n_devices * sizeof (cl_device_id));
 
-    errcode = clGetDeviceIDs (priv->platform, priv->device_type, priv->n_devices, priv->devices, NULL);
-    UFO_RESOURCES_CHECK_AND_SET (errcode, error);
+    errcode = clGetDeviceIDs (priv->platform, device_type, priv->n_devices, priv->devices, NULL);
+    UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
 
     if (errcode != CL_SUCCESS)
         return FALSE;
@@ -384,7 +396,7 @@ initialize_opencl (UfoResourcesPrivate *priv,
                                      priv->n_devices, priv->devices,
                                      NULL, NULL, &errcode);
 
-    UFO_RESOURCES_CHECK_AND_SET (errcode, error);
+    UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
 
     if (errcode != CL_SUCCESS)
         return FALSE;
@@ -395,7 +407,7 @@ initialize_opencl (UfoResourcesPrivate *priv,
         priv->command_queues[i] = clCreateCommandQueue (priv->context,
                                                         priv->devices[i],
                                                         queue_properties, &errcode);
-        UFO_RESOURCES_CHECK_AND_SET (errcode, error);
+        UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
 
         if (errcode != CL_SUCCESS)
             return FALSE;
@@ -981,7 +993,7 @@ ufo_resources_initable_init (GInitable *initable,
     resources = UFO_RESOURCES (initable);
     priv = resources->priv;
 
-    if (!initialize_opencl (priv, error))
+    if (priv->construct_error != NULL)
         return FALSE;
 
     return TRUE;
@@ -1043,6 +1055,7 @@ ufo_resources_init (UfoResources *self)
 
     self->priv = priv = UFO_RESOURCES_GET_PRIVATE (self);
 
+    priv->construct_error = NULL;
     priv->programs = NULL;
     priv->kernels = NULL;
     priv->kernel_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
@@ -1052,5 +1065,7 @@ ufo_resources_init (UfoResources *self)
     priv->paths = g_list_append (priv->paths, g_strdup (UFO_KERNEL_DIR));
 
     priv->device_type = UFO_DEVICE_GPU;
-    priv->platform_index = 0;
+    priv->platform_index = -1;
+
+    initialize_opencl (priv);
 }
