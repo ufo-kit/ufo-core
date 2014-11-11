@@ -290,8 +290,8 @@ ufo_plugin_manager_init (UfoPluginManager *manager)
     manager->priv = priv = UFO_PLUGIN_MANAGER_GET_PRIVATE (manager);
     priv->modules = NULL;
     priv->new_funcs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-    priv->paths = g_list_append (priv->paths, g_strdup (UFO_PLUGIN_DIR));
     add_environment_paths (priv, g_getenv (PATH_VAR));
+    priv->paths = g_list_append (priv->paths, g_strdup (UFO_PLUGIN_DIR));
 }
 
 /**
