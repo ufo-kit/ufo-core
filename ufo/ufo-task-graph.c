@@ -388,6 +388,19 @@ expand_remotes (UfoTaskGraph *task_graph,
     g_object_unref (remote_graph);
 }
 
+static gboolean
+has_common_ancestries (UfoTaskGraph *graph, GList *path)
+{
+    GList *it;
+
+    g_list_for (path, it) {
+        if (ufo_graph_get_num_predecessors (UFO_GRAPH (graph), UFO_NODE (it->data)) > 1)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 /**
  * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
@@ -412,6 +425,13 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph),
                                         (UfoFilterPredicate) is_gpu_task,
                                         NULL);
+
+    /* Check if any node on the path contains multiple inputs and stop expansion */
+    /* TODO: we need a better strategy at this point */
+    if (has_common_ancestries (task_graph, path)) {
+        g_list_free (path);
+        return;
+    }
 
     if (path != NULL && g_list_length (path) > 1) {
         GList *predecessors;
