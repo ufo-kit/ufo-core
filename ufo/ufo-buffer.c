@@ -991,6 +991,12 @@ convert_data (UfoBufferPrivate *priv,
         for (gint i = (n_pixels - 1); i >= 0; i--)
             dst[i] = ((gfloat) src[i]);
     }
+    else if (depth == UFO_BUFFER_DEPTH_32S) {
+        const gint32 *src = (const gint32 *) data;
+
+        for (gint i = (n_pixels - 1); i >= 0; i--)
+            dst[i] = ((gfloat) src[i]);
+    }
 }
 
 /**
