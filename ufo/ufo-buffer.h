@@ -140,7 +140,7 @@ GValue     *ufo_buffer_get_metadata         (UfoBuffer      *buffer,
                                              const gchar    *name);
 void        ufo_buffer_set_metadata         (UfoBuffer      *buffer,
                                              const gchar    *name,
-                                             GValue         *value);
+                                             GValue   *value);
 GType       ufo_buffer_get_type             (void);
 
 GParamSpec* ufo_buffer_param_spec           (const gchar*   name,

@@ -1094,7 +1094,7 @@ ufo_buffer_set_metadata (UfoBuffer *buffer,
     g_value_init (new, G_VALUE_TYPE (value));
     g_value_copy (value, new);
 
-    g_hash_table_insert (priv->metadata, g_strdup (name), new);
+    g_hash_table_replace (priv->metadata, g_strdup (name), new);
 }
 
 /**
