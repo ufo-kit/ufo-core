@@ -1129,6 +1129,23 @@ ufo_buffer_copy_metadata (UfoBuffer *src,
 }
 
 /**
+ * ufo_buffer_get_metadata_keys:
+ * @buffer: A #UfoBuffer
+ *
+ * Get all meta data keys associated with @buffer.
+ *
+ * Returns: (element-type utf8) (transfer container): A #GList with C strings.
+ * The content of the list owned by the buffer and should not be modified or
+ * freed. Use #g_list_free() when done using the list.
+ */
+GList *
+ufo_buffer_get_metadata_keys (UfoBuffer *buffer)
+{
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+    return g_hash_table_get_keys (buffer->priv->metadata);
+}
+
+/**
  * ufo_buffer_param_spec:
  * @name: canonical name of the property specified
  * @nick: nick name for the property specified
