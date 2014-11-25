@@ -264,8 +264,12 @@ run_task (TaskLocalData *tld)
             g_assert (output != NULL);
         }
 
-        if (output != NULL)
+        if (output != NULL) {
             ufo_buffer_discard_location (output);
+
+            for (guint i = 0; i < tld->n_inputs; i++)
+                ufo_buffer_copy_metadata (inputs[i], output);
+        }
 
         switch (mode) {
             case UFO_TASK_MODE_PROCESSOR:
