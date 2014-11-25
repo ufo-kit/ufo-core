@@ -76,7 +76,7 @@ validate_zmq_listen_address (gchar *addr)
      */
     gchar *host = g_strdup (&addr[6]);
     if (!g_ascii_isdigit (host[0]) && host[0] != '*')
-        g_message ("treating address %s as interface device name. Use IP address if supplying a host was intended.", host);
+        g_debug ("Treating address %s as interface device name. Use IP address if supplying a host was intended.", host);
     g_free (host);
 }
 
@@ -93,9 +93,7 @@ ufo_zmq_messenger_connect (UfoMessenger *msger, const gchar *addr, UfoMessengerR
         priv->zmq_socket = zmq_socket (priv->zmq_ctx, ZMQ_REQ);
 
         if (zmq_connect (priv->zmq_socket, priv->remote_addr) == 0) {
-            g_message ("Connected to `%s' via socket=%p",
-                       priv->remote_addr,
-                       priv->zmq_socket);
+            g_debug ("Connected to `%s' via socket=%p", priv->remote_addr, priv->zmq_socket);
         }
         else {
             g_warning ("Could not connect to `%s': %s",
@@ -283,7 +281,6 @@ ufo_messenger_interface_init (UfoMessengerIface *iface)
     iface->send_blocking = ufo_zmq_messenger_send_blocking;
     iface->recv_blocking = ufo_zmq_messenger_recv_blocking;
 }
-
 
 static void
 ufo_zmq_messenger_dispose (GObject *object)
