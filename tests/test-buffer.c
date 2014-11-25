@@ -110,8 +110,8 @@ test_convert_16_from_data (Fixture *fixture,
 }
 
 static void
-test_metadata (Fixture *fixture,
-                gconstpointer unused)
+test_insert_metadata (Fixture *fixture,
+                      gconstpointer unused)
 {
     GValue value = G_VALUE_INIT;
     GValue *other;
@@ -139,6 +139,33 @@ test_metadata (Fixture *fixture,
     g_assert (g_value_get_float (other) == 3.14f);
 }
 
+static void
+test_copy_metadata (Fixture *fixture,
+                    gconstpointer unused)
+{
+    GValue value = G_VALUE_INIT;
+    GValue *other;
+    UfoBuffer *copy;
+
+    UfoRequisition requisition = {
+        .n_dims = 2,
+        .dims[0] = 8,
+        .dims[1] = 8,
+    };
+
+    copy = ufo_buffer_new (&requisition, NULL);
+
+    g_value_init (&value, G_TYPE_INT);
+    g_value_set_int (&value, -123);
+
+    ufo_buffer_set_metadata (fixture->buffer, "foo", &value);
+    ufo_buffer_copy_metadata (fixture->buffer, copy);
+    other = ufo_buffer_get_metadata (copy, "foo");
+    g_assert (g_value_get_int (other) == -123);
+
+    g_object_unref (copy);
+}
+
 void
 test_add_buffer (void)
 {
@@ -158,7 +185,11 @@ test_add_buffer (void)
                 Fixture, NULL,
                 setup, test_convert_16_from_data, teardown);
 
-    g_test_add ("/no-opencl/buffer/metadata",
+    g_test_add ("/no-opencl/buffer/metadata/insert",
                 Fixture, NULL,
-                setup, test_metadata, teardown);
+                setup, test_insert_metadata, teardown);
+
+    g_test_add ("/no-opencl/buffer/metadata/copy",
+                Fixture, NULL,
+                setup, test_copy_metadata, teardown);
 }
