@@ -97,6 +97,7 @@ struct _UfoBufferPrivate {
     UfoMemLocation      location;
     UfoMemLocation      last_location;
     GHashTable         *metadata;
+    GList              *sub_device_arrays;
 };
 
 static void
@@ -799,6 +800,54 @@ ufo_buffer_get_device_array (UfoBuffer *buffer, gpointer cmd_queue)
 }
 
 /**
+ * ufo_buffer_get_device_array_with_offset:
+ * @buffer: A #UfoBuffer
+ * @cmd_queue: (allow-none): A cl_command_queue object or %NULL
+ * @offset: Offset in bytes from the original buffer
+ *
+ * Creates a new cl_mem object with the given offset and a size that is the
+ * original size minus the offset.
+ *
+ * Returns: (transfer none): A cl_mem sub buffer of the original data.
+ */
+gpointer
+ufo_buffer_get_device_array_with_offset (UfoBuffer *buffer,
+                                         gpointer cmd_queue,
+                                         gsize offset)
+{
+    UfoBufferPrivate *priv;
+    cl_mem device_array;
+    cl_mem sub_buffer;
+    cl_mem_flags mem_flags;
+    cl_buffer_region region;
+    cl_int errcode;
+    size_t size;
+
+    g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
+    priv = buffer->priv;
+
+    device_array = ufo_buffer_get_device_array (buffer, cmd_queue);
+
+    UFO_RESOURCES_CHECK_CLERR (clGetMemObjectInfo (device_array, CL_MEM_FLAGS,
+                                                   sizeof (cl_mem_flags),
+                                                   &mem_flags, NULL));
+
+    UFO_RESOURCES_CHECK_CLERR (clGetMemObjectInfo (device_array, CL_MEM_SIZE,
+                                                   sizeof (size_t),
+                                                   &size, NULL));
+
+    region.origin = offset;
+    region.size = size - offset;
+
+    sub_buffer = clCreateSubBuffer (device_array, mem_flags, CL_BUFFER_CREATE_TYPE_REGION,
+                                    &region, &errcode);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+    priv->sub_device_arrays = g_list_append (priv->sub_device_arrays, sub_buffer);
+    return sub_buffer;
+}
+
+/**
  * ufo_buffer_get_device_array_view:
  * @buffer: A #UfoBuffer
  * @cmd_queue: A cl_command_queue object
@@ -1185,6 +1234,7 @@ free_cl_mem (cl_mem *mem)
 static void
 ufo_buffer_finalize (GObject *gobject)
 {
+    GList *it;
     UfoBuffer *buffer = UFO_BUFFER (gobject);
     UfoBufferPrivate *priv = UFO_BUFFER_GET_PRIVATE (buffer);
 
@@ -1192,6 +1242,10 @@ ufo_buffer_finalize (GObject *gobject)
         g_free (priv->host_array);
 
     priv->host_array = NULL;
+
+    g_list_for (priv->sub_device_arrays, it) {
+        free_cl_mem ((cl_mem *) &it->data);
+    }
 
     free_cl_mem (&priv->device_array);
     free_cl_mem (&priv->device_image);
@@ -1225,6 +1279,7 @@ ufo_buffer_init (UfoBuffer *buffer)
     priv->last_location = UFO_LOCATION_INVALID;
     priv->requisition.n_dims = 0;
     priv->metadata = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    priv->sub_device_arrays = NULL;
 }
 
 static void
