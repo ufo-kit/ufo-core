@@ -276,7 +276,7 @@ ufo_arch_graph_set_property (GObject *object,
 
         case PROP_REMOTES:
             {
-                GArray *array;
+                GValueArray *array;
 
                 g_assert (priv->remotes == NULL);
                 array = g_value_get_boxed (value);
@@ -284,9 +284,10 @@ ufo_arch_graph_set_property (GObject *object,
                 if (array != NULL) {
                     g_list_free (priv->remotes);
 
-                    for (guint i = 0; i < array->len; i++)
+                    for (guint i = 0; i < array->n_values; i++) {
                         priv->remotes = g_list_append (priv->remotes,
-                                                       g_strdup (&g_array_index (array, const gchar, i)));
+                                                       g_strdup (g_value_get_string (&array->values[i])));
+                    }
                 }
             }
             break;
@@ -380,11 +381,15 @@ ufo_arch_graph_class_init (UfoArchGraphClass *klass)
                              G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
     properties[PROP_REMOTES] =
-        g_param_spec_boxed ("remotes",
-                            "List with remote addresses",
-                            "List with remote addresses",
-                            G_TYPE_ARRAY,
-                            G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+        g_param_spec_value_array ("remotes",
+                                  "List with remote addresses",
+                                  "List with remote addresses",
+                                  g_param_spec_string ("remote",
+                                                       "Remote address",
+                                                       "Remote address",
+                                                       "tcp://127.0.0.1:5554",
+                                                       G_PARAM_CONSTRUCT_ONLY | G_PARAM_READABLE),
+                                  G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
     g_object_class_install_property (oclass, PROP_RESOURCES, properties[PROP_RESOURCES]);
     g_object_class_install_property (oclass, PROP_REMOTES, properties[PROP_REMOTES]);
