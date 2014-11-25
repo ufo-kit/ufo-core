@@ -117,7 +117,7 @@ struct _UfoMessengerIface {
     GTypeInterface parent_iface;
 
     void (*connect)                         (UfoMessenger   *msger,
-                                             gchar *addr,
+                                             const gchar *addr,
                                              UfoMessengerRole role);
 
     void (*disconnect)                      (UfoMessenger   *msger);
@@ -132,7 +132,7 @@ struct _UfoMessengerIface {
 
 
 void        ufo_messenger_connect           (UfoMessenger *msger,
-                                             gchar *addr,
+                                             const gchar *addr,
                                              UfoMessengerRole role);
 
 void        ufo_messenger_disconnect        (UfoMessenger     *msger);

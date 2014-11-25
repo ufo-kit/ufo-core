@@ -73,7 +73,7 @@ ufo_messenger_error_quark ()
  */
 void
 ufo_messenger_connect (UfoMessenger *msger,
-                       gchar *addr,
+                       const gchar *addr,
                        UfoMessengerRole role)
 {
     UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role);

@@ -81,7 +81,7 @@ validate_zmq_listen_address (gchar *addr)
 }
 
 static void
-ufo_zmq_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole role)
+ufo_zmq_messenger_connect (UfoMessenger *msger, const gchar *addr, UfoMessengerRole role)
 {
     UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
     g_mutex_lock (priv->mutex);

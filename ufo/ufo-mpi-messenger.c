@@ -93,7 +93,7 @@ ufo_mpi_messenger_new ()
 }
 
 static void
-ufo_mpi_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole role)
+ufo_mpi_messenger_connect (UfoMessenger *msger, const gchar *addr, UfoMessengerRole role)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
     g_mutex_lock (priv->mutex);
