@@ -339,7 +339,7 @@ reduce_loop (TaskData *data)
     /* Process all inputs. Note that we already fetched the first input. */
     do {
         for (guint i = 0; i < n_outputs; i++) {
-            for (guint j = 0; j < n_inputs; i++)
+            for (guint j = 0; j < n_inputs; j++)
                 ufo_buffer_copy_metadata (inputs[j], outputs[i]);
 
             active = ufo_task_process (data->task, inputs, outputs[i], &requisition);
