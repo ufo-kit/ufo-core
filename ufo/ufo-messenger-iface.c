@@ -54,6 +54,7 @@ G_DEFINE_INTERFACE (UfoMessenger, ufo_messenger, G_TYPE_OBJECT)
 
 /**
  * UfoMessengerError:
+ * @UFO_MESSENGER_CONNECTION_PROBLEM: Could not establish a connection
  * @UFO_MESSENGER_BUFFER_FULL: Buffer is filled up completely
  * @UFO_MESSENGER_SIZE_MISSMATCH: Size mismatch
  */
@@ -68,15 +69,17 @@ ufo_messenger_error_quark ()
  * @msger: The messenger object
  * @addr: (transfer none) : The address to connect. This is implementation specific.
  * @role: The role of the local endpoint (client or server).
+ * @error: (allow-none): Location for a #GError or %NULL.
  *
  * Connects a messenger to and endpoint.
  */
 void
 ufo_messenger_connect (UfoMessenger *msger,
                        const gchar *addr,
-                       UfoMessengerRole role)
+                       UfoMessengerRole role,
+                       GError **error)
 {
-    UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role);
+    UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role, error);
 }
 
 void

@@ -475,35 +475,45 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
 }
 
 void
-ufo_daemon_start (UfoDaemon *daemon)
+ufo_daemon_start (UfoDaemon *daemon, GError **error)
 {
+    GError *tmp_error = NULL;
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
 
     g_mutex_lock (priv->startstop_lock);
+
     if (priv->has_started) {
         g_mutex_unlock (priv->startstop_lock);
         return;
     }
 
-    /* TODO handle error if unable to connect/bind */
-    ufo_messenger_connect (priv->msger, priv->listen_address, UFO_MESSENGER_SERVER);
+    ufo_messenger_connect (priv->msger, priv->listen_address, UFO_MESSENGER_SERVER, &tmp_error);
 
-    priv->thread = g_thread_create ((GThreadFunc)ufo_daemon_start_impl, daemon, TRUE, NULL);
+    if (tmp_error != NULL) {
+        g_propagate_error (error, tmp_error);
+        goto daemon_start_unlock;
+    }
+
+    priv->thread = g_thread_create ((GThreadFunc) ufo_daemon_start_impl, daemon, TRUE, NULL);
     g_return_if_fail (priv->thread != NULL);
 
     g_mutex_lock (priv->started_lock);
-    while (!priv->has_started)
-        g_cond_wait (priv->started_cond, priv->started_lock);
+
+        while (!priv->has_started)
+            g_cond_wait (priv->started_cond, priv->started_lock);
+
     g_mutex_unlock (priv->started_lock);
 
-
+daemon_start_unlock:
     g_mutex_unlock (priv->startstop_lock);
 }
 
 void
-ufo_daemon_stop (UfoDaemon *daemon)
+ufo_daemon_stop (UfoDaemon *daemon, GError **error)
 {
+    GError *tmp_error = NULL;
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+
     g_mutex_lock (priv->startstop_lock);
 
     /* HACK we can't call _disconnect() as this has to be run from the
@@ -518,17 +528,26 @@ ufo_daemon_stop (UfoDaemon *daemon)
     tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
 #endif
 
-    ufo_messenger_connect (tmp_msger, priv->listen_address, UFO_MESSENGER_CLIENT);
+    ufo_messenger_connect (tmp_msger, priv->listen_address, UFO_MESSENGER_CLIENT, &tmp_error);
+
+    if (tmp_error != NULL) {
+        g_propagate_error (error, tmp_error);
+        goto daemon_stop_unlock;
+    }
+
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
     ufo_messenger_send_blocking (tmp_msger, request, NULL);
 
     g_thread_join (priv->thread);
 
     g_mutex_lock (priv->stopped_lock);
-    priv->has_stopped = TRUE;
-    g_cond_signal (priv->stopped_cond);
+
+        priv->has_stopped = TRUE;
+        g_cond_signal (priv->stopped_cond);
+
     g_mutex_unlock (priv->stopped_lock);
 
+daemon_stop_unlock:
     g_mutex_unlock (priv->startstop_lock);
 }
 

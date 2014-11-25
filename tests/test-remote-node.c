@@ -29,9 +29,11 @@ typedef struct {
 static void
 setup (Fixture *fixture, gconstpointer data)
 {
+    GError *error = NULL;
     gchar *addr = g_strdup ("tcp://127.0.0.1:5555");
     fixture->daemon = ufo_daemon_new (addr);
-    ufo_daemon_start (fixture->daemon);
+    ufo_daemon_start (fixture->daemon, &error);
+    g_assert_no_error (error);
 
     fixture->remote_node = (UfoRemoteNode *) ufo_remote_node_new (addr);
 }
@@ -39,8 +41,10 @@ setup (Fixture *fixture, gconstpointer data)
 static void
 teardown (Fixture *fixture, gconstpointer data)
 {
+    GError *error = NULL;
     g_object_unref (fixture->remote_node);
-    ufo_daemon_stop (fixture->daemon);
+    ufo_daemon_stop (fixture->daemon, &error);
+    g_assert_no_error (error);
 
     g_object_unref (fixture->daemon);
 }

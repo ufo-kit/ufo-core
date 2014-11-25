@@ -64,24 +64,33 @@ ufo_zmq_messenger_new (void)
     return msger;
 }
 
-static void
-validate_zmq_listen_address (gchar *addr)
+static gboolean
+zmq_listen_address_valid (gchar *addr, GError **error)
 {
-    if (!g_str_has_prefix (addr, "tcp://"))
-        g_critical ("address didn't start with tcp:// scheme, which is required currently");
+    if (!g_str_has_prefix (addr, "tcp://")) {
+        g_set_error_literal (error, UFO_MESSENGER_ERROR, UFO_MESSENGER_CONNECTION_PROBLEM,
+                             "Address does not use 'tcp://' scheme.");
+        return FALSE;
+    }
 
     /* Pitfall: zmq will silently accept hostnames like tcp://localhost:5555
      * but not bind to it as it treats it like an interface name (like eth0).
      * We have to use IP addresses instead of DNS names.
      */
     gchar *host = g_strdup (&addr[6]);
+
     if (!g_ascii_isdigit (host[0]) && host[0] != '*')
         g_debug ("Treating address %s as interface device name. Use IP address if supplying a host was intended.", host);
+
     g_free (host);
+    return TRUE;
 }
 
 static void
-ufo_zmq_messenger_connect (UfoMessenger *msger, const gchar *addr, UfoMessengerRole role)
+ufo_zmq_messenger_connect (UfoMessenger *msger,
+                           const gchar *addr,
+                           UfoMessengerRole role,
+                           GError **error)
 {
     UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
     g_mutex_lock (priv->mutex);
@@ -96,17 +105,21 @@ ufo_zmq_messenger_connect (UfoMessenger *msger, const gchar *addr, UfoMessengerR
             g_debug ("Connected to `%s' via socket=%p", priv->remote_addr, priv->zmq_socket);
         }
         else {
-            g_warning ("Could not connect to `%s': %s",
-                        addr,
-                        zmq_strerror (errno));
+            g_set_error (error, UFO_MESSENGER_ERROR, UFO_MESSENGER_CONNECTION_PROBLEM,
+                         "Could not connect to `%s': %s", addr, zmq_strerror (errno));
         }
-    } else if (role == UFO_MESSENGER_SERVER) {
-        validate_zmq_listen_address (priv->remote_addr);
-        priv->zmq_socket = zmq_socket (priv->zmq_ctx, ZMQ_REP);
+    }
+    else if (role == UFO_MESSENGER_SERVER) {
+        if (zmq_listen_address_valid (priv->remote_addr, error)) {
+            priv->zmq_socket = zmq_socket (priv->zmq_ctx, ZMQ_REP);
 
-        gint err = zmq_bind (priv->zmq_socket, priv->remote_addr);
-        if (err < 0)
-            g_critical ("could not bind to address %s", priv->remote_addr);
+            gint err = zmq_bind (priv->zmq_socket, priv->remote_addr);
+
+            if (err < 0) {
+                g_set_error (error, UFO_MESSENGER_ERROR, UFO_MESSENGER_CONNECTION_PROBLEM,
+                             "Could not bind to address `%s'", priv->remote_addr);
+            }
+        }
     }
 
     g_mutex_unlock (priv->mutex);
@@ -169,7 +182,7 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
     zmq_msg_close (&request);
 
     if (err < 0) {
-        g_set_error (error, ufo_messenger_error_quark (), zmq_errno (),
+        g_set_error (error, UFO_MESSENGER_ERROR, zmq_errno (),
                      "Error sending message via %s: %s",
                      priv->remote_addr, zmq_strerror (zmq_errno ()));
         goto finalize;

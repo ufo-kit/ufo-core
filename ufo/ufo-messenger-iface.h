@@ -96,6 +96,7 @@ void ufo_message_free (UfoMessage *msg);
 UfoMessage * ufo_message_new (UfoMessageType type, guint64 data_size);
 
 typedef enum {
+    UFO_MESSENGER_CONNECTION_PROBLEM,
     UFO_MESSENGER_BUFFER_FULL,
     UFO_MESSENGER_SIZE_MISSMATCH
 } UfoMessengerError;
@@ -116,33 +117,35 @@ struct _UfoMessengerIface {
     /*< private >*/
     GTypeInterface parent_iface;
 
-    void (*connect)                         (UfoMessenger   *msger,
-                                             const gchar *addr,
-                                             UfoMessengerRole role);
+    void (*connect)                         (UfoMessenger       *msger,
+                                             const gchar        *addr,
+                                             UfoMessengerRole    role,
+                                             GError            **error);
 
-    void (*disconnect)                      (UfoMessenger   *msger);
+    void (*disconnect)                      (UfoMessenger       *msger);
 
-    UfoMessage * (*send_blocking)           (UfoMessenger *msger,
-                                             UfoMessage *request,
-                                             GError **error);
+    UfoMessage * (*send_blocking)           (UfoMessenger       *msger,
+                                             UfoMessage         *request,
+                                             GError            **error);
 
-    UfoMessage * (*recv_blocking)           (UfoMessenger *msger,
-                                             GError **error);
+    UfoMessage * (*recv_blocking)           (UfoMessenger       *msger,
+                                             GError            **error);
 };
 
 
-void        ufo_messenger_connect           (UfoMessenger *msger,
-                                             const gchar *addr,
-                                             UfoMessengerRole role);
+void        ufo_messenger_connect           (UfoMessenger       *msger,
+                                             const gchar        *addr,
+                                             UfoMessengerRole    role,
+                                             GError            **error);
 
-void        ufo_messenger_disconnect        (UfoMessenger     *msger);
+void        ufo_messenger_disconnect        (UfoMessenger       *msger);
 
-UfoMessage *ufo_messenger_send_blocking     (UfoMessenger     *msger,
-                                             UfoMessage *request,
-                                             GError          **error);
+UfoMessage *ufo_messenger_send_blocking     (UfoMessenger       *msger,
+                                             UfoMessage         *request,
+                                             GError            **error);
 
-UfoMessage *ufo_messenger_recv_blocking     (UfoMessenger     *msger,
-                                             GError          **error);
+UfoMessage *ufo_messenger_recv_blocking     (UfoMessenger       *msger,
+                                             GError            **error);
 
 GQuark      ufo_messenger_error_quark       (void);
 GType       ufo_messenger_get_type          (void);

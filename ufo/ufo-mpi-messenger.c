@@ -93,7 +93,10 @@ ufo_mpi_messenger_new ()
 }
 
 static void
-ufo_mpi_messenger_connect (UfoMessenger *msger, const gchar *addr, UfoMessengerRole role)
+ufo_mpi_messenger_connect (UfoMessenger *msger,
+                           const gchar *addr,
+                           UfoMessengerRole role,
+                           GError **error)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
     g_mutex_lock (priv->mutex);
@@ -102,10 +105,12 @@ ufo_mpi_messenger_connect (UfoMessenger *msger, const gchar *addr, UfoMessengerR
         int remote_rank = g_ascii_strtoll (addr, NULL, 0);
         priv->remote_rank = remote_rank;
         g_debug ("[%d:%d]: CLIENT connected to: %d", priv->pid, priv->own_rank, priv->remote_rank);
-    } else {
+    }
+    else {
         priv->remote_rank = 0;
         g_debug ("[%d:%d]: SERVER connected to: %d", priv->pid, priv->own_rank, priv->remote_rank);
     }
+
     priv->connected = TRUE;
     g_mutex_unlock (priv->mutex);
 }

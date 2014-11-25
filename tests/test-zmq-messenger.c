@@ -39,16 +39,20 @@ teardown (Fixture *fixture, gconstpointer data)
 
 static void send_num_devices_request (gpointer unused)
 {
+    GError *error = NULL;
     UfoMessenger *msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
     gchar *addr = g_strdup ("tcp://127.0.0.1:5555");
-    ufo_messenger_connect (msger, addr, UFO_MESSENGER_CLIENT);
+
+    ufo_messenger_connect (msger, addr, UFO_MESSENGER_CLIENT, &error);
+    g_assert_no_error (error);
 
     guint x = 0;
     while (x++ < 10) {
         UfoMessage *request = ufo_message_new (UFO_MESSAGE_GET_NUM_DEVICES, 0);
         UfoMessage *response;
 
-        response = ufo_messenger_send_blocking (msger, request, NULL);
+        response = ufo_messenger_send_blocking (msger, request, &error);
+        g_assert_no_error (error);
 
         guint16 num_devices = *(guint16 *) response->data;
         g_assert (num_devices == x);
@@ -62,23 +66,25 @@ static void send_num_devices_request (gpointer unused)
 
 static void handle_num_devices (gpointer unused)
 {
+    GError *error = NULL;
     UfoMessenger *msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
     gchar *addr = g_strdup ("tcp://127.0.0.1:5555");
-    ufo_messenger_connect (msger, addr, UFO_MESSENGER_SERVER);
+
+    ufo_messenger_connect (msger, addr, UFO_MESSENGER_SERVER, &error);
+    g_assert_no_error (error);
 
     guint16 x = 0;
-    GError *err = NULL;
     while (x++ < 10) {
-        UfoMessage *msg = ufo_messenger_recv_blocking (UFO_MESSENGER (msger), &err);
-        if (err != NULL)
-            g_critical ("%s", err->message);
+        UfoMessage *msg = ufo_messenger_recv_blocking (UFO_MESSENGER (msger), &error);
+        g_assert_no_error (error);
 
         UfoMessage *resp;
         switch (msg->type) {
             case UFO_MESSAGE_GET_NUM_DEVICES:
                 resp = ufo_message_new (UFO_MESSAGE_ACK, sizeof (guint16));
                 *(guint16 *)resp->data = x;
-                ufo_messenger_send_blocking (msger, resp, NULL);
+                ufo_messenger_send_blocking (msger, resp, &error);
+                g_assert_no_error (error);
                 ufo_message_free (resp);
                 break;
             default:
@@ -100,7 +106,6 @@ static void test_zmq_messenger (Fixture *fixture, gconstpointer unused)
     g_thread_join (client);
     g_thread_join (server);
 }
-
 
 void
 test_add_zmq_messenger (void)

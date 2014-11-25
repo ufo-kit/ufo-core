@@ -89,15 +89,23 @@ opts_free (Options *opts)
 static void
 terminate (int signum)
 {
+    GError *error = NULL;
+
     if (signum == SIGTERM)
         g_print ("Received SIGTERM, exiting...\n");
+
     if (signum == SIGINT)
         g_print ("Received SIGINT, exiting...\n");
 
     if (global_daemon != NULL) {
-        ufo_daemon_stop(global_daemon);
+        ufo_daemon_stop (global_daemon, &error);
+
+        if (error != NULL)
+            g_printerr ("Error: %s\n", error->message);
+
         g_object_unref (global_daemon);
     }
+
     exit (EXIT_SUCCESS);
 }
 
@@ -105,6 +113,7 @@ int
 main (int argc, char * argv[])
 {
     Options *opts;
+    GError *error = NULL;
 
     g_type_init ();
     g_thread_init (NULL);
@@ -117,7 +126,14 @@ main (int argc, char * argv[])
     (void) signal (SIGINT, terminate);
 
     global_daemon = ufo_daemon_new (opts->addr);
-    ufo_daemon_start(global_daemon);
+    ufo_daemon_start (global_daemon, &error);
+
+    if (error != NULL) {
+        g_printerr ("Error: %s\n", error->message);
+        g_object_unref (global_daemon);
+        return 1;
+    }
+
     g_print ("ufod %s - waiting for requests on %s ...\n", UFO_VERSION,
                                                            opts->addr);
 
@@ -126,6 +142,5 @@ main (int argc, char * argv[])
     }
 
     opts_free (opts);
-
     return 0;
 }

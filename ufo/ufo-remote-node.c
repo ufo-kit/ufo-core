@@ -42,6 +42,7 @@ ufo_remote_node_new (const gchar *address)
 {
     UfoRemoteNode *node;
     UfoRemoteNodePrivate *priv;
+    GError *error = NULL;
 
     g_return_val_if_fail (address != NULL, NULL);
     node = UFO_REMOTE_NODE (g_object_new (UFO_TYPE_REMOTE_NODE, NULL));
@@ -54,7 +55,14 @@ ufo_remote_node_new (const gchar *address)
 #endif
 
     gchar *addr = g_strdup (address);
-    ufo_messenger_connect (priv->msger, addr, UFO_MESSENGER_CLIENT);
+    ufo_messenger_connect (priv->msger, addr, UFO_MESSENGER_CLIENT, &error);
+
+    if (error != NULL) {
+        /* TODO: Stop RemoteNode from constructing */
+        g_warning ("%s", error->message);
+        g_error_free (error);
+    }
+
     g_free(addr);
 
     return UFO_NODE (node);
