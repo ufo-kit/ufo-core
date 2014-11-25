@@ -26,6 +26,7 @@
 
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-resources.h>
+#include "compat.h"
 
 /**
  * SECTION:ufo-buffer
@@ -1091,10 +1092,40 @@ ufo_buffer_set_metadata (UfoBuffer *buffer,
     }
 
     new = g_malloc0 (sizeof (GValue));
-    g_value_init (new, G_VALUE_TYPE (value));
+    g_value_init (new, G_VALUE_TYPE ((GValue *) value));
     g_value_copy (value, new);
 
     g_hash_table_replace (priv->metadata, g_strdup (name), new);
+}
+
+/**
+ * ufo_buffer_copy_metadata:
+ * @src: Source buffer
+ * @dst: Destination buffer
+ *
+ * Copies meta data content from @src to @dst.
+ */
+void
+ufo_buffer_copy_metadata (UfoBuffer *src,
+                          UfoBuffer *dst)
+{
+    UfoBufferPrivate *priv;
+    GList *keys;
+    GList *it;
+
+    g_return_if_fail (UFO_IS_BUFFER (src) && UFO_IS_BUFFER (dst));
+    priv = src->priv;
+    keys = g_hash_table_get_keys (priv->metadata);
+
+    g_list_for (keys, it) {
+        GValue *value;
+        const gchar *name = (const gchar *) it->data;
+
+        value = ufo_buffer_get_metadata (src, name);
+        ufo_buffer_set_metadata (dst, name, value);
+    }
+
+    g_list_free (keys);
 }
 
 /**
