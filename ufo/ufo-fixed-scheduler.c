@@ -272,6 +272,10 @@ process_loop (TaskData *data)
                 UfoTwoWayQueue *out_queue = (UfoTwoWayQueue *) it->data;
 
                 output = pop_output_data (out_queue, &requisition, data->context);
+
+                for (guint i = 0; i < n_inputs; i++)
+                    ufo_buffer_copy_metadata (inputs[i], output);
+
                 active = ufo_task_process (data->task, inputs, output, &requisition);
 
                 if (!active)
@@ -335,6 +339,9 @@ reduce_loop (TaskData *data)
     /* Process all inputs. Note that we already fetched the first input. */
     do {
         for (guint i = 0; i < n_outputs; i++) {
+            for (guint j = 0; j < n_inputs; j++)
+                ufo_buffer_copy_metadata (inputs[j], outputs[i]);
+
             active = ufo_task_process (data->task, inputs, outputs[i], &requisition);
             release_input_data (in_queues, inputs, n_inputs);
             active = pop_input_data (in_queues, finished, inputs, n_inputs);
