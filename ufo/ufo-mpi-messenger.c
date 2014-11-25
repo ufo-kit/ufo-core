@@ -92,7 +92,7 @@ ufo_mpi_messenger_new ()
     return msger;
 }
 
-void
+static void
 ufo_mpi_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole role)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
@@ -110,7 +110,7 @@ ufo_mpi_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole ro
     g_mutex_unlock (priv->mutex);
 }
 
-void
+static void
 ufo_mpi_messenger_disconnect (UfoMessenger *msger)
 {
     UfoMpiMessengerPrivate *priv = UFO_MPI_MESSENGER_GET_PRIVATE (msger);
@@ -119,7 +119,7 @@ ufo_mpi_messenger_disconnect (UfoMessenger *msger)
     g_mutex_unlock (priv->mutex);
 }
 
-UfoMessage *
+static UfoMessage *
 ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
                                  UfoMessage *request_msg,
                                  GError **error)
@@ -184,7 +184,7 @@ ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
         return response;
 }
 
-UfoMessage *
+static UfoMessage *
 ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
                                  GError **error)
 {
@@ -226,7 +226,6 @@ ufo_messenger_interface_init (UfoMessengerIface *iface)
     iface->send_blocking = ufo_mpi_messenger_send_blocking;
     iface->recv_blocking = ufo_mpi_messenger_recv_blocking;
 }
-
 
 static void
 ufo_mpi_messenger_dispose (GObject *object)

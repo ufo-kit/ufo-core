@@ -52,19 +52,6 @@ struct _UfoMpiMessengerClass {
 UfoMpiMessenger    *ufo_mpi_messenger_new           (void);
 GType               ufo_mpi_messenger_get_type      (void);
 
-void                ufo_mpi_messenger_connect       (UfoMessenger *msger,
-                                                     gchar *addr,
-                                                     UfoMessengerRole role);
-
-void                ufo_mpi_messenger_disconnect    (UfoMessenger *msg);
-
-UfoMessage         *ufo_mpi_messenger_send_blocking (UfoMessenger *msger,
-                                                     UfoMessage *request,
-                                                     GError **error);
-
-UfoMessage         *ufo_mpi_messenger_recv_blocking (UfoMessenger *msger,
-                                                     GError **error);
-
 G_END_DECLS
 
 #endif

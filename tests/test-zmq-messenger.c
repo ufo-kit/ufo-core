@@ -56,7 +56,7 @@ static void send_num_devices_request (gpointer unused)
         ufo_message_free (request);
         ufo_message_free (response);
     }
-    ufo_zmq_messenger_disconnect (msger);
+    ufo_messenger_disconnect (msger);
     g_object_unref (msger);
 }
 
@@ -78,7 +78,7 @@ static void handle_num_devices (gpointer unused)
             case UFO_MESSAGE_GET_NUM_DEVICES:
                 resp = ufo_message_new (UFO_MESSAGE_ACK, sizeof (guint16));
                 *(guint16 *)resp->data = x;
-                ufo_zmq_messenger_send_blocking (msger, resp, NULL);
+                ufo_messenger_send_blocking (msger, resp, NULL);
                 ufo_message_free (resp);
                 break;
             default:
@@ -88,7 +88,7 @@ static void handle_num_devices (gpointer unused)
         ufo_message_free (msg);
     };
 
-    ufo_zmq_messenger_disconnect (msger);
+    ufo_messenger_disconnect (msger);
     g_object_unref (msger);
 }
 

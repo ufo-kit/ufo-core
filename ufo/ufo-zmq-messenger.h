@@ -52,19 +52,6 @@ struct _UfoZmqMessengerClass {
 UfoZmqMessenger    *ufo_zmq_messenger_new           (void);
 GType               ufo_zmq_messenger_get_type      (void);
 
-void                ufo_zmq_messenger_connect       (UfoMessenger *msger,
-                                                     gchar *addr,
-                                                     UfoMessengerRole role);
-
-void                ufo_zmq_messenger_disconnect    (UfoMessenger *msg);
-
-UfoMessage         *ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
-                                                     UfoMessage *request_msg,
-                                                     GError **error);
-
-UfoMessage         *ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
-                                                     GError **error);
-
 G_END_DECLS
 
 #endif

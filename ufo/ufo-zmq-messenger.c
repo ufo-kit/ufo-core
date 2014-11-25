@@ -80,7 +80,7 @@ validate_zmq_listen_address (gchar *addr)
     g_free (host);
 }
 
-void
+static void
 ufo_zmq_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole role)
 {
     UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
@@ -115,7 +115,7 @@ ufo_zmq_messenger_connect (UfoMessenger *msger, gchar *addr, UfoMessengerRole ro
     return;
 }
 
-void
+static void
 ufo_zmq_messenger_disconnect (UfoMessenger *msger)
 {
     UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
@@ -143,7 +143,7 @@ ufo_zmq_messenger_disconnect (UfoMessenger *msger)
  *
  * Send message in blocking way.
  */
-UfoMessage *
+static UfoMessage *
 ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
                                  UfoMessage *request_msg,
                                  GError **error)
@@ -229,7 +229,7 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
  *
  * Receive message in blocking way.
  */
-UfoMessage *
+static UfoMessage *
 ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
                                  GError **error)
 {
