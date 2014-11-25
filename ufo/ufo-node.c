@@ -67,7 +67,7 @@ ufo_node_get_label (UfoNode *node)
 }
 
 static void
-bind_properties (GObject *dst,
+copy_properties (GObject *dst,
                  GObject *src)
 {
     GParamSpec **props;
@@ -77,9 +77,11 @@ bind_properties (GObject *dst,
 
     for (guint i = 0; i < n_props; i++) {
         if (props[i]->flags & G_PARAM_WRITABLE) {
-            g_object_bind_property (src, props[i]->name,
-                                    dst, props[i]->name,
-                                    G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+            GValue value = G_VALUE_INIT;
+
+            g_value_init (&value, props[i]->value_type);
+            g_object_get_property (src, props[i]->name, &value);
+            g_object_set_property (dst, props[i]->name, &value);
         }
     }
 
@@ -96,7 +98,7 @@ ufo_node_copy_real (UfoNode *node,
     copy = UFO_NODE (g_object_new (G_OBJECT_TYPE (node), NULL));
     orig = node->priv->orig;
 
-    bind_properties (G_OBJECT (copy), G_OBJECT (orig));
+    copy_properties (G_OBJECT (copy), G_OBJECT (orig));
 
     copy->priv->orig = orig;
     copy->priv->label = orig->priv->label;
