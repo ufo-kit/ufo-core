@@ -118,9 +118,10 @@ ufo_plugin_manager_new (void)
  *
  * Load a module and return an instance.
  *
- * Returns: (transfer full): (allow-none): #gpointer or %NULL if module cannot be found
+ * Returns: (transfer full): (allow-none): A loaded plugin or %NULL if module
+ * cannot be found.
  */
-gpointer
+GObject *
 ufo_plugin_manager_get_plugin (UfoPluginManager *manager,
                               const gchar *func_name,
                               const gchar *module_name,

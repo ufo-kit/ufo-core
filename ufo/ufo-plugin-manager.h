@@ -73,7 +73,7 @@ struct _UfoPluginManagerClass {
 };
 
 UfoPluginManager  * ufo_plugin_manager_new                  (void);
-gpointer            ufo_plugin_manager_get_plugin           (UfoPluginManager   *manager,
+GObject           * ufo_plugin_manager_get_plugin           (UfoPluginManager   *manager,
                                                              const gchar        *func_name,
                                                              const gchar        *module_name,
                                                              GError            **error);
