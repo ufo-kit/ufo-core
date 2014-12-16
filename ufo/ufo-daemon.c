@@ -398,10 +398,8 @@ static gpointer
 run_scheduler (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
-    g_message ("Start scheduler");
     ufo_base_scheduler_run (priv->scheduler, priv->task_graph, NULL);
 
-    g_message ("Done");
     g_object_unref (priv->scheduler);
 
     priv->scheduler = ufo_scheduler_new ();

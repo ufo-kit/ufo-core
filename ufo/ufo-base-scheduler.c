@@ -126,8 +126,9 @@ ufo_base_scheduler_get_arch (UfoBaseScheduler *scheduler)
 {
     g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
 
-    if (scheduler->priv->arch == NULL)
+    if (scheduler->priv->arch == NULL) {
         scheduler->priv->arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL));
+    }
 
     return scheduler->priv->arch;
 }
@@ -175,6 +176,26 @@ ufo_base_scheduler_get_gpu_nodes (UfoBaseScheduler *scheduler)
 
     return ufo_arch_graph_get_gpu_nodes (ufo_base_scheduler_get_arch (scheduler));
 }
+
+
+/**
+ * ufo_base_scheduler_set_rem_nodes:
+ * @scheduler: A #UfoBaseScheduler
+ * @arch: A #UfoArchGraph containing the remote nodes to use
+ *
+ * Sets the remote nodes for the @scheduler to use by extracting the necessary
+ * information from the #UfoArchGraph.
+ */
+void
+ufo_base_scheduler_set_rem_nodes_from_arch (UfoBaseScheduler *scheduler,
+				UfoArchGraph *arch)
+{
+	ufo_base_scheduler_set_gpu_nodes (scheduler, arch,
+					ufo_arch_graph_get_gpu_nodes(arch));
+	return;
+}
+
+
 
 static void
 ufo_base_scheduler_run_real (UfoBaseScheduler *scheduler,
