@@ -1196,7 +1196,7 @@ ufo_buffer_copy_metadata (UfoBuffer *src,
 GList *
 ufo_buffer_get_metadata_keys (UfoBuffer *buffer)
 {
-    g_return_if_fail (UFO_IS_BUFFER (buffer));
+    g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
     return g_hash_table_get_keys (buffer->priv->metadata);
 }
 
