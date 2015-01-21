@@ -5,7 +5,7 @@ LDADD = $(top_builddir)/ufo/libufo.la \
 
 bin_PROGRAMS=ufo-runjson ufod
 
-ufo_runjson_SOURCES = runjson.c
+ufo_runjson_SOURCES = ufo-runjson.c
 
 ufotemplatesdir=$(pkgdatadir)/templates
 

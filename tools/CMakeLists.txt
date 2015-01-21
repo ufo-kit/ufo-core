@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 #{{{ Binaries
-add_executable(ufo-runjson runjson.c)
 add_executable(ufo-launch ufo-launch.c)
+add_executable(ufo-runjson ufo-runjson.c)
 add_executable(ufod ufod.c)
 
 target_link_libraries(ufo-launch ufo ${UFOCORE_DEPS})
