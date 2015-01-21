@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 2.6)
 #{{{ Binaries
 add_executable(ufo-runjson runjson.c)
+add_executable(ufo-launch ufo-launch.c)
 add_executable(ufod ufod.c)
 
+target_link_libraries(ufo-launch ufo ${UFOCORE_DEPS})
 target_link_libraries(ufo-runjson ufo ${UFOCORE_DEPS})
 target_link_libraries(ufod ufo ${UFOCORE_DEPS})
 
-install(TARGETS ufod ufo-runjson
+install(TARGETS ufod ufo-launch ufo-runjson
         RUNTIME DESTINATION ${UFO_BINDIR})
 #}}}
 #{{{ ufo-mkfilter

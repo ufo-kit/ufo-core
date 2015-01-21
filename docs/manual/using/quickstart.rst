@@ -4,10 +4,30 @@
 Quick start guide
 =================
 
-There are essentially two ways to specify and execute a graph of tasks. One
-involves writing a :ref:`JSON file <json-configuration>` that is executed by the
-``ufo-runjson`` utility, the other way uses the provided language bindings to
-setup the task graph specifically.
+There are three ways to specify and execute a graph of tasks. The simplest
+method requires you to construct a pipeline on the command line using the
+``ufo-launch`` tool which is similar to the gst-launch_ tool from the GStreamer
+package. The second method involves writing a :ref:`JSON file
+<json-configuration>` that is executed by the ``ufo-runjson`` utility, the other
+way uses the provided language bindings to setup the task graph specifically.
+
+.. _gst-launch: http://docs.gstreamer.com/display/GstSDK/gst-launch
+
+
+Launching pipelines on the command line
+=======================================
+
+The ``ufo-launch`` tool receives a list of tasks separated by exclamation marks
+``!`` and executes the data flow in that order. To specify task parameters, you
+can add key-value pairs seperated by an equal sign. For example, to split a
+multi EDF file to single TIFFs you would do::
+
+    $ ufo-launch reader path=file.edf ! writer filename=out-%05i.tif
+
+You can concatenate an arbitrary number of tasks. For example to blur the lena
+image you would something like this::
+
+    $ ufo-launch reader path=lena.tif ! gaussian-blur size=20 sigma=5 ! writer
 
 
 Using a JSON description
