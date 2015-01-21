@@ -3,7 +3,9 @@ AM_CFLAGS = -I$(top_builddir)/common/autotools -I$(top_srcdir)\
 LDADD = $(top_builddir)/ufo/libufo.la \
 	$(GLIB_LIBS) $(JSON_GLIB_LIBS) $(ZMQ3_LIBS) $(OPENCL_LIBS)
 
-bin_PROGRAMS=ufo-runjson ufod
+bin_PROGRAMS=ufo-launch ufo-runjson ufod
+
+ufo_launch_SOURCES = ufo-launch.c
 
 ufo_runjson_SOURCES = ufo-runjson.c
 
