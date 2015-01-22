@@ -37,7 +37,6 @@ value_transform_##suffix (const GValue *src_value,      \
   g_value_set_##suffix (dest_value, trans_func (src));  \
 }
 
-DEFINE_CAST (schar,     atoi)
 DEFINE_CAST (uchar,     atoi)
 DEFINE_CAST (int,       atoi)
 DEFINE_CAST (long,      atol)
@@ -88,7 +87,6 @@ parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
     if (*error)
         return NULL;
 
-    g_value_register_transform_func (G_TYPE_STRING, G_TYPE_CHAR,    value_transform_schar);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UCHAR,   value_transform_uchar);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_INT,     value_transform_int);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT,    value_transform_uint);
