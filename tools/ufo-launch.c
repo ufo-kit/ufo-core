@@ -157,6 +157,15 @@ parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
     return graph;
 }
 
+static void
+progress_update (gpointer user)
+{
+    static int n = 0;
+
+    if ((n++ % 5) == 0)
+        g_print (".");
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -164,14 +173,32 @@ main(int argc, char* argv[])
     UfoTaskGraph *graph;
     UfoBaseScheduler *sched;
     GList *pipeline;
+    GOptionContext *context;
     GError *error = NULL;
+
+    static gboolean progress = FALSE;
+
+    static GOptionEntry entries[] = {
+        { "progress", 'p', 0, G_OPTION_ARG_NONE, &progress, "show progress", NULL },
+        { NULL }
+    };
 
 #if !(GLIB_CHECK_VERSION (2, 36, 0))
     g_type_init ();
 #endif
 
-    if (argc == 1)
+    context = g_option_context_new ("TASK [PROP=VAR [PROP=VAR ...]] ! [TASK ...]");
+    g_option_context_add_main_entries (context, entries, NULL);
+
+    if (!g_option_context_parse (context, &argc, &argv, &error)) {
+        g_print ("Error parsing options: %s\n", error->message);
+        return 1;
+    }
+
+    if (argc == 1) {
+        g_print ("%s", g_option_context_get_help (context, TRUE, NULL));
         return 0;
+    }
 
     pipeline = tokenize_args (argc - 1, &argv[1]);
     pm = ufo_plugin_manager_new ();
@@ -182,11 +209,26 @@ main(int argc, char* argv[])
         return 1;
     }
 
+    if (progress) {
+        UfoTaskNode *leaf;
+        GList *leaves;
+
+        leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
+        leaf = UFO_TASK_NODE (leaves->data);
+        g_list_free (leaves);
+
+        g_signal_connect (leaf, "processed", G_CALLBACK (progress_update), NULL);
+    }
+
     sched = ufo_scheduler_new ();
     ufo_base_scheduler_run (sched, graph, &error);
 
     if (error != NULL) {
         g_print ("Error executing pipeline: %s\n", error->message);
+    }
+
+    if (progress) {
+        g_print ("\n");
     }
 
     g_object_unref (graph);
