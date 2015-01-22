@@ -433,7 +433,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         return;
     }
 
-    if (path != NULL && g_list_length (path) > 1) {
+    if (path != NULL && g_list_length (path) > 0) {
         GList *predecessors;
         GList *successors;
 

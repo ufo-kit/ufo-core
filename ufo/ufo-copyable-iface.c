@@ -46,7 +46,7 @@ UfoCopyable * ufo_copyable_copy (gpointer origin,
     int nested_level = 0;
     while (parent_iface && nested_level < MAX_INHERITANCE_DEPTH) {
         current_iface = parent_iface;
-        _copy = parent_iface->copy (origin, copy);
+        _copy = parent_iface->copy (origin, _copy);
         parent_iface  = g_type_interface_peek_parent(current_iface);
     }
 
