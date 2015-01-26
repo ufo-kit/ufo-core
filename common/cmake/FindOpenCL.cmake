@@ -49,6 +49,7 @@ ELSE (APPLE)
             # Unix style platforms
             FIND_LIBRARY(OPENCL_LIBRARIES OpenCL
               ENV LD_LIBRARY_PATH
+              /usr/local/cuda/lib64
               /usr/lib/nvidia-current
               /usr/lib64/nvidia
               /opt/nvidia-current
