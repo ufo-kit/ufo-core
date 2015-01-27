@@ -332,6 +332,17 @@ ufo_buffer_get_size (UfoBuffer *buffer)
     return buffer->priv->size;
 }
 
+static gsize
+get_num_elements (UfoBufferPrivate *priv)
+{
+    gsize n = 1;
+
+    for (guint i = 0; i < priv->requisition.n_dims; i++)
+        n *= priv->requisition.dims[i];
+
+    return n;
+}
+
 static void
 set_region_from_requisition (size_t region[3],
                              UfoRequisition *requisition)
@@ -1198,6 +1209,78 @@ ufo_buffer_get_metadata_keys (UfoBuffer *buffer)
 {
     g_return_val_if_fail (UFO_IS_BUFFER (buffer), NULL);
     return g_hash_table_get_keys (buffer->priv->metadata);
+}
+
+/**
+ * ufo_buffer_max:
+ * @buffer: A #UfoBuffer
+ * @cmd_queue: An OpenCL command queue or %NULL
+ *
+ * Return the maximum value of @buffer.
+ *
+ * Returns: The maximum found.
+ */
+gfloat
+ufo_buffer_max (UfoBuffer *buffer,
+                gpointer cmd_queue)
+{
+    UfoBufferPrivate *priv;
+    gsize n;
+    gfloat max = -G_MAXFLOAT;
+
+    g_return_val_if_fail (UFO_IS_BUFFER (buffer), 0.0f);
+
+    priv = buffer->priv;
+
+    if (priv->location != UFO_LOCATION_HOST) {
+        g_warning ("max() not supported for non-host buffers");
+        return 0.0f;
+    }
+
+    n = get_num_elements (priv);
+
+    for (gsize i = 0; i < n; i++) {
+        if (priv->host_array[i] > max)
+            max = priv->host_array[i];
+    }
+
+    return max;
+}
+
+/**
+ * ufo_buffer_min:
+ * @buffer: A #UfoBuffer
+ * @cmd_queue: An OpenCL command queue or %NULL
+ *
+ * Return the minimum value of @buffer.
+ *
+ * Returns: The minimum found.
+ */
+gfloat
+ufo_buffer_min (UfoBuffer *buffer,
+                gpointer cmd_queue)
+{
+    UfoBufferPrivate *priv;
+    gsize n;
+    gfloat min = G_MAXFLOAT;
+
+    g_return_val_if_fail (UFO_IS_BUFFER (buffer), 0.0f);
+
+    priv = buffer->priv;
+
+    if (priv->location != UFO_LOCATION_HOST) {
+        g_warning ("min() not supported for non-host buffers");
+        return 0.0f;
+    }
+
+    n = get_num_elements (priv);
+
+    for (gsize i = 0; i < n; i++) {
+        if (priv->host_array[i] < min)
+            min = priv->host_array[i];
+    }
+
+    return min;
 }
 
 /**

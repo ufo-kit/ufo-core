@@ -149,6 +149,12 @@ void        ufo_buffer_set_metadata         (UfoBuffer      *buffer,
 void        ufo_buffer_copy_metadata        (UfoBuffer      *src,
                                              UfoBuffer      *dst);
 GList      *ufo_buffer_get_metadata_keys    (UfoBuffer      *buffer);
+
+gfloat      ufo_buffer_max                  (UfoBuffer      *buffer,
+                                             gpointer        cmd_queue);
+gfloat      ufo_buffer_min                  (UfoBuffer      *buffer,
+                                             gpointer        cmd_queue);
+
 GType       ufo_buffer_get_type             (void);
 
 GParamSpec* ufo_buffer_param_spec           (const gchar*   name,
