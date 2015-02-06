@@ -26,6 +26,7 @@
 
 #include <glib-object.h>
 #include <ufo/ufo-resources.h>
+#include <ufo/ufo-profiler.h>
 
 G_BEGIN_DECLS
 
@@ -72,6 +73,17 @@ UfoProcessor*       ufo_processor_new       (void);
 void                ufo_processor_setup     (UfoProcessor *processor,
                                              UfoResources *resources,
                                              GError       **error);
+
+void                ufo_processor_set_resources     (UfoProcessor *processor,
+                                                     UfoResources *resources);
+UfoResources *      ufo_processor_get_resources     (UfoProcessor *processor);
+void                ufo_processor_set_profiler      (UfoProcessor *processor,
+                                                     UfoProfiler  *profiler);
+UfoProfiler *       ufo_processor_get_profiler      (UfoProcessor *processor);
+void                ufo_processor_set_command_queue (UfoProcessor *processor,
+                                                     gpointer cmd_queue);
+gpointer            ufo_processor_get_command_queue (UfoProcessor *processor);
+
 void                ufo_processor_configure (UfoProcessor *processor);
 GType               ufo_processor_get_type  (void);
 

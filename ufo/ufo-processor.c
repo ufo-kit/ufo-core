@@ -19,7 +19,6 @@
 
 #include "ufo-processor.h"
 #include "ufo-copyable-iface.h"
-#include <ufo/ufo-profiler.h>
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
@@ -41,15 +40,6 @@ struct _UfoProcessorPrivate {
     gpointer      cmd_queue;
 };
 
-enum {
-    PROP_0,
-    PROP_UFO_RESOURCES,
-    PROP_UFO_PROFILER,
-    PROP_CL_COMMAND_QUEUE,
-    N_PROPERTIES
-};
-static GParamSpec *properties[N_PROPERTIES] = { NULL, };
-
 UfoProcessor *
 ufo_processor_new (void)
 {
@@ -57,77 +47,87 @@ ufo_processor_new (void)
                                           NULL);
 }
 
-static void
-ufo_processor_set_property (GObject      *object,
-                            guint        property_id,
-                            const GValue *value,
-                            GParamSpec   *pspec)
+void
+ufo_processor_set_resources (UfoProcessor *processor,
+                             UfoResources *resources)
 {
-    UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (object);
+    if (resources == NULL)
+        return;
 
-    GObject *value_object;
-
-    switch (property_id) {
-        case PROP_UFO_RESOURCES:
-            {
-                value_object = g_value_get_object (value);
-
-                if (priv->resources)
-                    g_object_unref (priv->resources);
-
-                if (value_object != NULL) {
-                    priv->resources = g_object_ref (UFO_RESOURCES (value_object));
-                }
-            }
-            break;
-        case PROP_UFO_PROFILER:
-            {
-                value_object = g_value_get_object (value);
-
-                if (priv->profiler)
-                    g_object_unref (priv->profiler);
-
-                if (value_object != NULL) {
-                    priv->profiler = g_object_ref (UFO_PROFILER (value_object));
-                }
-            }
-            break;
-        case PROP_CL_COMMAND_QUEUE:
-            if (priv->cmd_queue) {
-                 UFO_RESOURCES_CHECK_CLERR (clReleaseCommandQueue (priv->cmd_queue));
-            }
-            priv->cmd_queue = g_value_get_pointer (value);
-            UFO_RESOURCES_CHECK_CLERR (clRetainCommandQueue (priv->cmd_queue));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-            break;
-    }
+    UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (processor);
+    if (priv->resources)
+        g_object_unref (priv->resources);
+  
+    priv->resources = g_object_ref (resources);
+}
+/**
+ * ufo_processor_get_resources:
+ * @processor: A #UfoProcessor 
+ *
+ * Returns: #UfoResources or %NULL if resources were not set before.
+ */
+UfoResources *
+ufo_processor_get_resources (UfoProcessor *processor)
+{
+    UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (processor);
+    return priv->resources;
 }
 
-static void
-ufo_processor_get_property (GObject    *object,
-                            guint      property_id,
-                            GValue     *value,
-                            GParamSpec *pspec)
+void
+ufo_processor_set_profiler (UfoProcessor *processor,
+                            UfoProfiler  *profiler)
 {
-    UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (object);
+    if (profiler == NULL)
+        return;
 
-    switch (property_id) {
-        case PROP_UFO_RESOURCES:
-            g_value_set_object (value, priv->resources);
-            break;
-        case PROP_UFO_PROFILER:
-            g_value_set_object (value, priv->profiler);
-            break;
-        case PROP_CL_COMMAND_QUEUE:
-            g_value_set_pointer (value, priv->cmd_queue);
-            UFO_RESOURCES_CHECK_CLERR (clRetainCommandQueue (priv->cmd_queue));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-            break;
+    UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (processor);
+    if (priv->profiler)
+        g_object_unref (priv->profiler);
+  
+    priv->profiler = g_object_ref (profiler);
+}
+
+/**
+ * ufo_processor_get_profiler:
+ * @processor: A #UfoProcessor 
+ *
+ * Returns: #UfoProfiler or %NULL if profiler was not set before.
+ */
+UfoProfiler *
+ufo_processor_get_profiler (UfoProcessor *processor)
+{
+    UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (processor);
+    return priv->profiler;
+}
+
+void
+ufo_processor_set_command_queue (UfoProcessor *processor,
+                                 gpointer cmd_queue)
+{
+    if (cmd_queue == NULL)
+        return;
+    
+    UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (processor); 
+    if (priv->cmd_queue) {
+        UFO_RESOURCES_CHECK_CLERR (clReleaseCommandQueue (priv->cmd_queue));
     }
+
+    priv->cmd_queue = cmd_queue;
+    UFO_RESOURCES_CHECK_CLERR (clRetainCommandQueue (priv->cmd_queue));
+}
+
+/**
+ * ufo_processor_get_command_queue:
+ * @processor: A #UfoProcessor
+ *
+ * Returns: gpointer or %NULL if resources were not set before.
+ */
+gpointer
+ufo_processor_get_command_queue (UfoProcessor *processor)
+{
+    UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (processor);
+    UFO_RESOURCES_CHECK_CLERR (clRetainCommandQueue (priv->cmd_queue));
+    return priv->cmd_queue;
 }
 
 static void
@@ -183,32 +183,7 @@ ufo_processor_class_init (UfoProcessorClass *klass)
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
     gobject_class->finalize = ufo_processor_finalize;
     gobject_class->dispose = ufo_processor_dispose;
-    gobject_class->set_property = ufo_processor_set_property;
-    gobject_class->get_property = ufo_processor_get_property;
-
-    properties[PROP_UFO_RESOURCES] =
-        g_param_spec_object("ufo-resources",
-                            "Pointer to the instance of UfoResources.",
-                            "Pointer to the instance of UfoResources.",
-                            UFO_TYPE_RESOURCES,
-                            G_PARAM_READWRITE);
-
-    properties[PROP_UFO_PROFILER] =
-        g_param_spec_object("ufo-profiler",
-                            "Pointer to the instance of UfoProfiler.",
-                            "Pointer to the instance of UfoProfiler.",
-                            UFO_TYPE_PROFILER,
-                            G_PARAM_READWRITE);
-
-    properties[PROP_CL_COMMAND_QUEUE] =
-        g_param_spec_pointer("command-queue",
-                             "Pointer to the instance of cl_command_queue.",
-                             "Pointer to the instance of cl_command_queue.",
-                             G_PARAM_READWRITE);
-
-    for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
-        g_object_class_install_property (gobject_class, i, properties[i]);
-
+    
     g_type_class_add_private (gobject_class, sizeof (UfoProcessorPrivate));
     klass->setup = ufo_processor_setup_real;
     klass->configure = ufo_processor_configure_real;
@@ -235,10 +210,9 @@ ufo_processor_copy_real (gpointer origin,
         copy = UFO_COPYABLE (ufo_processor_new());
 
     UfoProcessorPrivate *priv = UFO_PROCESSOR_GET_PRIVATE (origin);
-    g_object_set (G_OBJECT (copy),
-                  "ufo-resources", priv->resources,
-                  "ufo-profiler", priv->profiler,
-                  NULL);
+    ufo_processor_set_profiler (copy, priv->profiler);
+    ufo_processor_set_resources (copy, priv->resources);
+   
     return copy;
 }
 
@@ -257,7 +231,7 @@ ufo_processor_setup (UfoProcessor *processor,
                      UFO_IS_RESOURCES (resources));
 
     UfoProcessorClass *klass = UFO_PROCESSOR_GET_CLASS (processor);
-    g_object_set (processor, "ufo-resources", resources, NULL);
+    ufo_processor_set_resources (processor, resources);
     klass->setup (processor, resources, error);
 }
 
