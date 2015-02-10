@@ -8,13 +8,11 @@ management to describe a workflow as a graph of processing nodes. The nodes are
 implemented as plugins in the
 [ufo-filters](https://github.com/ufo-kit/ufo-filters) sister project.
 
-The [ufo-python-tools](https://github.com/ufo-kit/ufo-python-tools) suite
-provides functions for better integration within Python-based projects. The
+See the `python/` directory for enhanced support of the UFO framework with
+Python-based projects and accompanying. The
 [ufo-scripts](https://github.com/ufo-kit/ufo-scripts) project is a collection of
 small programs for offline reconstruction of tomographic data using the UFO
-framework. A wide range of sample programms that test the framework can be found
-in the [ufo-tests](https://github.com/ufo-kit/ufo-tests) project.
-
+framework.
 
 ## Further information
 
