@@ -140,7 +140,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
 #{{{ Subdirectories
 add_subdirectory(ufo)
 add_subdirectory(docs)
-add_subdirectory(tools)
+add_subdirectory(bin)
 
 if (WITH_TESTS)
     add_subdirectory(tests)

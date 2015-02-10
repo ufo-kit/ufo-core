@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-introspection
 
-SUBDIRS=common ufo tools tests docs
+SUBDIRS=common ufo bin tests docs
 
 dist-hook:
 ## Generate the Changelog file for the distribution.
