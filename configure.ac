@@ -118,6 +118,6 @@ AC_CONFIG_FILES([Makefile
                  docs/Makefile
                  docs/manual/Makefile
                  tests/Makefile
-                 tools/Makefile
+                 bin/Makefile
                  ufo/Makefile])
 AC_OUTPUT

@@ -35,3 +35,7 @@ ufo/*ufo-enums.*
 ufod
 ufo-runjson
 Makefile
+
+*.pyc
+python/dist
+python/ufo.egg-info
