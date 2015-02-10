@@ -69,9 +69,9 @@ ufo_arch_graph_new (UfoResources *resources,
                     GList *remotes)
 {
     return UFO_GRAPH (g_object_new (UFO_TYPE_ARCH_GRAPH,
-                                    "resources", resources,
-                                    "remotes", remotes,
-                                    NULL));
+			    "resources", resources,
+			    "remotes", remotes,
+			    NULL));
 }
 
 /**
