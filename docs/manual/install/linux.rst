@@ -22,7 +22,6 @@ create this documentation.
 In case you use openSUSE, just issue ::
 
     $ zypper install gcc gcc-c++ glib2-devel json-glib-devel
-    $ zypper install gobject-introspection-devel python-gobject2
     $ zypper install gtk-doc python-Sphinx
     $ zypper install libtiff-devel
 
@@ -125,6 +124,25 @@ way ::
     $ cmake <path-to-ufo-filters> -DLIBDIR=/usr/lib64 -DPREFIX=/usr
     $ make
     $ make install
+
+
+Python support
+--------------
+
+ufo-core has GObject introspection to let third-party languages interface with
+the library. To build the support files you need the GObject introspection
+scanner ``g-ir-scanner`` and compiler ``g-ir-compiler`` which you can get on
+openSUSE via ::
+
+    $ zypper install gobject-introspection-devel python-gobject2
+
+In the ``python/`` subdirectory of the source distribution, additional Python
+modules to interface more easily with the framework is provided. To install the
+NumPy module and the high-level interface run ::
+
+    $ cd python/ && python setup install
+
+Refer to the README for additional information.
 
 
 .. _inst-installing-into-non-standard-directories:
