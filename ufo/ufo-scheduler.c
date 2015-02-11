@@ -169,9 +169,7 @@ run_remote_task (TaskLocalData *tld)
     guint n_remote_gpus;
     gboolean *alive;
     gboolean active = TRUE;
-
-    g_assert (tld->n_inputs == 1);
-
+    
     remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
     n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
     alive = g_new0 (gboolean, n_remote_gpus);
@@ -410,6 +408,7 @@ setup_tasks (UfoBaseScheduler *scheduler,
 
     tlds = g_new0 (TaskLocalData *, n_nodes);
 
+
     for (guint i = 0; i < n_nodes; i++) {
         UfoNode *node;
         UfoProfiler *profiler;
@@ -431,16 +430,18 @@ setup_tasks (UfoBaseScheduler *scheduler,
         for (guint j = 0; j < tld->n_inputs; j++)
             tld->dims[j] = ufo_task_get_num_dimensions (tld->task, j);
 
-        if (!check_target_connections (task_graph, node, tld->n_inputs, error))
+        if (!check_target_connections (task_graph, node, tld->n_inputs, error)) {
             return NULL;
+	}
 
         profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (node));
         ufo_profiler_enable_tracing (profiler, tracing_enabled);
 
         tld->finished = g_new0 (gboolean, tld->n_inputs);
 
-        if (error && *error != NULL)
+        if (error && *error != NULL) {
             return NULL;
+	}
     }
 
     g_list_free (nodes);
@@ -582,7 +583,7 @@ propagate_partition (UfoTaskGraph *graph)
 static void
 join_threads (GThread **threads, guint n_threads)
 {
-    for (guint i = 0; i < n_threads; i++)
+    for (guint i = 0; i < n_threads; i++) 
         g_thread_join (threads[i]);
 }
 
@@ -624,7 +625,7 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
         graph = task_graph;
     }
 
-    if (graph == NULL)
+    if (graph == NULL) 
         return;
 
     arch = ufo_base_scheduler_get_arch (scheduler);
@@ -645,8 +646,9 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     /* Prepare task structures */
     tlds = setup_tasks (scheduler, graph, error);
 
-    if (tlds == NULL)
+    if (tlds == NULL) {
         return;
+    }
 
     groups = setup_groups (scheduler, graph);
 

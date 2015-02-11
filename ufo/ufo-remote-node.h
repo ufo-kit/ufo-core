@@ -86,6 +86,8 @@ void        ufo_remote_node_send_json           (UfoRemoteNode  *node,
                                                  UfoRemoteMode   mode,
                                                  const gchar    *json);
 guint       ufo_remote_node_get_num_inputs      (UfoRemoteNode  *node);
+void	    ufo_remote_node_set_num_inputs	(UfoRemoteNode  *node,
+						 guint		n_inputs);
 guint       ufo_remote_node_get_num_dimensions  (UfoRemoteNode  *node,
                                                  guint           input);
 UfoTaskMode ufo_remote_node_get_mode            (UfoRemoteNode  *node);
