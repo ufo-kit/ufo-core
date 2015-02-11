@@ -166,6 +166,15 @@ test_copy_metadata (Fixture *fixture,
     g_object_unref (copy);
 }
 
+static void
+test_location (Fixture *fixture,
+               gconstpointer unused)
+{
+    g_assert (ufo_buffer_get_location (fixture->buffer) == UFO_BUFFER_LOCATION_INVALID);
+    ufo_buffer_get_host_array (fixture->buffer, NULL);
+    g_assert (ufo_buffer_get_location (fixture->buffer) == UFO_BUFFER_LOCATION_HOST);
+}
+
 void
 test_add_buffer (void)
 {
@@ -192,4 +201,8 @@ test_add_buffer (void)
     g_test_add ("/no-opencl/buffer/metadata/copy",
                 Fixture, NULL,
                 setup, test_copy_metadata, teardown);
+
+    g_test_add ("/no-opencl/buffer/location",
+                Fixture, NULL,
+                setup, test_location, teardown);
 }

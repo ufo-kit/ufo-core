@@ -67,16 +67,20 @@
  * Source depth of data as used in ufo_buffer_convert().
  */
 
+/**
+ * UfoBufferLocation:
+ * @UFO_BUFFER_LOCATION_HOST: Data is located in main memory
+ * @UFO_BUFFER_LOCATION_DEVICE: Data is located in regular device memory
+ * @UFO_BUFFER_LOCATION_DEVICE_IMAGE: Data is located in image device memory
+ * @UFO_BUFFER_LOCATION_INVALID: There is currently no data associated with the
+ *  buffer
+ *
+ * Location of the backed data memory.
+ */
+
 G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT)
 
 #define UFO_BUFFER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BUFFER, UfoBufferPrivate))
-
-typedef enum {
-    UFO_LOCATION_HOST = 0,
-    UFO_LOCATION_DEVICE,
-    UFO_LOCATION_DEVICE_IMAGE,
-    UFO_LOCATION_INVALID
-} UfoMemLocation;
 
 enum {
     PROP_0,
@@ -94,8 +98,8 @@ struct _UfoBufferPrivate {
     cl_context          context;
     cl_command_queue    last_queue;
     gsize               size;           /* size of buffer in bytes */
-    UfoMemLocation      location;
-    UfoMemLocation      last_location;
+    UfoBufferLocation      location;
+    UfoBufferLocation      last_location;
     GHashTable         *metadata;
     GList              *sub_device_arrays;
 };
@@ -572,12 +576,12 @@ ufo_buffer_copy (UfoBuffer *src, UfoBuffer *dst)
     dpriv = dst->priv;
     queue = spriv->last_queue != NULL ? spriv->last_queue : dpriv->last_queue;
 
-    if (spriv->location == UFO_LOCATION_INVALID) {
+    if (spriv->location == UFO_BUFFER_LOCATION_INVALID) {
         alloc_host_mem (spriv);
-        spriv->location = UFO_LOCATION_HOST;
+        spriv->location = UFO_BUFFER_LOCATION_HOST;
     }
 
-    if (dpriv->location == UFO_LOCATION_INVALID ||
+    if (dpriv->location == UFO_BUFFER_LOCATION_INVALID ||
         (!dpriv->host_array && !dpriv->device_array && !dpriv->device_image)) {
         alloc[spriv->location](dpriv);
         dpriv->location = spriv->location;
@@ -708,7 +712,7 @@ update_last_queue (UfoBufferPrivate *priv,
 
 static void
 update_location (UfoBufferPrivate *priv,
-                 UfoMemLocation new_location)
+                 UfoBufferLocation new_location)
 {
     priv->last_location = priv->location;
     priv->location = new_location;
@@ -739,7 +743,7 @@ ufo_buffer_set_host_array (UfoBuffer *buffer, gfloat *array, gboolean free_data)
     priv->free = free_data;
     priv->host_array = array;
 
-    update_location (priv, UFO_LOCATION_HOST);
+    update_location (priv, UFO_BUFFER_LOCATION_HOST);
 }
 
 /**
@@ -764,13 +768,13 @@ ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
     if (priv->host_array == NULL)
         alloc_host_mem (priv);
 
-    if (priv->location == UFO_LOCATION_DEVICE && priv->device_array)
+    if (priv->location == UFO_BUFFER_LOCATION_DEVICE && priv->device_array)
         transfer_device_to_host (priv, priv, priv->last_queue);
 
-    if (priv->location == UFO_LOCATION_DEVICE_IMAGE && priv->device_image)
+    if (priv->location == UFO_BUFFER_LOCATION_DEVICE_IMAGE && priv->device_image)
         transfer_image_to_host (priv, priv, priv->last_queue);
 
-    update_location (priv, UFO_LOCATION_HOST);
+    update_location (priv, UFO_BUFFER_LOCATION_HOST);
 
     return priv->host_array;
 }
@@ -799,13 +803,13 @@ ufo_buffer_get_device_array (UfoBuffer *buffer, gpointer cmd_queue)
     if (priv->device_array == NULL)
         alloc_device_array (priv);
 
-    if (priv->location == UFO_LOCATION_HOST && priv->host_array)
+    if (priv->location == UFO_BUFFER_LOCATION_HOST && priv->host_array)
         transfer_host_to_device (priv, priv, priv->last_queue);
 
-    if (priv->location == UFO_LOCATION_DEVICE_IMAGE && priv->device_array)
+    if (priv->location == UFO_BUFFER_LOCATION_DEVICE_IMAGE && priv->device_array)
         transfer_image_to_device (priv, priv, priv->last_queue);
 
-    update_location (priv, UFO_LOCATION_DEVICE);
+    update_location (priv, UFO_BUFFER_LOCATION_DEVICE);
 
     return priv->device_array;
 }
@@ -906,7 +910,7 @@ ufo_buffer_get_device_array_view (UfoBuffer *buffer,
     mem = clCreateBuffer (priv->context, CL_MEM_READ_WRITE, size, NULL, &errcode);
     UFO_RESOURCES_CHECK_CLERR (errcode);
 
-    if (priv->location == UFO_LOCATION_HOST && priv->host_array) {
+    if (priv->location == UFO_BUFFER_LOCATION_HOST && priv->host_array) {
         if (priv->requisition.n_dims == 1) {
             UFO_RESOURCES_CHECK_CLERR (clEnqueueWriteBuffer (cmd_queue, mem, CL_TRUE,
                                                              region->origin[0] * sizeof (float), size,
@@ -952,7 +956,7 @@ ufo_buffer_get_device_array_view (UfoBuffer *buffer,
         }
     }
 
-    if (priv->location == UFO_LOCATION_DEVICE_IMAGE && priv->device_array) {
+    if (priv->location == UFO_BUFFER_LOCATION_DEVICE_IMAGE && priv->device_array) {
         cl_event event;
 
         UFO_RESOURCES_CHECK_CLERR (clEnqueueCopyBufferRect (cmd_queue,
@@ -994,15 +998,28 @@ ufo_buffer_get_device_image (UfoBuffer *buffer,
     if (priv->device_image == NULL)
         alloc_device_image (priv);
 
-    if (priv->location == UFO_LOCATION_HOST && priv->host_array)
+    if (priv->location == UFO_BUFFER_LOCATION_HOST && priv->host_array)
         transfer_host_to_image (priv, priv, priv->last_queue);
 
-    if (priv->location == UFO_LOCATION_DEVICE && priv->device_array)
+    if (priv->location == UFO_BUFFER_LOCATION_DEVICE && priv->device_array)
         transfer_device_to_image (priv, priv, priv->last_queue);
 
-    update_location (priv, UFO_LOCATION_DEVICE_IMAGE);
+    update_location (priv, UFO_BUFFER_LOCATION_DEVICE_IMAGE);
 
     return priv->device_image;
+}
+
+/**
+ * ufo_buffer_get_location:
+ * @buffer: A #UfoBuffer
+ *
+ * Return current location of data backed by @buffer.
+ */
+UfoBufferLocation
+ufo_buffer_get_location (UfoBuffer *buffer)
+{
+    g_return_val_if_fail (UFO_IS_BUFFER (buffer), UFO_BUFFER_LOCATION_INVALID);
+    return buffer->priv->location;
 }
 
 /**
@@ -1015,7 +1032,6 @@ void
 ufo_buffer_discard_location (UfoBuffer *buffer)
 {
     g_return_if_fail (UFO_IS_BUFFER (buffer));
-
     buffer->priv->location = buffer->priv->last_location;
 }
 
@@ -1232,7 +1248,7 @@ ufo_buffer_max (UfoBuffer *buffer,
 
     priv = buffer->priv;
 
-    if (priv->location != UFO_LOCATION_HOST) {
+    if (priv->location != UFO_BUFFER_LOCATION_HOST) {
         g_warning ("max() not supported for non-host buffers");
         return 0.0f;
     }
@@ -1268,7 +1284,7 @@ ufo_buffer_min (UfoBuffer *buffer,
 
     priv = buffer->priv;
 
-    if (priv->location != UFO_LOCATION_HOST) {
+    if (priv->location != UFO_BUFFER_LOCATION_HOST) {
         g_warning ("min() not supported for non-host buffers");
         return 0.0f;
     }
@@ -1364,8 +1380,8 @@ ufo_buffer_init (UfoBuffer *buffer)
     priv->host_array = NULL;
     priv->free = TRUE;
 
-    priv->location = UFO_LOCATION_INVALID;
-    priv->last_location = UFO_LOCATION_INVALID;
+    priv->location = UFO_BUFFER_LOCATION_INVALID;
+    priv->last_location = UFO_BUFFER_LOCATION_INVALID;
     priv->requisition.n_dims = 0;
     priv->metadata = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->sub_device_arrays = NULL;
