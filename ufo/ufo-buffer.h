@@ -102,6 +102,13 @@ typedef enum {
     UFO_BUFFER_DEPTH_32F,
 } UfoBufferDepth;
 
+typedef enum {
+    UFO_BUFFER_LOCATION_HOST = 0,
+    UFO_BUFFER_LOCATION_DEVICE,
+    UFO_BUFFER_LOCATION_DEVICE_IMAGE,
+    UFO_BUFFER_LOCATION_INVALID
+} UfoBufferLocation;
+
 UfoBuffer*  ufo_buffer_new                  (UfoRequisition *requisition,
                                              gpointer        context);
 UfoBuffer*  ufo_buffer_new_with_size        (GList          *dims,
@@ -135,6 +142,8 @@ gpointer    ufo_buffer_get_device_array_with_offset
                                             (UfoBuffer      *buffer,
                                              gpointer        cmd_queue,
                                              gsize           offset);
+UfoBufferLocation
+            ufo_buffer_get_location         (UfoBuffer      *buffer);
 void        ufo_buffer_discard_location     (UfoBuffer      *buffer);
 void        ufo_buffer_convert              (UfoBuffer      *buffer,
                                              UfoBufferDepth  depth);
