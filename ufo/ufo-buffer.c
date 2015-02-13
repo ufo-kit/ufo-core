@@ -63,6 +63,10 @@
  * UfoBufferDepth:
  * @UFO_BUFFER_DEPTH_8U: 8 bit unsigned
  * @UFO_BUFFER_DEPTH_16U: 16 bit unsigned
+ * @UFO_BUFFER_DEPTH_16S: 16 bit signed
+ * @UFO_BUFFER_DEPTH_32S: 32 bit signed
+ * @UFO_BUFFER_DEPTH_32U: 32 bit unsigned
+ * @UFO_BUFFER_DEPTH_32F: 32 bit float
  *
  * Source depth of data as used in ufo_buffer_convert().
  */
