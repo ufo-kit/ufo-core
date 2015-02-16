@@ -82,7 +82,7 @@ parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
     UfoTaskGraph *graph;
     UfoTaskNode *prev = NULL;
 
-    assignment = g_regex_new ("\\s*([A-Za-z0-9]*)=(.*)\\s*", 0, 0, error);
+    assignment = g_regex_new ("\\s*([A-Za-z0-9-]*)=(.*)\\s*", 0, 0, error);
 
     if (*error)
         return NULL;
