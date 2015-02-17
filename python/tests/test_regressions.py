@@ -4,6 +4,21 @@ from common import tempdir, disable
 from gi.repository import Ufo
 
 
+def test_filters_issue_46_varying_fft_size():
+    from ufo import Fft, Ifft
+
+    data = [np.random.random((256, 256)),
+            np.random.random((512, 512)),
+            np.random.random((1024, 1024))]
+
+    fft = Fft(dimensions=1)
+    ifft = Ifft(dimensions=1)
+    result = list(ifft(fft(data)))
+
+    for orig, processed in zip(data, result):
+        assert(np.sum(orig - processed) < 1.0)
+
+
 def test_core_issue_61_16_bit_tiffs():
     from ufo import Read, Write
 
