@@ -24,7 +24,6 @@ def test_wrong_connection():
     sched.run(g)
 
 
-@disable
 def test_task_count():
     from ufo import DummyData, Write, Average
 
@@ -37,7 +36,7 @@ def test_task_count():
 
         assert(generate.task.props.num_processed == 0)
         assert(average.task.props.num_processed == 5)
-        assert(writer.task.props.num_processed == 1)
+        assert(write.task.props.num_processed == 1)
 
 
 @disable

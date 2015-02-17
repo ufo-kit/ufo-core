@@ -266,6 +266,7 @@ process_loop (TaskData *data)
 
         if (is_sink) {
             active = ufo_task_process (data->task, inputs, NULL, &requisition);
+            ufo_task_node_increase_processed (UFO_TASK_NODE (data->task));
         }
         else {
             g_list_for (out_queues, it) {
@@ -281,6 +282,7 @@ process_loop (TaskData *data)
                 if (!active)
                     break;
 
+                ufo_task_node_increase_processed (UFO_TASK_NODE (data->task));
                 ufo_two_way_queue_producer_push (out_queue, output);
             }
         }
@@ -345,6 +347,7 @@ reduce_loop (TaskData *data)
             active = ufo_task_process (data->task, inputs, outputs[i], &requisition);
             release_input_data (in_queues, inputs, n_inputs);
             active = pop_input_data (in_queues, finished, inputs, n_inputs);
+            ufo_task_node_increase_processed (UFO_TASK_NODE (data->task));
         }
     } while (active);
 
