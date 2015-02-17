@@ -5,15 +5,15 @@ from gi.repository import Ufo
 
 
 def test_core_issue_61_16_bit_tiffs():
-    from ufo import Reader, Writer
+    from ufo import Read, Write
 
     orig = np.random.randint(0, 65535, (512, 512)).astype(np.uint16)
 
     with tempdir() as d:
         tifffile.imsave(d.path('temp.tif'), orig)
 
-        read = Reader(path=d.path('temp.tif'))
-        write = Writer(filename=d.path('temp-%i.tif'))
+        read = Read(path=d.path('temp.tif'))
+        write = Write(filename=d.path('temp-%i.tif'))
 
         write(read()).run().join()
 

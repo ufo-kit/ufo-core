@@ -16,21 +16,21 @@ def have_camera_plugin():
     return 'camera' in Ufo.PluginManager().get_all_task_names()
 
 
-def test_averager():
-    from ufo import Averager
-    averager = Averager()
+def test_average():
+    from ufo import Average
+    average = Average()
 
-    for x in averager([a * ones, b * ones]):
+    for x in average([a * ones, b * ones]):
         expected = (a + b) / 2
         assert(np.all(x == expected))
 
 
 def test_buffer():
-    from ufo import Generate, Buffer
+    from ufo import DummyData, Buffer
 
-    generate = Generate(number=10, width=512, height=256)
+    data = DummyData(number=10, width=512, height=256)
     buffr = Buffer()
-    result = list(buffr(generate()))
+    result = list(buffr(data()))
     assert(len(result) == 10)
 
     for r in result:
@@ -48,11 +48,11 @@ def test_downsample():
 
 @disable
 def test_roi():
-    from ufo import RegionOfInterest
+    from ufo import CutRoi
 
     x, y = 10, 20
     w, h = 256, 128
-    roi = RegionOfInterest(x=x, y=y, width=w, height=h)
+    roi = CutRoi(x=x, y=y, width=w, height=h)
     result = list(roi([random, random]))
     ref = random[y:y+h, x:x+w]
     assert(ref.shape[0] == h)
@@ -62,7 +62,7 @@ def test_roi():
 
 def test_stack():
     from ufo import Stack
-    stack = Stack(num_items=2)
+    stack = Stack(number=2)
 
     for x in stack([a * ones, b * ones]):
         assert(x.shape[0] == 2)
@@ -105,19 +105,19 @@ def test_fft_2d():
 
 
 def test_flatfield_correction():
-    from ufo import FlatFieldCorrection
+    from ufo import FlatFieldCorrect
 
     darks = np.ones((512, 512)) * 1.5
     flats = np.ones((512, 512)) * 11.5
     projs = np.ones((512, 512)) * 100.0
-    ffc = FlatFieldCorrection()
+    ffc = FlatFieldCorrect()
 
     expected = (projs - darks) / (flats - darks)
     result = list(ffc([projs, projs], [darks, darks], [flats, flats]))[0]
     assert(np.sum(np.abs(expected - result)) < 1)
 
     expected = - np.log((projs - darks) / (flats - darks))
-    ffc = FlatFieldCorrection(absorption_correction=True)
+    ffc = FlatFieldCorrect(absorption_correct=True)
     result = list(ffc([projs, projs], [darks, darks], [flats, flats]))[0]
     assert(np.sum(np.abs(expected - result)) < 1)
 
@@ -136,19 +136,19 @@ def test_measure():
     assert(len(measures) == 2)
 
 
-def test_generate():
-    from ufo import Generate
+def test_dummy_data():
+    from ufo import DummyData
 
-    generate = Generate(number=10, width=256, height=128)
-    result = list(generate())
+    data = DummyData(number=10, width=256, height=128)
+    result = list(data())
     assert(len(result) == 10)
     assert(all(r.shape[0] == 128 and r.shape[1] == 256 for r in result))
 
 
 def test_metaballs():
-    from ufo import MetaBalls
+    from ufo import Metaballs
 
-    metaballs = MetaBalls(num_iterations=5, num_balls=5, width=512, height=256)
+    metaballs = Metaballs(number=5, number_balls=5, width=512, height=256)
     result = list(metaballs())
     assert(len(result) == 5)
     assert(all(r.shape[0] == 256 and r.shape[1] == 512 for r in result))
@@ -169,7 +169,7 @@ def test_uca():
     if have_camera_plugin():
         from ufo import Camera
 
-        camera = Camera(name='mock', count=2)
+        camera = Camera(name='mock', number=2)
         result = list(camera())
         assert(len(result) == 2)
 

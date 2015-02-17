@@ -6,19 +6,19 @@ from common import tempdir, disable
 
 @raises(GLib.GError)
 def test_wrong_connection():
-    from ufo import Reader, FlatFieldCorrection, Writer
+    from ufo import Read, FlatFieldCorrect, Write
 
-    dark_reader = Reader()
-    flat_reader = Reader()
-    radio_reader = Reader()
-    writer = Writer()
-    ffc = FlatFieldCorrection()
+    darks = Read()
+    flats = Read()
+    radios = Read()
+    write = Write()
+    ffc = FlatFieldCorrect()
 
     g = Ufo.TaskGraph()
-    g.connect_nodes_full(radio_reader.task, ffc.task, 0)
-    g.connect_nodes_full(dark_reader.task, ffc.task, 1)
-    g.connect_nodes_full(flat_reader.task, ffc.task, 0)
-    g.connect_nodes(ffc.task, writer.task)
+    g.connect_nodes_full(radios.task, ffc.task, 0)
+    g.connect_nodes_full(darks.task, ffc.task, 1)
+    g.connect_nodes_full(flats.task, ffc.task, 0)
+    g.connect_nodes(ffc.task, write.task)
 
     sched = Ufo.Scheduler()
     sched.run(g)
@@ -26,14 +26,14 @@ def test_wrong_connection():
 
 @disable
 def test_task_count():
-    from ufo import Generate, Writer, Averager
+    from ufo import DummyData, Write, Average
 
     with tempdir() as d:
-        generate = Generate(number=5, width=512, height=512)
-        writer = Writer(filename=d.path('foo-%i.tif'))
-        average = Averager()
+        generate = DummyData(number=5, width=512, height=512)
+        write = Write(filename=d.path('foo-%i.tif'))
+        average = Average()
 
-        writer(average(generate())).run().join()
+        write(average(generate())).run().join()
 
         assert(generate.task.props.num_processed == 0)
         assert(average.task.props.num_processed == 5)
