@@ -19,6 +19,7 @@
 
 #include <ufo/ufo-task-iface.h>
 #include <ufo/ufo-task-node.h>
+#include <ufo/ufo-misc.h>
 
 /**
  * SECTION:ufo-task-iface
@@ -113,7 +114,7 @@ ufo_task_process (UfoTask *task,
 {
     gboolean result;
     result = UFO_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
-    g_signal_emit (task, signals[PROCESSED], 0);
+    ufo_signal_emit (task, signals[PROCESSED], 0);
 
     return result;
 }
@@ -125,7 +126,7 @@ ufo_task_generate (UfoTask *task,
 {
     gboolean result;
     result = UFO_TASK_GET_IFACE (task)->generate (task, output, requisition);
-    g_signal_emit (task, signals[GENERATED], 0);
+    ufo_signal_emit (task, signals[GENERATED], 0);
 
     return result;
 }
