@@ -31,8 +31,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 include(ConfigurePaths)
 configure_paths(UFO)
 
-set(UFO_INCLUDEDIR "${UFO_INCLUDEDIR}/ufo-${UFO_VERSION_MAJOR}")
-set(UFO_KERNELDIR "${UFO_DATADIR}/ufo")
+set(UFO_INCLUDEDIR  "${UFO_INCLUDEDIR}/ufo-${UFO_VERSION_MAJOR}")
+set(UFO_KERNELDIR   "${UFO_DATADIR}/ufo")
+set(UFO_PLUGINDIR   "${UFO_LIBDIR}/ufo")
 #}}}
 #{{{ Options
 find_program (MPICC "mpicc")

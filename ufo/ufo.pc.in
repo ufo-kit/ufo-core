@@ -4,6 +4,8 @@ libdir=@UFO_LIBDIR@
 includedir=@UFO_INCLUDEDIR@
 girdir=@UFO_GIRDIR@
 typelibdir=@UFO_TYPELIBDIR@
+plugindir=@UFO_PLUGINDIR@
+kerneldir=@UFO_KERNELDIR@
 
 Name: @TARNAME@
 Description: @UFO_DESCRIPTION_SUMMARY@
