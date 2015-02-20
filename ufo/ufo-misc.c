@@ -49,7 +49,8 @@ ufo_signal_emit (gpointer instance,
     va_list var_args;
 
 #ifdef WITH_PYTHON
-    PyGILState_STATE state = PyGILState_Ensure ();
+    if (Py_IsInitialized ()) {
+        PyGILState_STATE state = PyGILState_Ensure ();
 #endif
 
     va_start (var_args, detail);
@@ -57,6 +58,7 @@ ufo_signal_emit (gpointer instance,
     va_end (var_args);
 
 #ifdef WITH_PYTHON
-    PyGILState_Release (state);
+        PyGILState_Release (state);
+    }
 #endif
 }
