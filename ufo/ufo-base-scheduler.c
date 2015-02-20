@@ -106,6 +106,10 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
     if (!ufo_task_graph_is_alright (graph, error))
         return;
 
+#ifdef WITH_PYTHON
+    PyEval_InitThreads();
+#endif
+
     timer = g_timer_new ();
     (*klass->run)(scheduler, graph, error);
     scheduler->priv->time = g_timer_elapsed (timer, NULL);
