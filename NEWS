@@ -5,6 +5,44 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.7
+===========
+
+Released on February 20th 2015.
+
+This is a major update from the previous version released a year ago. Besides
+numerous bug fixes and compatibility enhancements we
+
+- added ufo_signal_emit for threadsafe signal emission
+- export plugin and kernel directories via pkg-config so that thirdparty plugins
+  easily know where to install themselves
+- added the ufo-launch tool to run basic pipelines directly from the command
+  line
+- merged the ufo-python-tools and ufo-tests repos with the core repository
+- added additional buffer depths
+- parse the UFO_PLUGIN_PATH environment variable to specify additional plugin
+  locations
+- added a copy task which copies data from input 0
+- added a fixed scheduler for manual assignment of hardware resources to task
+  nodes
+- added "processed" and "generated" signals to tasks which emit whenever either
+  action completed
+- added UFO_DEVICE_TYPE_ACC for accelerator devices
+- added buffer views for larger-than-GPU data
+- output OpenCL profiler information as Chrome JSON
+- added ufo_resources_get_kernel_with_opts()
+- added ufo_buffer_set_host_array()
+- added ufo_buffer_get/set_metadata(), ufo_buffer_get_metadata_keys() and
+  ufo_buffer_copy_meta_data()
+- added ufo_buffer_get_device_array_with_offset()
+- added ufo_buffer_get_location()
+
+and broke compatibility by
+
+- retiring the UfoConfig infrastructure and
+- replacing g_message() with g_debug()
+
+
 Version 0.6
 ===========
 
