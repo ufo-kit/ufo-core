@@ -18,6 +18,9 @@ class TestDir(object):
     def path(self, name):
         return os.path.join(self.root, name)
 
+    def __str__(self):
+        return self.root
+
 
 @contextlib.contextmanager
 def tempdir():

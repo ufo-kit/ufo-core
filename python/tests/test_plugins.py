@@ -1,6 +1,7 @@
 import ufo.numpy
 import numpy as np
-from common import disable
+import tifffile
+from common import disable, tempdir
 
 
 a, b = 1.5, 2.5
@@ -14,6 +15,39 @@ def have_camera_plugin():
     from gi.repository import Ufo
 
     return 'camera' in Ufo.PluginManager().get_all_task_names()
+
+
+def test_read_single_tiffs():
+    from ufo import Read, Null
+
+    with tempdir() as d:
+        n_images = 32
+        data = np.ones((512, 512), dtype=np.float32)
+
+        for i in range(n_images):
+            tifffile.imsave(d.path('foo-{:05}.tif'.format(i)), data)
+
+        read = Read(path=d.root)
+        null = Null()
+
+        null(read()).run().join()
+        assert(null.task.props.num_processed == n_images)
+
+
+@disable
+def test_read_multi_tiffs():
+    from ufo import Read, Null
+
+    with tempdir() as d:
+        n_images = 32
+        data = np.ones((512, 512, n_images))
+        tifffile.imsave(d.path('foo.tif'), data)
+
+        read = Read(path=d.path('foo.tif'))
+        null = Null()
+
+        null(read()).run().join()
+        assert(null.task.props.num_processed == n_images)
 
 
 def test_average():
