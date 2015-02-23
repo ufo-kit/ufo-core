@@ -274,7 +274,6 @@ run_task (TaskLocalData *tld)
                 ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
                 active = ufo_task_process (tld->task, inputs, output, &requisition);
                 ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
-                ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
                 break;
 
             case UFO_TASK_MODE_REDUCTOR:
@@ -282,7 +281,6 @@ run_task (TaskLocalData *tld)
                     ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
                     ufo_task_process (tld->task, inputs, output, &requisition);
                     ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
-                    ufo_task_node_increase_processed (UFO_TASK_NODE (tld->task));
 
                     release_inputs (tld, inputs);
                     active = get_inputs (tld, inputs);

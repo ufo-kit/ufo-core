@@ -65,6 +65,7 @@ struct _UfoTaskNodeClass {
     UfoNodeClass parent_class;
 };
 
+void            ufo_task_node_setup                 (UfoTaskNode    *node);
 void            ufo_task_node_set_plugin_name       (UfoTaskNode    *node,
                                                      const gchar    *name);
 const gchar    *ufo_task_node_get_plugin_name       (UfoTaskNode    *node);

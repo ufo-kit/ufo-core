@@ -63,6 +63,7 @@ ufo_task_setup (UfoTask *task,
 {
     GError *tmp_error = NULL;
 
+    ufo_task_node_setup (UFO_TASK_NODE (task));
     UFO_TASK_GET_IFACE (task)->setup (task, resources, &tmp_error);
 
     if (tmp_error != NULL) {
@@ -115,6 +116,7 @@ ufo_task_process (UfoTask *task,
     gboolean result;
     result = UFO_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
     ufo_signal_emit (task, signals[PROCESSED], 0);
+    ufo_task_node_increase_processed (UFO_TASK_NODE (task));
 
     return result;
 }

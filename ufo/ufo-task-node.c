@@ -57,6 +57,13 @@ struct _UfoTaskNodePrivate {
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 
 void
+ufo_task_node_setup (UfoTaskNode *node)
+{
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    node->priv->num_processed = 0;
+}
+
+void
 ufo_task_node_set_plugin_name (UfoTaskNode *task_node,
                                const gchar *name)
 {
