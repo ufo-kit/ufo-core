@@ -1,6 +1,7 @@
 import ufo.numpy
 import numpy as np
 import tifffile
+import contextlib
 from common import disable, tempdir
 
 
@@ -17,21 +18,38 @@ def have_camera_plugin():
     return 'camera' in Ufo.PluginManager().get_all_task_names()
 
 
-def test_read_single_tiffs():
-    from ufo import Read, Null
-
+@contextlib.contextmanager
+def single_tiff_setup(n_images, fmt='foo-{:05}.tif'):
     with tempdir() as d:
-        n_images = 32
         data = np.ones((512, 512), dtype=np.float32)
 
         for i in range(n_images):
-            tifffile.imsave(d.path('foo-{:05}.tif'.format(i)), data)
+            tifffile.imsave(d.path(fmt.format(i)), data)
 
+        yield d
+
+
+def test_read_single_tiffs():
+    from ufo import Read, Null
+
+    with single_tiff_setup(32) as d:
         read = Read(path=d.root)
         null = Null()
 
         null(read()).run().join()
-        assert(null.task.props.num_processed == n_images)
+        assert(null.task.props.num_processed == 32)
+
+
+def test_read_single_tiffs_stepped():
+    from ufo import Read, Null
+
+    with single_tiff_setup(32) as d:
+        read = Read(path=d.root)
+        null = Null()
+
+        read = Read(path=d.root, step=2)
+        null(read()).run().join()
+        assert(null.task.props.num_processed == 32 / 2)
 
 
 @disable
