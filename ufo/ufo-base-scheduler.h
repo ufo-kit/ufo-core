@@ -72,8 +72,9 @@ struct _UfoBaseSchedulerClass {
     void (*run) (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, GError **error);
 };
 
-void            ufo_base_scheduler_set_rem_nodes_from_arch       (UfoBaseScheduler *scheduler,
-							UfoArchGraph  *arch);
+void            ufo_base_scheduler_set_rem_nodes_from_arch
+                                                    (UfoBaseScheduler   *scheduler,
+                                                     UfoArchGraph       *arch);
 void            ufo_base_scheduler_run              (UfoBaseScheduler   *scheduler,
                                                      UfoTaskGraph       *task_graph,
                                                      GError            **error);
