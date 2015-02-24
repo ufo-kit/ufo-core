@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2013 Karlsruhe Institute of Technology
+ * Copyright (C) 2011-2015 Karlsruhe Institute of Technology
  *
  * This file is part of Ufo.
  *
@@ -19,12 +19,6 @@
 
 #include "ufo-{{hyphenated}}-task.h"
 
-/**
- * SECTION:ufo-{{hyphenated}}-task
- * @Short_description: Write TIFF files
- * @Title: {{underscored}}
- *
- */
 
 struct _Ufo{{camelcased}}TaskPrivate {
     gboolean foo;
