@@ -384,6 +384,7 @@ run_local (TaskData *data)
             break;
 
         case UFO_TASK_MODE_PROCESSOR:
+        case UFO_TASK_MODE_SINK:
             process_loop (data);
             break;
 

@@ -224,6 +224,7 @@ run_task (TaskLocalData *tld)
     UfoTaskMode mode;
     UfoProfiler *profiler;
     UfoRequisition requisition;
+    gboolean produces;
     gboolean active;
 
     node = UFO_TASK_NODE (tld->task);
@@ -238,10 +239,10 @@ run_task (TaskLocalData *tld)
 
     /* mode without CPU/GPU flag */
     mode = tld->mode & UFO_TASK_MODE_TYPE_MASK;
+    produces = mode != UFO_TASK_MODE_SINK;
 
     while (active) {
         UfoGroup *group;
-        gboolean produces;
 
         group = ufo_task_node_get_out_group (node);
 
@@ -255,7 +256,6 @@ run_task (TaskLocalData *tld)
 
         /* Get output buffers */
         ufo_task_get_requisition (tld->task, inputs, &requisition);
-        produces = requisition.n_dims > 0;
 
         if (produces) {
             output = ufo_group_pop_output_buffer (group, &requisition);
@@ -271,6 +271,7 @@ run_task (TaskLocalData *tld)
 
         switch (mode) {
             case UFO_TASK_MODE_PROCESSOR:
+            case UFO_TASK_MODE_SINK:
                 ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
                 active = ufo_task_process (tld->task, inputs, output, &requisition);
                 ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);

@@ -52,6 +52,7 @@ typedef enum {
  * @UFO_TASK_MODE_PROCESSOR: one-by-one processing
  * @UFO_TASK_MODE_GENERATOR: do not receive any data but produce a stream.
  * @UFO_TASK_MODE_REDUCTOR: receive fininite stream and generate a reduced stream
+ * @UFO_TASK_MODE_SINK: receives data but does not produce any,
  * @UFO_TASK_MODE_GPU: runs on GPU
  * @UFO_TASK_MODE_CPU: runs on CPU
  * @UFO_TASK_MODE_SHARE_DATA: sibling tasks share the same input data
@@ -65,11 +66,13 @@ typedef enum {
     UFO_TASK_MODE_PROCESSOR     = 1 << 0,
     UFO_TASK_MODE_GENERATOR     = 1 << 1,
     UFO_TASK_MODE_REDUCTOR      = 1 << 2,
-    UFO_TASK_MODE_CPU           = 1 << 3,
-    UFO_TASK_MODE_GPU           = 1 << 4,
-    UFO_TASK_MODE_SHARE_DATA    = 1 << 5,
+    UFO_TASK_MODE_SINK          = 1 << 3,
+    UFO_TASK_MODE_CPU           = 1 << 4,
+    UFO_TASK_MODE_GPU           = 1 << 5,
+    UFO_TASK_MODE_SHARE_DATA    = 1 << 6,
 
-    UFO_TASK_MODE_TYPE_MASK = UFO_TASK_MODE_PROCESSOR | UFO_TASK_MODE_GENERATOR | UFO_TASK_MODE_REDUCTOR,
+    UFO_TASK_MODE_TYPE_MASK     = UFO_TASK_MODE_PROCESSOR | UFO_TASK_MODE_GENERATOR | UFO_TASK_MODE_REDUCTOR  | UFO_TASK_MODE_SINK,
+
     UFO_TASK_MODE_PROCESSOR_MASK = UFO_TASK_MODE_CPU | UFO_TASK_MODE_GPU
 } UfoTaskMode;
 
