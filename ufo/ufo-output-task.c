@@ -161,7 +161,7 @@ ufo_output_task_get_num_dimensions (UfoTask *task,
 static UfoTaskMode
 ufo_output_task_get_mode (UfoTask *task)
 {
-    return UFO_TASK_MODE_PROCESSOR | UFO_TASK_MODE_CPU;
+    return UFO_TASK_MODE_SINK | UFO_TASK_MODE_CPU;
 }
 
 static gboolean
