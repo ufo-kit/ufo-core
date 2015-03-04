@@ -551,9 +551,11 @@ ufo_task_graph_is_alright (UfoTaskGraph *task_graph,
 {
     GList *nodes;
     GList *it;
+    gboolean alright = TRUE;
 
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
 
+    /* Check that nodes don't receive input from reductors and processors */
     g_list_for (nodes, it) {
         GList *predecessors;
 
@@ -577,7 +579,6 @@ ufo_task_graph_is_alright (UfoTaskGraph *task_graph,
 #endif
                 g_warning ("`%s' receives both processor and reductor inputs which may deadlock.",
                            ufo_task_node_get_plugin_name (UFO_TASK_NODE (it->data)));
-
             }
         }
 
@@ -585,7 +586,23 @@ ufo_task_graph_is_alright (UfoTaskGraph *task_graph,
     }
 
     g_list_free (nodes);
-    return TRUE;
+
+    /* Check leaves are sinks */
+    nodes = ufo_graph_get_leaves (UFO_GRAPH (task_graph));
+
+    g_list_for (nodes, it) {
+        if ((ufo_task_get_mode (UFO_TASK (it->data)) & UFO_TASK_MODE_TYPE_MASK) != UFO_TASK_MODE_SINK) {
+            alright = FALSE;
+            g_set_error (error, UFO_TASK_GRAPH_ERROR, UFO_TASK_GRAPH_ERROR_BAD_INPUTS,
+                         "`%s' is a leaf node but not a sink task",
+                         ufo_task_node_get_plugin_name (UFO_TASK_NODE (it->data)));
+            break;
+        }
+    }
+
+    g_list_free (nodes);
+
+    return alright;
 }
 
 /**
