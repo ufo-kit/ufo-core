@@ -80,7 +80,6 @@ struct _UfoResourcesPrivate {
     cl_context       context;
     cl_uint          n_devices;         /* Number of OpenCL devices per platform id */
     cl_device_id     *devices;          /* Array of OpenCL devices per platform id */
-    cl_command_queue *command_queues;   /* Array of command queues per device */
 
     GList       *gpu_nodes;
 
@@ -367,7 +366,6 @@ initialize_opencl (UfoResourcesPrivate *priv)
 {
     cl_device_type device_type;
     cl_int errcode = CL_SUCCESS;
-    cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
 
     priv->platform = get_preferably_gpu_based_platform (priv);
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
@@ -404,18 +402,10 @@ initialize_opencl (UfoResourcesPrivate *priv)
     if (errcode != CL_SUCCESS)
         return FALSE;
 
-    priv->command_queues = g_malloc0 (priv->n_devices * sizeof (cl_command_queue));
     priv->gpu_nodes = NULL;
 
     for (guint i = 0; i < priv->n_devices; i++) {
-        priv->command_queues[i] = clCreateCommandQueue (priv->context,
-                                                        priv->devices[i],
-                                                        queue_properties, &errcode);
-        priv->gpu_nodes = g_list_append (priv->gpu_nodes, ufo_gpu_node_new (priv->command_queues[i]));
-        UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
-
-        if (errcode != CL_SUCCESS)
-            return FALSE;
+        priv->gpu_nodes = g_list_append (priv->gpu_nodes, ufo_gpu_node_new (priv->context, priv->devices[i]));
     }
 
     return TRUE;
@@ -830,13 +820,15 @@ GList *
 ufo_resources_get_cmd_queues (UfoResources *resources)
 {
     UfoResourcesPrivate *priv;
+    GList *it;
     GList *result = NULL;
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources), NULL);
-    priv = resources->priv;
+    priv = UFO_RESOURCES_GET_PRIVATE (resources);
 
-    for (guint i = 0; i < priv->n_devices; i++)
-        result = g_list_append (result, priv->command_queues[i]);
+    g_list_for (priv->gpu_nodes, it) {
+        result = g_list_append (result, ufo_gpu_node_get_cmd_queue (UFO_GPU_NODE (it->data)));
+    }
 
     return result;
 }
@@ -967,16 +959,12 @@ ufo_resources_finalize (GObject *object)
     list_free_full (&priv->kernels, (GFunc) release_kernel);
     list_free_full (&priv->programs, (GFunc) release_program);
 
-    for (guint i = 0; i < priv->n_devices; i++)
-        UFO_RESOURCES_CHECK_CLERR (clReleaseCommandQueue (priv->command_queues[i]));
-
     if (priv->context)
         UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
 
     g_string_free (priv->build_opts, TRUE);
 
     g_free (priv->devices);
-    g_free (priv->command_queues);
 
     priv->kernels = NULL;
     priv->devices = NULL;

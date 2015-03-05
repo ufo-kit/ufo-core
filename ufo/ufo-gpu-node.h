@@ -62,7 +62,8 @@ struct _UfoGpuNodeClass {
     UfoNodeClass parent_class;
 };
 
-UfoNode  *ufo_gpu_node_new              (gpointer    cmd_queue);
+UfoNode  *ufo_gpu_node_new              (gpointer    context,
+                                         gpointer    device);
 gpointer  ufo_gpu_node_get_cmd_queue    (UfoGpuNode *node);
 GType     ufo_gpu_node_get_type         (void);
 

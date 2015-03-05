@@ -18,6 +18,7 @@
  */
 
 #include <CL/cl.h>
+#include <ufo/ufo-resources.h>
 #include <ufo/ufo-gpu-node.h>
 
 G_DEFINE_TYPE (UfoGpuNode, ufo_gpu_node, UFO_TYPE_NODE)
@@ -26,18 +27,29 @@ G_DEFINE_TYPE (UfoGpuNode, ufo_gpu_node, UFO_TYPE_NODE)
 
 
 struct _UfoGpuNodePrivate {
-    gpointer cmd_queue;
+    cl_context context;
+    cl_device_id device;
+    cl_command_queue cmd_queue;
 };
 
 UfoNode *
-ufo_gpu_node_new (gpointer cmd_queue)
+ufo_gpu_node_new (gpointer context, gpointer device)
 {
     UfoGpuNode *node;
+    cl_int errcode;
+    cl_command_queue_properties queue_properties;
 
-    g_return_val_if_fail (cmd_queue != NULL, NULL);
+    g_return_val_if_fail (context != NULL && device != NULL, NULL);
+
+    queue_properties = CL_QUEUE_PROFILING_ENABLE;
+
     node = UFO_GPU_NODE (g_object_new (UFO_TYPE_GPU_NODE, NULL));
-    node->priv->cmd_queue = cmd_queue;
-    clRetainCommandQueue (cmd_queue);
+    node->priv->context = context;
+    node->priv->device = device;
+    node->priv->cmd_queue = clCreateCommandQueue (context, device, queue_properties, &errcode);
+
+    UFO_RESOURCES_CHECK_CLERR (errcode);
+    UFO_RESOURCES_CHECK_CLERR (clRetainContext (context));
 
     return UFO_NODE (node);
 }
@@ -61,7 +73,10 @@ static UfoNode *
 ufo_gpu_node_copy_real (UfoNode *node,
                         GError **error)
 {
-    return UFO_NODE (ufo_gpu_node_new (UFO_GPU_NODE (node)->priv->cmd_queue));
+    UfoGpuNode *orig;
+
+    orig = UFO_GPU_NODE (node);
+    return ufo_gpu_node_new (orig->priv->context, orig->priv->device);
 }
 
 static gboolean
@@ -73,19 +88,21 @@ ufo_gpu_node_equal_real (UfoNode *n1,
 }
 
 static void
-ufo_gpu_node_dispose (GObject *object)
+ufo_gpu_node_finalize (GObject *object)
 {
     UfoGpuNodePrivate *priv;
 
     priv = UFO_GPU_NODE_GET_PRIVATE (object);
 
     if (priv->cmd_queue != NULL) {
-        g_debug ("Release cmd_queue=%p", priv->cmd_queue);
-        clReleaseCommandQueue (priv->cmd_queue);
+        g_debug ("Release cmd_queue=%p", (gpointer) priv->cmd_queue);
+        UFO_RESOURCES_CHECK_CLERR (clReleaseCommandQueue (priv->cmd_queue));
         priv->cmd_queue = NULL;
+
+        UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
     }
 
-    G_OBJECT_CLASS (ufo_gpu_node_parent_class)->dispose (object);
+    G_OBJECT_CLASS (ufo_gpu_node_parent_class)->finalize (object);
 }
 
 static void
@@ -94,7 +111,7 @@ ufo_gpu_node_class_init (UfoGpuNodeClass *klass)
     GObjectClass *oclass = G_OBJECT_CLASS (klass);
     UfoNodeClass *node_class = UFO_NODE_CLASS (klass);
 
-    oclass->dispose = ufo_gpu_node_dispose;
+    oclass->finalize = ufo_gpu_node_finalize;
     node_class->copy = ufo_gpu_node_copy_real;
     node_class->equal = ufo_gpu_node_equal_real;
 
