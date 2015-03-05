@@ -40,10 +40,8 @@ struct _UfoArchGraphPrivate {
     UfoResources *resources;
     GList *remotes;
     UfoNode **cpu_nodes;
-    UfoNode **gpu_nodes;
     UfoNode **remote_nodes;
     guint n_cpus;
-    guint n_gpus;
     guint n_remotes;
 };
 
@@ -88,19 +86,6 @@ ufo_arch_graph_get_num_cpus (UfoArchGraph *graph)
 }
 
 /**
- * ufo_arch_graph_get_num_gpus:
- * @graph: A #UfoArchGraph object
- *
- * Returns: Number of GPU nodes in @graph.
- */
-guint
-ufo_arch_graph_get_num_gpus (UfoArchGraph *graph)
-{
-    g_return_val_if_fail (UFO_IS_ARCH_GRAPH (graph), 0);
-    return graph->priv->n_gpus;
-}
-
-/**
  * ufo_arch_graph_get_num_remotes:
  * @graph: A #UfoArchGraph object
  *
@@ -126,25 +111,6 @@ ufo_arch_graph_get_resources (UfoArchGraph *graph)
 {
     g_return_val_if_fail (UFO_IS_ARCH_GRAPH (graph), NULL);
     return graph->priv->resources;
-}
-
-static gboolean
-is_gpu_node (UfoNode *node, gpointer user_data)
-{
-    return UFO_IS_GPU_NODE (node);
-}
-
-/**
- * ufo_arch_graph_get_gpu_nodes:
- * @graph: A #UfoArchGraph
- *
- * Returns: (element-type UfoGpuNode) (transfer container): A list of
- * #UfoGpuNode elements in @graph.
- */
-GList *
-ufo_arch_graph_get_gpu_nodes (UfoArchGraph *graph)
-{
-    return ufo_graph_get_nodes_filtered (UFO_GRAPH (graph), is_gpu_node, NULL);
 }
 
 static gboolean
@@ -213,14 +179,6 @@ ufo_arch_graph_constructed (GObject *object)
     /* Create GPU nodes, each one is associated with its own command queue. */
     cmd_queues = ufo_resources_get_cmd_queues (priv->resources);
 
-    priv->n_gpus = g_list_length (cmd_queues);
-    priv->gpu_nodes = g_new0 (UfoNode *, priv->n_gpus);
-
-    for (guint i = 0; i < priv->n_gpus; i++) {
-        priv->gpu_nodes[i] = ufo_gpu_node_new (g_list_nth_data (cmd_queues, i));
-        g_debug ("Create new UfoGpuNode-%p", (gpointer) priv->gpu_nodes[i]);
-    }
-
     /* Create remote nodes */
     priv->n_remotes = g_list_length (priv->remotes);
 
@@ -237,10 +195,6 @@ ufo_arch_graph_constructed (GObject *object)
      * NUMA-specific mapping.
      */
     for (guint i = 0; i < priv->n_cpus; i++) {
-        for (guint j = 0; j < priv->n_gpus; j++) {
-            ufo_graph_connect_nodes (graph, priv->cpu_nodes[i], priv->gpu_nodes[j], NULL);
-        }
-
         for (guint j = 0; j < priv->n_remotes; j++) {
             ufo_graph_connect_nodes (graph, priv->cpu_nodes[i], priv->remote_nodes[j], NULL);
         }
@@ -331,7 +285,6 @@ ufo_arch_graph_dispose (GObject *object)
     priv = UFO_ARCH_GRAPH_GET_PRIVATE (object);
 
     unref_node_array (priv->cpu_nodes, priv->n_cpus);
-    unref_node_array (priv->gpu_nodes, priv->n_gpus);
     unref_node_array (priv->remote_nodes, priv->n_remotes);
 
     if (priv->resources != NULL) {
@@ -350,12 +303,10 @@ ufo_arch_graph_finalize (GObject *object)
     priv = UFO_ARCH_GRAPH_GET_PRIVATE (object);
 
     g_free (priv->cpu_nodes);
-    g_free (priv->gpu_nodes);
     g_free (priv->remote_nodes);
     g_list_free_full (priv->remotes, g_free);
 
     priv->cpu_nodes = NULL;
-    priv->gpu_nodes = NULL;
     priv->remotes = NULL;
     priv->remote_nodes = NULL;
 
@@ -404,7 +355,6 @@ ufo_arch_graph_init (UfoArchGraph *self)
     self->priv = priv = UFO_ARCH_GRAPH_GET_PRIVATE (self);
 
     priv->cpu_nodes = NULL;
-    priv->gpu_nodes = NULL;
     priv->remotes = NULL;
     priv->remote_nodes = NULL;
     priv->resources = NULL;

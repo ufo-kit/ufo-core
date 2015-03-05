@@ -176,7 +176,7 @@ ufo_base_scheduler_get_gpu_nodes (UfoBaseScheduler *scheduler)
     if (scheduler->priv->gpu_nodes != NULL)
         return scheduler->priv->gpu_nodes;
 
-    return ufo_arch_graph_get_gpu_nodes (ufo_base_scheduler_get_arch (scheduler));
+    return ufo_resources_get_gpu_nodes (ufo_arch_graph_get_resources (ufo_base_scheduler_get_arch (scheduler)));
 }
 
 
@@ -192,9 +192,8 @@ void
 ufo_base_scheduler_set_rem_nodes_from_arch (UfoBaseScheduler *scheduler,
 				UfoArchGraph *arch)
 {
-	ufo_base_scheduler_set_gpu_nodes (scheduler, arch,
-					ufo_arch_graph_get_gpu_nodes(arch));
-	return;
+	/* ufo_base_scheduler_set_gpu_nodes (scheduler, arch, */
+	/* 				ufo_arch_graph_get_gpu_nodes(arch)); */
 }
 
 
