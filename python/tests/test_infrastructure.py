@@ -60,3 +60,12 @@ def test_broadcast():
         bars = glob.glob(d.path('bar-*'))
         assert(len(foos) == 5)
         assert(len(bars) == 5)
+
+
+def test_resource_info():
+    resources = Ufo.Resources()
+    nodes = resources.get_gpu_nodes()
+    assert(nodes)
+    node = nodes[0]
+    assert(node.get_info(Ufo.GpuNodeInfo.LOCAL_MEM_SIZE) > 0)
+    assert(node.get_info(Ufo.GpuNodeInfo.GLOBAL_MEM_SIZE) > node.get_info(Ufo.GpuNodeInfo.LOCAL_MEM_SIZE))

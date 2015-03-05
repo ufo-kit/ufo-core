@@ -18,6 +18,7 @@
  */
 
 #include <CL/cl.h>
+#include <string.h>
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-gpu-node.h>
 
@@ -67,6 +68,43 @@ ufo_gpu_node_get_cmd_queue (UfoGpuNode *node)
 {
     g_return_val_if_fail (UFO_IS_GPU_NODE (node), NULL);
     return node->priv->cmd_queue;
+}
+
+/**
+ * ufo_gpu_node_get_info:
+ * @node: A #UfoGpuNodeInfo
+ * @info: Information to be queried
+ *
+ * Return information about the associated OpenCL device.
+ *
+ * Returns: (transfer full): Information about @info.
+ */
+GValue *
+ufo_gpu_node_get_info (UfoGpuNode *node,
+                       UfoGpuNodeInfo info)
+{
+    UfoGpuNodePrivate *priv;
+    GValue *value;
+    cl_ulong ulong_value;
+
+    priv = UFO_GPU_NODE_GET_PRIVATE (node);
+    value = g_new0 (GValue, 1);
+    memset (value, 0, sizeof (GValue));
+
+    g_value_init (value, G_TYPE_ULONG);
+
+    switch (info) {
+        case UFO_GPU_NODE_INFO_GLOBAL_MEM_SIZE:
+            UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
+            break;
+
+        case UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE:
+            UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
+            break;
+    }
+
+    g_value_set_ulong (value, ulong_value);
+    return value;
 }
 
 static UfoNode *
