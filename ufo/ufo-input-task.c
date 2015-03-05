@@ -173,6 +173,10 @@ ufo_input_task_get_requisition (UfoTask *task,
 
         ufo_buffer_get_requisition (priv->input, requisition);
     }
+    else {
+        requisition->n_dims = 1;
+        requisition->dims[0] = 1;
+    }
 }
 
 static gboolean
