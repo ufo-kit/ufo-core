@@ -163,6 +163,28 @@ ufo_task_node_add_in_group (UfoTaskNode *node,
 }
 
 /**
+ * ufo_task_node_reset:
+ * @node: A #UfoTaskNode
+ *
+ * Reset a task node so it can be re-used a second time.
+ */
+void
+ufo_task_node_reset (UfoTaskNode *node)
+{
+    UfoTaskNodePrivate *priv;
+
+    g_return_if_fail (UFO_IS_TASK_NODE (node));
+    priv = UFO_TASK_NODE_GET_PRIVATE (node);
+    priv->out_group = NULL;
+    priv->proc_node = NULL;
+
+    for (guint i = 0; i < 16; i++) {
+        g_list_free (priv->in_groups[i]);
+        priv->in_groups[i] = NULL;
+    }
+}
+
+/**
  * ufo_task_node_get_current_in_group:
  * @node: A #UfoTaskNode
  * @pos: Input position of @node
@@ -336,11 +358,9 @@ ufo_task_node_finalize (GObject *object)
     UfoTaskNodePrivate *priv;
 
     priv = UFO_TASK_NODE_GET_PRIVATE (object);
+    ufo_task_node_reset (UFO_TASK_NODE (object));
     g_free (priv->plugin);
     g_free (priv->unique);
-
-    for (guint i = 0; i < 16; i++)
-        g_list_free (priv->in_groups[i]);
 
     G_OBJECT_CLASS (ufo_task_node_parent_class)->finalize (object);
 }

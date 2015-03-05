@@ -333,6 +333,8 @@ cleanup_task_local_data (TaskLocalData **tlds,
     for (guint i = 0; i < n; i++) {
         TaskLocalData *tld = tlds[i];
 
+        ufo_task_node_reset (UFO_TASK_NODE (tld->task));
+
         g_free (tld->dims);
         g_free (tld->finished);
         g_free (tld);
@@ -599,34 +601,17 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     guint n_nodes;
     GThread **threads;
     TaskLocalData **tlds;
-    gboolean rerun;
     gboolean expand;
     gboolean trace;
 
     priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
 
     g_object_get (scheduler,
-                  "enable-reruns", &rerun,
                   "enable-tracing", &trace,
                   "expand", &expand,
                   NULL);
 
-    if (rerun) {
-        graph = UFO_TASK_GRAPH (ufo_graph_copy (UFO_GRAPH (task_graph), error));
-    }
-    else {
-        if (priv->ran) {
-            g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
-                         "UfoScheduler::run called for second time but ::enable-reruns is set to FALSE");
-            return;
-        }
-
-        graph = task_graph;
-    }
-
-    if (graph == NULL)
-        return;
-
+    graph = task_graph;
     arch = ufo_base_scheduler_get_arch (scheduler);
     gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
 
@@ -636,7 +621,11 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
 
     if (expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
-        ufo_task_graph_expand (graph, arch, g_list_length (gpu_nodes), expand_remote);
+
+        if (!priv->ran)
+            ufo_task_graph_expand (graph, arch, g_list_length (gpu_nodes), expand_remote);
+        else
+            g_debug ("Task graph already expanded, skipping.");
     }
 
     propagate_partition (graph);
@@ -700,10 +689,6 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     g_list_foreach (groups, (GFunc) g_object_unref, NULL);
     g_list_free (groups);
     g_free (threads);
-
-    /* The graph is a copy which we do not need anymore */
-    if (rerun)
-        g_object_unref (graph);
 
     priv->ran = TRUE;
 }

@@ -131,6 +131,9 @@ ufo_input_task_setup (UfoTask *task,
                       UfoResources *resources,
                       GError **error)
 {
+    UfoInputTaskPrivate *priv;
+    priv = UFO_INPUT_TASK_GET_PRIVATE (task);
+    priv->active = TRUE;
 }
 
 static guint
@@ -241,5 +244,4 @@ ufo_input_task_init (UfoInputTask *task)
 
     task->priv->in_queue = g_async_queue_new ();
     task->priv->out_queue = g_async_queue_new ();
-    task->priv->active = TRUE;
 }
