@@ -150,15 +150,16 @@ add_custom_command(
             ${CMAKE_CURRENT_SOURCE_DIR}/ufo-enums.c.template
 )
 #}}}
-#{{{ g-ir-scanner and g-ir-compiler
-find_program(INTROSPECTION_SCANNER "g-ir-scanner")
-find_program(INTROSPECTION_COMPILER "g-ir-compiler")
-
+#{{{ GObject introspection
 pkg_check_modules(GOBJECT_INTROSPECTION gobject-introspection-1.0)
 
-if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER AND GOBJECT_INTROSPECTION_FOUND)
+if (GOBJECT_INTROSPECTION_FOUND)
     option(WITH_GIR "Build introspection files" ON)
+
     if (WITH_GIR)
+        pkg_check_variable(gobject-introspection-1.0 g_ir_scanner)
+        pkg_check_variable(gobject-introspection-1.0 g_ir_compiler)
+
         set(GIR_PREFIX "Ufo-${UFO_GIR_VERSION}")
         set(GIR_XML "${GIR_PREFIX}.gir")
         set(GIR_TYPELIB "${GIR_PREFIX}.typelib")
@@ -169,7 +170,7 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER AND GOBJECT_INTROSPECTION_F
         endforeach()
 
         add_custom_command(OUTPUT ${GIR_XML}
-            COMMAND ${INTROSPECTION_SCANNER}
+            COMMAND ${GOBJECT_INTROSPECTION_1.0_G_IR_SCANNER}
                     --namespace=Ufo
                     --nsversion=${UFO_GIR_VERSION}
                     --library=ufo
@@ -190,7 +191,7 @@ if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER AND GOBJECT_INTROSPECTION_F
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
         add_custom_command(OUTPUT ${GIR_TYPELIB}
-            COMMAND ${INTROSPECTION_COMPILER}
+            COMMAND ${GOBJECT_INTROSPECTION_1.0_G_IR_COMPILER}
                     -o ${GIR_TYPELIB}
                     ${GIR_XML}
             DEPENDS ${GIR_XML}
