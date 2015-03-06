@@ -154,7 +154,9 @@ add_custom_command(
 find_program(INTROSPECTION_SCANNER "g-ir-scanner")
 find_program(INTROSPECTION_COMPILER "g-ir-compiler")
 
-if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER)
+pkg_check_modules(GOBJECT_INTROSPECTION gobject-introspection-1.0)
+
+if (INTROSPECTION_SCANNER AND INTROSPECTION_COMPILER AND GOBJECT_INTROSPECTION_FOUND)
     option(WITH_GIR "Build introspection files" ON)
     if (WITH_GIR)
         set(GIR_PREFIX "Ufo-${UFO_GIR_VERSION}")
