@@ -62,8 +62,24 @@ struct _UfoGpuNodeClass {
     UfoNodeClass parent_class;
 };
 
-UfoNode  *ufo_gpu_node_new              (gpointer    cmd_queue);
-gpointer  ufo_gpu_node_get_cmd_queue    (UfoGpuNode *node);
+/**
+ * UfoGpuNodeInfo:
+ * @UFO_GPU_NODE_INFO_GLOBAL_MEM_SIZE: Global memory size
+ * @UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE: Local memory size
+ *
+ * OpenCL device info types. Refer to the OpenCL standard for complete details
+ * about each information.
+ */
+typedef enum {
+    UFO_GPU_NODE_INFO_GLOBAL_MEM_SIZE = 0,
+    UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE,
+} UfoGpuNodeInfo;
+
+UfoNode  *ufo_gpu_node_new              (gpointer        context,
+                                         gpointer        device);
+gpointer  ufo_gpu_node_get_cmd_queue    (UfoGpuNode     *node);
+GValue   *ufo_gpu_node_get_info         (UfoGpuNode     *node,
+                                         UfoGpuNodeInfo  info);
 GType     ufo_gpu_node_get_type         (void);
 
 G_END_DECLS

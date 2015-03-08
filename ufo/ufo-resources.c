@@ -29,6 +29,7 @@
 #endif
 
 #include <ufo/ufo-resources.h>
+#include <ufo/ufo-gpu-node.h>
 #include <ufo/ufo-enums.h>
 #include "compat.h"
 
@@ -79,7 +80,8 @@ struct _UfoResourcesPrivate {
     cl_context       context;
     cl_uint          n_devices;         /* Number of OpenCL devices per platform id */
     cl_device_id     *devices;          /* Array of OpenCL devices per platform id */
-    cl_command_queue *command_queues;   /* Array of command queues per device */
+
+    GList       *gpu_nodes;
 
     GList       *paths;         /* List of paths containing kernels and header files */
     GHashTable  *kernel_cache;
@@ -364,7 +366,6 @@ initialize_opencl (UfoResourcesPrivate *priv)
 {
     cl_device_type device_type;
     cl_int errcode = CL_SUCCESS;
-    cl_command_queue_properties queue_properties = CL_QUEUE_PROFILING_ENABLE;
 
     priv->platform = get_preferably_gpu_based_platform (priv);
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
@@ -401,16 +402,10 @@ initialize_opencl (UfoResourcesPrivate *priv)
     if (errcode != CL_SUCCESS)
         return FALSE;
 
-    priv->command_queues = g_malloc0 (priv->n_devices * sizeof (cl_command_queue));
+    priv->gpu_nodes = NULL;
 
     for (guint i = 0; i < priv->n_devices; i++) {
-        priv->command_queues[i] = clCreateCommandQueue (priv->context,
-                                                        priv->devices[i],
-                                                        queue_properties, &errcode);
-        UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
-
-        if (errcode != CL_SUCCESS)
-            return FALSE;
+        priv->gpu_nodes = g_list_append (priv->gpu_nodes, ufo_gpu_node_new (priv->context, priv->devices[i]));
     }
 
     return TRUE;
@@ -825,13 +820,15 @@ GList *
 ufo_resources_get_cmd_queues (UfoResources *resources)
 {
     UfoResourcesPrivate *priv;
+    GList *it;
     GList *result = NULL;
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources), NULL);
-    priv = resources->priv;
+    priv = UFO_RESOURCES_GET_PRIVATE (resources);
 
-    for (guint i = 0; i < priv->n_devices; i++)
-        result = g_list_append (result, priv->command_queues[i]);
+    g_list_for (priv->gpu_nodes, it) {
+        result = g_list_append (result, ufo_gpu_node_get_cmd_queue (UFO_GPU_NODE (it->data)));
+    }
 
     return result;
 }
@@ -861,30 +858,19 @@ ufo_resources_get_devices (UfoResources *resources)
 }
 
 /**
- * ufo_resources_get_mapped_cmd_queues:
+ * ufo_resources_get_gpu_nodes:
  * @resources: A #UfoResources
  *
- * Get all devices queues managed by @resources.
+ * Get all #UfoGpuNode objects managed by @resources.
  *
- * Return value: (transfer container): Hash table with cl_device_id objects as key and
- * cl_command_queue objects as value. Free with g_hash_table_destroy() but not
- * its elements.
+ * Returns: (transfer container) (element-type Ufo.GpuNode): List with
+ * #UfoGpuNode objects. Free with g_list_free() but not its elements.
  */
-GHashTable *
-ufo_resources_get_mapped_cmd_queues (UfoResources *resources)
+GList *
+ufo_resources_get_gpu_nodes (UfoResources *resources)
 {
-    UfoResourcesPrivate *priv;
-    GHashTable *result = NULL;
-
     g_return_val_if_fail (UFO_IS_RESOURCES (resources), NULL);
-    priv = resources->priv;
-    result = g_hash_table_new_full (g_direct_hash, g_direct_equal,
-                                    NULL, (GDestroyNotify) release_program);
-
-    for (guint i = 0; i < priv->n_devices; i++)
-        g_hash_table_insert (result, priv->devices[i], priv->command_queues[i]);
-
-    return result;
+    return g_list_copy (resources->priv->gpu_nodes);
 }
 
 static void
@@ -944,6 +930,22 @@ list_free_full (GList **list,
 }
 
 static void
+ufo_resources_dispose (GObject *object)
+{
+    UfoResourcesPrivate *priv;
+    GList *it;
+
+    priv = UFO_RESOURCES_GET_PRIVATE (object);
+
+    g_list_for (priv->gpu_nodes, it) {
+        g_object_unref (G_OBJECT (it->data));
+    }
+
+    g_list_free (priv->gpu_nodes);
+    priv->gpu_nodes = NULL;
+}
+
+static void
 ufo_resources_finalize (GObject *object)
 {
     UfoResourcesPrivate *priv;
@@ -957,16 +959,12 @@ ufo_resources_finalize (GObject *object)
     list_free_full (&priv->kernels, (GFunc) release_kernel);
     list_free_full (&priv->programs, (GFunc) release_program);
 
-    for (guint i = 0; i < priv->n_devices; i++)
-        UFO_RESOURCES_CHECK_CLERR (clReleaseCommandQueue (priv->command_queues[i]));
-
     if (priv->context)
         UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
 
     g_string_free (priv->build_opts, TRUE);
 
     g_free (priv->devices);
-    g_free (priv->command_queues);
 
     priv->kernels = NULL;
     priv->devices = NULL;
@@ -1012,6 +1010,7 @@ ufo_resources_class_init (UfoResourcesClass *klass)
 
     oclass->set_property = ufo_resources_set_property;
     oclass->get_property = ufo_resources_get_property;
+    oclass->dispose = ufo_resources_dispose;
     oclass->finalize = ufo_resources_finalize;
 
     /**
@@ -1063,6 +1062,7 @@ ufo_resources_init (UfoResources *self)
 
     priv->paths = g_list_append (NULL, g_strdup ("."));
     priv->paths = g_list_append (priv->paths, g_strdup (UFO_KERNEL_DIR));
+    priv->gpu_nodes = NULL;
 
     priv->device_type = UFO_DEVICE_GPU;
     priv->platform_index = -1;

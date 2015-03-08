@@ -161,26 +161,6 @@ ufo_base_scheduler_set_gpu_nodes (UfoBaseScheduler *scheduler,
 }
 
 /**
- * ufo_base_scheduler_get_gpu_nodes:
- * @scheduler: A #UfoBaseScheduler
- *
- * Get the GPU nodes that @scheduler can use for execution.
- *
- * Returns: (transfer none) (element-type Ufo.GpuNode): A list of #UfoGpuNode objects.
- */
-GList *
-ufo_base_scheduler_get_gpu_nodes (UfoBaseScheduler *scheduler)
-{
-    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
-
-    if (scheduler->priv->gpu_nodes != NULL)
-        return scheduler->priv->gpu_nodes;
-
-    return ufo_arch_graph_get_gpu_nodes (ufo_base_scheduler_get_arch (scheduler));
-}
-
-
-/**
  * ufo_base_scheduler_set_rem_nodes:
  * @scheduler: A #UfoBaseScheduler
  * @arch: A #UfoArchGraph containing the remote nodes to use
@@ -192,12 +172,9 @@ void
 ufo_base_scheduler_set_rem_nodes_from_arch (UfoBaseScheduler *scheduler,
 				UfoArchGraph *arch)
 {
-	ufo_base_scheduler_set_gpu_nodes (scheduler, arch,
-					ufo_arch_graph_get_gpu_nodes(arch));
-	return;
+	/* ufo_base_scheduler_set_gpu_nodes (scheduler, arch, */
+	/* 				ufo_arch_graph_get_gpu_nodes(arch)); */
 }
-
-
 
 static void
 ufo_base_scheduler_run_real (UfoBaseScheduler *scheduler,

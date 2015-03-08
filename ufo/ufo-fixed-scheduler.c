@@ -438,7 +438,7 @@ setup_tasks (UfoGraph *graph,
     data->tasks = NULL;
 
     nodes = ufo_graph_get_nodes (graph);
-    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
+    gpu_nodes = ufo_resources_get_gpu_nodes (resources);
 
     g_list_for (nodes, it) {
         UfoNode *source_node;

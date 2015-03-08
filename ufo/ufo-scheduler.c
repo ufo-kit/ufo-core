@@ -595,6 +595,7 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
 {
     UfoSchedulerPrivate *priv;
     UfoArchGraph *arch;
+    UfoResources *resources;
     UfoTaskGraph *graph;
     GList *gpu_nodes;
     GList *groups;
@@ -613,7 +614,8 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
 
     graph = task_graph;
     arch = ufo_base_scheduler_get_arch (scheduler);
-    gpu_nodes = ufo_base_scheduler_get_gpu_nodes (scheduler);
+    resources = ufo_arch_graph_get_resources (arch);
+    gpu_nodes = ufo_resources_get_gpu_nodes (resources);
 
     if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
         replicate_task_graph (graph, arch);

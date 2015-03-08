@@ -68,9 +68,7 @@ UfoGraph     *ufo_arch_graph_new              (UfoResources   *resources,
                                                GList          *remotes);
 UfoResources *ufo_arch_graph_get_resources    (UfoArchGraph   *graph);
 guint         ufo_arch_graph_get_num_cpus     (UfoArchGraph   *graph);
-guint         ufo_arch_graph_get_num_gpus     (UfoArchGraph   *graph);
 guint         ufo_arch_graph_get_num_remotes  (UfoArchGraph   *graph);
-GList        *ufo_arch_graph_get_gpu_nodes    (UfoArchGraph   *graph);
 GList        *ufo_arch_graph_get_remote_nodes (UfoArchGraph   *graph);
 GType         ufo_arch_graph_get_type         (void);
 
