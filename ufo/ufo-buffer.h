@@ -99,7 +99,7 @@ typedef enum {
     UFO_BUFFER_DEPTH_16S,
     UFO_BUFFER_DEPTH_32S,
     UFO_BUFFER_DEPTH_32U,
-    UFO_BUFFER_DEPTH_32F,
+    UFO_BUFFER_DEPTH_32F
 } UfoBufferDepth;
 
 typedef enum {

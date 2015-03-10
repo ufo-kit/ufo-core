@@ -72,7 +72,7 @@ struct _UfoGpuNodeClass {
  */
 typedef enum {
     UFO_GPU_NODE_INFO_GLOBAL_MEM_SIZE = 0,
-    UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE,
+    UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE
 } UfoGpuNodeInfo;
 
 UfoNode  *ufo_gpu_node_new              (gpointer        context,

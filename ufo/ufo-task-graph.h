@@ -47,7 +47,7 @@ typedef struct _UfoTaskGraphPrivate    UfoTaskGraphPrivate;
 
 typedef enum {
     UFO_TASK_GRAPH_ERROR_JSON_KEY,
-    UFO_TASK_GRAPH_ERROR_BAD_INPUTS,
+    UFO_TASK_GRAPH_ERROR_BAD_INPUTS
 } UfoTaskGraphError;
 
 /**
