@@ -81,7 +81,7 @@ class Task(object):
         return self.items()
 
     def run(self):
-        sched = Ufo.FixedScheduler()
+        sched = Ufo.Scheduler()
 
         def run_scheduler():
             self.env.done = False
