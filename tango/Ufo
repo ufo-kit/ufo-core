@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import multiprocessing
-from PyTango import AttrWriteType, DispLevel, Except, ErrSeverity
+from PyTango import AttrWriteType, DevState, DispLevel, Except, ErrSeverity
 from PyTango.server import (Device, DeviceMeta, attribute, device_property,
                             command, server_run)
 
@@ -48,6 +48,7 @@ class Process(Device):
         Device.init_device(self)
         self._jobs = {}
         self._json = "{}"
+        self.set_state(DevState.ON)
 
     def read_jobs(self):
         return len([job for job in self._jobs.values() if job.is_alive()])
