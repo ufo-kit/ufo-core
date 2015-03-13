@@ -28,7 +28,7 @@ class _DataProcess(multiprocessing.Process):
             self.log("Error: {}".format(e.message))
 
     def log(self, s):
-        print("{}: {}".format(self.name, s))
+        print("Process-{}: {}".format(self.pid, s))
 
 
 class Process(Device):
