@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 import multiprocessing
 from PyTango import AttrWriteType, DevState, DispLevel, Except, ErrSeverity
 from PyTango.server import (Device, DeviceMeta, attribute, device_property,
@@ -26,6 +27,7 @@ class _DataProcess(multiprocessing.Process):
             self.log("Done.")
         except GLib.GError as e:
             self.log("Error: {}".format(e.message))
+            sys.exit(1)
 
     def log(self, s):
         print("Process-{}: {}".format(self.pid, s))
@@ -59,6 +61,12 @@ class Process(Device):
     def write_json(self, json):
         self._json = json
 
+    def get_job(self, job_id):
+        if job_id not in self._jobs:
+            Except.throw_exception("Unknown job ID", "Unknown job ID", "Here", ErrSeverity.ERR)
+
+        return self._jobs[job_id]
+
     @command(dtype_out=int, doc_out="Job ID")
     def Run(self):
         process = _DataProcess(self._json)
@@ -69,10 +77,12 @@ class Process(Device):
     @command(dtype_in=int, doc_in="Job ID",
              dtype_out=bool, doc_out="True if still running")
     def Running(self, job_id):
-        if job_id not in self._jobs:
-            Except.throw_exception("Unknown job ID", "Unknown job ID", "Here", ErrSeverity.ERR)
-        else:
-            return self._jobs[job_id].is_alive()
+        return self.get_job(job_id).is_alive()
+
+    @command(dtype_in=int, doc_in="Job ID",
+             dtype_out=int, doc_out="Exit code of process")
+    def ExitCode(self, job_id):
+        return self.get_job(job_id).exitcode
 
 
 if __name__ == '__main__':
