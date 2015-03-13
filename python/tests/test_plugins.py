@@ -90,10 +90,10 @@ def test_buffer():
         assert(r.shape[1] == 512)
 
 
-def test_downsample():
-    from ufo import Downsample
-    downsample = Downsample(factor=2)
-    result = list(downsample([a * ones, b * small]))
+def test_rescale():
+    from ufo import Rescale
+    rescale = Rescale(factor=0.5)
+    result = list(rescale([a * ones, b * small]))
     assert(np.mean(result[0]) == a)
     assert(np.mean(result[1]) == b)
 
