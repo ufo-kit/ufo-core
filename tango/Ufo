@@ -82,7 +82,8 @@ class Process(Device):
     @command(dtype_in=int, doc_in="Job ID",
              dtype_out=int, doc_out="Exit code of process")
     def ExitCode(self, job_id):
-        return self.get_job(job_id).exitcode
+        code = self.get_job(job_id).exitcode
+        return -42 if code is None else code
 
 
 if __name__ == '__main__':
