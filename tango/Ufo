@@ -21,6 +21,7 @@ class UfoProcess(multiprocessing.Process):
     def __init__(self, json):
         super(UfoProcess, self).__init__()
         self.json = json
+        self.server, self.client = multiprocessing.Pipe(duplex=True)
 
     def log(self, s):
         print("Process-{}: {}".format(self.pid, s))
@@ -62,13 +63,14 @@ class SingleProcess(UfoProcess):
             sched = Ufo.Scheduler()
             sched.run(g)
 
+        self.server.send(0)
+
 
 class ContinuousProcess(UfoProcess):
 
     def __init__(self, json):
         super(ContinuousProcess, self).__init__(json)
         self.job_queue = multiprocessing.Queue()
-        self.server, self.client = multiprocessing.Pipe(duplex=True)
 
     def run_ufo(self):
         from gi.repository import Ufo
@@ -97,7 +99,7 @@ class ContinuousProcess(UfoProcess):
                 with self.measure():
                     sched.run(g)
 
-                self.server.send(1)
+                self.server.send(0)
 
 
 class Process(Device):
