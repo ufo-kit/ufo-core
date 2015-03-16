@@ -109,10 +109,10 @@ class ContinuousProcess(UfoProcess):
 class Process(Device):
     __metaclass__ = DeviceMeta
 
-    jobs = attribute(label="Jobs", dtype=int,
+    jobs = attribute(label="Jobs", dtype=[int],
                     display_level=DispLevel.OPERATOR,
                     access=AttrWriteType.READ,
-                    doc="Number of running jobs")
+                    doc="Job IDs of all running jobs")
 
     json = attribute(label="JSON", dtype=str,
                     display_level=DispLevel.OPERATOR,
@@ -126,7 +126,7 @@ class Process(Device):
         self.set_state(DevState.ON)
 
     def read_jobs(self):
-        return len([job for job in self._jobs.values() if job.is_alive()])
+        return [job_id for job_id, job in self._jobs.items() if job.is_alive()]
 
     def read_json(self):
         return self._json
