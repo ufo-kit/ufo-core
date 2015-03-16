@@ -71,6 +71,7 @@ class ContinuousProcess(UfoProcess):
     def __init__(self, json):
         super(ContinuousProcess, self).__init__(json)
         self.job_queue = multiprocessing.Queue()
+        self.timeout = 30 * 60
 
     def run_ufo(self):
         from gi.repository import Ufo
@@ -81,6 +82,9 @@ class ContinuousProcess(UfoProcess):
         done = False
 
         while not done:
+            if not self.server.poll(self.timeout):
+                break
+
             command = self.server.recv()
             done = command.stop
 
