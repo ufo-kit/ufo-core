@@ -41,7 +41,7 @@ enum {
 
 struct _UfoTaskNodePrivate {
     gchar           *plugin;
-    gchar           *unique;
+    gchar           *identifier;
     UfoSendPattern   pattern;
     UfoNode         *proc_node;
     UfoGroup        *out_group;
@@ -75,8 +75,8 @@ ufo_task_node_set_plugin_name (UfoTaskNode *task_node,
     g_free (priv->plugin);
     priv->plugin = g_strdup (name);
 
-    g_free (priv->unique);
-    priv->unique = g_strdup_printf ("%s-%p", name, (gpointer) task_node);
+    g_free (priv->identifier);
+    priv->identifier = g_strdup_printf ("%s-%p", name, (gpointer) task_node);
 }
 
 const gchar *
@@ -86,11 +86,20 @@ ufo_task_node_get_plugin_name (UfoTaskNode *task_node)
     return task_node->priv->plugin;
 }
 
+void
+ufo_task_node_set_identifier (UfoTaskNode *node,
+                              const gchar *identifier)
+{
+    g_assert (UFO_IS_TASK_NODE (node) && identifier != NULL);
+    g_free (node->priv->identifier);
+    node->priv->identifier = g_strdup (identifier);
+}
+
 const gchar *
-ufo_task_node_get_unique_name (UfoTaskNode *task_node)
+ufo_task_node_get_identifier (UfoTaskNode *task_node)
 {
     g_assert (UFO_IS_TASK_NODE (task_node));
-    return task_node->priv->unique;
+    return task_node->priv->identifier;
 }
 
 void
@@ -360,7 +369,7 @@ ufo_task_node_finalize (GObject *object)
     priv = UFO_TASK_NODE_GET_PRIVATE (object);
     ufo_task_node_reset (UFO_TASK_NODE (object));
     g_free (priv->plugin);
-    g_free (priv->unique);
+    g_free (priv->identifier);
 
     G_OBJECT_CLASS (ufo_task_node_parent_class)->finalize (object);
 }
@@ -396,7 +405,7 @@ ufo_task_node_init (UfoTaskNode *self)
 {
     self->priv = UFO_TASK_NODE_GET_PRIVATE (self);
     self->priv->plugin = NULL;
-    self->priv->unique = NULL;
+    self->priv->identifier = NULL;
     self->priv->pattern = UFO_SEND_SCATTER;
     self->priv->proc_node = NULL;
     self->priv->out_group = NULL;

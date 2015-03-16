@@ -524,7 +524,7 @@ correct_connections (UfoTaskGraph *graph,
             ufo_group_get_num_targets (group) < 1) {
             g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
                          "No outgoing node for `%s'",
-                         ufo_task_node_get_unique_name (node));
+                         ufo_task_node_get_identifier (node));
             result = FALSE;
             break;
         }

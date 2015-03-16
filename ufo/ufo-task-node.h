@@ -69,7 +69,9 @@ void            ufo_task_node_setup                 (UfoTaskNode    *node);
 void            ufo_task_node_set_plugin_name       (UfoTaskNode    *node,
                                                      const gchar    *name);
 const gchar    *ufo_task_node_get_plugin_name       (UfoTaskNode    *node);
-const gchar    *ufo_task_node_get_unique_name       (UfoTaskNode    *node);
+const gchar    *ufo_task_node_get_identifier        (UfoTaskNode    *node);
+void            ufo_task_node_set_identifier        (UfoTaskNode    *node,
+                                                     const gchar    *name);
 void            ufo_task_node_set_send_pattern      (UfoTaskNode    *node,
                                                      UfoSendPattern  pattern);
 UfoSendPattern  ufo_task_node_get_send_pattern      (UfoTaskNode    *node);

@@ -757,6 +757,7 @@ handle_json_task_node (JsonNode *element,
         g_error ("Duplicate name `%s' found", name);
 
     g_hash_table_insert (priv->json_nodes, g_strdup (name), plugin);
+    ufo_task_node_set_identifier (plugin, name);
 
     if (json_object_has_member (object, "properties")) {
         JsonObject *prop_object = json_object_get_object_member (object, "properties");
@@ -896,7 +897,7 @@ add_task_node_to_json_array (UfoTaskNode *node, JsonArray *array)
     g_assert (plugin_name != NULL);
     json_object_set_string_member (node_object, "plugin", plugin_name);
 
-    const gchar *name = ufo_task_node_get_unique_name (node);
+    const gchar *name = ufo_task_node_get_identifier (node);
     g_assert (name != NULL);
     json_object_set_string_member (node_object, "name", name);
 
@@ -911,7 +912,7 @@ json_object_from_ufo_node (UfoNode *node)
     JsonObject *object;
 
     object = json_object_new ();
-    const gchar *unique_name = ufo_task_node_get_unique_name (UFO_TASK_NODE (node));
+    const gchar *unique_name = ufo_task_node_get_identifier (UFO_TASK_NODE (node));
     json_object_set_string_member (object, "name", unique_name);
     return object;
 }
