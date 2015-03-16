@@ -1064,6 +1064,18 @@ ufo_resources_init (UfoResources *self)
     priv->paths = g_list_append (priv->paths, g_strdup (UFO_KERNEL_DIR));
     priv->gpu_nodes = NULL;
 
+    gchar **kernel_paths, **path;
+    const gchar *kernel_path = g_getenv("UFO_KERNEL_PATH");
+    if (kernel_path != NULL) {
+        kernel_paths = g_strsplit(kernel_path, ":", -1);
+        for (path=kernel_paths; *path; path++) {
+            if (**path) {
+                priv->paths = g_list_append(priv->paths, *path);
+            }
+        }
+        g_free(kernel_paths);
+    }
+
     priv->device_type = UFO_DEVICE_GPU;
     priv->platform_index = -1;
 
