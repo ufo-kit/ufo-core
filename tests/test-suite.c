@@ -19,6 +19,8 @@
 
 #include <glib-object.h>
 #include "test-suite.h"
+#include "config.h"
+
 #ifdef MPI
 #include <mpi.h>
 #endif
@@ -49,7 +51,7 @@ int main(int argc, char *argv[])
     int provided;
     MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
     test_add_mpi_remote_node ();
-#else
+#elif HAVE_ZMQ
     test_add_zmq_messenger ();
     test_add_remote_node ();
 #endif

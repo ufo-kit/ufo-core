@@ -38,7 +38,6 @@ set(ufocore_SRCS
     ufo-transform-iface.c
     ufo-two-way-queue.c
     ufo-basic-ops.c
-    ufo-zmq-messenger.c
     )
 #}}}
 #{{{ headers
@@ -77,17 +76,22 @@ set(ufocore_HDRS
     ufo-transform-iface.h
     ufo-two-way-queue.h
     ufo-basic-ops.h
-    ufo-zmq-messenger.h
     )
 #}}}
 #{{{ optional dependencies
-if(WITH_MPI)
-    set(ufocore_HDRS ${ufocore_HDRS}
-        ufo-mpi-messenger.h
-    )
-    set(ufocore_SRCS ${ufocore_SRCS}
-        ufo-mpi-messenger.c
-    )
+if (WITH_MPI)
+    list(APPEND ufocore_SRCS ufo-mpi-messenger.c)
+endif ()
+
+if (ZMQ_FOUND)
+    set(HAVE_ZMQ 1)
+
+    link_directories(${ZMQ_LIBRARY_DIRS})
+    include_directories(${ZMQ_INCLUDE_DIRS})
+    list(APPEND UFO_CORE_DEPS ${ZMQ_LIBRARIES})
+
+    list(APPEND ufocore_SRCS ufo-zmq-messenger.c)
+    list(APPEND ufocore_HDRS ufo-zmq-messenger.h)
 endif ()
 #}}}
 #{{{ libufo

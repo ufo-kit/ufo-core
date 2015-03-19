@@ -1,5 +1,6 @@
 #cmakedefine WITH_PYTHON    0
 #cmakedefine HAVE_VIENNACL  1
+#cmakedefine HAVE_ZMQ       1
 #define UFO_PLUGIN_DIR  "${UFO_PLUGINDIR}"
 #define UFO_KERNEL_DIR  "${UFO_KERNELDIR}"
 #define UFO_VERSION     "${PACKAGE_VERSION}"

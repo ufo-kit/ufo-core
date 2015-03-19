@@ -28,6 +28,10 @@
 #include <ufo/ufo-mpi-messenger.h>
 #endif
 
+#ifdef HAVE_ZMQ
+#include <ufo/ufo-zmq-messenger.h>
+#endif
+
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,7 +42,6 @@
 #include <ufo/ufo-plugin-manager.h>
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-graph.h>
-#include <ufo/ufo-zmq-messenger.h>
 #include <ufo/ufo-messenger-iface.h>
 
 G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)
@@ -86,8 +89,11 @@ ufo_daemon_new (const gchar *listen_address)
     priv->scheduler = ufo_scheduler_new ();
 #ifdef MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-#else
+#elif HAVE_ZMQ
     priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+#else
+    /* TODO: we should return a GError in the constructor */
+    g_warning ("No messenger backend available!");
 #endif
     return daemon;
 }
@@ -523,10 +529,11 @@ ufo_daemon_stop (UfoDaemon *daemon, GError **error)
      * - we thus send a TERMINATE message to that thread
      */
 
-    UfoMessenger *tmp_msger;
+    UfoMessenger *tmp_msger = NULL;
+
 #ifdef MPI
     tmp_msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-#else
+#elif HAVE_ZMQ
     tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
 #endif
 

@@ -20,10 +20,15 @@
 #include <string.h>
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-messenger-iface.h>
-#include <ufo/ufo-zmq-messenger.h>
+
+#include "config.h"
 
 #ifdef MPI
 #include <ufo/ufo-mpi-messenger.h>
+#endif
+
+#ifdef HAVE_ZMQ
+#include <ufo/ufo-zmq-messenger.h>
 #endif
 
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
@@ -50,8 +55,10 @@ ufo_remote_node_new (const gchar *address)
 
 #ifdef MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-#else
+#elif HAVE_ZMQ
     priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
+#else
+    g_warning ("No messenger backend available");
 #endif
 
     gchar *addr = g_strdup (address);

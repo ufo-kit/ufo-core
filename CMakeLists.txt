@@ -71,24 +71,23 @@ pkg_check_modules(GMODULE2 gmodule-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GTHREAD2 gthread-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GIO2 gio-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0>=${PKG_JSON_GLIB_MIN_REQUIRED} REQUIRED)
-pkg_check_modules(ZMQ libzmq>=${PKG_ZMQ_MIN_REQUIRED} REQUIRED)
+pkg_check_modules(ZMQ libzmq>=${PKG_ZMQ_MIN_REQUIRED})
 pkg_check_modules(PYTHON python)
 
 set(UFOCORE_DEPS
+    m
     ${OPENCL_LIBRARIES}
     ${GLIB2_LIBRARIES}
     ${GOBJECT2_LIBRARIES}
     ${GMODULE2_LIBRARIES}
     ${GTHREAD2_LIBRARIES}
     ${GIO2_LIBRARIES}
-    ${JSON_GLIB_LIBRARIES}
-    ${ZMQ_LIBRARIES})
+    ${JSON_GLIB_LIBRARIES})
 
 #{{{ Link dirs of dependencies
 link_directories(
     ${GLIB2_LIBRARY_DIRS}
-    ${JSON_GLIB_LIBRARY_DIRS}
-    ${ZMQ_LIBRARY_DIRS})
+    ${JSON_GLIB_LIBRARY_DIRS})
 #}}}
 #{{{ Add include directories
 include_directories(
@@ -97,8 +96,7 @@ include_directories(
     ${GLIB2_INCLUDE_DIRS}
     ${GIO2_INCLUDE_DIRS}
     ${OPENCL_INCLUDE_DIRS}
-    ${JSON_GLIB_INCLUDE_DIRS}
-    ${ZMQ_INCLUDE_DIRS})
+    ${JSON_GLIB_INCLUDE_DIRS})
 #}}}
 #}}}
 #{{{ Definitions
