@@ -39,21 +39,9 @@ set(UFO_PLUGINDIR   "${UFO_LIBDIR}/ufo")
 #{{{ Options
 find_program (MPICC "mpicc")
 
-option(WITH_PROFILING "Enable profiling" OFF)
 option(WITH_TESTS "Build test suite" ON)
 option(WITH_MPI "Build with MPI support" OFF)
-option(WITH_DEBUG "Build with DEBUG support" OFF)
 option(WITH_DEPRECATED_OPENCL_1_1_API "Build with deprecated OpenCL 1.1 API" ON)
-
-if (WITH_PROFILING)
-    add_definitions("-pg")
-    set(CMAKE_C_FLAGS "-pg")
-endif ()
-
-if (WITH_DEBUG)
-    add_definitions ("-DDEBUG")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
-endif ()
 
 if (WITH_DEPRECATED_OPENCL_1_1_API)
     add_definitions ("-DCL_USE_DEPRECATED_OPENCL_1_1_APIS")

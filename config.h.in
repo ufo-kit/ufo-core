@@ -1,4 +1,3 @@
-#cmakedefine WITH_PROFILING 1
 #cmakedefine WITH_PYTHON    0
 #cmakedefine HAVE_VIENNACL  1
 #define UFO_PLUGIN_DIR  "${UFO_PLUGINDIR}"
