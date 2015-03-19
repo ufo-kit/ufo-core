@@ -23,7 +23,9 @@
 #include <CL/cl.h>
 #endif
 
-#ifdef MPI
+#include "config.h"
+
+#ifdef WITH_MPI
 #include <mpi.h>
 #include <ufo/ufo-mpi-messenger.h>
 #endif
@@ -87,7 +89,7 @@ ufo_daemon_new (const gchar *listen_address)
     priv->listen_address = g_strdup (listen_address);
     priv->manager = ufo_plugin_manager_new ();
     priv->scheduler = ufo_scheduler_new ();
-#ifdef MPI
+#ifdef WITH_MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
 #elif HAVE_ZMQ
     priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
@@ -531,7 +533,7 @@ ufo_daemon_stop (UfoDaemon *daemon, GError **error)
 
     UfoMessenger *tmp_msger = NULL;
 
-#ifdef MPI
+#ifdef WITH_MPI
     tmp_msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
 #elif HAVE_ZMQ
     tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());

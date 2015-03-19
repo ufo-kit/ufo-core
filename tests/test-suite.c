@@ -21,7 +21,7 @@
 #include "test-suite.h"
 #include "config.h"
 
-#ifdef MPI
+#ifdef WITH_MPI
 #include <mpi.h>
 #endif
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     test_add_profiler ();
     test_add_node ();
 
-#ifdef MPI
+#ifdef WITH_MPI
     int provided;
     MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
     test_add_mpi_remote_node ();
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
     g_test_run();
 
-#ifdef MPI
+#ifdef WITH_MPI
     MPI_Finalize ();
 #endif
 

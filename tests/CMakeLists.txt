@@ -7,13 +7,16 @@ set(TEST_SRCS
     test-node.c
     test-profiler.c
     test-remote-node.c
-    test-mpi-remote-node.c
     )
 
 set(SUITE_BIN "test-suite")
 
 if (HAVE_ZMQ)
     list(APPEND TEST_SRCS test-zmq-messenger.c)
+endif ()
+
+if (WITH_MPI)
+    list(APPEND TEST_SRCS test-mpi-remote-node.c)
 endif ()
 
 add_executable(${SUITE_BIN} ${TEST_SRCS})

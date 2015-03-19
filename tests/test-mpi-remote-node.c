@@ -17,11 +17,6 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* needed to avoid emty translation unit warning */
-void __unused_test_mpi_remote_fn_(void);
-
-#ifdef MPI
-
 #include <string.h>
 #include <ufo/ufo.h>
 #include "test-suite.h"
@@ -122,5 +117,3 @@ test_add_mpi_remote_node (void)
                 Fixture, NULL,
                 setup, test_remote_node_get_num_cpus, teardown);
 }
-
-#endif

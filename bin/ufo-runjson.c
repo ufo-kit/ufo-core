@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <ufo/ufo.h>
 
-#ifdef MPI
+#ifdef WITH_MPI
 #include <mpi.h>
 #include <ufo/ufo-mpi-messenger.h>
 #include <unistd.h>
@@ -80,7 +80,7 @@ execute_json (const gchar *filename,
     g_object_unref (manager);
 }
 
-#ifdef MPI
+#ifdef WITH_MPI
 
 static void
 mpi_terminate_processes (gint global_size)
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
     GOptionEntry entries[] = {
         { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths,
           "Path to node plugins or OpenCL kernels", NULL },
-#ifndef MPI
+#ifndef WITH_MPI
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
           "Address of remote server running `ufod'", NULL },
 #endif
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-#ifdef MPI
+#ifdef WITH_MPI
     gint rank, size;
     mpi_init (&argc, argv, &rank, &size);
 
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 
     execute_json (argv[argc-1], addresses);
 
-#ifdef MPI
+#ifdef WITH_MPI
     if (rank == 0) {
         mpi_terminate_processes (size);
         MPI_Finalize ();

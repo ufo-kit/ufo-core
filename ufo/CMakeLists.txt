@@ -79,8 +79,13 @@ set(ufocore_HDRS
     )
 #}}}
 #{{{ optional dependencies
-if (WITH_MPI)
-    list(APPEND ufocore_SRCS ufo-mpi-messenger.c)
+if (MPICC_FOUND)
+    option(WITH_MPI "Build with MPI support" OFF)
+
+    if (WITH_MPI)
+        list(APPEND ufocore_SRCS ufo-mpi-messenger.c)
+        set(CMAKE_C_COMPILER ${MPICC})
+    endif ()
 endif ()
 
 if (ZMQ_FOUND)

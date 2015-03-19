@@ -37,25 +37,14 @@ set(UFO_KERNELDIR   "${UFO_DATADIR}/ufo")
 set(UFO_PLUGINDIR   "${UFO_LIBDIR}/ufo")
 #}}}
 #{{{ Options
-find_program (MPICC "mpicc")
 
 option(WITH_TESTS "Build test suite" ON)
-option(WITH_MPI "Build with MPI support" OFF)
 option(WITH_DEPRECATED_OPENCL_1_1_API "Build with deprecated OpenCL 1.1 API" ON)
 
 if (WITH_DEPRECATED_OPENCL_1_1_API)
     add_definitions ("-DCL_USE_DEPRECATED_OPENCL_1_1_APIS")
 endif ()
 
-if (WITH_MPI)
-    add_definitions ("-DMPI")
-    
-    if (NOT MPICC)
-        message (FATAL_ERROR "No mpicc compiler be found but MPI was explicitly enabled")
-    endif ()
-
-    set(CMAKE_C_COMPILER ${MPICC})
-endif ()
 #}}}
 #{{{ Dependencies
 set(PKG_GLIB2_MIN_REQUIRED "2.22")
@@ -64,6 +53,7 @@ set(PKG_ZMQ_MIN_REQUIRED "2.1")
 
 find_package(OpenCL REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_program (MPICC "mpicc")
 
 pkg_check_modules(GLIB2 glib-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GOBJECT2 gobject-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
