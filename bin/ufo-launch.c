@@ -28,6 +28,12 @@ typedef struct {
 } TaskDescription;
 
 
+static gboolean
+str_to_boolean (const gchar *s)
+{
+    return g_ascii_strncasecmp (s, "true", 4) == 0;
+}
+
 #define DEFINE_CAST(suffix, trans_func)                 \
 static void                                             \
 value_transform_##suffix (const GValue *src_value,      \
@@ -44,6 +50,7 @@ DEFINE_CAST (uint,      atoi)
 DEFINE_CAST (ulong,     atol)
 DEFINE_CAST (float,     atof)
 DEFINE_CAST (double,    atof)
+DEFINE_CAST (boolean,   str_to_boolean)
 
 
 static GList *
@@ -94,6 +101,7 @@ parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_ULONG,   value_transform_ulong);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_FLOAT,   value_transform_float);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_DOUBLE,  value_transform_double);
+    g_value_register_transform_func (G_TYPE_STRING, G_TYPE_BOOLEAN, value_transform_boolean);
 
     graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
 
