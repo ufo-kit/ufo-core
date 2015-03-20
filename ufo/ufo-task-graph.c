@@ -457,8 +457,11 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         successors = ufo_graph_get_successors (UFO_GRAPH (task_graph),
                                                UFO_NODE (g_list_last (path)->data));
         
-        path = g_list_prepend (path, g_list_first (predecessors)->data);
-        path = g_list_append (path, g_list_first (successors)->data);
+        if (predecessors != NULL)
+            path = g_list_prepend (path, g_list_first (predecessors)->data);
+
+        if (successors != NULL)
+            path = g_list_append (path, g_list_first (successors)->data);
 
         g_list_free (predecessors);
         g_list_free (successors);
