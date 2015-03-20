@@ -93,7 +93,7 @@ if (ZMQ_FOUND)
 
     link_directories(${ZMQ_LIBRARY_DIRS})
     include_directories(${ZMQ_INCLUDE_DIRS})
-    list(APPEND UFO_CORE_DEPS ${ZMQ_LIBRARIES})
+    list(APPEND UFOCORE_DEPS ${ZMQ_LIBRARIES})
 
     list(APPEND ufocore_SRCS ufo-zmq-messenger.c)
     list(APPEND ufocore_HDRS ufo-zmq-messenger.h)
