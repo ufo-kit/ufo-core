@@ -53,7 +53,7 @@ set(PKG_ZMQ_MIN_REQUIRED "2.1")
 
 find_package(OpenCL REQUIRED)
 find_package(PkgConfig REQUIRED)
-find_program (MPICC "mpicc")
+find_package(MPI)
 
 pkg_check_modules(GLIB2 glib-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GOBJECT2 gobject-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
@@ -73,6 +73,18 @@ set(UFOCORE_DEPS
     ${GTHREAD2_LIBRARIES}
     ${GIO2_LIBRARIES}
     ${JSON_GLIB_LIBRARIES})
+
+if (MPI_C_FOUND)
+    option(WITH_MPI "Build with MPI support" OFF)
+
+    if (WITH_MPI)
+        set(CMAKE_C_COMPILER ${MPI_C_COMPILER})
+
+        list(APPEND ufocore_SRCS ufo-mpi-messenger.c)
+        list(APPEND UFOCORE_DEPS ${MPI_C_LIBRARIES})
+        include_directories(${MPI_C_INCLUDE_PATH})
+    endif ()
+endif ()
 
 #{{{ Link dirs of dependencies
 link_directories(
