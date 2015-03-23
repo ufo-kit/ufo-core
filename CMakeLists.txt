@@ -74,6 +74,15 @@ set(UFOCORE_DEPS
     ${GIO2_LIBRARIES}
     ${JSON_GLIB_LIBRARIES})
 
+if(PYTHON_FOUND)
+    option(WITH_PYTHON "Enable Python multithreading support" ON)
+
+    if (WITH_PYTHON)
+        include_directories(${PYTHON_INCLUDE_DIRS})
+        list(APPEND UFOCORE_DEPS ${PYTHON_LIBRARIES})
+    endif ()
+endif()
+
 if (MPI_C_FOUND)
     option(WITH_MPI "Build with MPI support" OFF)
 
