@@ -30,7 +30,7 @@
 #include <ufo/ufo-mpi-messenger.h>
 #endif
 
-#ifdef HAVE_ZMQ
+#ifdef WITH_ZMQ
 #include <ufo/ufo-zmq-messenger.h>
 #endif
 
@@ -91,7 +91,7 @@ ufo_daemon_new (const gchar *listen_address)
     priv->scheduler = ufo_scheduler_new ();
 #ifdef WITH_MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-#elif HAVE_ZMQ
+#elif WITH_ZMQ
     priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
 #else
     /* TODO: we should return a GError in the constructor */
@@ -535,7 +535,7 @@ ufo_daemon_stop (UfoDaemon *daemon, GError **error)
 
 #ifdef WITH_MPI
     tmp_msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-#elif HAVE_ZMQ
+#elif WITH_ZMQ
     tmp_msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
 #endif
 

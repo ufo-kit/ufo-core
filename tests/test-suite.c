@@ -51,7 +51,9 @@ int main(int argc, char *argv[])
     int provided;
     MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
     test_add_mpi_remote_node ();
-#elif HAVE_ZMQ
+#endif
+
+#ifdef WITH_ZMQ
     test_add_zmq_messenger ();
     test_add_remote_node ();
 #endif

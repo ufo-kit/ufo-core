@@ -27,7 +27,7 @@
 #include <ufo/ufo-mpi-messenger.h>
 #endif
 
-#ifdef HAVE_ZMQ
+#ifdef WITH_ZMQ
 #include <ufo/ufo-zmq-messenger.h>
 #endif
 
@@ -53,9 +53,11 @@ ufo_remote_node_new (const gchar *address)
     node = UFO_REMOTE_NODE (g_object_new (UFO_TYPE_REMOTE_NODE, NULL));
     priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
+    /* TODO: Use URI to determine which messenger to use */
+
 #ifdef WITH_MPI
     priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-#elif HAVE_ZMQ
+#elif WITH_ZMQ
     priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
 #else
     g_warning ("No messenger backend available");

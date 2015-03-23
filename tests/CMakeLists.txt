@@ -11,7 +11,7 @@ set(TEST_SRCS
 
 set(SUITE_BIN "test-suite")
 
-if (HAVE_ZMQ)
+if (WITH_ZMQ)
     list(APPEND TEST_SRCS test-zmq-messenger.c)
 endif ()
 

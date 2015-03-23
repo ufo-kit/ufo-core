@@ -78,33 +78,20 @@ set(ufocore_HDRS
     ufo-basic-ops.h
     )
 #}}}
-#{{{ optional dependencies
-
-if (ZMQ_FOUND)
-    set(HAVE_ZMQ 1)
-
-    link_directories(${ZMQ_LIBRARY_DIRS})
-    include_directories(${ZMQ_INCLUDE_DIRS})
-    list(APPEND UFOCORE_DEPS ${ZMQ_LIBRARIES})
-
-    list(APPEND ufocore_SRCS ufo-zmq-messenger.c)
-    list(APPEND ufocore_HDRS ufo-zmq-messenger.h)
-endif ()
-#}}}
 #{{{ libufo
+
 add_definitions(-DUFO_COMPILATION)
 
 if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_definitions(-DG_DISABLE_ASSERT)
 endif()
 
-add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
+if (WITH_ZMQ)
+    list(APPEND ufocore_SRCS ufo-zmq-messenger.c)
+    list(APPEND ufocore_HDRS ufo-zmq-messenger.h)
+endif ()
 
-if(PYTHON_FOUND)
-    option(WITH_PYTHON "Enable Python multithreading support" ON)
-    include_directories(${PYTHON_INCLUDE_DIRS})
-    target_link_libraries(ufo ${PYTHON_LIBRARIES})
-endif()
+add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 set_target_properties(ufo PROPERTIES
     VERSION ${PACKAGE_VERSION}

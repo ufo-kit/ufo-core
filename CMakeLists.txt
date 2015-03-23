@@ -86,6 +86,16 @@ if (MPI_C_FOUND)
     endif ()
 endif ()
 
+if (ZMQ_FOUND)
+    option(WITH_ZMQ "Build with ZMQ support" ON)
+
+    if (WITH_ZMQ)
+        link_directories(${ZMQ_LIBRARY_DIRS})
+        include_directories(${ZMQ_INCLUDE_DIRS})
+        list(APPEND UFOCORE_DEPS ${ZMQ_LIBRARIES})
+    endif ()
+endif ()
+
 #{{{ Link dirs of dependencies
 link_directories(
     ${GLIB2_LIBRARY_DIRS}
