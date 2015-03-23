@@ -54,7 +54,7 @@ def dfi(dset, oversampling=1, overwrite=True):
     to = padded_size / 2 + proj_width / 2
 
     transpose = TransposeProjections(number=n_proj)
-    pad = Zeropad(oversampling=oversampling)
+    pad = Zeropad(oversampling=oversampling, center_of_rotation=center)
     fft = Fft(dimensions=1, auto_zeropadding=0)
     dfi = DfiSinc()
     ifft = Ifft(dimensions=2)
