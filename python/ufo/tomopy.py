@@ -28,17 +28,17 @@ def _prepare(dset):
 
 
 def fbp(dset, overwrite=True):
-    from ufo import Fft, Ifft, Filter, Backproject, SinoGenerator
+    from ufo import Fft, Ifft, Filter, Backproject, TransposeProjections
 
     center, theta, n_proj, proj_width, _, projections, volume = _prepare(dset)
 
-    sino = SinoGenerator(num_projections=n_proj)
+    transpose = TransposeProjections(number=n_proj)
     bp = Backproject(axis_pos=center, angle_step=theta)
     fft = Fft()
     ifft = Ifft(crop_width=proj_width)
     flt = Filter()
 
-    for i, slce in enumerate(bp(ifft(flt(fft(sino(projections)))))):
+    for i, slce in enumerate(bp(ifft(flt(fft(transpose(projections)))))):
         volume[i,:,:] = slce
 
     dset.logger.info("ufo-fb [ok]")
@@ -46,22 +46,22 @@ def fbp(dset, overwrite=True):
 
 
 def dfi(dset, oversampling=1, overwrite=True):
-    from ufo import Zeropadding, Fft, Ifft, DfiSinc, Ifft, SwapQuadrants, SinoGenerator
+    from ufo import Zeropad, Fft, Ifft, DfiSinc, Ifft, SwapQuadrants, TransposeProjections
 
     center, theta, n_proj, proj_width, _, projections, volume = _prepare(dset)
     padded_size = pow(2, int(math.log(proj_width, 2) + 0.5))
     frm = padded_size / 2 - proj_width / 2
     to = padded_size / 2 + proj_width / 2
 
-    sino = SinoGenerator(num_projections=n_proj)
-    pad = Zeropadding(oversampling=oversampling)
+    transpose = TransposeProjections(number=n_proj)
+    pad = Zeropad(oversampling=oversampling)
     fft = Fft(dimensions=1, auto_zeropadding=0)
     dfi = DfiSinc()
     ifft = Ifft(dimensions=2)
     swap_forward = SwapQuadrants()
     swap_backward = SwapQuadrants()
 
-    for i, slce in enumerate(swap_backward(ifft(swap_forward(dfi(fft(pad(sino(projections)))))))):
+    for i, slce in enumerate(swap_backward(ifft(swap_forward(dfi(fft(pad(transpose(projections)))))))):
         volume[i,:,:] = slce[frm:to, frm:to]
 
     dset.logger.info("ufo-dfi [ok]")
@@ -70,13 +70,13 @@ def dfi(dset, oversampling=1, overwrite=True):
 
 try:
     def sart(dset, overwrite=True):
-        from ufo import Null, Ir, SinoGenerator, Buffer
+        from ufo import Null, Ir, TransposeProjections, Buffer
 
         center, theta, n_proj, proj_width, _, projections, volume = _prepare(dset)
 
         # FIXME: stupid hack
-        sinogen = SinoGenerator(num_projections=n_proj)
-        env = sinogen.env
+        transpose = TransposeProjections(number=n_proj)
+        env = transpose.env
 
         geometry = env.pm.get_plugin('ufo_ir_parallel_geometry_new',
                                      'libufoir_parallel_geometry.so')
@@ -93,7 +93,7 @@ try:
         ir = Ir(geometry=geometry, projector=projector, method=sart)
         bffr = Buffer()
 
-        for i, slce in enumerate(bffr(ir(sinogen(projections)))):
+        for i, slce in enumerate(bffr(ir(transpose(projections)))):
             volume[i,:,:] = slce[:,:]
 
         dset.logger.info("ufo-sart [ok]")

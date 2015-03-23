@@ -63,3 +63,22 @@ sinogram = np.ones((512, 512))
 for slice_data in backproject([sinogram]):
     print slice_data
 ```
+
+
+### TomoPy integration
+
+Using the `tomopy` module we can hook into the TomoPy pipeline and provide
+additional `ufo_fbp`, `ufo_dfi` and `ufo_sart` methods:
+
+```python
+import tomopy
+import ufo.tomopy
+
+d = tomopy.xtomo_dataset()
+d.dataset(data, white, dark, theta)
+d.normalize()
+d.center = 42.0
+d.ufo_fbp()
+
+tomopy.xtomo_writer(d.data_recon, 'result-', axis=0)
+```
