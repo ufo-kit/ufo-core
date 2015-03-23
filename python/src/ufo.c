@@ -109,10 +109,33 @@ fromarray_inplace (PyObject *self, PyObject *args)
     return Py_BuildValue("");
 }
 
+static PyObject *
+empty_like (PyObject *self, PyObject *args)
+{
+    PyArrayObject *np_array;
+    guint np_ndims;
+    npy_intp *np_dims;
+    UfoRequisition req;
+
+    if (!PyArg_ParseTuple (args, "O!", &PyArray_Type, &np_array))
+        return NULL;
+
+    np_ndims = PyArray_NDIM (np_array);
+    np_dims = PyArray_DIMS (np_array);
+
+    req.n_dims = np_ndims;
+
+    for (guint i = 0; i < np_ndims; i++)
+        req.dims[i] = np_dims[np_ndims - 1 - i];
+
+    return pygobject_new (G_OBJECT (ufo_buffer_new (&req, NULL)));
+}
+
 static PyMethodDef exported_methods[] = {
     {"asarray",             asarray,            METH_VARARGS, "Convert UfoBuffer to Numpy array"},
     {"fromarray",           fromarray,          METH_VARARGS, "Convert Numpy array to UfoBuffer"},
     {"fromarray_inplace",   fromarray_inplace,  METH_VARARGS, "Convert Numpy array to UfoBuffer in-place"},
+    {"empty_like",          empty_like,         METH_VARARGS, "Create UfoBuffer with dimensions of NumPy array"},
     {NULL, NULL, 0, NULL}
 };
 
