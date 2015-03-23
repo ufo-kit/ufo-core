@@ -49,7 +49,7 @@ def dfi(dset, oversampling=1, overwrite=True):
     from ufo import Zeropad, Fft, Ifft, DfiSinc, Ifft, SwapQuadrants, TransposeProjections
 
     center, theta, n_proj, proj_width, _, projections, volume = _prepare(dset)
-    padded_size = pow(2, int(math.log(proj_width, 2) + 0.5))
+    padded_size = pow(2, int(math.ceil(math.log(proj_width, 2))))
     frm = padded_size / 2 - proj_width / 2
     to = padded_size / 2 + proj_width / 2
 
