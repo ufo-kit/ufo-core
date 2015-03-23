@@ -725,7 +725,7 @@ update_location (UfoBufferPrivate *priv,
 /**
  * ufo_buffer_set_host_array:
  * @buffer: A #UfoBuffer
- * @array: A pointer to a float array with suitable size.
+ * @array: (type gulong): A pointer to a float array with suitable size.
  * @free_data: %TRUE if @buffer is supposed to clean up the host array.
  *
  * Use this function to set a host array with a user-provided memory buffer.
@@ -733,7 +733,7 @@ update_location (UfoBufferPrivate *priv,
  * consumer. Note, that the buffer *must* have an appropriate size.
  */
 void
-ufo_buffer_set_host_array (UfoBuffer *buffer, gfloat *array, gboolean free_data)
+ufo_buffer_set_host_array (UfoBuffer *buffer, gpointer array, gboolean free_data)
 {
     UfoBufferPrivate *priv;
 
