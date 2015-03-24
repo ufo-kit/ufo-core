@@ -88,10 +88,8 @@ if (MPI_C_FOUND)
 
     if (WITH_MPI)
         set(CMAKE_C_COMPILER ${MPI_C_COMPILER})
-
-        list(APPEND ufocore_SRCS ufo-mpi-messenger.c)
-        list(APPEND UFOCORE_DEPS ${MPI_C_LIBRARIES})
         include_directories(${MPI_C_INCLUDE_PATH})
+        list(APPEND UFOCORE_DEPS ${MPI_C_LIBRARIES})
     endif ()
 endif ()
 
