@@ -47,7 +47,7 @@ endif ()
 
 #}}}
 #{{{ Dependencies
-set(PKG_GLIB2_MIN_REQUIRED "2.22")
+set(PKG_GLIB2_MIN_REQUIRED "2.30")
 set(PKG_JSON_GLIB_MIN_REQUIRED "0.7.6")
 set(PKG_ZMQ_MIN_REQUIRED "2.1")
 
