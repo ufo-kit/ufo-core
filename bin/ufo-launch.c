@@ -125,7 +125,7 @@ parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
 
             if (g_match_info_matches (match)) {
                 GParamSpec *pspec;
-                GValue value = G_VALUE_INIT;
+                GValue value = {0};
 
                 gchar *prop = g_match_info_fetch (match, 1);
                 gchar *string_value = g_match_info_fetch (match, 2);
@@ -136,7 +136,7 @@ parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
                 pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (task), prop);
 
                 if (pspec != NULL) {
-                    GValue target_value = G_VALUE_INIT;
+                    GValue target_value = {0};
 
                     g_value_init (&target_value, pspec->value_type);
                     g_value_transform (&value, &target_value);

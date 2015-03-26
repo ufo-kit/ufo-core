@@ -113,7 +113,7 @@ static void
 test_insert_metadata (Fixture *fixture,
                       gconstpointer unused)
 {
-    GValue value = G_VALUE_INIT;
+    GValue value = {0};
     GValue *other;
 
     g_assert (ufo_buffer_get_metadata (fixture->buffer, "bar") == NULL);
@@ -143,7 +143,7 @@ static void
 test_copy_metadata (Fixture *fixture,
                     gconstpointer unused)
 {
-    GValue value = G_VALUE_INIT;
+    GValue value = {0};
     GValue *other;
     UfoBuffer *copy;
 

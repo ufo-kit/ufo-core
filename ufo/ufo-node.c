@@ -77,7 +77,7 @@ copy_properties (GObject *dst,
 
     for (guint i = 0; i < n_props; i++) {
         if (props[i]->flags & G_PARAM_WRITABLE) {
-            GValue value = G_VALUE_INIT;
+            GValue value = {0};
 
             g_value_init (&value, props[i]->value_type);
             g_object_get_property (src, props[i]->name, &value);
