@@ -89,6 +89,11 @@ if (WITH_ZMQ)
     list(APPEND ufocore_HDRS ufo-zmq-messenger.h)
 endif ()
 
+if (WITH_KIRO)
+    list(APPEND ufocore_SRCS ufo-kiro-messenger.c)
+    list(APPEND ufocore_HDRS ufo-kiro-messenger.h)
+endif ()
+
 add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 set_target_properties(ufo PROPERTIES
@@ -243,7 +248,7 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
-                    --ignore-headers=ufo-mpi-messenger.h
+                    "--ignore-headers=ufo-mpi-messenger.h ufo-kiro-messenger.h"
             DEPENDS ufo
             COMMENT "Running gtkdoc-scan"
             WORKING_DIRECTORY ${docs_out})

@@ -18,6 +18,7 @@
  */
 
 #include <string.h>
+#include <glib/gprintf.h>
 #include <ufo/ufo.h>
 #include "test-suite.h"
 
@@ -30,12 +31,16 @@ static void
 setup (Fixture *fixture, gconstpointer data)
 {
     GError *error = NULL;
-    gchar *addr = g_strdup ("tcp://127.0.0.1:5555");
+    const gchar *protocol = (const gchar *)data;
+    gchar *addr = g_malloc (strlen ("://127.0.0.1:5555") + strlen (protocol));
+    g_sprintf (addr, "%s://127.0.0.1:5555", protocol);
     fixture->daemon = ufo_daemon_new (addr);
     ufo_daemon_start (fixture->daemon, &error);
     g_assert_no_error (error);
 
     fixture->remote_node = (UfoRemoteNode *) ufo_remote_node_new (addr);
+
+    g_free (addr);
 }
 
 static void
@@ -59,9 +64,9 @@ test_remote_node_get_num_cpus (Fixture *fixture,
 }
 
 void
-test_add_remote_node (void)
+test_add_remote_node (const gchar* protocol)
 {
     g_test_add ("/opencl/remotenode/get_num_cpus",
-                Fixture, NULL,
+                Fixture, protocol,
                 setup, test_remote_node_get_num_cpus, teardown);
 }

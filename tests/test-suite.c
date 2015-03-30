@@ -55,7 +55,12 @@ int main(int argc, char *argv[])
 
 #ifdef WITH_ZMQ
     test_add_zmq_messenger ();
-    test_add_remote_node ();
+    test_add_remote_node ("tcp");
+#endif
+
+#ifdef WITH_KIRO
+    test_add_kiro_messenger ();
+    test_add_remote_node ("kiro");
 #endif
 
     g_test_run();

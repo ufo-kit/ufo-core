@@ -63,6 +63,7 @@ pkg_check_modules(GIO2 gio-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0>=${PKG_JSON_GLIB_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(ZMQ libzmq>=${PKG_ZMQ_MIN_REQUIRED})
 pkg_check_modules(PYTHON python)
+pkg_check_modules(KIRO kiro>=1.4)
 
 set(UFOCORE_DEPS
     m
@@ -100,6 +101,16 @@ if (ZMQ_FOUND)
         link_directories(${ZMQ_LIBRARY_DIRS})
         include_directories(${ZMQ_INCLUDE_DIRS})
         list(APPEND UFOCORE_DEPS ${ZMQ_LIBRARIES})
+    endif ()
+endif ()
+
+if (KIRO_FOUND)
+    option(WITH_KIRO "Build with KIRO InfiniBand support" ON)
+
+    if (WITH_KIRO)
+        link_directories(${KIRO_LIBRARY_DIRS})
+        include_directories(${KIRO_INCLUDE_DIRS})
+        list(APPEND UFOCORE_DEPS ${KIRO_LIBRARIES})
     endif ()
 endif ()
 

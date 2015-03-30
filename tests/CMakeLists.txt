@@ -19,6 +19,10 @@ if (WITH_MPI)
     list(APPEND TEST_SRCS test-mpi-remote-node.c)
 endif ()
 
+if (WITH_KIRO)
+    list(APPEND TEST_SRCS test-kiro-messenger.c)
+endif ()
+
 add_executable(${SUITE_BIN} ${TEST_SRCS})
 
 target_link_libraries(${SUITE_BIN} ufo ${UFOCORE_DEPS})

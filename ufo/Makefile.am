@@ -95,6 +95,12 @@ AM_CPPFLAGS += -DHAVE_PYTHON $(PYTHON_CFLAGS)
 libufo_la_LIBADD += $(PYTHON_LIBS) 
 endif
 
+if WITH_KIRO
+ufo_headers += ufo-kiro-messenger.h
+libufo_la_SOURCES += ufo-kiro-messenger.c
+libufo_la_LIBADD += $(KIRO_LIBS)
+AM_CPPFLAGS += -DWITH_KIRO $(KIRO_CFLAGS)
+endif
 
 ufoincludedir = ${includedir}/ufo-@VMAJ@/ufo
 ufoinclude_HEADERS = $(ufo_headers) ufo.h ufo-enums.h

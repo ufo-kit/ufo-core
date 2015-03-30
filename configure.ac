@@ -65,6 +65,30 @@ AX_PROG_CC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
 ])
 AM_CONDITIONAL([WITH_MPI], [test x"$with_mpi" = xyes])
 
+dnl ************
+dnl *** KIRO ***
+dnl ************
+
+# If --with-kiro=auto is used, try to find KIRO InfiniBand and use it only if found.
+# If --with-kiro=yes is used, try to find KIRO InfiniBand and fail if it isn't found.
+# If --with-mpi=no is used, don't build with KIRO InfiniBand support.
+AC_ARG_WITH(kiro, [AS_HELP_STRING([--with-kiro],
+    [locate KIRO InfiniBand library and build with support for InfiniBand
+     communication between nodes. Default: auto])
+],,[with_kiro=auto])
+#
+PKG_CHECK_MODULES([KIRO],[kiro >= 1.1],[use_kiro=yes],[use_kiro=no])
+if test x"$with_kiro" != xauto; then
+    if test x"$with_kiro" = xno; then
+        use_kiro=no
+    else
+        if test x"$use_kiro" != xyes; then
+            AC_MSG_FAILURE([KIRO InfiniBand support requested but KIRO library could not be found])
+        fi
+    fi
+fi
+AM_CONDITIONAL([WITH_KIRO], [test x"$use_kiro" = xyes]) 
+
 # Checks for programs.
 AC_PROG_CC_C99
 AC_PROG_INSTALL
@@ -73,7 +97,7 @@ AC_PROG_MAKE_SET
 LT_INIT
 
 # Checks for libraries.
-AM_PATH_GLIB_2_0(0.22.0,,,gmodule gobject gthread gio)
+AM_PATH_GLIB_2_0(2.30.0,,,gmodule gobject gthread gio)
 PKG_CHECK_MODULES([JSON_GLIB], [json-glib-1.0 >= 0.7.6])
 PKG_CHECK_MODULES([ZMQ3], [libzmq >= 2.1])
 PKG_CHECK_MODULES([OPENCL], [OpenCL >= 1.2])

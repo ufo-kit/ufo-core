@@ -206,8 +206,10 @@ ufo_kiro_messenger_send_blocking (UfoMessenger *msger,
         return NULL;
     }
 
-    //receive callback will automatically fill in the 'response' message for us
-    while (!response->data) {};
+    if (request_msg->type != UFO_MESSAGE_ACK) {
+        //receive callback will automatically fill in the 'response' message for us
+        while (!response) {};
+    }
 
     return response;
 }

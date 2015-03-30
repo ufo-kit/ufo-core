@@ -24,8 +24,9 @@ void test_add_buffer (void);
 void test_add_graph (void);
 void test_add_node (void);
 void test_add_profiler (void);
-void test_add_remote_node (void);
+void test_add_remote_node (const gchar *protocol);
 void test_add_mpi_remote_node (void);
 void test_add_zmq_messenger (void);
+void test_add_kiro_messenger (void);
 
 #endif
