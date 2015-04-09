@@ -18,6 +18,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include <json-glib/json-glib.h>
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-task-node.h>
@@ -336,35 +337,25 @@ build_remote_graph (UfoTaskGraph *remote_graph,
 static void
 create_remote_tasks (UfoTaskGraph *task_graph,
                      UfoTaskGraph *remote_graph,
-                     GList *first,
+                     UfoTaskNode *first,
                      UfoTaskNode *last,
                      UfoRemoteNode *remote)
 {
     UfoTaskGraphPrivate *priv;
     UfoTaskNode *task;
     gchar *json;
-    GList *pred;
-    guint port = 0;
 
-    priv = task_graph->priv;
     json = ufo_task_graph_get_json_data (remote_graph, NULL);
+    priv = task_graph->priv;
     ufo_remote_node_send_json (remote, UFO_REMOTE_MODE_STREAM, json);
 
     task = UFO_TASK_NODE (ufo_remote_task_new ());
     priv->remote_tasks = g_list_append (priv->remote_tasks, task);
     ufo_task_node_set_proc_node (task, UFO_NODE (remote));
 
-    /* Setting the remote's # of inputs to the # of inputs of the corresponding
-     * task */
-    GList *roots = ufo_graph_get_roots (UFO_GRAPH (remote_graph));
-    guint root_num_inputs = ufo_task_get_num_inputs (UFO_TASK (roots->data));
-    ufo_remote_node_set_num_inputs (remote, root_num_inputs);
-
-    g_list_for (first->data, pred) {
-        ufo_task_graph_connect_nodes_full (task_graph, pred->data, task, port++);
-    }
-
+    ufo_task_graph_connect_nodes (task_graph, first, task);
     ufo_task_graph_connect_nodes (task_graph, task, last);
+
     g_free (json);
 }
 
@@ -381,6 +372,7 @@ expand_remotes (UfoTaskGraph *task_graph,
 
     first = g_list_first (path);
     last = g_list_last (path);
+
     remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
     node = build_remote_graph (remote_graph, first, last);
 
@@ -392,7 +384,7 @@ expand_remotes (UfoTaskGraph *task_graph,
 
     g_list_for (remotes, it) {
         create_remote_tasks (task_graph, remote_graph,
-                             first, last->data, it->data);
+                             first->data, last->data, it->data);
     }
 
     g_object_unref (remote_graph);
