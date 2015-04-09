@@ -136,6 +136,26 @@ ufo_base_scheduler_get_arch (UfoBaseScheduler *scheduler)
 }
 
 /**
+ * ufo_base_scheduler_set_arch:
+ * @scheduler: A #UfoBaseScheduler
+ * @arch: A #UfoArchGraph
+ *
+ * Set ArchGraph to use in @scheduler.
+ */
+void
+ufo_base_scheduler_set_arch (UfoBaseScheduler *scheduler,
+                             UfoArchGraph *arch)
+{
+    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
+    g_return_val_if_fail (UFO_IS_ARCH_GRAPH (arch), NULL);
+
+    if (scheduler->priv->arch != NULL)
+        g_object_unref (scheduler->priv->arch);
+
+    scheduler->priv->arch = g_object_ref (arch);
+}
+
+/**
  * ufo_base_scheduler_set_gpu_nodes:
  * @scheduler: A #UfoBaseScheduler
  * @arch: A #UfoArchGraph from which the nodes come from
