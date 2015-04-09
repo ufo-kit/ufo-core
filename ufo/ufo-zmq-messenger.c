@@ -40,11 +40,12 @@ struct _UfoZmqMessengerPrivate {
     UfoMessengerRole role;
 };
 
-/* C99 allows flexible length structs that we use to map
-* arbitrary frame lengths that are transferred via zmq.
-* Note: Sizes of datatypes should be fixed and equal on all plattforms
-* (i.e. don't use a gsize as it has different size on x86 & x86_64)
-*/
+/*
+ * C99 allows flexible length structs that we use to map arbitrary frame lengths
+ * that are transferred via zmq.  Note: Sizes of datatypes should be fixed and
+ * equal on all plattforms (i.e. don't use a gsize as it has different size on
+ * x86 & x86_64).
+ */
 typedef struct _DataFrame {
     UfoMessageType type;
     guint64 data_size;
@@ -137,7 +138,7 @@ ufo_zmq_messenger_disconnect (UfoMessenger *msger)
         zmq_close (priv->zmq_socket);
         priv->zmq_socket = NULL;
 
-        // waits for outstanding messages to be flushed
+        /* waits for outstanding messages to be flushed */
         zmq_term (priv->zmq_ctx);
         g_free (priv->remote_addr);
     }
@@ -146,14 +147,6 @@ ufo_zmq_messenger_disconnect (UfoMessenger *msger)
     return;
 }
 
-/**
- * ufo_zmq_messenger_send_blocking: (skip)
- * @msger: #UfoMessenger
- * @request_msg: Request message
- * @error: Location for an error or %NULL
- *
- * Send message in blocking way.
- */
 static UfoMessage *
 ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
                                  UfoMessage *request_msg,
@@ -188,21 +181,23 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
         goto finalize;
     }
 
-    /* if this is an ACK message, don't expect a response
-     * (send_blocking is then most likely being called by the server)
+    /*
+     * If this is an ACK message, don't expect a response (send_blocking is then
+     * most likely being called by the server).
      */
-    if (request_msg->type == UFO_MESSAGE_ACK) {
+    if (request_msg->type == UFO_MESSAGE_ACK)
         goto finalize;
-    }
 
-    /* we always need to receive as response as ZMQ
-     * requires REQ/REP/REQ/REP/... scheme
+    /*
+     * We always need to receive as response as ZMQ requires REQ/REP/REQ/REP/...
+     * scheme.
      */
     zmq_msg_t reply;
     zmq_msg_init (&reply);
 
     err = zmq_msg_recv (&reply, priv->zmq_socket, 0);
     gint size = zmq_msg_size (&reply);
+
     if (err < 0) {
         g_set_error (error, ufo_messenger_error_quark (), zmq_errno(),
                      "Could not receive from %s: %s ", priv->remote_addr,
@@ -223,36 +218,26 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
     UfoMessage *reply_msg = ufo_message_new (resp_frame->type, resp_frame->data_size);
     memcpy (reply_msg->data, resp_frame->data, resp_frame->data_size);
 
-    //if (frame->type != 5 && frame->type != 7 && frame->type!=8)
-    //g_message ("Type: %i \tData_size: %i",(int) frame->type, (int) resp_frame->data_size);
-
     zmq_msg_close (&reply);
     result = reply_msg;
-    goto finalize;
 
-    finalize:
-        g_mutex_unlock (priv->mutex);
-        return result;
-
+finalize:
+    g_mutex_unlock (priv->mutex);
+    return result;
 }
 
-/**
- * ufo_zmq_messenger_recv_blocking: (skip)
- * @msger: A #UfoMessenger
- * @error: Location for an error or %NULL
- *
- * Receive message in blocking way.
- */
 static UfoMessage *
 ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
                                  GError **error)
 {
-    UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
+    UfoZmqMessengerPrivate *priv;
+    UfoMessage *result = NULL;
+
+    priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
     g_assert (priv->role == UFO_MESSENGER_SERVER);
 
     g_mutex_lock (priv->mutex);
 
-    UfoMessage *result = NULL;
     zmq_msg_t reply;
     zmq_msg_init (&reply);
     gint err = zmq_msg_recv (&reply, priv->zmq_socket, 0);
@@ -268,7 +253,8 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
 
     DataFrame *frame = zmq_msg_data (&reply);
     guint expected_size = (guint) (sizeof (DataFrame) + frame->data_size);
-    if ((guint)size != expected_size) {
+
+    if ((guint) size != expected_size) {
         g_set_error (error, ufo_messenger_error_quark(),
                      UFO_MESSENGER_SIZE_MISSMATCH,
                      "Received unexpected frame size: %d, should be: %d",
@@ -276,16 +262,13 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
         goto finalize;
     }
 
-    UfoMessage *msg = ufo_message_new (frame->type, frame->data_size);
-    memcpy (msg->data, frame->data, frame->data_size);
-
+    result = ufo_message_new (frame->type, frame->data_size);
+    memcpy (result->data, frame->data, frame->data_size);
     zmq_msg_close (&reply);
-    result = msg;
-    goto finalize;
 
-    finalize:
-        g_mutex_unlock (priv->mutex);
-        return result;
+finalize:
+    g_mutex_unlock (priv->mutex);
+    return result;
 }
 
 static void
