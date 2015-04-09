@@ -78,6 +78,8 @@ void            ufo_base_scheduler_set_rem_nodes_from_arch
 void            ufo_base_scheduler_run              (UfoBaseScheduler   *scheduler,
                                                      UfoTaskGraph       *task_graph,
                                                      GError            **error);
+void            ufo_base_scheduler_set_arch         (UfoBaseScheduler   *scheduler,
+                                                     UfoArchGraph       *arch);
 UfoArchGraph   *ufo_base_scheduler_get_arch         (UfoBaseScheduler   *scheduler);
 void            ufo_base_scheduler_set_gpu_nodes    (UfoBaseScheduler   *scheduler,
                                                      UfoArchGraph       *arch,
