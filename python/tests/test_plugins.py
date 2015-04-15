@@ -44,12 +44,21 @@ def test_read_single_tiffs_stepped():
     from ufo import Read, Null
 
     with single_tiff_setup(32) as d:
-        read = Read(path=d.root)
-        null = Null()
-
         read = Read(path=d.root, step=2)
+        null = Null()
         null(read()).run().join()
         assert(null.task.props.num_processed == 32 / 2)
+
+
+def test_read_single_tiffs_start_modified():
+    from ufo import Read, Null
+
+    with single_tiff_setup(32) as d:
+        read = Read(path=d.root, start=15)
+        null = Null()
+
+        null(read()).run().join()
+        assert(null.task.props.num_processed == 32 - 15)
 
 
 @disable
