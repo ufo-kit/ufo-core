@@ -173,7 +173,7 @@ alloc_device_image (UfoBufferPrivate *priv)
     if (priv->device_image != NULL)
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_image));
 
-    format.image_channel_order = CL_R;
+    format.image_channel_order = CL_INTENSITY;
     format.image_channel_data_type = CL_FLOAT;
 
     if (priv->requisition.n_dims == 2) {
@@ -218,7 +218,7 @@ alloc_device_image (UfoBufferPrivate *priv)
     if (priv->device_image != NULL)
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_image));
 
-    format.image_channel_order = CL_R;
+    format.image_channel_order = CL_INTENSITY;
     format.image_channel_data_type = CL_FLOAT;
 
     flags = CL_MEM_READ_WRITE;
