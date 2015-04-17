@@ -203,6 +203,7 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
 
     err = zmq_msg_recv (&reply, priv->zmq_socket, 0);
     gint size = zmq_msg_size (&reply);
+
     if (err < 0) {
         g_set_error (error, ufo_messenger_error_quark (), zmq_errno(),
                      "Could not receive from %s: %s ", priv->remote_addr,
@@ -223,17 +224,13 @@ ufo_zmq_messenger_send_blocking (UfoMessenger *msger,
     UfoMessage *reply_msg = ufo_message_new (resp_frame->type, resp_frame->data_size);
     memcpy (reply_msg->data, resp_frame->data, resp_frame->data_size);
 
-    //if (frame->type != 5 && frame->type != 7 && frame->type!=8)
-    //g_message ("Type: %i \tData_size: %i",(int) frame->type, (int) resp_frame->data_size);
-
     zmq_msg_close (&reply);
     result = reply_msg;
     goto finalize;
 
-    finalize:
-        g_mutex_unlock (priv->mutex);
-        return result;
-
+finalize:
+    g_mutex_unlock (priv->mutex);
+    return result;
 }
 
 /**
@@ -247,12 +244,14 @@ static UfoMessage *
 ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
                                  GError **error)
 {
-    UfoZmqMessengerPrivate *priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
+    UfoZmqMessengerPrivate *priv;
+    UfoMessage *result = NULL;
+
+    priv = UFO_ZMQ_MESSENGER_GET_PRIVATE (msger);
     g_assert (priv->role == UFO_MESSENGER_SERVER);
 
     g_mutex_lock (priv->mutex);
 
-    UfoMessage *result = NULL;
     zmq_msg_t reply;
     zmq_msg_init (&reply);
     gint err = zmq_msg_recv (&reply, priv->zmq_socket, 0);
@@ -268,6 +267,7 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
 
     DataFrame *frame = zmq_msg_data (&reply);
     guint expected_size = (guint) (sizeof (DataFrame) + frame->data_size);
+
     if ((guint)size != expected_size) {
         g_set_error (error, ufo_messenger_error_quark(),
                      UFO_MESSENGER_SIZE_MISSMATCH,
@@ -276,16 +276,13 @@ ufo_zmq_messenger_recv_blocking (UfoMessenger *msger,
         goto finalize;
     }
 
-    UfoMessage *msg = ufo_message_new (frame->type, frame->data_size);
-    memcpy (msg->data, frame->data, frame->data_size);
-
+    result = ufo_message_new (frame->type, frame->data_size);
+    memcpy (result->data, frame->data, frame->data_size);
     zmq_msg_close (&reply);
-    result = msg;
-    goto finalize;
 
-    finalize:
-        g_mutex_unlock (priv->mutex);
-        return result;
+finalize:
+    g_mutex_unlock (priv->mutex);
+    return result;
 }
 
 static void

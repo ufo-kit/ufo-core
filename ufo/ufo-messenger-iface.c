@@ -43,6 +43,7 @@ ufo_message_new (UfoMessageType type, guint64 data_size)
     UfoMessage *msg = g_malloc (sizeof (UfoMessage));
     msg->type = type;
     msg->data_size = data_size;
+
     if (data_size == 0)
         msg->data = NULL;
     else

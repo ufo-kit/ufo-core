@@ -193,7 +193,7 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
 
     // determine our total message size
     guint64 size = 0;
-    
+
     for (guint i = 0; i < priv->n_inputs; i++) {
         guint64 buffer_size = ufo_buffer_get_size (inputs[i]);
         size += buffer_size;
@@ -219,7 +219,6 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
     request->data = buffer;
     // send as a single message
     ufo_messenger_send_blocking (priv->msger, request, NULL);
-
 }
 
 void
@@ -291,7 +290,7 @@ ufo_remote_node_terminate (UfoRemoteNode *node)
     ufo_messenger_send_blocking (priv->msger, request, NULL);
 
     ufo_messenger_disconnect (priv->msger);
-    return; 
+    return;
 }
 
 static void
@@ -330,6 +329,6 @@ ufo_remote_node_init (UfoRemoteNode *self)
 {
     UfoRemoteNodePrivate *priv;
     self->priv = priv = UFO_REMOTE_NODE_GET_PRIVATE (self);
-    priv->n_inputs = 0; 
+    priv->n_inputs = 1;
     priv->terminated = FALSE;
 }
