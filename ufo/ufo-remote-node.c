@@ -23,14 +23,6 @@
 
 #include "config.h"
 
-#ifdef WITH_MPI
-#include <ufo/ufo-mpi-messenger.h>
-#endif
-
-#ifdef WITH_ZMQ
-#include <ufo/ufo-zmq-messenger.h>
-#endif
-
 G_DEFINE_TYPE (UfoRemoteNode, ufo_remote_node, UFO_TYPE_NODE)
 
 #define UFO_REMOTE_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_REMOTE_NODE, UfoRemoteNodePrivate))
@@ -53,15 +45,13 @@ ufo_remote_node_new (const gchar *address)
     node = UFO_REMOTE_NODE (g_object_new (UFO_TYPE_REMOTE_NODE, NULL));
     priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
-    /* TODO: Use URI to determine which messenger to use */
-
-#ifdef WITH_MPI
-    priv->msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-#elif WITH_ZMQ
-    priv->msger = UFO_MESSENGER (ufo_zmq_messenger_new ());
-#else
-    g_warning ("No messenger backend available");
-#endif
+    priv->msger = ufo_messenger_create (address, &error);
+    if (error != NULL) {
+        /* TODO: Stop RemoteNode from constructing */
+        g_warning ("%s", error->message);
+        g_error_free (error);
+        return NULL;
+    }
 
     gchar *addr = g_strdup (address);
     ufo_messenger_connect (priv->msger, addr, UFO_MESSENGER_CLIENT, &error);

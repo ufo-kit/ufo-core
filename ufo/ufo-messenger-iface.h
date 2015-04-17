@@ -102,10 +102,14 @@ struct _UfoMessage {
 void ufo_message_free (UfoMessage *msg);
 UfoMessage * ufo_message_new (UfoMessageType type, guint64 data_size);
 
+UfoMessenger * ufo_messenger_create (const gchar *address, GError **error);
+
 typedef enum {
     UFO_MESSENGER_CONNECTION_PROBLEM,
     UFO_MESSENGER_BUFFER_FULL,
-    UFO_MESSENGER_SIZE_MISSMATCH
+    UFO_MESSENGER_SIZE_MISSMATCH,
+    UFO_MESSENGER_INVALID_ADDRESS,
+    UFO_MESSENGER_UNKNOWN_PROTOCOL
 } UfoMessengerError;
 
 /**
