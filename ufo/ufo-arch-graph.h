@@ -65,7 +65,7 @@ struct _UfoArchGraphClass {
 };
 
 UfoGraph     *ufo_arch_graph_new              (UfoResources   *resources,
-                                               GList          *remotes);
+                                               GValueArray    *remotes);
 UfoResources *ufo_arch_graph_get_resources    (UfoArchGraph   *graph);
 guint         ufo_arch_graph_get_num_cpus     (UfoArchGraph   *graph);
 guint         ufo_arch_graph_get_num_remotes  (UfoArchGraph   *graph);
