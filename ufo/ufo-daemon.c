@@ -105,13 +105,41 @@ ufo_daemon_new (const gchar *listen_address)
     priv->messenger = ufo_messenger_create (priv->listen_address, &error);
 
     if (error != NULL) {
-        g_printerr ("%s\n", error->message);
+        g_printerr ("Error while creating ufo-daemon: %s\n", error->message);
         g_error_free (error);
         g_object_unref (daemon);
         return NULL;
     }
 
     return daemon;
+}
+
+static inline gboolean
+retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, const gchar *str)
+{
+    GError *error = NULL;
+    guint counter = retries;
+
+    while (counter) {
+        ufo_messenger_send_blocking (msger, msg, &error);
+
+        if (error != NULL) {
+            if (counter > 1) {
+                g_debug ("Failed to send %s. Retrying %u more times.", str, --counter);
+                g_error_free (error);
+                error = NULL;
+            }
+            else {
+                g_printerr ("Failed to send %s after %u times: \"%s\" Giving up...\n", str, retries,error->message);
+                g_error_free (error);
+                return FALSE;
+            }
+            g_usleep (1 * G_USEC_PER_SEC);
+        }
+        else
+            break;
+    }
+    return TRUE;
 }
 
 static void
@@ -130,12 +158,7 @@ handle_get_num_devices (UfoDaemon *daemon, UfoMessage *request)
 
     *(guint16 *) reply->data = (guint16) num_devices;
 
-    GError *error = NULL;
-    ufo_messenger_send_blocking (priv->messenger, reply, 0);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-        g_error_free (error);
-    }
+    retry_send_n_times (3, priv->messenger, reply, "num devices");
     ufo_message_free (reply);
 }
 
@@ -184,9 +207,8 @@ handle_replicate_json (UfoDaemon *daemon, UfoMessage *request)
 
     // send ack
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    ufo_messenger_send_blocking (priv->messenger, reply, NULL);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
+    if (!retry_send_n_times (3, priv->messenger, reply, "replicate JSON ACK")) {
+        ufo_message_free (reply);
         goto replicate_json_free;
     }
     ufo_message_free (reply);
@@ -224,9 +246,8 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *request)
 
     /* send ack */
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    ufo_messenger_send_blocking (priv->messenger, reply, NULL);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
+    if (!retry_send_n_times (3, priv->messenger, reply, "stream JSON ACK")) {
+        ufo_message_free (reply);
         return;
     }
     ufo_message_free (reply);
@@ -281,11 +302,7 @@ handle_get_structure (UfoDaemon *daemon, UfoMessage *request)
     reply = ufo_message_new (UFO_MESSAGE_ACK, sizeof (struct _Structure));
     *(struct _Structure *) (reply->data) = message_data;
 
-    GError *error = NULL;
-    ufo_messenger_send_blocking (priv->messenger, reply, NULL);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-    }
+    retry_send_n_times (3, priv->messenger, reply, "get structure reply");
     ufo_message_free (reply);
 }
 
@@ -324,12 +341,8 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
 
     ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task), priv->input);
 
-    GError *error = NULL;
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    ufo_messenger_send_blocking (priv->messenger, reply, NULL);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-    }
+    retry_send_n_times (3, priv->messenger, reply, "inputs reply");
     ufo_message_free (reply);
 }
 
@@ -338,7 +351,6 @@ handle_get_requisition (UfoDaemon *daemon, UfoMessage *request)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     UfoRequisition requisition;
-    GError *error = NULL;
 
     /* We need to get the requisition from the last node */
     ufo_output_task_get_output_requisition (UFO_OUTPUT_TASK (priv->output_task),
@@ -346,10 +358,7 @@ handle_get_requisition (UfoDaemon *daemon, UfoMessage *request)
 
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, sizeof (UfoRequisition));
     memcpy (reply->data, &requisition, reply->data_size);
-    ufo_messenger_send_blocking (priv->messenger, reply, NULL);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-    }
+    retry_send_n_times (3, priv->messenger, reply, "requisition reply");
     ufo_message_free (reply);
 }
 
@@ -359,17 +368,14 @@ void handle_get_result (UfoDaemon *daemon, UfoMessage *request)
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     UfoBuffer *buffer;
     gsize size;
-    GError *error = NULL;
 
     buffer = ufo_output_task_get_output_buffer (UFO_OUTPUT_TASK (priv->output_task));
     size = ufo_buffer_get_size (buffer);
 
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, size);
     memcpy (reply->data, ufo_buffer_get_host_array (buffer, NULL), size);
-    ufo_messenger_send_blocking (priv->messenger, reply, NULL);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-    }
+    retry_send_n_times (3, priv->messenger, reply, "results");
+    ufo_message_free (reply);
     ufo_output_task_release_output_buffer (UFO_OUTPUT_TASK (priv->output_task), buffer);
 }
 
@@ -391,12 +397,8 @@ void handle_cleanup (UfoDaemon *daemon, UfoMessage *request)
      * We send the ACK early on, because we don't want to let the host wait for
      * actually cleaning up (and waiting some time to unref the input task).
      */
-    GError *error = NULL;
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    ufo_messenger_send_blocking (priv->messenger, reply, NULL);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-    }
+    retry_send_n_times (3, priv->messenger, reply, "cleanup ACK");
     ufo_message_free (reply);
 
     /* TODO: check that we don't need to execute this branch wen priv->input is null */
@@ -418,14 +420,10 @@ void handle_cleanup (UfoDaemon *daemon, UfoMessage *request)
 static void
 handle_terminate (UfoDaemon *daemon, UfoMessage *request)
 {
-    GError *error = NULL;
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
-
+    
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    ufo_messenger_send_blocking (priv->messenger, reply, NULL);
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-    }
+    retry_send_n_times (3, priv->messenger, reply, "terminate ACK");
     ufo_message_free (reply);
 
     if (priv->scheduler_thread != NULL) {
@@ -567,9 +565,10 @@ ufo_daemon_stop (UfoDaemon *daemon, GError **error)
     }
 
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
-    ufo_messenger_send_blocking (tmp_messenger, request, NULL);
-    if (tmp_error != NULL) {
-        g_propagate_error (error, tmp_error);
+    if (!retry_send_n_times (3, priv->messenger, request, "terminate request")) {
+        g_set_error (&tmp_error, UFO_MESSENGER_ERROR, UFO_MESSENGER_CONNECTION_PROBLEM,
+                     "Failed to send terminate request");
+        ufo_message_free (request);
         goto daemon_stop_unlock;
     }
 

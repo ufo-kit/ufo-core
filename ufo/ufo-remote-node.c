@@ -67,6 +67,37 @@ ufo_remote_node_new (const gchar *address)
     return UFO_NODE (node);
 }
 
+static inline gboolean
+retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, const gchar *str, UfoMessage **response)
+{
+    GError *error = NULL;
+    guint counter = retries;
+
+    while (counter) {
+        if (response)
+            *response = ufo_messenger_send_blocking (msger, msg, &error);
+        else
+            ufo_messenger_send_blocking (msger, msg, &error);
+
+        if (error != NULL) {
+            if (counter > 1) {
+                g_debug ("Failed to send %s. Retrying %u more times.", str, --counter);
+                g_error_free (error);
+                error = NULL;
+            }
+            else {
+                g_printerr ("Failed to send %s after %u times: \"%s\" Giving up...\n", str, retries, error->message);
+                g_error_free (error);
+                return FALSE;
+            }
+            g_usleep (1 * G_USEC_PER_SEC);
+        }
+        else
+            break;
+    }
+    return TRUE;
+}
+
 guint
 ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
 {
@@ -78,7 +109,11 @@ ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
     priv = node->priv;
 
     UfoMessage *result;
-    result = ufo_messenger_send_blocking (priv->msger, request, NULL);
+    if (!retry_send_n_times (3, priv->msger, request, "get num gpus request", &result)) {
+        ufo_message_free (request);
+        g_printerr ("Communication with peer failed. Pretending no devices are available on the peer.");
+        return 0;
+    }
     guint n_devices = * (guint16 *) result->data;
 
     ufo_message_free (request);
@@ -132,7 +167,7 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
     request = ufo_message_new (type, size);
 
     memcpy (request->data, json, size);
-    ufo_messenger_send_blocking (priv->msger, request, NULL);
+    retry_send_n_times (3, priv->msger, request, "JSON", NULL);
 }
 
 guint
@@ -208,7 +243,7 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
     g_free (request->data);
     request->data = buffer;
     // send as a single message
-    ufo_messenger_send_blocking (priv->msger, request, NULL);
+    retry_send_n_times (3, priv->msger, request, "inputs", NULL);
 }
 
 void
@@ -223,7 +258,11 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
 
     priv = node->priv;
     request = ufo_message_new (UFO_MESSAGE_GET_RESULT, 0);
-    response = ufo_messenger_send_blocking (priv->msger, request, NULL);
+    if (!retry_send_n_times (3, priv->msger, request, "result request", &response)) {
+        g_printerr ("A communication error occured while trying to get the results from the peer.");
+        ufo_message_free (request);
+        return;
+    }
 
     ufo_buffer_discard_location (buffer);
     host_array = ufo_buffer_get_host_array (buffer, NULL);
@@ -246,7 +285,11 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
 
     priv = node->priv;
     request = ufo_message_new (UFO_MESSAGE_GET_REQUISITION, 0);
-    response = ufo_messenger_send_blocking (priv->msger, request, NULL);
+    if (!retry_send_n_times (3, priv->msger, request, "requisition request", &response)) {
+        g_printerr ("A communication error occured while trying to get requisition from the peer.");
+        ufo_message_free (request);
+        return;
+    }
 
     g_assert (response->data_size == sizeof (UfoRequisition));
     memcpy (requisition, response->data, sizeof (UfoRequisition));
@@ -259,7 +302,7 @@ static void
 cleanup_remote (UfoRemoteNodePrivate *priv)
 {
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_CLEANUP, 0);
-    ufo_messenger_send_blocking (priv->msger, request, NULL);
+    retry_send_n_times (3, priv->msger, request, "cleanup request", NULL);
     ufo_message_free (request);
 }
 
@@ -277,7 +320,7 @@ ufo_remote_node_terminate (UfoRemoteNode *node)
 
     priv = node->priv;
     request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
-    ufo_messenger_send_blocking (priv->msger, request, NULL);
+    retry_send_n_times (3, priv->msger, request, "terminate request", NULL);
 
     ufo_messenger_disconnect (priv->msger);
     return;

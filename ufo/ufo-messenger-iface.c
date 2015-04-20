@@ -47,7 +47,7 @@ ufo_messenger_create (const gchar *address, GError **error)
 {
     UfoMessenger *msgr_out = NULL;
     GError *error_internal = NULL;
-    GRegex *regex = g_regex_new ("^[a-z A-Z]*://[a-z A-Z 0-9 \\.]*:[0-9]{1,5}", \
+    GRegex *regex = g_regex_new ("^[a-z A-Z]+://[a-z A-Z 0-9 \\.]+:[0-9]{1,5}", \
                                  0, G_REGEX_MATCH_NOTEMPTY, &error_internal);
     if (error_internal) {
         g_propagate_error (error, error_internal);
