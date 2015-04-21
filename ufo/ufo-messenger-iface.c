@@ -67,7 +67,7 @@ ufo_messenger_error_quark ()
 
 /**
  * ufo_messenger_connect:
- * @msger: The messenger object
+ * @messenger: The messenger object
  * @addr: (transfer none) : The address to connect. This is implementation specific.
  * @role: The role of the local endpoint (client or server).
  * @error: (allow-none): Location for a #GError or %NULL.
@@ -75,23 +75,23 @@ ufo_messenger_error_quark ()
  * Connects a messenger to and endpoint.
  */
 void
-ufo_messenger_connect (UfoMessenger *msger,
+ufo_messenger_connect (UfoMessenger *messenger,
                        const gchar *addr,
                        UfoMessengerRole role,
                        GError **error)
 {
-    UFO_MESSENGER_GET_IFACE (msger)->connect (msger, addr, role, error);
+    UFO_MESSENGER_GET_IFACE (messenger)->connect (messenger, addr, role, error);
 }
 
 void
-ufo_messenger_disconnect (UfoMessenger *msger)
+ufo_messenger_disconnect (UfoMessenger *messenger)
 {
-    UFO_MESSENGER_GET_IFACE (msger)->disconnect (msger);
+    UFO_MESSENGER_GET_IFACE (messenger)->disconnect (messenger);
 }
 
 /**
  * ufo_messenger_send_blocking: (skip)
- * @msger: The messenger object
+ * @messenger: The messenger object
  * @request: (transfer none): The request #UfoMessage.
  * @error: A #GError
  *
@@ -101,16 +101,16 @@ ufo_messenger_disconnect (UfoMessenger *msger)
  * endpoint and blocks until the message want fully sent.
  */
 UfoMessage *
-ufo_messenger_send_blocking (UfoMessenger *msger,
+ufo_messenger_send_blocking (UfoMessenger *messenger,
                              UfoMessage *request,
                              GError **error)
 {
-    return UFO_MESSENGER_GET_IFACE (msger)->send_blocking (msger, request, error);
+    return UFO_MESSENGER_GET_IFACE (messenger)->send_blocking (messenger, request, error);
 }
 
 /**
  * ufo_messenger_recv_blocking: (skip)
- * @msger: The messenger object.
+ * @messenger: The messenger object.
  * @error: The #GError object
  *
  * Returns: The received #UfoMessage.
@@ -120,10 +120,10 @@ ufo_messenger_send_blocking (UfoMessenger *msger,
  *
  */
 UfoMessage *
-ufo_messenger_recv_blocking (UfoMessenger *msger,
+ufo_messenger_recv_blocking (UfoMessenger *messenger,
                             GError **error)
 {
-    return UFO_MESSENGER_GET_IFACE (msger)->recv_blocking (msger, error);
+    return UFO_MESSENGER_GET_IFACE (messenger)->recv_blocking (messenger, error);
 }
 
 static void
