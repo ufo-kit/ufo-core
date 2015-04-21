@@ -56,14 +56,14 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 /**
  * ufo_arch_graph_new:
  * @resources: (allow-none): An initialized #UfoResources object or %NULL
- * @remotes: (element-type utf8): (allow-none): A #GList containing
+ * @remotes: (array) (element-type utf8) (allow-none): A #GValueArray containing
  *      address strings.
  *
  * Returns: A new #UfoArchGraph.
  */
 UfoGraph *
 ufo_arch_graph_new (UfoResources *resources,
-                    GList *remotes)
+                    GValueArray *remotes)
 {
     return UFO_GRAPH (g_object_new (UFO_TYPE_ARCH_GRAPH,
 			    "resources", resources,
