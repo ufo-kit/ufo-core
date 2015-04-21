@@ -28,7 +28,6 @@
 #include <CL/cl.h>
 #endif
 
-#include <ufo/ufo-arch-graph.h>
 #include <ufo/ufo-base-scheduler.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-task-iface.h>
@@ -58,7 +57,7 @@ G_DEFINE_TYPE_WITH_CODE (UfoBaseScheduler, ufo_base_scheduler, G_TYPE_OBJECT,
 
 struct _UfoBaseSchedulerPrivate {
     GError          *construct_error;
-    UfoArchGraph    *arch;
+    UfoResources    *resources;
     GList           *gpu_nodes;
     gboolean         expand;
     gboolean         trace;
@@ -115,85 +114,65 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
     g_timer_destroy (timer);
 }
 
-/**
- * ufo_base_scheduler_get_arch:
- * @scheduler: A #UfoBaseScheduler
- *
- * Get arch graph associated with this scheduler.
- *
- * Returns: (transfer none): The #UfoArchGraph object.
- */
-UfoArchGraph *
-ufo_base_scheduler_get_arch (UfoBaseScheduler *scheduler)
+void
+ufo_base_scheduler_set_resources (UfoBaseScheduler *scheduler,
+                                  UfoResources *resources)
 {
-    g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
+    UfoBaseSchedulerPrivate *priv;
 
-    if (scheduler->priv->arch == NULL) {
-        scheduler->priv->arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (NULL, NULL));
-    }
+    g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
+    priv = UFO_BASE_SCHEDULER_GET_PRIVATE (scheduler);
 
-    return scheduler->priv->arch;
+    if (priv->resources != NULL)
+        g_object_unref (priv->resources);
+
+    priv->resources = g_object_ref (resources);
 }
 
 /**
- * ufo_base_scheduler_set_arch:
+ * ufo_base_scheduler_get_resources:
  * @scheduler: A #UfoBaseScheduler
- * @arch: A #UfoArchGraph
  *
- * Set ArchGraph to use in @scheduler.
+ * Get the current #UfoResources currently associated with @scheduler.
+ *
+ * Returns: (transfer none): the currently associated #UfoResources object.
  */
-void
-ufo_base_scheduler_set_arch (UfoBaseScheduler *scheduler,
-                             UfoArchGraph *arch)
+UfoResources *
+ufo_base_scheduler_get_resources (UfoBaseScheduler *scheduler)
 {
+    UfoBaseSchedulerPrivate *priv;
+    GError *error = NULL;
+
     g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
-    g_return_val_if_fail (UFO_IS_ARCH_GRAPH (arch), NULL);
+    priv = UFO_BASE_SCHEDULER_GET_PRIVATE (scheduler);
 
-    if (scheduler->priv->arch != NULL)
-        g_object_unref (scheduler->priv->arch);
+    if (priv->resources == NULL) {
+        priv->resources = ufo_resources_new (&error);
 
-    scheduler->priv->arch = g_object_ref (arch);
+        if (error != NULL) {
+            g_error ("Error: %s", error->message);
+            return NULL;
+        }
+    }
+
+    return priv->resources;
 }
 
 /**
  * ufo_base_scheduler_set_gpu_nodes:
  * @scheduler: A #UfoBaseScheduler
- * @arch: A #UfoArchGraph from which the nodes come from
  * @gpu_nodes: (element-type Ufo.GpuNode): A list of #UfoGpuNode objects.
  *
  * Sets the GPU nodes that @scheduler can only use. Note, that the #UfoGpuNode
  * objects must be from the same #UfoArchGraph that is returned by
- * ufo_base_scheduler_get_arch.
+ * ufo_base_scheduler_get_resources().
  */
 void
 ufo_base_scheduler_set_gpu_nodes (UfoBaseScheduler *scheduler,
-                                  UfoArchGraph *arch,
                                   GList *gpu_nodes)
 {
     g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
-    g_return_if_fail (arch != NULL);
-
-    if (scheduler->priv->arch != NULL)
-        g_object_unref (scheduler->priv->arch);
-
-    scheduler->priv->arch = g_object_ref (arch);
     scheduler->priv->gpu_nodes = g_list_copy (gpu_nodes);
-}
-
-/**
- * ufo_base_scheduler_set_rem_nodes:
- * @scheduler: A #UfoBaseScheduler
- * @arch: A #UfoArchGraph containing the remote nodes to use
- *
- * Sets the remote nodes for the @scheduler to use by extracting the necessary
- * information from the #UfoArchGraph.
- */
-void
-ufo_base_scheduler_set_rem_nodes_from_arch (UfoBaseScheduler *scheduler,
-				UfoArchGraph *arch)
-{
-	/* ufo_base_scheduler_set_gpu_nodes (scheduler, arch, */
-	/* 				ufo_arch_graph_get_gpu_nodes(arch)); */
 }
 
 static void
@@ -262,9 +241,9 @@ ufo_base_scheduler_dispose (GObject *object)
 
     priv = UFO_BASE_SCHEDULER_GET_PRIVATE (object);
 
-    if (priv->arch != NULL) {
-        g_object_unref (priv->arch);
-        priv->arch = NULL;
+    if (priv->resources != NULL) {
+        g_object_unref (priv->resources);
+        priv->resources = NULL;
     }
 
     G_OBJECT_CLASS (ufo_base_scheduler_parent_class)->dispose (object);
@@ -366,4 +345,5 @@ ufo_base_scheduler_init (UfoBaseScheduler *scheduler)
     priv->ran = FALSE;
     priv->time = 0.0;
     priv->gpu_nodes = NULL;
+    priv->resources = NULL;
 }

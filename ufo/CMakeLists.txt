@@ -4,7 +4,6 @@ cmake_minimum_required(VERSION 2.6)
 set(ufocore_SRCS
     compat.c
     ufo-priv.c
-    ufo-arch-graph.c
     ufo-base-scheduler.c
     ufo-copy-task.c
     ufo-buffer.c
@@ -42,7 +41,6 @@ set(ufocore_SRCS
 #}}}
 #{{{ headers
 set(ufocore_HDRS
-    ufo-arch-graph.h
     ufo-base-scheduler.h
     ufo-copy-task.h
     ufo-buffer.h

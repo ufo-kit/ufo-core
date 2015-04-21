@@ -448,7 +448,6 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
                          UfoTaskGraph *task_graph,
                          GError **error)
 {
-    UfoArchGraph *arch;
     UfoResources *resources;
     UfoGraph *group_graph;
     GList *threads;
@@ -458,8 +457,7 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (UFO_IS_GROUP_SCHEDULER (scheduler));
 
-    arch = ufo_base_scheduler_get_arch (scheduler);
-    resources = ufo_arch_graph_get_resources (arch);
+    resources = ufo_base_scheduler_get_resources (scheduler);
     group_graph = build_group_graph (scheduler, task_graph, resources, error);
 
     if (group_graph == NULL)

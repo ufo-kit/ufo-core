@@ -53,7 +53,6 @@ G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)
 struct _UfoDaemonPrivate {
     UfoPluginManager *manager;
     UfoResources *resources;
-    UfoArchGraph *arch;
     UfoTaskGraph *task_graph;
     UfoBaseScheduler *scheduler;
     GThread *scheduler_thread;
@@ -414,7 +413,7 @@ run_scheduler (UfoDaemon *daemon)
 
     g_message ("Run scheduler ...");
     priv->scheduler = ufo_scheduler_new ();
-    ufo_base_scheduler_set_arch (priv->scheduler, priv->arch);
+    ufo_base_scheduler_set_resources (priv->scheduler, priv->resources);
     ufo_base_scheduler_run (priv->scheduler, priv->task_graph, NULL);
     g_message ("Done.");
 
@@ -437,8 +436,6 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
         g_warning ("%s\n", error->message);
         return;
     }
-
-    priv->arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources, NULL));
 
     /* tell the calling thread that we have started */
     g_mutex_lock (priv->started_lock);

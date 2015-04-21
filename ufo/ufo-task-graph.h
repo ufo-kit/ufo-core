@@ -25,7 +25,6 @@
 #endif
 
 #include <ufo/ufo-graph.h>
-#include <ufo/ufo-arch-graph.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-plugin-manager.h>
 
@@ -92,7 +91,7 @@ gboolean     ufo_task_graph_is_alright          (UfoTaskGraph       *task_graph,
 void         ufo_task_graph_map                 (UfoTaskGraph       *task_graph,
                                                  GList              *gpu_nodes);
 void         ufo_task_graph_expand              (UfoTaskGraph       *task_graph,
-                                                 UfoArchGraph       *arch_graph,
+                                                 UfoResources       *resources,
                                                  guint               n_gpus,
                                                  gboolean            expand_remote);
 void         ufo_task_graph_connect_nodes       (UfoTaskGraph       *graph,

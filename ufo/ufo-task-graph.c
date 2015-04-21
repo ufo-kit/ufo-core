@@ -406,7 +406,7 @@ has_common_ancestries (UfoTaskGraph *graph, GList *path)
 /**
  * ufo_task_graph_expand:
  * @task_graph: A #UfoTaskGraph
- * @arch_graph: A #UfoArchGraph
+ * @resources: A #UfoResources objects
  * @n_gpus: Number of GPUs to expand the graph for
  * @expand_remote: %TRUE if remote nodes should be inserted
  *
@@ -416,7 +416,7 @@ has_common_ancestries (UfoTaskGraph *graph, GList *path)
  */
 void
 ufo_task_graph_expand (UfoTaskGraph *task_graph,
-                       UfoArchGraph *arch_graph,
+                       UfoResources *resources,
                        guint n_gpus,
                        gboolean expand_remote)
 {
@@ -462,7 +462,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
             GList *remotes;
             guint n_remotes;
 
-            remotes = ufo_arch_graph_get_remote_nodes (arch_graph);
+            remotes = ufo_resources_get_remote_nodes (resources);
             n_remotes = g_list_length (remotes);
 
             if (n_remotes > 0) {

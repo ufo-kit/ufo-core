@@ -30,6 +30,7 @@
 
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-gpu-node.h>
+#include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-enums.h>
 #include "compat.h"
 
@@ -72,7 +73,6 @@ ufo_resources_error_quark (void)
 struct _UfoResourcesPrivate {
     GError          *construct_error;
 
-    /* Property storage */
     UfoDeviceType    device_type;
     gint             platform_index;
 
@@ -88,12 +88,16 @@ struct _UfoResourcesPrivate {
     GList       *programs;
     GList       *kernels;
     GString     *build_opts;
+
+    GList       *remotes;
+    GList       *remote_nodes;
 };
 
 enum {
     PROP_0,
     PROP_PLATFORM_INDEX,
     PROP_DEVICE_TYPE,
+    PROP_REMOTES,
     N_PROPERTIES
 };
 
@@ -873,6 +877,22 @@ ufo_resources_get_gpu_nodes (UfoResources *resources)
     return g_list_copy (resources->priv->gpu_nodes);
 }
 
+/**
+ * ufo_resources_get_remote_nodes:
+ * @resources: A #UfoResources
+ *
+ * Get all #UfoRemoteNode objects managed by @resources.
+ *
+ * Returns: (transfer container) (element-type Ufo.RemoteNode): List with
+ * #UfoRemoteNode objects. Free with g_list_free() but not its elements.
+ */
+GList *
+ufo_resources_get_remote_nodes (UfoResources *resources)
+{
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources), NULL);
+    return g_list_copy (resources->priv->remote_nodes);
+}
+
 static void
 ufo_resources_set_property (GObject *object,
                             guint property_id,
@@ -888,6 +908,29 @@ ufo_resources_set_property (GObject *object,
 
         case PROP_DEVICE_TYPE:
             priv->device_type = g_value_get_flags (value);
+            break;
+
+        case PROP_REMOTES:
+            {
+                GValueArray *array;
+
+                g_assert (priv->remotes == NULL);
+                array = g_value_get_boxed (value);
+
+                if (array != NULL) {
+                    g_list_free (priv->remotes);
+
+                    for (guint i = 0; i < array->n_values; i++) {
+                        gchar *address;
+                        UfoNode *node;
+
+                        address = g_strdup (g_value_get_string (&array->values[i]));
+                        node = ufo_remote_node_new (address);
+                        priv->remotes = g_list_append (priv->remotes, address);
+                        priv->remote_nodes = g_list_append (priv->remote_nodes, node);
+                    }
+                }
+            }
             break;
 
         default:
@@ -913,20 +956,14 @@ ufo_resources_get_property (GObject *object,
             g_value_set_flags (value, priv->device_type);
             break;
 
+        case PROP_REMOTES:
+            g_value_set_boxed (value, priv->remotes);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
     }
-}
-
-static void
-list_free_full (GList **list,
-                GFunc free_func)
-{
-    g_assert (list != NULL);
-    g_list_foreach (*list, free_func, NULL);
-    g_list_free (*list);
-    *list = NULL;
 }
 
 static void
@@ -941,8 +978,15 @@ ufo_resources_dispose (GObject *object)
         g_object_unref (G_OBJECT (it->data));
     }
 
+    g_list_for (priv->remote_nodes, it) {
+        g_object_unref (G_OBJECT (it->data));
+    }
+
     g_list_free (priv->gpu_nodes);
+    g_list_free (priv->remote_nodes);
+
     priv->gpu_nodes = NULL;
+    priv->remote_nodes = NULL;
 }
 
 static void
@@ -955,9 +999,10 @@ ufo_resources_finalize (GObject *object)
     g_clear_error (&priv->construct_error);
     g_hash_table_destroy (priv->kernel_cache);
 
-    list_free_full (&priv->paths, (GFunc) g_free);
-    list_free_full (&priv->kernels, (GFunc) release_kernel);
-    list_free_full (&priv->programs, (GFunc) release_program);
+    g_list_free_full (priv->remotes, g_free);
+    g_list_free_full (priv->paths, g_free);
+    g_list_free_full (priv->kernels, (GDestroyNotify) release_kernel);
+    g_list_free_full (priv->programs, (GDestroyNotify) release_program);
 
     if (priv->context)
         UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
@@ -1041,6 +1086,17 @@ ufo_resources_class_init (UfoResourcesClass *klass)
                             UFO_TYPE_DEVICE_TYPE, UFO_DEVICE_ALL,
                             G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
+    properties[PROP_REMOTES] =
+        g_param_spec_value_array ("remotes",
+                                  "List with remote addresses",
+                                  "List with remote addresses",
+                                  g_param_spec_string ("remote",
+                                                       "Remote address",
+                                                       "Remote address",
+                                                       "tcp://127.0.0.1:5554",
+                                                       G_PARAM_CONSTRUCT_ONLY | G_PARAM_READABLE),
+                                  G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
         g_object_class_install_property (oclass, i, properties[i]);
 
@@ -1051,6 +1107,9 @@ static void
 ufo_resources_init (UfoResources *self)
 {
     UfoResourcesPrivate *priv;
+    const gchar *kernel_path;
+    gchar **kernel_paths;
+    gchar **path;
 
     self->priv = priv = UFO_RESOURCES_GET_PRIVATE (self);
 
@@ -1063,17 +1122,21 @@ ufo_resources_init (UfoResources *self)
     priv->paths = g_list_append (NULL, g_strdup ("."));
     priv->paths = g_list_append (priv->paths, g_strdup (UFO_KERNEL_DIR));
     priv->gpu_nodes = NULL;
+    priv->remotes = NULL;
+    priv->remote_nodes = NULL;
 
-    gchar **kernel_paths, **path;
-    const gchar *kernel_path = g_getenv("UFO_KERNEL_PATH");
+    kernel_path = g_getenv ("UFO_KERNEL_PATH");
+
     if (kernel_path != NULL) {
-        kernel_paths = g_strsplit(kernel_path, ":", -1);
-        for (path=kernel_paths; *path; path++) {
+        kernel_paths = g_strsplit (kernel_path, ":", -1);
+
+        for (path = kernel_paths; *path; path++) {
             if (**path) {
-                priv->paths = g_list_append(priv->paths, *path);
+                priv->paths = g_list_append (priv->paths, *path);
             }
         }
-        g_free(kernel_paths);
+
+        g_free (kernel_paths);
     }
 
     priv->device_type = UFO_DEVICE_GPU;
