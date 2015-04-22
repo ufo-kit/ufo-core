@@ -72,17 +72,13 @@ struct _UfoBaseSchedulerClass {
     void (*run) (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, GError **error);
 };
 
-void            ufo_base_scheduler_set_rem_nodes_from_arch
-                                                    (UfoBaseScheduler   *scheduler,
-                                                     UfoArchGraph       *arch);
 void            ufo_base_scheduler_run              (UfoBaseScheduler   *scheduler,
                                                      UfoTaskGraph       *task_graph,
                                                      GError            **error);
-void            ufo_base_scheduler_set_arch         (UfoBaseScheduler   *scheduler,
-                                                     UfoArchGraph       *arch);
-UfoArchGraph   *ufo_base_scheduler_get_arch         (UfoBaseScheduler   *scheduler);
+void            ufo_base_scheduler_set_resources    (UfoBaseScheduler   *scheduler,
+                                                     UfoResources       *resources);
+UfoResources   *ufo_base_scheduler_get_resources    (UfoBaseScheduler   *scheduler);
 void            ufo_base_scheduler_set_gpu_nodes    (UfoBaseScheduler   *scheduler,
-                                                     UfoArchGraph       *arch,
                                                      GList              *gpu_nodes);
 GType           ufo_base_scheduler_get_type         (void);
 GQuark          ufo_base_scheduler_error_quark      (void);

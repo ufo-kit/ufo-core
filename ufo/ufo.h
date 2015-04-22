@@ -22,7 +22,6 @@
 
 #define __UFO_H_INSIDE__
 
-#include <ufo/ufo-arch-graph.h>
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-copy-task.h>
 #include <ufo/ufo-cpu-node.h>

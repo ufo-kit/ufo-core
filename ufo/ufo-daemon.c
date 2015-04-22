@@ -53,15 +53,12 @@ G_DEFINE_TYPE (UfoDaemon, ufo_daemon, G_TYPE_OBJECT)
 struct _UfoDaemonPrivate {
     UfoPluginManager *manager;
     UfoResources *resources;
-    UfoArchGraph *arch;
     UfoTaskGraph *task_graph;
-    UfoBaseScheduler *scheduler;
     GThread *scheduler_thread;
     gpointer socket;
     UfoNode *input_task;
     UfoNode *output_task;
     UfoBuffer *input;
-    cl_context context;
     gchar *listen_address;
     GThread *thread;
     GMutex *startstop_lock;
@@ -176,11 +173,13 @@ read_json (UfoDaemon *daemon, UfoMessage *message)
 static void
 handle_replicate_json (UfoDaemon *daemon, UfoMessage *request)
 {
-    UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    UfoDaemonPrivate *priv;
+    UfoBaseScheduler *scheduler;
     gchar *json;
     UfoTaskGraph *graph;
     GError *error = NULL;
 
+    priv = UFO_DAEMON_GET_PRIVATE (daemon);
     json = read_json (daemon, request);
 
     /* send ack */
@@ -196,10 +195,9 @@ handle_replicate_json (UfoDaemon *daemon, UfoMessage *request)
         goto replicate_json_free;
     }
 
-    ufo_base_scheduler_run (priv->scheduler, graph, NULL);
-    g_object_unref (priv->scheduler);
-
-    priv->scheduler = ufo_scheduler_new ();
+    scheduler = ufo_scheduler_new ();
+    ufo_base_scheduler_run (scheduler, graph, NULL);
+    g_object_unref (scheduler);
 
 replicate_json_free:
     g_object_unref (graph);
@@ -410,17 +408,18 @@ handle_terminate (UfoDaemon *daemon, UfoMessage *request)
 static gpointer
 run_scheduler (UfoDaemon *daemon)
 {
-    UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
+    UfoDaemonPrivate *priv;
+    UfoBaseScheduler *scheduler;
+
+    priv = UFO_DAEMON_GET_PRIVATE (daemon);
 
     g_message ("Run scheduler ...");
-    priv->scheduler = ufo_scheduler_new ();
-    ufo_base_scheduler_set_arch (priv->scheduler, priv->arch);
-    ufo_base_scheduler_run (priv->scheduler, priv->task_graph, NULL);
+    scheduler = ufo_scheduler_new ();
+    ufo_base_scheduler_set_resources (scheduler, priv->resources);
+    ufo_base_scheduler_run (scheduler, priv->task_graph, NULL);
     g_message ("Done.");
 
-    g_object_unref (priv->scheduler);
-    priv->scheduler = ufo_scheduler_new ();
-
+    g_object_unref (scheduler);
     return NULL;
 }
 
@@ -437,8 +436,6 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
         g_warning ("%s\n", error->message);
         return;
     }
-
-    priv->arch = UFO_ARCH_GRAPH (ufo_arch_graph_new (priv->resources, NULL));
 
     /* tell the calling thread that we have started */
     g_mutex_lock (priv->started_lock);
@@ -551,6 +548,8 @@ ufo_daemon_stop (UfoDaemon *daemon, GError **error)
     g_mutex_unlock (priv->stopped_lock);
 
 daemon_stop_unlock:
+    g_object_unref (tmp_messenger);
+    g_object_unref (priv->resources);
     g_mutex_unlock (priv->startstop_lock);
 }
 
@@ -578,9 +577,6 @@ ufo_daemon_dispose (GObject *object)
 
     if (priv->manager != NULL)
         g_object_unref (priv->manager);
-
-    if (priv->scheduler != NULL)
-        g_object_unref (priv->scheduler);
 
     G_OBJECT_CLASS (ufo_daemon_parent_class)->dispose (object);
 }
@@ -614,7 +610,6 @@ ufo_daemon_init (UfoDaemon *self)
     UfoDaemonPrivate *priv;
     self->priv = priv = UFO_DAEMON_GET_PRIVATE (self);
 
-    priv->scheduler = NULL;
     priv->startstop_lock = g_mutex_new ();
     priv->started_lock = g_mutex_new ();
     priv->stopped_lock = g_mutex_new ();

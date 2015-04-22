@@ -393,22 +393,19 @@ setup_tasks (UfoBaseScheduler *scheduler,
              UfoTaskGraph *task_graph,
              GError **error)
 {
-    UfoArchGraph *arch;
     UfoResources *resources;
     TaskLocalData **tlds;
     GList *nodes;
     guint n_nodes;
     gboolean tracing_enabled;
 
-    arch = ufo_base_scheduler_get_arch (scheduler);
-    resources = ufo_arch_graph_get_resources (arch);
+    resources = ufo_base_scheduler_get_resources (scheduler);
     g_object_get (scheduler, "enable-tracing", &tracing_enabled, NULL);
 
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
     n_nodes = g_list_length (nodes);
 
     tlds = g_new0 (TaskLocalData *, n_nodes);
-
 
     for (guint i = 0; i < n_nodes; i++) {
         UfoNode *node;
@@ -462,7 +459,7 @@ setup_groups (UfoBaseScheduler *scheduler,
 
     groups = NULL;
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
-    resources = ufo_arch_graph_get_resources (ufo_base_scheduler_get_arch (scheduler));
+    resources = ufo_base_scheduler_get_resources (scheduler);
     context = ufo_resources_get_context (resources);
 
     g_list_for (nodes, it) {
@@ -536,14 +533,14 @@ correct_connections (UfoTaskGraph *graph,
 
 static void
 replicate_task_graph (UfoTaskGraph *graph,
-                      UfoArchGraph *arch)
+                      UfoResources *resources)
 {
     GList *remotes;
     GList *it;
     guint n_graphs;
     guint idx = 1;
 
-    remotes = ufo_arch_graph_get_remote_nodes (arch);
+    remotes = ufo_resources_get_remote_nodes (resources);
     n_graphs = g_list_length (remotes) + 1;
 
     g_list_for (remotes, it) {
@@ -594,7 +591,6 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
                    GError **error)
 {
     UfoSchedulerPrivate *priv;
-    UfoArchGraph *arch;
     UfoResources *resources;
     UfoTaskGraph *graph;
     GList *gpu_nodes;
@@ -613,19 +609,18 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
                   NULL);
 
     graph = task_graph;
-    arch = ufo_base_scheduler_get_arch (scheduler);
-    resources = ufo_arch_graph_get_resources (arch);
+    resources = ufo_base_scheduler_get_resources (scheduler);
     gpu_nodes = ufo_resources_get_gpu_nodes (resources);
 
     if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
-        replicate_task_graph (graph, arch);
+        replicate_task_graph (graph, resources);
     }
 
     if (expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
 
         if (!priv->ran)
-            ufo_task_graph_expand (graph, arch, g_list_length (gpu_nodes), expand_remote);
+            ufo_task_graph_expand (graph, resources, g_list_length (gpu_nodes), expand_remote);
         else
             g_debug ("Task graph already expanded, skipping.");
     }

@@ -53,10 +53,6 @@ G_DEFINE_TYPE (UfoFixedScheduler, ufo_fixed_scheduler, UFO_TYPE_BASE_SCHEDULER)
 
 #define UFO_FIXED_SCHEDULER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_FIXED_SCHEDULER, UfoFixedSchedulerPrivate))
 
-struct  _UfoFixedSchedulerPrivate {
-    UfoArchGraph *arch;
-};
-
 typedef struct {
     UfoTask *from;
     UfoTask *to;
@@ -509,7 +505,6 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
                          UfoTaskGraph *task_graph,
                          GError **error)
 {
-    UfoArchGraph *arch;
     UfoResources *resources;
     ProcessData *pdata;
     GList *threads;
@@ -518,8 +513,7 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (UFO_IS_FIXED_SCHEDULER (scheduler));
 
-    arch = ufo_base_scheduler_get_arch (scheduler);
-    resources = ufo_arch_graph_get_resources (arch);
+    resources = ufo_base_scheduler_get_resources (scheduler);
     pdata = setup_tasks (UFO_GRAPH (task_graph), scheduler, resources, &tmp_error);
 
     if (tmp_error != NULL) {
@@ -563,38 +557,16 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 }
 
 static void
-ufo_fixed_scheduler_dispose (GObject *object)
-{
-    UfoFixedSchedulerPrivate *priv;
-
-    priv = UFO_FIXED_SCHEDULER_GET_PRIVATE (object);
-
-    if (priv->arch != NULL) {
-        g_object_unref (priv->arch);
-        priv->arch = NULL;
-    }
-
-    G_OBJECT_CLASS (ufo_fixed_scheduler_parent_class)->dispose (object);
-}
-
-static void
 ufo_fixed_scheduler_class_init (UfoFixedSchedulerClass *klass)
 {
-    GObjectClass *oclass;
     UfoBaseSchedulerClass *sclass;
 
     sclass = UFO_BASE_SCHEDULER_CLASS (klass);
     sclass->run = ufo_fixed_scheduler_run;
-
-    oclass = G_OBJECT_CLASS (klass);
-    oclass->dispose = ufo_fixed_scheduler_dispose;
-
-    g_type_class_add_private (klass, sizeof (UfoFixedSchedulerPrivate));
 }
 
 static void
 ufo_fixed_scheduler_init (UfoFixedScheduler *scheduler)
 {
     scheduler->priv = UFO_FIXED_SCHEDULER_GET_PRIVATE (scheduler);
-    scheduler->priv->arch = NULL;
 }
