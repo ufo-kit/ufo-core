@@ -27,6 +27,10 @@
 #include <ufo/ufo-mpi-messenger.h>
 #endif
 
+#ifdef WITH_KIRO
+#include <ufo/ufo-kiro-messenger.h>
+#endif
+
 #include <ufo/ufo-messenger-iface.h>
 
 typedef UfoMessengerIface UfoMessengerInterface;
@@ -67,6 +71,13 @@ ufo_messenger_create (const gchar *address, GError **error)
 #ifdef WITH_MPI
         if (!g_strcmp0 (protocol[0], "mpi")) {
             msgr_out = UFO_MESSENGER (ufo_mpi_messenger_new ());
+            goto done;
+        }
+#endif
+
+#ifdef WITH_KIRO
+        if (!g_strcmp0 (protocol[0], "kiro")) {
+            msgr_out = UFO_MESSENGER (ufo_kiro_messenger_new ());
             goto done;
         }
 #endif

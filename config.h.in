@@ -2,6 +2,7 @@
 #cmakedefine HAVE_VIENNACL  1
 #cmakedefine WITH_ZMQ       1
 #cmakedefine WITH_MPI       1
+#cmakedefine WITH_KIRO      1
 #define UFO_PLUGIN_DIR  "${UFO_PLUGINDIR}"
 #define UFO_KERNEL_DIR  "${UFO_KERNELDIR}"
 #define UFO_VERSION     "${PACKAGE_VERSION}"
