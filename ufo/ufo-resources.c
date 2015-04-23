@@ -1094,8 +1094,8 @@ ufo_resources_class_init (UfoResourcesClass *klass)
                                                        "Remote address",
                                                        "Remote address",
                                                        "tcp://127.0.0.1:5554",
-                                                       G_PARAM_CONSTRUCT_ONLY | G_PARAM_READABLE),
-                                  G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+                                                       G_PARAM_READABLE),
+                                  G_PARAM_READWRITE);
 
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
         g_object_class_install_property (oclass, i, properties[i]);
