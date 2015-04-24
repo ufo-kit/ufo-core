@@ -37,16 +37,22 @@ handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
     }
 }
 
-static GList *
-string_array_to_list (gchar **array)
+static GValueArray *
+string_array_to_value_array (gchar **array)
 {
-    GList *result = NULL;
+    GValueArray *result = NULL;
 
     if (array == NULL)
         return NULL;
-
-    for (guint i = 0; array[i] != NULL; i++)
-        result = g_list_append (result, array[i]);
+    
+    result = g_value_array_new (0);
+    
+    for (guint i = 0; array[i] != NULL; i++) {
+        GValue *tmp = (GValue *) g_malloc0 (sizeof (GValue));
+        g_value_init (tmp, G_TYPE_STRING);
+        g_value_set_string (tmp, array[i]);
+        result = g_value_array_append (result, tmp);
+    }
 
     return result;
 }
@@ -56,9 +62,10 @@ execute_json (const gchar *filename,
               gchar **addresses)
 {
     UfoTaskGraph    *task_graph;
+    UfoResources    *resources = NULL;
     UfoBaseScheduler *scheduler;
     UfoPluginManager *manager;
-    GList *address_list = NULL;
+    GValueArray *address_list = NULL;
     GError *error = NULL;
 
     manager = ufo_plugin_manager_new ();
@@ -67,10 +74,18 @@ execute_json (const gchar *filename,
     ufo_task_graph_read_from_file (task_graph, manager, filename, &error);
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
-    address_list = string_array_to_list (addresses);
-    g_list_free (address_list);
-
     scheduler = ufo_scheduler_new ();
+
+    address_list = string_array_to_value_array (addresses);
+    if (address_list) {
+        resources = UFO_RESOURCES (ufo_resources_new (NULL));
+        g_object_set (G_OBJECT (resources),
+                      "remotes", address_list,
+                      NULL);
+        g_value_array_free (address_list);
+        ufo_base_scheduler_set_resources (scheduler, resources);
+    }
+
 
     ufo_base_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
@@ -78,6 +93,9 @@ execute_json (const gchar *filename,
     g_object_unref (task_graph);
     g_object_unref (scheduler);
     g_object_unref (manager);
+
+    if (resources)
+        g_object_unref (resources);
 }
 
 #ifdef WITH_MPI
