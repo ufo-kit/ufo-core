@@ -44,9 +44,9 @@ string_array_to_value_array (gchar **array)
 
     if (array == NULL)
         return NULL;
-    
+
     result = g_value_array_new (0);
-    
+
     for (guint i = 0; array[i] != NULL; i++) {
         GValue *tmp = (GValue *) g_malloc0 (sizeof (GValue));
         g_value_init (tmp, G_TYPE_STRING);
