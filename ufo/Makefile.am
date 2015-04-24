@@ -40,7 +40,7 @@ ufo_sources = \
     ufo-task-iface.c \
     ufo-task-graph.c \
     ufo-task-node.c \
-    ufo-transform-iface \
+    ufo-transform-iface.c \
     ufo-two-way-queue.c \
     ufo-basic-ops.c \
     ufo-zmq-messenger.c
