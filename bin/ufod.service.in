@@ -1,0 +1,5 @@
+[Unit]
+Description=Remote node daemon for UFO
+
+[Service]
+ExecStart=@UFO_BINDIR@/ufod --listen tcp://127.0.0.1:5000
