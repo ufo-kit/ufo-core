@@ -45,7 +45,6 @@ struct _UfoTaskNodePrivate {
     UfoSendPattern   pattern;
     UfoNode         *proc_node;
     UfoGroup        *out_group;
-    UfoProfiler     *profiler;
     GList           *in_groups[16];
     GList           *current[16];
     gint             n_expected[16];
@@ -236,34 +235,6 @@ ufo_task_node_set_proc_node (UfoTaskNode *task_node,
     task_node->priv->proc_node = proc_node;
 }
 
-void
-ufo_task_node_set_profiler (UfoTaskNode *node,
-                            UfoProfiler *profiler)
-{
-    g_return_if_fail (UFO_IS_TASK_NODE (node));
-
-    if (node->priv->profiler)
-        g_object_unref (node->priv->profiler);
-
-    g_object_ref (profiler);
-    node->priv->profiler = profiler;
-}
-
-/**
- * ufo_task_node_get_profiler:
- * @node: A #UfoTaskNode
- *
- * Get the associated profiler of @node.
- *
- * Return value: (transfer full): A #UfoProfiler object.
- */
-UfoProfiler *
-ufo_task_node_get_profiler (UfoTaskNode *node)
-{
-    g_return_val_if_fail (UFO_IS_TASK_NODE (node), NULL);
-    return node->priv->profiler;
-}
-
 /**
  * ufo_task_node_get_proc_node:
  * @node: A #UfoTaskNode
@@ -347,21 +318,6 @@ ufo_task_node_get_property (GObject *object,
 }
 
 static void
-ufo_task_node_dispose (GObject *object)
-{
-    UfoTaskNodePrivate *priv;
-
-    priv = UFO_TASK_NODE_GET_PRIVATE (object);
-
-    if (priv->profiler) {
-        g_object_unref (priv->profiler);
-        priv->profiler = NULL;
-    }
-
-    G_OBJECT_CLASS (ufo_task_node_parent_class)->dispose (object);
-}
-
-static void
 ufo_task_node_finalize (GObject *object)
 {
     UfoTaskNodePrivate *priv;
@@ -382,7 +338,6 @@ ufo_task_node_class_init (UfoTaskNodeClass *klass)
 
     oclass = G_OBJECT_CLASS (klass);
     oclass->get_property = ufo_task_node_get_property;
-    oclass->dispose = ufo_task_node_dispose;
     oclass->finalize = ufo_task_node_finalize;
 
     nclass = UFO_NODE_CLASS (klass);
@@ -412,7 +367,6 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv->index = 0;
     self->priv->total = 1;
     self->priv->num_processed = 0;
-    self->priv->profiler = ufo_profiler_new ();
 
     for (guint i = 0; i < 16; i++) {
         self->priv->in_groups[i] = NULL;

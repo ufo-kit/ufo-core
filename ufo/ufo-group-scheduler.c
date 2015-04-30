@@ -304,7 +304,7 @@ run_generator_or_processor (UfoTask *task,
     UfoProfiler *profiler;
     gboolean active;
 
-    profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (task));
+    profiler = ufo_node_get_profiler (UFO_NODE (task));
 
     switch (mode) {
         case UFO_TASK_MODE_PROCESSOR:
@@ -363,7 +363,7 @@ run_group (TaskGroup *group)
         current = schedule_next (group, current);
 
         task = UFO_TASK (current->data);
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (task));
+        profiler = ufo_node_get_profiler (UFO_NODE (task));
 
         /* Ask current task about size requirements */
         ufo_task_get_requisition (task, inputs, &requisition);
@@ -478,7 +478,7 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
         g_list_for (group->tasks, jt) {
             UfoTaskNode *task = UFO_TASK_NODE (jt->data);
 
-            ufo_profiler_enable_tracing (ufo_task_node_get_profiler (task), TRUE);
+            ufo_profiler_enable_tracing (ufo_node_get_profiler (UFO_NODE (task)), TRUE);
             ufo_task_setup (UFO_TASK (task), resources, error);
 
             tasks = g_list_append (tasks, task);

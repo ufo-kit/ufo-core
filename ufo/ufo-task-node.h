@@ -26,7 +26,6 @@
 
 #include <ufo/ufo-node.h>
 #include <ufo/ufo-group.h>
-#include <ufo/ufo-profiler.h>
 
 G_BEGIN_DECLS
 
@@ -99,10 +98,7 @@ void            ufo_task_node_set_partition         (UfoTaskNode    *node,
 void            ufo_task_node_get_partition         (UfoTaskNode    *node,
                                                      guint          *index,
                                                      guint          *total);
-void            ufo_task_node_set_profiler          (UfoTaskNode    *node,
-                                                     UfoProfiler    *profiler);
 void            ufo_task_node_reset                 (UfoTaskNode    *node);
-UfoProfiler    *ufo_task_node_get_profiler          (UfoTaskNode    *node);
 void            ufo_task_node_increase_processed    (UfoTaskNode    *node);
 GType           ufo_task_node_get_type              (void);
 

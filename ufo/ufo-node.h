@@ -25,6 +25,7 @@
 #endif
 
 #include <glib-object.h>
+#include <ufo/ufo-profiler.h>
 
 G_BEGIN_DECLS
 
@@ -67,15 +68,18 @@ struct _UfoNodeClass {
                          UfoNode   *n2);
 };
 
-UfoNode     *ufo_node_new       (gpointer    label);
-gpointer     ufo_node_get_label (UfoNode    *node);
-UfoNode     *ufo_node_copy      (UfoNode    *node,
-                                 GError    **error);
-gboolean     ufo_node_equal     (UfoNode    *n1,
-                                 UfoNode    *n2);
-guint        ufo_node_get_index (UfoNode    *node);
-guint        ufo_node_get_total (UfoNode    *node);
-GType        ufo_node_get_type  (void);
+UfoNode     *ufo_node_new           (gpointer     label);
+gpointer     ufo_node_get_label     (UfoNode     *node);
+UfoNode     *ufo_node_copy          (UfoNode     *node,
+                                     GError     **error);
+gboolean     ufo_node_equal         (UfoNode     *n1,
+                                     UfoNode     *n2);
+guint        ufo_node_get_index     (UfoNode     *node);
+guint        ufo_node_get_total     (UfoNode     *node);
+GType        ufo_node_get_type      (void);
+void         ufo_node_set_profiler  (UfoNode     *node,
+                                     UfoProfiler *profiler);
+UfoProfiler *ufo_node_get_profiler  (UfoNode     *node);
 
 G_END_DECLS
 

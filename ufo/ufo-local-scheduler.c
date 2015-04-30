@@ -185,7 +185,7 @@ run_local (TaskLocal *local)
             break;
 
         /* Choose next task of the local */
-        /* profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (task)); */
+        /* profiler = ufo_node_get_profiler (UFO_NODE (task)); */
 
         /* Ask current task about size requirements */
         ufo_task_get_requisition (task, inputs, &requisition);
