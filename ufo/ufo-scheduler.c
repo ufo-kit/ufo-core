@@ -230,7 +230,7 @@ run_task (TaskLocalData *tld)
     node = UFO_TASK_NODE (tld->task);
     active = TRUE;
     output = NULL;
-    profiler = g_object_ref (ufo_task_node_get_profiler (node));
+    profiler = g_object_ref (ufo_node_get_profiler (UFO_NODE (node)));
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
         run_remote_task (tld);
@@ -432,7 +432,7 @@ setup_tasks (UfoBaseScheduler *scheduler,
             return NULL;
         }
 
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (node));
+        profiler = ufo_node_get_profiler (UFO_NODE (node));
         ufo_profiler_enable_tracing (profiler, tracing_enabled);
 
         tld->finished = g_new0 (gboolean, tld->n_inputs);

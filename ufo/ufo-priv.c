@@ -44,7 +44,7 @@ get_sorted_trace_events (GList *nodes)
         GList *jt;
 
         node = UFO_TASK_NODE (it->data);
-        profiler = ufo_task_node_get_profiler (node);
+        profiler = ufo_node_get_profiler (UFO_NODE (node));
         events = ufo_profiler_get_trace_events (profiler);
 
         g_list_for (events, jt) {
@@ -141,7 +141,7 @@ ufo_write_opencl_events (GList *nodes)
     g_list_for (nodes, it) {
         UfoProfiler *profiler;
 
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (it->data));
+        profiler = ufo_node_get_profiler (UFO_NODE (it->data));
         ufo_profiler_foreach (profiler, (UfoProfilerFunc) add_events, &container);
     }
 
