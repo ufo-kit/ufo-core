@@ -93,7 +93,8 @@ typedef enum {
     UFO_TRACE_EVENT_PROCESS     = 1 << 0,
     UFO_TRACE_EVENT_GENERATE    = 1 << 1,
     UFO_TRACE_EVENT_BEGIN       = 1 << 2,
-    UFO_TRACE_EVENT_END         = 1 << 3
+    UFO_TRACE_EVENT_END         = 1 << 3,
+    UFO_TRACE_EVENT_NETWORK     = 1 << 4,
 } UfoTraceEventType;
 
 #define UFO_TRACE_EVENT_TYPE_MASK   (UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_GENERATE)
@@ -109,6 +110,7 @@ typedef struct {
     UfoTraceEventType type;
     gpointer     thread_id;
     gdouble      timestamp;
+    gchar       *args;
 } UfoTraceEvent;
 
 typedef enum {
@@ -140,7 +142,8 @@ void         ufo_profiler_start         (UfoProfiler        *profiler,
 void         ufo_profiler_stop          (UfoProfiler        *profiler,
                                          UfoProfilerTimer    timer);
 void         ufo_profiler_trace_event   (UfoProfiler        *profiler,
-                                         UfoTraceEventType   type);
+                                         UfoTraceEventType   type,
+                                         const gchar        *args);
 void         ufo_profiler_enable_tracing
                                         (UfoProfiler        *profiler,
                                          gboolean            enable);
