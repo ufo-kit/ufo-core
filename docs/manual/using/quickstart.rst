@@ -22,12 +22,12 @@ The ``ufo-launch`` tool receives a list of tasks separated by exclamation marks
 can add key-value pairs seperated by an equal sign. For example, to split a
 multi EDF file to single TIFFs you would do::
 
-    $ ufo-launch reader path=file.edf ! writer filename=out-%05i.tif
+    $ ufo-launch read path=file.edf ! write filename=out-%05i.tif
 
 You can concatenate an arbitrary number of tasks. For example to blur the lena
 image you would something like this::
 
-    $ ufo-launch reader path=lena.tif ! gaussian-blur size=20 sigma=5 ! writer
+    $ ufo-launch read path=lena.tif ! gaussian-blur size=20 sigma=5 ! write
 
 
 Using a JSON description
@@ -137,25 +137,27 @@ hand::
     {
         UfoTaskGraph *graph;
         UfoPluginManager *manager;
-        UfoScheduler *scheduler;
+        UfoBaseScheduler *scheduler;
         UfoTaskNode *reader;
         UfoTaskNode *writer;
 
-        g_type_init ();  /* you _must_ call this! */
+    #if !(GLIB_CHECK_VERSION (2, 36, 0))
+        g_type_init ();
+    #endif
 
         graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-        manager = ufo_plugin_manager_new (NULL);
-        scheduler = ufo_scheduler_new (NULL, NULL);
-        reader = ufo_plugin_manager_get_task (manager, "reader", NULL);
-        writer = ufo_plugin_manager_get_task (manager, "writer", NULL);
+        manager = ufo_plugin_manager_new ();
+        scheduler = ufo_scheduler_new ();
+        reader = ufo_plugin_manager_get_task (manager, "read", NULL);
+        writer = ufo_plugin_manager_get_task (manager, "write", NULL);
 
         g_object_set (G_OBJECT (reader),
                       "path", "/home/user/data/*.tif",
-                      "count", 5,
+                      "number", 5,
                       NULL);
 
         ufo_task_graph_connect_nodes (graph, reader, writer);
-        ufo_scheduler_run (scheduler, graph, NULL);
+        ufo_base_scheduler_run (scheduler, graph, NULL);
         return 0;
     }
 
@@ -209,9 +211,9 @@ and keyword system::
     manager = Ufo.PluginManager()
     scheduler = Ufo.Scheduler()
 
-    reader = manager.get_task('reader')
-    writer = manager.get_task('writer')
-    reader.set_properties(path='/home/user/data/*.tif', count=5)
+    reader = manager.get_task('read')
+    writer = manager.get_task('write')
+    reader.set_properties(path='/home/user/data/*.tif', number=5)
 
     graph.connect_nodes(reader, writer)
     scheduler.run(graph)
