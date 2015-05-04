@@ -68,16 +68,21 @@ ufo_remote_node_new (const gchar *address)
 }
 
 static inline gboolean
-retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, const gchar *str, UfoMessage **response)
+retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, UfoRemoteNode *node, const gchar *str, UfoMessage **response)
 {
     GError *error = NULL;
     guint counter = retries;
+    gchar *args = g_strdup_printf ("\"type\":\"%i (%s)\",\"size\":\"%lu\"", msg->type, str, msg->data_size);
+
+    UfoProfiler *profiler = ufo_node_get_profiler (UFO_NODE (node));
 
     while (counter) {
+        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_NETWORK | UFO_TRACE_EVENT_BEGIN, args);
         if (response)
             *response = ufo_messenger_send_blocking (msger, msg, &error);
         else
             ufo_messenger_send_blocking (msger, msg, &error);
+        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_NETWORK | UFO_TRACE_EVENT_END, "");
 
         if (error != NULL) {
             if (counter > 1) {
@@ -95,6 +100,8 @@ retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, const g
         else
             break;
     }
+
+    g_free (args);
     return TRUE;
 }
 
@@ -109,7 +116,7 @@ ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
     priv = node->priv;
 
     UfoMessage *result;
-    if (!retry_send_n_times (3, priv->msger, request, "get num gpus request", &result)) {
+    if (!retry_send_n_times (3, priv->msger, request, node, "get num gpus request", &result)) {
         ufo_message_free (request);
         g_printerr ("Communication with peer failed. Pretending no devices are available on the peer.");
         return 0;
@@ -167,7 +174,7 @@ ufo_remote_node_send_json (UfoRemoteNode *node,
     request = ufo_message_new (type, size);
 
     memcpy (request->data, json, size);
-    retry_send_n_times (3, priv->msger, request, "JSON", NULL);
+    retry_send_n_times (3, priv->msger, request, node, "JSON", NULL);
 }
 
 guint
@@ -243,7 +250,7 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
     g_free (request->data);
     request->data = buffer;
     // send as a single message
-    retry_send_n_times (3, priv->msger, request, "inputs", NULL);
+    retry_send_n_times (3, priv->msger, request, node, "inputs", NULL);
 }
 
 void
@@ -258,7 +265,7 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
 
     priv = node->priv;
     request = ufo_message_new (UFO_MESSAGE_GET_RESULT, 0);
-    if (!retry_send_n_times (3, priv->msger, request, "result request", &response)) {
+    if (!retry_send_n_times (3, priv->msger, request, node, "result request", &response)) {
         g_printerr ("A communication error occured while trying to get the results from the peer.");
         ufo_message_free (request);
         return;
@@ -285,7 +292,7 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
 
     priv = node->priv;
     request = ufo_message_new (UFO_MESSAGE_GET_REQUISITION, 0);
-    if (!retry_send_n_times (3, priv->msger, request, "requisition request", &response)) {
+    if (!retry_send_n_times (3, priv->msger, request, node, "requisition request", &response)) {
         g_printerr ("A communication error occured while trying to get requisition from the peer.");
         ufo_message_free (request);
         return;
@@ -299,10 +306,12 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
 }
 
 static void
-cleanup_remote (UfoRemoteNodePrivate *priv)
+cleanup_remote (UfoRemoteNode *node)
 {
+    UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
+
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_CLEANUP, 0);
-    retry_send_n_times (3, priv->msger, request, "cleanup request", NULL);
+    retry_send_n_times (3, priv->msger, request, node, "cleanup request", NULL);
     ufo_message_free (request);
 }
 
@@ -312,7 +321,7 @@ ufo_remote_node_terminate (UfoRemoteNode *node)
     UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
 
     priv->terminated = TRUE;
-    cleanup_remote (priv);
+    cleanup_remote (node);
 
     UfoMessage *request;
 
@@ -320,7 +329,7 @@ ufo_remote_node_terminate (UfoRemoteNode *node)
 
     priv = node->priv;
     request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
-    retry_send_n_times (3, priv->msger, request, "terminate request", NULL);
+    retry_send_n_times (3, priv->msger, request, node, "terminate request", NULL);
 
     ufo_messenger_disconnect (priv->msger);
     return;
@@ -332,7 +341,7 @@ ufo_remote_node_dispose (GObject *object)
     UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (object);
 
     if (!priv->terminated) {
-        cleanup_remote (priv);
+        cleanup_remote (UFO_REMOTE_NODE (object));
         ufo_messenger_disconnect (priv->msger);
     }
 

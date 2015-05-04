@@ -169,8 +169,14 @@ run_remote_task (TaskLocalData *tld)
     guint n_remote_gpus;
     gboolean *alive;
     gboolean active = TRUE;
+    UfoProfiler *profiler;
 
     remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
+
+    /* pass down the local remote-task profiler */
+    profiler = ufo_node_get_profiler (UFO_NODE (tld->task));
+    ufo_node_set_profiler (UFO_NODE (remote), profiler);
+
     n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
     alive = g_new0 (gboolean, n_remote_gpus);
 
