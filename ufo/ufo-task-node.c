@@ -278,6 +278,13 @@ ufo_task_node_increase_processed (UfoTaskNode *node)
     node->priv->num_processed++;
 }
 
+/* purely for backward compatibility */
+UfoProfiler *
+ufo_task_node_get_profiler (UfoTaskNode *node)
+{
+    return ufo_node_get_profiler (UFO_NODE (node));
+}
+
 static UfoNode *
 ufo_task_node_copy (UfoNode *node,
                     GError **error)
