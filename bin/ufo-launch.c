@@ -185,9 +185,11 @@ main(int argc, char* argv[])
     GError *error = NULL;
 
     static gboolean progress = FALSE;
+    static gboolean trace = FALSE;
 
     static GOptionEntry entries[] = {
         { "progress", 'p', 0, G_OPTION_ARG_NONE, &progress, "show progress", NULL },
+        { "trace", 't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
         { NULL }
     };
 
@@ -229,6 +231,11 @@ main(int argc, char* argv[])
     }
 
     sched = ufo_scheduler_new ();
+
+    if (trace) {
+        g_object_set (sched, "enable-tracing", TRUE, NULL);
+    }
+
     ufo_base_scheduler_run (sched, graph, &error);
 
     if (error != NULL) {
