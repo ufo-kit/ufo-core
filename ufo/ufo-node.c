@@ -34,6 +34,7 @@ struct _UfoNodePrivate {
     guint     total;
     guint     index;
     gpointer  label;
+    UfoProfiler *profiler;
 };
 
 enum {
@@ -176,11 +177,57 @@ ufo_node_equal (UfoNode *n1,
     return UFO_NODE_GET_CLASS (n1)->equal (n1, n2);
 }
 
+void
+ufo_node_set_profiler (UfoNode *node,
+                       UfoProfiler *profiler)
+{
+    g_return_if_fail (UFO_IS_NODE (node));
+
+    if (node->priv->profiler)
+        g_object_unref (node->priv->profiler);
+
+    g_object_ref (profiler);
+    node->priv->profiler = profiler;
+}
+
+/**
+ * ufo_node_get_profiler:
+ * @node: A #UfoNode derived object
+ *
+ * Get the associated profiler of @node.
+ *
+ * Return value: (transfer full): A #UfoProfiler object.
+ */
+UfoProfiler *
+ufo_node_get_profiler (UfoNode *node)
+{
+    g_return_val_if_fail (UFO_IS_NODE (node), NULL);
+    return node->priv->profiler;
+}
+
+static void
+ufo_node_dispose (GObject *object)
+{
+    UfoNodePrivate *priv;
+    priv = UFO_NODE_GET_PRIVATE (object);
+
+    if (priv->profiler) {
+        g_object_unref (priv->profiler);
+        priv->profiler = NULL;
+    }
+
+    G_OBJECT_CLASS (ufo_node_parent_class)->dispose (object);
+}
+
+
 static void
 ufo_node_class_init (UfoNodeClass *klass)
 {
     klass->copy = ufo_node_copy_real;
     klass->equal = ufo_node_equal_real;
+
+    GObjectClass *oclass = G_OBJECT_CLASS (klass);
+    oclass->dispose = ufo_node_dispose;
 
     g_type_class_add_private (klass, sizeof(UfoNodePrivate));
 }
@@ -194,4 +241,5 @@ ufo_node_init (UfoNode *self)
     priv->label = NULL;
     priv->total = 1;
     priv->index = 0;
+    priv->profiler = ufo_profiler_new ();
 }

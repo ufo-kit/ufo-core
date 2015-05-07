@@ -304,19 +304,19 @@ run_generator_or_processor (UfoTask *task,
     UfoProfiler *profiler;
     gboolean active;
 
-    profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (task));
+    profiler = ufo_node_get_profiler (UFO_NODE (task));
 
     switch (mode) {
         case UFO_TASK_MODE_PROCESSOR:
-            ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_PROCESS);
+            ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_PROCESS, "");
             active = ufo_task_process (task, inputs, output, requisition);
-            ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_END | UFO_TRACE_EVENT_PROCESS);
+            ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_END | UFO_TRACE_EVENT_PROCESS, "");
             break;
 
         case UFO_TASK_MODE_GENERATOR:
-            ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_GENERATE);
+            ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_GENERATE, "");
             active = ufo_task_generate (task, output, requisition);
-            ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_END | UFO_TRACE_EVENT_GENERATE);
+            ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_END | UFO_TRACE_EVENT_GENERATE, "");
             break;
 
         default:
@@ -363,7 +363,7 @@ run_group (TaskGroup *group)
         current = schedule_next (group, current);
 
         task = UFO_TASK (current->data);
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (task));
+        profiler = ufo_node_get_profiler (UFO_NODE (task));
 
         /* Ask current task about size requirements */
         ufo_task_get_requisition (task, inputs, &requisition);
@@ -406,18 +406,18 @@ run_group (TaskGroup *group)
             /* This branch handles the reductor mode */
 
             do {
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_PROCESS);
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_PROCESS, "");
                 active = ufo_task_process (task, inputs, output, &requisition);
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_END | UFO_TRACE_EVENT_PROCESS);
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_END | UFO_TRACE_EVENT_PROCESS, "");
                 release_input_data (group->parents, inputs);
                 active = pop_input_data (group->parents, inputs);
             } while (active);
 
             /* Generate and forward as long as reductor produces data */
             do {
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_GENERATE);
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_BEGIN | UFO_TRACE_EVENT_GENERATE, "");
                 active = ufo_task_generate (task, output, &requisition);
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_END | UFO_TRACE_EVENT_GENERATE);
+                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_END | UFO_TRACE_EVENT_GENERATE, "");
 
                 if (active) {
                     ufo_two_way_queue_producer_push (group->queue, output);
@@ -478,7 +478,7 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
         g_list_for (group->tasks, jt) {
             UfoTaskNode *task = UFO_TASK_NODE (jt->data);
 
-            ufo_profiler_enable_tracing (ufo_task_node_get_profiler (task), TRUE);
+            ufo_profiler_enable_tracing (ufo_node_get_profiler (UFO_NODE (task)), TRUE);
             ufo_task_setup (UFO_TASK (task), resources, error);
 
             tasks = g_list_append (tasks, task);

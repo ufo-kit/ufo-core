@@ -11,6 +11,7 @@ typedef struct {
     gsize pid;
     gchar type;
     gdouble timestamp;
+    const gchar *args;
     gconstpointer data;
 } Event;
 
@@ -44,7 +45,7 @@ get_sorted_trace_events (GList *nodes)
         GList *jt;
 
         node = UFO_TASK_NODE (it->data);
-        profiler = ufo_task_node_get_profiler (node);
+        profiler = ufo_node_get_profiler (UFO_NODE (node));
         events = ufo_profiler_get_trace_events (profiler);
 
         g_list_for (events, jt) {
@@ -68,8 +69,17 @@ get_sorted_trace_events (GList *nodes)
             if (trace_event->type & UFO_TRACE_EVENT_GENERATE)
                 event->name = "generate";
 
+            if (trace_event->type & UFO_TRACE_EVENT_NETWORK)
+                event->name = "network";
+
             event->pid = 1;
             event->tid = g_strdup_printf ("%s-%p", G_OBJECT_TYPE_NAME (node), (gpointer) node);
+
+            if (trace_event->args)
+                event->args = g_strdup (trace_event->args);
+            else
+                event->args = "";
+
             sorted = g_list_insert_sorted (sorted, event, (GCompareFunc) compare_events);
         }
     }
@@ -87,6 +97,7 @@ make_event (const gchar *kernel, gconstpointer queue, gchar type, gulong timesta
     event->tid = g_strdup (kernel);
     event->pid = (gsize) queue;
     event->type = type;
+    event->args = "";
     event->timestamp = timestamp / 1000.0;
 
     return event;
@@ -118,8 +129,8 @@ write_trace_json (const gchar *filename_template, GList *events)
     g_list_for (events, it) {
         Event *event = (Event *) it->data;
         gdouble timestamp = event->timestamp * 1000 * 1000;
-        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%c\", \"ts\": %.0f, \"pid\": %zu, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {}}",
-                     event->type, timestamp, event->pid, event->tid, event->name);
+        fprintf (fp, "{\"cat\":\"f\",\"ph\": \"%c\", \"ts\": %.0f, \"pid\": %zu, \"tid\": \"%s\",\"name\": \"%s\", \"args\": {%s}}",
+                     event->type, timestamp, event->pid, event->tid, event->name, event->args);
 
         if (g_list_next (it) != NULL)
             fprintf (fp, ",");
@@ -141,7 +152,7 @@ ufo_write_opencl_events (GList *nodes)
     g_list_for (nodes, it) {
         UfoProfiler *profiler;
 
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (it->data));
+        profiler = ufo_node_get_profiler (UFO_NODE (it->data));
         ufo_profiler_foreach (profiler, (UfoProfilerFunc) add_events, &container);
     }
 

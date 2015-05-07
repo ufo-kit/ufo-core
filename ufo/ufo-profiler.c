@@ -198,7 +198,8 @@ ufo_profiler_stop (UfoProfiler       *profiler,
 
 void
 ufo_profiler_trace_event (UfoProfiler *profiler,
-                          UfoTraceEventType type)
+                          UfoTraceEventType type,
+                          const gchar *args)
 {
     UfoTraceEvent *event;
 
@@ -210,6 +211,10 @@ ufo_profiler_trace_event (UfoProfiler *profiler,
     event->type = type;
     event->thread_id = g_thread_self ();
     event->timestamp = g_timer_elapsed (global_clock, NULL);
+    if (args)
+        event->args = g_strdup (args);
+    else
+        event->args = g_strdup ("");
     profiler->priv->trace_events = g_list_append (profiler->priv->trace_events, event);
 }
 
@@ -360,6 +365,14 @@ ufo_profiler_dispose (GObject *object)
 }
 
 static void
+free_trace_event (UfoTraceEvent *event)
+{
+    if (event->args)
+        g_free (event->args);
+    g_free (event);
+}
+
+static void
 ufo_profiler_finalize (GObject *object)
 {
     UfoProfilerPrivate *priv;
@@ -375,7 +388,7 @@ ufo_profiler_finalize (GObject *object)
 
     g_array_free (priv->event_array, TRUE);
 
-    g_list_foreach (priv->trace_events, (GFunc) g_free, NULL);
+    g_list_foreach (priv->trace_events, (GFunc) free_trace_event, NULL);
     g_list_free (priv->trace_events);
 
     for (guint i = 0; i < UFO_PROFILER_TIMER_LAST; i++)
