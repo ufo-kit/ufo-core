@@ -186,10 +186,12 @@ main(int argc, char* argv[])
 
     static gboolean progress = FALSE;
     static gboolean trace = FALSE;
+    static gboolean time = FALSE;
 
     static GOptionEntry entries[] = {
         { "progress", 'p', 0, G_OPTION_ARG_NONE, &progress, "show progress", NULL },
         { "trace", 't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
+        { "time", 0, 0, G_OPTION_ARG_NONE, &time, "print run time", NULL },
         { NULL }
     };
 
@@ -244,6 +246,13 @@ main(int argc, char* argv[])
 
     if (progress) {
         g_print ("\n");
+    }
+
+    if (time) {
+        gdouble run_time;
+
+        g_object_get (sched, "time", &run_time, NULL);
+        g_print ("%3.5fs\n", run_time);
     }
 
     g_object_unref (graph);
