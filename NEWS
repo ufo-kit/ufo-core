@@ -5,6 +5,32 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.8
+===========
+
+Release on May 19th 2015.
+
+This release breaks with the distinction of ArchGraph and Resources. The former
+is removed with its functionality moved to the latter. Besides that numerous
+improvements have been incorporated:
+
+- ufo-launch: add --time and --trace options
+- Added a systemd unit for ufod
+- Fixed cluster communication.
+- Fixed #86: use CL_INTENSITY instead of CL_R
+- Handle kernel path with environment variable UFO_KERNEL_PATH
+- ufo-launch now parses boolean properties
+- Removed hard dependency on ZeroMQ
+- Removed WITH_DEBUG and WITH_PROFILING CMake variables
+- Add JSON-based TANGO server for remote computation
+- Removed ufo_base_scheduler_get_gpu_nodes()
+- Fixed #80: add ufo_gpu_node_get_info()
+- Fixed re-running the same task graph
+- Removed tifffile dependency
+- Fixed #78: reset num-processed before execution
+- Fixed #77: initialize threads when accessing the GIL
+
+
 Version 0.7
 ===========
 
