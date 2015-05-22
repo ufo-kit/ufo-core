@@ -51,7 +51,7 @@
  */
 
 /**
- * UfoRegion
+ * UfoRegion:
  * @origin: n-dimensional origin of the region
  * @size: n-dimensional size of the region
  *
