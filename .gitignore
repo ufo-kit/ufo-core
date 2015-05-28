@@ -39,3 +39,5 @@ Makefile
 *.pyc
 python/dist
 python/ufo.egg-info
+/.project
+CMakeLists.txt.user

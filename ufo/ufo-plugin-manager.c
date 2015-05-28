@@ -334,6 +334,45 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
 }
 
 /**
+ * ufo_plugin_manager_get_task_from_package:
+ * @manager: A #UfoPluginManager
+ * @package_name: Name of library package
+ * @name: Name of the plugin.
+ * @error: return location for a GError or %NULL
+ *
+ * Load a #UfoTaskNode module and return an instance. The shared object name must
+ * be in @package_name subfolder and constructed as "lib@name.so".
+ *
+ * Since: 0.2, the error parameter is available
+ *
+ * Returns: (transfer full): (allow-none): #UfoTaskNode or %NULL if module cannot be found
+ */
+UfoTaskNode*
+ufo_plugin_manager_get_task_from_package(UfoPluginManager   *manager,
+                                         const gchar        *package_name,
+                                         const gchar        *name,
+                                         GError            **error)
+{
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && name != NULL, NULL);
+    UfoTaskNode *node;
+
+    gchar *so_name = g_strdup_printf("%s/libufo%s.so", package_name, name);
+    gchar *func_name = g_strdup_printf("ufo_%s_%s_task_new", package_name, name);
+    node = UFO_TASK_NODE (ufo_plugin_manager_get_plugin (manager,
+                                          func_name,
+                                          so_name,
+                                          error));
+
+    ufo_task_node_set_plugin_name (node, name);
+
+    g_free (func_name);
+    g_free (so_name);
+
+    g_debug ("UfoPluginManager: Created %s-%p", name, (gpointer) node);
+    return node;
+}
+
+/**
  * ufo_plugin_manager_get_all_task_names:
  * @manager: A #UfoPluginManager
  *

@@ -722,7 +722,7 @@ handle_json_task_node (JsonNode *element,
                        UfoTaskGraphPrivate *priv,
                        GError **error)
 {
-    UfoTaskNode *plugin;
+    UfoTaskNode *plugin = NULL;
     JsonObject *object;
     GError *tmp_error = NULL;
     const gchar *name;
@@ -738,7 +738,14 @@ handle_json_task_node (JsonNode *element,
     }
 
     plugin_name = json_object_get_string_member (object, "plugin");
-    plugin = ufo_plugin_manager_get_task (priv->manager, plugin_name, &tmp_error);
+
+    if (json_object_has_member (object, "package")) {
+        const gchar *package_name = json_object_get_string_member(object, "package");
+        plugin = ufo_plugin_manager_get_task_from_package(priv->manager, package_name, plugin_name, &tmp_error);
+    }
+    else{
+        plugin = ufo_plugin_manager_get_task (priv->manager, plugin_name, &tmp_error);
+    }
     ufo_task_node_set_plugin_name (plugin, plugin_name);
 
     if (tmp_error != NULL) {
@@ -891,6 +898,11 @@ add_task_node_to_json_array (UfoTaskNode *node, JsonArray *array)
     const gchar *plugin_name = ufo_task_node_get_plugin_name (node);
     g_assert (plugin_name != NULL);
     json_object_set_string_member (node_object, "plugin", plugin_name);
+
+    const gchar *package_name = ufo_task_node_get_package_name (node);
+    if(package_name != NULL){
+        json_object_set_string_member (node_object, "package", package_name);
+    }
 
     const gchar *name = ufo_task_node_get_identifier (node);
     g_assert (name != NULL);

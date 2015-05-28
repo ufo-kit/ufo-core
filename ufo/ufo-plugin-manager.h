@@ -83,6 +83,10 @@ GList             * ufo_plugin_get_all_plugin_names         (UfoPluginManager   
 UfoTaskNode       * ufo_plugin_manager_get_task             (UfoPluginManager   *manager,
                                                              const gchar        *name,
                                                              GError            **error);
+UfoTaskNode       * ufo_plugin_manager_get_task_from_package(UfoPluginManager   *manager,
+                                                             const gchar        *package_name,
+                                                             const gchar        *name,
+                                                             GError            **error);
 GList             * ufo_plugin_manager_get_all_task_names   (UfoPluginManager   *manager);
 GType               ufo_plugin_manager_get_type             (void);
 
