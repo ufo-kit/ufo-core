@@ -63,12 +63,17 @@ struct _UfoTaskNode {
 struct _UfoTaskNodeClass {
     /*< private >*/
     UfoNodeClass parent_class;
+
+    const gchar *(*get_package_name)(UfoTaskNode *self);
 };
 
 void            ufo_task_node_setup                 (UfoTaskNode    *node);
 void            ufo_task_node_set_plugin_name       (UfoTaskNode    *node,
                                                      const gchar    *name);
 const gchar    *ufo_task_node_get_plugin_name       (UfoTaskNode    *node);
+void            ufo_task_node_set_package_name       (UfoTaskNode    *node,
+                                                     const gchar    *name);
+const gchar    *ufo_task_node_get_package_name       (UfoTaskNode    *node);
 const gchar    *ufo_task_node_get_identifier        (UfoTaskNode    *node);
 void            ufo_task_node_set_identifier        (UfoTaskNode    *node,
                                                      const gchar    *name);
