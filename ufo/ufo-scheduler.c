@@ -279,13 +279,30 @@ run_task (TaskLocalData *tld)
 
             case UFO_TASK_MODE_REDUCTOR:
                 do {
-                    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
-                    ufo_task_process (tld->task, inputs, output, &requisition);
-                    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
+                    gboolean go_on = TRUE;
 
-                    release_inputs (tld, inputs);
-                    active = get_inputs (tld, inputs);
+                    do {
+                        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
+                        go_on = ufo_task_process (tld->task, inputs, output, &requisition);
+                        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
+
+                        release_inputs (tld, inputs);
+                        active = get_inputs (tld, inputs);
+                        go_on = go_on && active;
+                    } while (go_on);
+
+                    do {
+                        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_BEGIN);
+                        go_on = ufo_task_generate (tld->task, output, &requisition);
+                        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
+
+                        if (go_on) {
+                            ufo_group_push_output_buffer (group, output);
+                            output = ufo_group_pop_output_buffer (group, &requisition);
+                        }
+                    } while (go_on);
                 } while (active);
+
                 break;
 
             case UFO_TASK_MODE_GENERATOR:
@@ -304,19 +321,6 @@ run_task (TaskLocalData *tld)
         /* Release buffers for further consumption */
         if (active)
             release_inputs (tld, inputs);
-
-        if (mode == UFO_TASK_MODE_REDUCTOR) {
-            do {
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_BEGIN);
-                active = ufo_task_generate (tld->task, output, &requisition);
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
-
-                if (active) {
-                    ufo_group_push_output_buffer (group, output);
-                    output = ufo_group_pop_output_buffer (group, &requisition);
-                }
-            } while (active);
-        }
 
         if (!active)
             ufo_group_finish (group);
