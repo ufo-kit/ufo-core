@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2011-2013 Karlsruhe Institute of Technology
  *
  * This file is part of Ufo.
@@ -909,29 +909,69 @@ static void add_node_to_table (JsonObject *object, const gchar *name, JsonNode *
     g_hash_table_insert(hash_table, g_strdup(name), node);
 }
 
+static JsonObject *
+create_full_json_from_task_node(UfoTaskNode *task_node) {
+
+    JsonObject *json_object= json_object_new ();
+
+    const gchar *plugin_name = ufo_task_node_get_plugin_name (task_node);
+    g_assert (plugin_name != NULL);
+    json_object_set_string_member (json_object, "plugin", plugin_name);
+
+    const gchar *package_name = ufo_task_node_get_package_name (task_node);
+    if(package_name != NULL){
+        json_object_set_string_member (json_object, "package", package_name);
+    }
+
+    const gchar *name = ufo_task_node_get_identifier (task_node);
+    g_assert (name != NULL);
+    json_object_set_string_member (json_object, "name", name);
+
+    JsonNode *prop_node = json_gobject_serialize (G_OBJECT (task_node));
+    JsonObject *prop_object = json_node_get_object(prop_node);
+
+    // Some modified code from json-glib
+    GParamSpec **pspecs;
+    guint n_pspecs;
+    pspecs = g_object_class_list_properties (G_OBJECT_GET_CLASS (task_node), &n_pspecs);
+    for (guint i = 0; i < n_pspecs; i++) {
+        GParamSpec *pspec = pspecs[i];
+        GValue value = { 0, };
+
+        /* read only what we can */
+        if (!(pspec->flags & G_PARAM_READABLE)) {
+            continue;
+        }
+
+        // Process only task node type properties
+        if(UFO_TYPE_TASK_NODE != pspec->value_type) {
+            continue;
+        }
+
+        g_value_init (&value, G_PARAM_SPEC_VALUE_TYPE (pspec));
+        g_object_get_property (G_OBJECT(task_node), pspec->name, &value);
+
+        // skip if the value is the default for the property
+        if (!g_param_value_defaults (pspec, &value)) {
+            JsonObject *subtask_json_object = create_full_json_from_task_node(g_value_get_object(&value));
+            json_object_set_object_member(prop_object, pspec->name, subtask_json_object);
+        }
+
+        g_value_unset (&value);
+    }
+
+    g_free (pspecs);
+
+    json_object_set_member (json_object, "properties", prop_node);
+
+    return json_object;
+}
+
+
 static void
 add_task_node_to_json_array (UfoTaskNode *node, JsonArray *array)
 {
-    JsonObject *node_object;
-    JsonNode *prop_node;
-
-    node_object = json_object_new ();
-    const gchar *plugin_name = ufo_task_node_get_plugin_name (node);
-    g_assert (plugin_name != NULL);
-    json_object_set_string_member (node_object, "plugin", plugin_name);
-
-    const gchar *package_name = ufo_task_node_get_package_name (node);
-    if(package_name != NULL){
-        json_object_set_string_member (node_object, "package", package_name);
-    }
-
-    const gchar *name = ufo_task_node_get_identifier (node);
-    g_assert (name != NULL);
-    json_object_set_string_member (node_object, "name", name);
-
-    prop_node = json_gobject_serialize (G_OBJECT (node));
-    json_object_set_member (node_object, "properties", prop_node);
-    json_array_add_object_element (array, node_object);
+    json_array_add_object_element (array, create_full_json_from_task_node(node));
 }
 
 static JsonObject *
