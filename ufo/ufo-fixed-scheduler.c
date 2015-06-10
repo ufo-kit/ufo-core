@@ -332,28 +332,33 @@ reduce_loop (TaskData *data)
         outputs[i] = pop_output_data (output_queues[i], &requisition, data->context);
     }
 
-    /* Process all inputs. Note that we already fetched the first input. */
     do {
-        for (guint i = 0; i < n_outputs; i++) {
-            for (guint j = 0; j < n_inputs; j++)
-                ufo_buffer_copy_metadata (inputs[j], outputs[i]);
+        gboolean go_on = TRUE;
 
-            active = ufo_task_process (data->task, inputs, outputs[i], &requisition);
-            release_input_data (in_queues, inputs, n_inputs);
-            active = pop_input_data (in_queues, finished, inputs, n_inputs);
-        }
-    } while (active);
+        /* Process all inputs. Note that we already fetched the first input. */
+        do {
+            for (guint i = 0; i < n_outputs; i++) {
+                for (guint j = 0; j < n_inputs; j++)
+                    ufo_buffer_copy_metadata (inputs[j], outputs[i]);
 
-    /* Generate all outputs */
-    do {
-        for (guint i = 0; i < n_outputs; i++) {
-            active = ufo_task_generate (data->task, outputs[i], &requisition);
-
-            if (active) {
-                ufo_two_way_queue_producer_push (output_queues[i], outputs[i]);
-                outputs[i] = ufo_two_way_queue_producer_pop (output_queues[i]);
+                go_on = ufo_task_process (data->task, inputs, outputs[i], &requisition);
+                release_input_data (in_queues, inputs, n_inputs);
+                active = pop_input_data (in_queues, finished, inputs, n_inputs);
+                go_on = go_on && active;
             }
-        }
+        } while (go_on);
+
+        /* Generate all outputs */
+        do {
+            for (guint i = 0; i < n_outputs; i++) {
+                go_on = ufo_task_generate (data->task, outputs[i], &requisition);
+
+                if (go_on) {
+                    ufo_two_way_queue_producer_push (output_queues[i], outputs[i]);
+                    outputs[i] = ufo_two_way_queue_producer_pop (output_queues[i]);
+                }
+            }
+        } while (go_on);
     } while (active);
 
     finish_successors (out_queues);
