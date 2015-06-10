@@ -65,3 +65,15 @@ def test_core_issue_66_remote_list():
     daemon.start()
     arch = Ufo.ArchGraph(remotes=['tcp://127.0.0.1:5554'])
     daemon.stop()
+
+
+def test_filters_issue_79():
+    from ufo import Stack, Slice
+
+    data = [np.ones((512, 512)) for i in range(10)]
+
+    stack = Stack(number=2)
+    unstack = Slice()
+
+    result = list(unstack(stack(data)))
+    assert len(result) == len(data)
