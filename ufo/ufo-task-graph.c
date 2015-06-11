@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2011-2013 Karlsruhe Institute of Technology
  *
  * This file is part of Ufo.
