@@ -17,7 +17,6 @@ set(ufocore_SRCS
     ufo-group.c
     ufo-group-scheduler.c
     ufo-input-task.c
-    ufo-json-routines.c
     ufo-local-scheduler.c
     ufo-messenger-iface.c
     ufo-method-iface.c
@@ -54,7 +53,6 @@ set(ufocore_HDRS
     ufo-group.h
     ufo-group-scheduler.h
     ufo-input-task.h
-    ufo-json-routines.h
     ufo-local-scheduler.h
     ufo-messenger-iface.h
     ufo-method-iface.h

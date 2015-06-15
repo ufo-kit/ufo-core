@@ -23,7 +23,6 @@
 #include <ufo/ufo-plugin-manager.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-dummy-task.h>
-#include <ufo/ufo-json-routines.h>
 #include "compat.h"
 
 /**
@@ -37,6 +36,9 @@
  * the UFO_PLUGIN_PATH environment variable. The name of the plugin xyz maps to
  * the library name libufofilterxyz.so.
  */
+
+gchar *ufo_transform_string (const gchar *pattern, const gchar *s, const gchar *separator);
+gchar *ufo_transform_string2 (const gchar *pattern, const gchar *s1,const gchar *s2, const gchar *separator);
 
 G_DEFINE_TYPE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT)
 
@@ -354,14 +356,11 @@ ufo_plugin_manager_get_task_from_package(UfoPluginManager   *manager,
                                          GError            **error)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && name != NULL, NULL);
-    UfoTaskNode *node;
 
-    gchar *so_name = g_strdup_printf("%s/libufo%s.so", package_name, name);
-    gchar *func_name = g_strdup_printf("ufo_%s_%s_task_new", package_name, name);
-    node = UFO_TASK_NODE (ufo_plugin_manager_get_plugin (manager,
-                                          func_name,
-                                          so_name,
-                                          error));
+    gchar *so_name = ufo_transform_string2("%s/libufo%s.so", package_name, name, NULL);
+    gchar *func_name = ufo_transform_string2("ufo_%s_%s_task_new", package_name, name, "_");
+
+    UfoTaskNode *node = UFO_TASK_NODE (ufo_plugin_manager_get_plugin (manager, func_name, so_name, error));
 
     ufo_task_node_set_plugin_name (node, name);
 
@@ -392,5 +391,59 @@ ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
                                                     "libufofilter*.so");
 
     g_regex_unref (regex);
+    return result;
+}
+
+/**
+ * ufo_transform_string:
+ * @pattern: A pattern to place the result string in it.
+ * @s: A string, which should be placed in the @pattern.
+ * @separator: A string containing separator symbols in the @s that should be removed
+ *
+ * Returns: A string there in @pattern was placed @s.
+ */
+gchar *
+ufo_transform_string (const gchar *pattern,
+                      const gchar *s,
+                      const gchar *separator)
+{
+    gchar **sv;
+    gchar *transformed;
+    gchar *result;
+    sv = g_strsplit_set (s, "-_ ", -1);
+    transformed = g_strjoinv (separator, sv);
+    result = g_strdup_printf (pattern, transformed);
+    g_strfreev (sv);
+    g_free (transformed);
+    return result;
+}
+
+/**
+ * ufo_transform_string:
+ * @pattern: A pattern to place the result string in it.
+ * @s: A string, which should be placed in the @pattern.
+ * @separator: A string containing separator symbols in the @s that should be removed
+ *
+ * Returns: A string there in @pattern was placed @s.
+ */
+gchar *
+ufo_transform_string2 (const gchar *pattern,
+                       const gchar *s1,
+                       const gchar *s2,
+                       const gchar *separator)
+{
+    gchar **sv;
+    gchar *transformed1;
+    gchar *transformed2;
+    gchar *result;
+    sv = g_strsplit_set (s1, "-_ ", -1);
+    transformed1 = g_strjoinv (separator, sv);
+    g_strfreev (sv);
+    sv = g_strsplit_set (s2, "-_ ", -1);
+    transformed2 = g_strjoinv (separator, sv);
+    g_strfreev (sv);
+    result = g_strdup_printf (pattern, transformed1, transformed2);
+    g_free (transformed1);
+    g_free (transformed2);
     return result;
 }
