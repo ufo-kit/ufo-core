@@ -419,7 +419,7 @@ ufo_transform_string (const gchar *pattern,
 }
 
 /**
- * ufo_transform_string:
+ * ufo_transform_string2:
  * @pattern: A pattern to place the result string in it.
  * @s: A string, which should be placed in the @pattern.
  * @separator: A string containing separator symbols in the @s that should be removed
