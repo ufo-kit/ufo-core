@@ -22,7 +22,9 @@
 
 #define __UFO_H_INSIDE__
 
+#include <ufo/ufo-basic-ops.h>
 #include <ufo/ufo-buffer.h>
+#include <ufo/ufo-copyable-iface.h>
 #include <ufo/ufo-copy-task.h>
 #include <ufo/ufo-cpu-node.h>
 #include <ufo/ufo-dummy-task.h>
@@ -33,9 +35,14 @@
 #include <ufo/ufo-graph.h>
 #include <ufo/ufo-group.h>
 #include <ufo/ufo-input-task.h>
+#include <ufo/ufo-json-routines.h>
+#include <ufo/ufo-messenger-iface.h>
+#include <ufo/ufo-method-iface.h>
+#include <ufo/ufo-misc.h>
 #include <ufo/ufo-node.h>
 #include <ufo/ufo-output-task.h>
 #include <ufo/ufo-plugin-manager.h>
+#include <ufo/ufo-processor.h>
 #include <ufo/ufo-profiler.h>
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-remote-task.h>
@@ -44,15 +51,8 @@
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-task-iface.h>
 #include <ufo/ufo-task-node.h>
-#include <ufo/ufo-two-way-queue.h>
-#include <ufo/ufo-basic-ops.h>
-#include <ufo/ufo-messenger-iface.h>
-#include <ufo/ufo-misc.h>
-#include <ufo/ufo-processor.h>
-#include <ufo/ufo-method-iface.h>
 #include <ufo/ufo-transform-iface.h>
-#include <ufo/ufo-copyable-iface.h>
-#include <ufo/ufo-json-routines.h>
+#include <ufo/ufo-two-way-queue.h>
 
 #undef __UFO_H_INSIDE__
 
