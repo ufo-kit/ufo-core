@@ -1,0 +1,26 @@
+#!/bin/bash
+
+_ufo_launch() 
+{
+    local cur prev opts tasks
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="--progress --trace --time"
+    tasks="$(ufo-query -l)"
+
+    if [[ "${tasks}" == *"${prev}"* ]]; then
+        COMPREPLY=( $(compgen -W "$(ufo-query -p ${prev})" -- ${cur}) )
+        return 0
+    fi
+    
+    if [[ ${cur} == -* ]] ; then
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        return 0
+    else
+        COMPREPLY=( $(compgen -W "${tasks}" -- ${cur}) )
+        return 0
+    fi
+}
+
+complete -F _ufo_launch ufo-launch

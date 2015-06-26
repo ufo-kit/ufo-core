@@ -21,6 +21,16 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ufod.service.in
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufod.service
         DESTINATION ${WITH_SYSTEMDSYSTEMUNITDIR})
+
+option(INSTALL_COMPLETION "Install Bash completion script" OFF)
+
+if (INSTALL_COMPLETION)
+    pkg_check_variable(bash-completion completionsdir)
+
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ufo-launch
+            DESTINATION ${BASH_COMPLETION_COMPLETIONSDIR}
+            OPTIONAL)
+endif()
 #}}}
 #{{{ ufo-mkfilter
 set(UFO_FILTER_TEMPLATE_DIR "${UFO_DATADIR}/ufo/templates")
