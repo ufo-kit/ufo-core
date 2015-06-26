@@ -7,7 +7,7 @@ import threading
 import Queue as queue
 import numpy as np
 from gi.repository import GObject, Ufo
-from .numpy import asarray, fromarray, fromarray_inplace
+from .numpy import asarray, empty_like
 
 
 Ufo.Scheduler()
@@ -62,11 +62,11 @@ class Task(object):
                 for args in zip(*iargs):
                     for i, (task, data) in enumerate(zip(tasks, args)):
                         if buffers[i] is None:
-                            buffers[i] = fromarray(data.astype(np.float32))
+                            buffers[i] = empty_like(data)
                         else:
                             buffers[i] = task.get_input_buffer()
-                            fromarray_inplace(buffers[i], data.astype(np.float32))
 
+                        buffers[i].set_host_array(data.__array_interface__['data'][0], False)
                         task.release_input_buffer(buffers[i])
 
                 for task in tasks:

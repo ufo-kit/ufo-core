@@ -6,7 +6,7 @@ import numpy
 from setuptools import setup, Extension
 
 
-VERSION = '1.0.1'
+VERSION = '1.1.0'
 
 
 if not pkgconfig.installed('pygobject-3.0', '>=3.2.2') and \
