@@ -34,7 +34,6 @@
     </chapter>
     <chapter id="device_resources">
       <title>Resources</title>
-      <xi:include href="xml/ufo-arch-graph.xml"/>
       <xi:include href="xml/ufo-cpu-node.xml"/>
       <xi:include href="xml/ufo-gpu-node.xml"/>
       <xi:include href="xml/ufo-resources.xml"/>
