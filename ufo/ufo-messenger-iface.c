@@ -55,7 +55,7 @@ ufo_messenger_create (const gchar *address, GError **error)
     }
     if (g_regex_match_all (regex, address, 0, NULL)) {
         gchar **protocol = g_strsplit (address, ":", 2);
-        g_debug ("Trying to kreate a new messenger for the '%s://' protocol", protocol[0]);
+        g_debug ("Creating messenger for the '%s://' protocol", protocol[0]);
 
 #ifdef WITH_ZMQ
         if (!g_strcmp0 (protocol[0], "tcp")) {

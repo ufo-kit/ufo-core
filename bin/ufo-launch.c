@@ -174,6 +174,26 @@ progress_update (gpointer user)
         g_print (".");
 }
 
+static GValueArray *
+string_array_to_value_array (gchar **array)
+{
+    GValueArray *result = NULL;
+
+    if (array == NULL)
+        return NULL;
+
+    result = g_value_array_new (0);
+
+    for (guint i = 0; array[i] != NULL; i++) {
+        GValue *tmp = (GValue *) g_malloc0 (sizeof (GValue));
+        g_value_init (tmp, G_TYPE_STRING);
+        g_value_set_string (tmp, array[i]);
+        result = g_value_array_append (result, tmp);
+    }
+
+    return result;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -182,16 +202,20 @@ main(int argc, char* argv[])
     UfoBaseScheduler *sched;
     GList *pipeline;
     GOptionContext *context;
+    UfoResources *resources = NULL;
+    GValueArray *address_list = NULL;
     GError *error = NULL;
 
     static gboolean progress = FALSE;
     static gboolean trace = FALSE;
     static gboolean time = FALSE;
+    static gchar **addresses = NULL;
 
     static GOptionEntry entries[] = {
         { "progress", 'p', 0, G_OPTION_ARG_NONE, &progress, "show progress", NULL },
         { "trace", 't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
         { "time", 0, 0, G_OPTION_ARG_NONE, &time, "print run time", NULL },
+        { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
         { NULL }
     };
 
@@ -238,6 +262,15 @@ main(int argc, char* argv[])
         g_object_set (sched, "enable-tracing", TRUE, NULL);
     }
 
+    address_list = string_array_to_value_array (addresses);
+
+    if (address_list) {
+        resources = UFO_RESOURCES (ufo_resources_new (NULL));
+        g_object_set (G_OBJECT (resources), "remotes", address_list, NULL);
+        g_value_array_free (address_list);
+        ufo_base_scheduler_set_resources (sched, resources);
+    }
+
     ufo_base_scheduler_run (sched, graph, &error);
 
     if (error != NULL) {
@@ -255,8 +288,13 @@ main(int argc, char* argv[])
         g_print ("%3.5fs\n", run_time);
     }
 
+    if (resources) {
+        g_object_unref (resources);
+    }
+
     g_object_unref (graph);
     g_object_unref (pm);
+    g_strfreev (addresses);
 
     return 0;
 }
