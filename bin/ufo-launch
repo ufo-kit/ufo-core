@@ -6,7 +6,7 @@ _ufo_launch()
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="--progress --trace --time"
+    opts="--progress --trace --time --address --dump"
     tasks="$(ufo-query -l)"
 
     if [[ "${tasks}" == *"${prev}"* ]]; then

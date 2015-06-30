@@ -210,12 +210,14 @@ main(int argc, char* argv[])
     static gboolean trace = FALSE;
     static gboolean time = FALSE;
     static gchar **addresses = NULL;
+    static gchar *dump = NULL;
 
     static GOptionEntry entries[] = {
         { "progress", 'p', 0, G_OPTION_ARG_NONE, &progress, "show progress", NULL },
         { "trace", 't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
         { "time", 0, 0, G_OPTION_ARG_NONE, &time, "print run time", NULL },
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
+        { "dump", 'd', 0, G_OPTION_ARG_STRING, &dump, "Dump to JSON file", NULL },
         { NULL }
     };
 
@@ -290,6 +292,13 @@ main(int argc, char* argv[])
 
     if (resources) {
         g_object_unref (resources);
+    }
+
+    if (dump) {
+        ufo_task_graph_save_to_json (graph, dump, &error);
+
+        if (error != NULL)
+            g_print ("Error dumping task graph: %s\n", error->message);
     }
 
     g_object_unref (graph);
