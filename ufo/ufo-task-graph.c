@@ -435,7 +435,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         return;
     }
 
-    if (path != NULL && g_list_length (path) > 1) {
+    if (path != NULL && g_list_length (path) >= 1) {
         GList *predecessors;
         GList *successors;
 
@@ -944,16 +944,18 @@ create_full_json_from_task_node(UfoTaskNode *task_node) {
         }
 
         // Process only task node type properties
-        if(UFO_TYPE_TASK_NODE != pspec->value_type) {
+        if(!UFO_IS_TASK_NODE_CLASS(&(pspec->value_type))) {
             continue;
         }
 
         g_value_init (&value, G_PARAM_SPEC_VALUE_TYPE (pspec));
         g_object_get_property (G_OBJECT(task_node), pspec->name, &value);
 
+        gpointer real_val = g_value_get_object(&value);
+
         // skip if the value is the default for the property
         if (!g_param_value_defaults (pspec, &value)) {
-            JsonObject *subtask_json_object = create_full_json_from_task_node(g_value_get_object(&value));
+            JsonObject *subtask_json_object = create_full_json_from_task_node(real_val);
             json_object_set_object_member(prop_object, pspec->name, subtask_json_object);
         }
 
