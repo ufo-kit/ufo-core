@@ -889,7 +889,11 @@ add_task_node_to_json_array (UfoTaskNode *node, JsonArray *array)
 
     node_object = json_object_new ();
     const gchar *plugin_name = ufo_task_node_get_plugin_name (node);
-    g_assert (plugin_name != NULL);
+
+    /* plugin_name can be NULL for task graphs expanded with remote nodes */
+    if (plugin_name == NULL)
+        return;
+
     json_object_set_string_member (node_object, "plugin", plugin_name);
 
     const gchar *name = ufo_task_node_get_identifier (node);
