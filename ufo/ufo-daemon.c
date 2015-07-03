@@ -335,11 +335,14 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
             ufo_buffer_resize (priv->input, &requisition);
     }
 
+    g_debug ("daemon: received input sized [%zu, %zu, ...]", requisition.dims[0], requisition.dims[1]);
+
     memcpy (ufo_buffer_get_host_array (priv->input, NULL),
             base + sizeof (struct Header),
             ufo_buffer_get_size (priv->input));
 
     ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task), priv->input);
+    g_debug ("daemon: released input buffer");
 
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
     retry_send_n_times (3, priv->messenger, reply, "inputs reply");

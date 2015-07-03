@@ -356,6 +356,10 @@ create_remote_tasks (UfoTaskGraph *task_graph,
     ufo_task_graph_connect_nodes (task_graph, first, task);
     ufo_task_graph_connect_nodes (task_graph, task, last);
 
+    g_debug ("remote: connected %s -> [remote] -> %s",
+             ufo_task_node_get_identifier (first),
+             ufo_task_node_get_identifier (last));
+
     g_free (json);
 }
 
@@ -377,9 +381,7 @@ expand_remotes (UfoTaskGraph *task_graph,
     node = build_remote_graph (remote_graph, first, last);
 
     if (ufo_graph_get_num_nodes (UFO_GRAPH (remote_graph)) == 0) {
-        ufo_task_graph_connect_nodes (remote_graph,
-                                      UFO_TASK_NODE (ufo_dummy_task_new ()),
-                                      node);
+        ufo_task_graph_connect_nodes (remote_graph, UFO_TASK_NODE (ufo_dummy_task_new ()), node);
     }
 
     g_list_for (remotes, it) {

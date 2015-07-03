@@ -123,21 +123,6 @@ ufo_remote_node_get_num_gpus (UfoRemoteNode *node)
 }
 
 void
-ufo_remote_node_request_setup (UfoRemoteNode *node)
-{
-    // TODO setup isn't in use, remove it
-    //g_assert (FALSE);
-
-    // g_return_if_fail (UFO_IS_REMOTE_NODE (node));
-    // UfoRemoteNodePrivate *priv = UFO_REMOTE_NODE_GET_PRIVATE (node);
-
-    // UfoMessage *request;
-    // request = ufo_message_new (UFO_MESSAGE_SETUP, 0);
-    // ufo_message_send_blocking (request);
-    // ufo_message_free (request);
-}
-
-void
 ufo_remote_node_send_json (UfoRemoteNode *node,
                            UfoRemoteMode mode,
                            const gchar *json)
@@ -237,6 +222,9 @@ ufo_remote_node_send_inputs (UfoRemoteNode *node,
         base += sizeof (struct _Header);
         memcpy (base, ufo_buffer_get_host_array (inputs[i], NULL), header->buffer_size);
         base += header->buffer_size;
+
+        g_debug ("remote: send input sized [%zu, %zu, ...]",
+                 header->requisition.dims[0], header->requisition.dims[1]);
     }
 
     request = ufo_message_new (UFO_MESSAGE_SEND_INPUTS, size);
@@ -252,12 +240,14 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
 {
     UfoRemoteNodePrivate *priv;
     UfoMessage *request, *response;
+    UfoRequisition requisition;
     gpointer host_array;
 
     g_return_if_fail (UFO_IS_REMOTE_NODE (node));
 
     priv = node->priv;
     request = ufo_message_new (UFO_MESSAGE_GET_RESULT, 0);
+
     if (!retry_send_n_times (3, priv->msger, request, "result request", &response)) {
         g_printerr ("A communication error occured while trying to get the results from the peer.");
         ufo_message_free (request);
@@ -269,6 +259,11 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
     g_assert (ufo_buffer_get_size (buffer) == response->data_size);
 
     memcpy (host_array, response->data, ufo_buffer_get_size (buffer));
+
+    ufo_buffer_get_requisition (buffer, &requisition);
+
+    g_debug ("remote: recvd result sized [%zu, %zu, ...]",
+             requisition.dims[0], requisition.dims[1]);
 
     ufo_message_free (request);
     ufo_message_free (response);

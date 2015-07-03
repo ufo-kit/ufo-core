@@ -67,7 +67,6 @@ ufo_remote_task_setup (UfoTask *task,
     priv->remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (task)));
     g_assert (priv->remote != NULL);
     ufo_remote_node_get_num_gpus (priv->remote);
-    ufo_remote_node_request_setup (priv->remote);
 }
 
 static void
