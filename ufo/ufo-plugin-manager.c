@@ -23,7 +23,6 @@
 #include <ufo/ufo-plugin-manager.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-dummy-task.h>
-#include <ufo/ufo-json-routines.h>
 #include "compat.h"
 
 /**
@@ -37,6 +36,9 @@
  * the UFO_PLUGIN_PATH environment variable. The name of the plugin xyz maps to
  * the library name libufofilterxyz.so.
  */
+
+gchar *ufo_transform_string (const gchar *pattern, const gchar *s, const gchar *separator);
+gchar *ufo_transform_string2 (const gchar *pattern, const gchar *s1,const gchar *s2, const gchar *separator);
 
 G_DEFINE_TYPE (UfoPluginManager, ufo_plugin_manager, G_TYPE_OBJECT)
 
@@ -334,6 +336,42 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
 }
 
 /**
+ * ufo_plugin_manager_get_task_from_package:
+ * @manager: A #UfoPluginManager
+ * @package_name: Name of library package
+ * @name: Name of the plugin.
+ * @error: return location for a GError or %NULL
+ *
+ * Load a #UfoTaskNode module and return an instance. The shared object name must
+ * be in @package_name subfolder and constructed as "lib@name.so".
+ *
+ * Since: 0.2, the error parameter is available
+ *
+ * Returns: (transfer full): (allow-none): #UfoTaskNode or %NULL if module cannot be found
+ */
+UfoTaskNode*
+ufo_plugin_manager_get_task_from_package(UfoPluginManager   *manager,
+                                         const gchar        *package_name,
+                                         const gchar        *name,
+                                         GError            **error)
+{
+    g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager) && name != NULL, NULL);
+
+    gchar *so_name = ufo_transform_string2("%s/libufo%s.so", package_name, name, NULL);
+    gchar *func_name = ufo_transform_string2("ufo_%s_%s_task_new", package_name, name, "_");
+
+    UfoTaskNode *node = UFO_TASK_NODE (ufo_plugin_manager_get_plugin (manager, func_name, so_name, error));
+
+    ufo_task_node_set_plugin_name (node, name);
+
+    g_free (func_name);
+    g_free (so_name);
+
+    g_debug ("UfoPluginManager: Created %s-%p", name, (gpointer) node);
+    return node;
+}
+
+/**
  * ufo_plugin_manager_get_all_task_names:
  * @manager: A #UfoPluginManager
  *
@@ -353,5 +391,59 @@ ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
                                                     "libufofilter*.so");
 
     g_regex_unref (regex);
+    return result;
+}
+
+/**
+ * ufo_transform_string:
+ * @pattern: A pattern to place the result string in it.
+ * @s: A string, which should be placed in the @pattern.
+ * @separator: A string containing separator symbols in the @s that should be removed
+ *
+ * Returns: A string there in @pattern was placed @s.
+ */
+gchar *
+ufo_transform_string (const gchar *pattern,
+                      const gchar *s,
+                      const gchar *separator)
+{
+    gchar **sv;
+    gchar *transformed;
+    gchar *result;
+    sv = g_strsplit_set (s, "-_ ", -1);
+    transformed = g_strjoinv (separator, sv);
+    result = g_strdup_printf (pattern, transformed);
+    g_strfreev (sv);
+    g_free (transformed);
+    return result;
+}
+
+/**
+ * ufo_transform_string2:
+ * @pattern: A pattern to place the result string in it.
+ * @s: A string, which should be placed in the @pattern.
+ * @separator: A string containing separator symbols in the @s that should be removed
+ *
+ * Returns: A string there in @pattern was placed @s.
+ */
+gchar *
+ufo_transform_string2 (const gchar *pattern,
+                       const gchar *s1,
+                       const gchar *s2,
+                       const gchar *separator)
+{
+    gchar **sv;
+    gchar *transformed1;
+    gchar *transformed2;
+    gchar *result;
+    sv = g_strsplit_set (s1, "-_ ", -1);
+    transformed1 = g_strjoinv (separator, sv);
+    g_strfreev (sv);
+    sv = g_strsplit_set (s2, "-_ ", -1);
+    transformed2 = g_strjoinv (separator, sv);
+    g_strfreev (sv);
+    result = g_strdup_printf (pattern, transformed1, transformed2);
+    g_free (transformed1);
+    g_free (transformed2);
     return result;
 }

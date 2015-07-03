@@ -86,6 +86,13 @@ ufo_task_node_get_plugin_name (UfoTaskNode *task_node)
     return task_node->priv->plugin;
 }
 
+const gchar *
+ufo_task_node_get_package_name (UfoTaskNode *task_node)
+{
+    g_assert (UFO_IS_TASK_NODE (task_node));
+    return UFO_TASK_NODE_GET_CLASS(task_node)->get_package_name(task_node);
+}
+
 void
 ufo_task_node_set_identifier (UfoTaskNode *node,
                               const gchar *identifier)
@@ -374,6 +381,13 @@ ufo_task_node_finalize (GObject *object)
     G_OBJECT_CLASS (ufo_task_node_parent_class)->finalize (object);
 }
 
+
+static const gchar *
+ufo_task_node_get_package_name_real (UfoTaskNode *task_node)
+{
+    return NULL;
+}
+
 static void
 ufo_task_node_class_init (UfoTaskNodeClass *klass)
 {
@@ -387,6 +401,8 @@ ufo_task_node_class_init (UfoTaskNodeClass *klass)
 
     nclass = UFO_NODE_CLASS (klass);
     nclass->copy = ufo_task_node_copy;
+
+    klass->get_package_name = ufo_task_node_get_package_name_real;
 
     properties[PROP_NUM_PROCESSED] =
         g_param_spec_uint ("num-processed",

@@ -29,6 +29,8 @@ G_DEFINE_TYPE (UfoNode, ufo_node, G_TYPE_OBJECT)
 
 #define UFO_NODE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_NODE, UfoNodePrivate))
 
+static UfoNode *ufo_node_copy_real (UfoNode *node, GError **error);
+
 struct _UfoNodePrivate {
     UfoNode  *orig;
     guint     total;
@@ -81,6 +83,10 @@ copy_properties (GObject *dst,
 
             g_value_init (&value, props[i]->value_type);
             g_object_get_property (src, props[i]->name, &value);
+            if(UFO_IS_NODE_CLASS(&(props[i]->value_type))) {
+                g_value_set_object(&value, ufo_node_copy_real(UFO_NODE(g_value_get_object(&value)), NULL));
+            }
+
             g_object_set_property (dst, props[i]->name, &value);
         }
     }

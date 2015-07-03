@@ -52,14 +52,14 @@ typedef enum {
     JSON_DATA
 } JsonLocation;
 
-static void add_nodes_from_json     (UfoTaskGraph *, JsonNode *, GError **);
+static void add_nodes_from_json     (UfoTaskGraph *self, JsonNode *, GError **);
 static void handle_json_prop_set    (JsonObject *, const gchar *, JsonNode *, gpointer user);
-static void handle_json_single_prop (JsonObject *, const gchar *, JsonNode *, gpointer user);
 static void handle_json_task_edge   (JsonArray *, guint, JsonNode *, gpointer);
-static gboolean handle_json_task_node (JsonNode *, UfoTaskGraphPrivate *priv, GError **error);
 static void add_task_node_to_json_array (UfoTaskNode *, JsonArray *);
 static JsonObject *json_object_from_ufo_node (UfoNode *node);
 static JsonNode *get_json_representation (UfoTaskGraph *, GError **);
+static UfoTaskNode *create_node_from_json(JsonNode *json_node,UfoPluginManager *manager, GHashTable *prop_sets, GError **error);
+static void add_node_to_table (JsonObject *object, const gchar *name, JsonNode *node, gpointer table);
 
 /*
  * ChangeLog:
@@ -435,7 +435,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         return;
     }
 
-    if (path != NULL && g_list_length (path) > 1) {
+    if (path != NULL && g_list_length (path) >= 1) {
         GList *predecessors;
         GList *successors;
 
@@ -681,15 +681,16 @@ ufo_task_graph_get_partition (UfoTaskGraph *graph,
 }
 
 static void
-add_nodes_from_json (UfoTaskGraph *graph,
+add_nodes_from_json (UfoTaskGraph *self,
                      JsonNode *root,
                      GError **error)
 {
+    UfoTaskGraphPrivate *priv = UFO_TASK_GRAPH_GET_PRIVATE(self);
     JsonObject *root_object = json_node_get_object (root);
 
     if (json_object_has_member (root_object, "prop-sets")) {
         JsonObject *sets = json_object_get_object_member (root_object, "prop-sets");
-        json_object_foreach_member (sets, handle_json_prop_set, graph->priv);
+        json_object_foreach_member (sets, handle_json_prop_set, priv);
     }
 
     if (json_object_has_member (root_object, "nodes")) {
@@ -698,12 +699,21 @@ add_nodes_from_json (UfoTaskGraph *graph,
         GList *it;
 
         g_list_for (elements, it) {
-            if (!handle_json_task_node (it->data, graph->priv, error)) {
+            UfoTaskNode *new_node = create_node_from_json(it->data, priv->manager, priv->prop_sets, error);
+            if(new_node != NULL) {
+                const char *name = ufo_task_node_get_identifier(new_node);
+
+                if (g_hash_table_lookup (priv->json_nodes, name) != NULL) {
+                    g_error ("Duplicate name `%s' found", name);
+                }
+
+                g_hash_table_insert (priv->json_nodes, g_strdup (name), new_node);
+            }
+            else {
                 g_list_free (elements);
                 return;
             }
         }
-
         g_list_free (elements);
 
         /*
@@ -712,74 +722,106 @@ add_nodes_from_json (UfoTaskGraph *graph,
          */
         if (json_object_has_member (root_object, "edges")) {
             JsonArray *edges = json_object_get_array_member (root_object, "edges");
-            json_array_foreach_element (edges, handle_json_task_edge, graph);
+            json_array_foreach_element (edges, handle_json_task_edge, self);
         }
     }
 }
 
-static gboolean
-handle_json_task_node (JsonNode *element,
-                       UfoTaskGraphPrivate *priv,
-                       GError **error)
+static UfoTaskNode *create_node_from_json(JsonNode *json_node,
+                                          UfoPluginManager *manager,
+                                          GHashTable *prop_sets,
+                                          GError **error)
 {
-    UfoTaskNode *plugin;
-    JsonObject *object;
+    UfoTaskNode *ret_node = NULL;
+    JsonObject *json_object;
     GError *tmp_error = NULL;
-    const gchar *name;
     const gchar *plugin_name;
 
-    object = json_node_get_object (element);
+    json_object = json_node_get_object (json_node);
 
-    if (!json_object_has_member (object, "plugin") ||
-        !json_object_has_member (object, "name")) {
+    gboolean plRes = json_object_has_member (json_object, "plugin");
+    gboolean nmRes = json_object_has_member (json_object, "name");
+    if (!plRes || !nmRes) {
         g_set_error (error, UFO_TASK_GRAPH_ERROR, UFO_TASK_GRAPH_ERROR_JSON_KEY,
                      "Node does not have `plugin' or `name' key");
-        return FALSE;
+        return NULL;
     }
 
-    plugin_name = json_object_get_string_member (object, "plugin");
-    plugin = ufo_plugin_manager_get_task (priv->manager, plugin_name, &tmp_error);
-    ufo_task_node_set_plugin_name (plugin, plugin_name);
+    plugin_name = json_object_get_string_member (json_object, "plugin");
+
+    if (json_object_has_member (json_object, "package")) {
+        const gchar *package_name = json_object_get_string_member (json_object, "package");
+        ret_node = ufo_plugin_manager_get_task_from_package (manager, package_name, plugin_name, &tmp_error);
+    }
+    else{
+        ret_node = ufo_plugin_manager_get_task (manager, plugin_name, &tmp_error);
+    }
+    ufo_task_node_set_plugin_name (ret_node, plugin_name);
 
     if (tmp_error != NULL) {
         g_propagate_error (error, tmp_error);
-        return FALSE;
+        return NULL;
     }
 
-    name = json_object_get_string_member (object, "name");
+    const gchar *task_name;
+    task_name = json_object_get_string_member (json_object, "name");
+    ufo_task_node_set_identifier (ret_node, task_name);
 
-    if (g_hash_table_lookup (priv->json_nodes, name) != NULL)
-        g_error ("Duplicate name `%s' found", name);
+    GHashTable *nodes_to_process = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
-    g_hash_table_insert (priv->json_nodes, g_strdup (name), plugin);
-    ufo_task_node_set_identifier (plugin, name);
-
-    if (json_object_has_member (object, "properties")) {
-        JsonObject *prop_object = json_object_get_object_member (object, "properties");
-        json_object_foreach_member (prop_object, handle_json_single_prop, plugin);
+    if (json_object_has_member (json_object, "properties")) {
+        JsonObject *prop_object = json_object_get_object_member (json_object, "properties");
+        json_object_foreach_member (prop_object, add_node_to_table, nodes_to_process);
     }
 
-    if (json_object_has_member (object, "prop-refs")) {
-        JsonArray *prop_refs;
-
-        prop_refs = json_object_get_array_member (object, "prop-refs");
+    if (json_object_has_member (json_object, "prop-refs")) {
+        JsonArray *prop_refs = json_object_get_array_member (json_object, "prop-refs");
 
         for (guint i = 0; i < json_array_get_length (prop_refs); i++) {
             const gchar *ref_name = json_array_get_string_element (prop_refs, i);
-            JsonObject *prop_set = g_hash_table_lookup (priv->prop_sets, ref_name);
+            JsonObject *prop_set = g_hash_table_lookup (prop_sets, ref_name);
 
             if (prop_set == NULL) {
                 g_warning ("No property set `%s' found in `prop-sets'", ref_name);
             }
             else {
-                json_object_foreach_member (prop_set,
-                                            handle_json_single_prop,
-                                            plugin);
+                json_object_foreach_member (prop_set, add_node_to_table, nodes_to_process);
+                //json_object_foreach_member (prop_set, handle_json_single_prop, ret_node);
             }
         }
     }
 
-    return TRUE;
+    GHashTableIter iter;
+    gpointer key, value;
+
+    g_hash_table_iter_init (&iter, nodes_to_process);
+    while (g_hash_table_iter_next (&iter, &key, &value)) {
+        JsonNode *node = (JsonNode*)value;
+
+        if (JSON_NODE_HOLDS_VALUE (node)) {
+            GValue val = {0,};
+            json_node_get_value (node, &val);
+            g_object_set_property (G_OBJECT(ret_node), key, &val);
+            g_value_unset (&val);
+        }
+        else if (JSON_NODE_HOLDS_OBJECT (node)) {
+
+            JsonObject *node_object = json_node_get_object (node);
+            if(json_object_has_member(node_object, "plugin")){
+                UfoTaskNode *inner_node = create_node_from_json(node, manager, prop_sets, error);
+                g_object_set(G_OBJECT(ret_node), key, inner_node, NULL);
+            }
+            else {
+                ufo_task_set_json_object_property (UFO_TASK (node), key, node_object);
+            }
+        }
+        else {
+            g_warning ("`%s' is neither a primitive value nor an object!", (char*)key);
+        }
+    }
+
+    g_hash_table_unref(nodes_to_process);
+    return ret_node;
 }
 
 static void
@@ -861,44 +903,77 @@ handle_json_prop_set (JsonObject *object,
     g_hash_table_insert (priv->prop_sets, g_strdup (name), properties);
 }
 
-static void
-handle_json_single_prop (JsonObject *object,
-                         const gchar *name,
-                         JsonNode *node,
-                         gpointer user)
+static void add_node_to_table (JsonObject *object, const gchar *name, JsonNode *node, gpointer table)
 {
-    if (JSON_NODE_HOLDS_VALUE (node)) {
-        GValue val = {0,};
-        json_node_get_value (node, &val);
-        g_object_set_property (G_OBJECT(user), name, &val);
-        g_value_unset (&val);
-    }
-    else if (JSON_NODE_HOLDS_OBJECT (node)) {
-        ufo_task_set_json_object_property (UFO_TASK (user), name, json_node_get_object (node));
-    }
-    else {
-        g_warning ("`%s' is neither a primitive value nor an object!", name);
-    }
+    GHashTable *hash_table = (GHashTable*)table;
+    g_hash_table_insert(hash_table, g_strdup(name), node);
 }
+
+static JsonObject *
+create_full_json_from_task_node(UfoTaskNode *task_node) {
+
+    JsonObject *json_object= json_object_new ();
+
+    const gchar *plugin_name = ufo_task_node_get_plugin_name (task_node);
+    g_assert (plugin_name != NULL);
+    json_object_set_string_member (json_object, "plugin", plugin_name);
+
+    const gchar *package_name = ufo_task_node_get_package_name (task_node);
+    if(package_name != NULL){
+        json_object_set_string_member (json_object, "package", package_name);
+    }
+
+    const gchar *name = ufo_task_node_get_identifier (task_node);
+    g_assert (name != NULL);
+    json_object_set_string_member (json_object, "name", name);
+
+    JsonNode *prop_node = json_gobject_serialize (G_OBJECT (task_node));
+    JsonObject *prop_object = json_node_get_object(prop_node);
+
+    // Some modified code from json-glib
+    GParamSpec **pspecs;
+    guint n_pspecs;
+    pspecs = g_object_class_list_properties (G_OBJECT_GET_CLASS (task_node), &n_pspecs);
+    for (guint i = 0; i < n_pspecs; i++) {
+        GParamSpec *pspec = pspecs[i];
+        GValue value = { 0, };
+
+        /* read only what we can */
+        if (!(pspec->flags & G_PARAM_READABLE)) {
+            continue;
+        }
+
+        // Process only task node type properties
+        if(!UFO_IS_TASK_NODE_CLASS(&(pspec->value_type))) {
+            continue;
+        }
+
+        g_value_init (&value, G_PARAM_SPEC_VALUE_TYPE (pspec));
+        g_object_get_property (G_OBJECT(task_node), pspec->name, &value);
+
+        gpointer real_val = g_value_get_object(&value);
+
+        // skip if the value is the default for the property
+        if (!g_param_value_defaults (pspec, &value)) {
+            JsonObject *subtask_json_object = create_full_json_from_task_node(real_val);
+            json_object_set_object_member(prop_object, pspec->name, subtask_json_object);
+        }
+
+        g_value_unset (&value);
+    }
+
+    g_free (pspecs);
+
+    json_object_set_member (json_object, "properties", prop_node);
+
+    return json_object;
+}
+
 
 static void
 add_task_node_to_json_array (UfoTaskNode *node, JsonArray *array)
 {
-    JsonObject *node_object;
-    JsonNode *prop_node;
-
-    node_object = json_object_new ();
-    const gchar *plugin_name = ufo_task_node_get_plugin_name (node);
-    g_assert (plugin_name != NULL);
-    json_object_set_string_member (node_object, "plugin", plugin_name);
-
-    const gchar *name = ufo_task_node_get_identifier (node);
-    g_assert (name != NULL);
-    json_object_set_string_member (node_object, "name", name);
-
-    prop_node = json_gobject_serialize (G_OBJECT (node));
-    json_object_set_member (node_object, "properties", prop_node);
-    json_array_add_object_element (array, node_object);
+    json_array_add_object_element (array, create_full_json_from_task_node(node));
 }
 
 static JsonObject *
