@@ -117,27 +117,8 @@ ufo_remote_task_process (UfoTask *task,
     priv = UFO_REMOTE_TASK_GET_PRIVATE (UFO_REMOTE_TASK (task));
 
     ufo_remote_node_get_result (priv->remote, output);
+    g_debug ("remote: received result");
     return TRUE;
-}
-
-static void
-ufo_remote_task_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
-{
-    switch (property_id) {
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-            break;
-    }
-}
-
-static void
-ufo_remote_task_get_property(GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
-{
-    switch (property_id) {
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-            break;
-    }
 }
 
 static void
@@ -162,10 +143,7 @@ ufo_remote_task_class_init (UfoRemoteTaskClass *klass)
 {
     GObjectClass *oclass = G_OBJECT_CLASS (klass);
 
-    oclass->set_property = ufo_remote_task_set_property;
-    oclass->get_property = ufo_remote_task_get_property;
     oclass->dispose = ufo_remote_task_dispose;
-
     g_type_class_add_private (oclass, sizeof(UfoRemoteTaskPrivate));
 }
 
