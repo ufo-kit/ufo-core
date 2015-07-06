@@ -208,14 +208,14 @@ main(int argc, char* argv[])
 
     static gboolean progress = FALSE;
     static gboolean trace = FALSE;
-    static gboolean time = FALSE;
+    static gboolean do_time = FALSE;
     static gchar **addresses = NULL;
     static gchar *dump = NULL;
 
     static GOptionEntry entries[] = {
         { "progress", 'p', 0, G_OPTION_ARG_NONE, &progress, "show progress", NULL },
         { "trace", 't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
-        { "time", 0, 0, G_OPTION_ARG_NONE, &time, "print run time", NULL },
+        { "time", 0, 0, G_OPTION_ARG_NONE, &do_time, "print run time", NULL },
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
         { "dump", 'd', 0, G_OPTION_ARG_STRING, &dump, "Dump to JSON file", NULL },
         { NULL }
@@ -283,7 +283,7 @@ main(int argc, char* argv[])
         g_print ("\n");
     }
 
-    if (time) {
+    if (do_time) {
         gdouble run_time;
 
         g_object_get (sched, "time", &run_time, NULL);
