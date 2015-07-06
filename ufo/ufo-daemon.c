@@ -200,18 +200,20 @@ handle_replicate_json (UfoDaemon *daemon, UfoMessage *request)
     UfoBaseScheduler *scheduler;
     gchar *json;
     UfoTaskGraph *graph;
+    UfoMessage *reply;
     GError *error = NULL;
 
     priv = UFO_DAEMON_GET_PRIVATE (daemon);
-    json = read_json (daemon, request);
 
-    // send ack
-    UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
+    reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
+
     if (!retry_send_n_times (3, priv->messenger, reply, "replicate JSON ACK")) {
         ufo_message_free (reply);
-        goto replicate_json_free;
+        return;
     }
+
     ufo_message_free (reply);
+    json = read_json (daemon, request);
 
     graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
     ufo_task_graph_read_from_data (graph, priv->manager, json, &error);
