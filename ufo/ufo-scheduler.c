@@ -213,6 +213,7 @@ run_remote_task (TaskLocalData *tld)
 
     g_free (alive);
     ufo_group_finish (ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task)));
+    ufo_remote_node_terminate (remote);
 }
 
 static gpointer
