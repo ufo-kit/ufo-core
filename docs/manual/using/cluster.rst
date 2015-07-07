@@ -39,3 +39,14 @@ mode, you have to prepare the scheduler::
     sched = Ufo.Scheduler(remotes=remotes)
     sched.set_remote_mode(Ufo.RemoteMode.REPLICATE)
     sched.run(graph)
+
+
+Improving small kernel launches
+===============================
+
+UFO uses a single OpenCL context to manage multiple GPUs in a transparent way.
+For applications and plugins that require many small kernel launches, multi-GPU
+performance suffers on NVIDIA systems due to bad scaling of the kernel launch
+time. In order to improve performance on machines with multiple GPUs it is
+strongly advised to run multiple ``ufod`` services with differently chosen GPUs
+and ports.
