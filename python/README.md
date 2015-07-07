@@ -82,3 +82,23 @@ d.ufo_fbp()
 
 tomopy.xtomo_writer(d.data_recon, 'result-', axis=0)
 ```
+
+
+### Fabfile for easier cluster setup
+
+Depending on the use case it is necessary to start several instances of `ufod`
+on the same machine. To ease startup and connection one can use the provided
+Fabric `fabfile.py` to run binaries that accept the `-a` flag for specifying a
+host address. This requires Fabric to be installed on the master machine. To run
+a simple pipeline you would issue:
+
+```bash
+fab -H 123.123.123.123 -u user start:cmd='ufo-launch',args='dummy-data ! blur ! null'
+```
+
+This starts as many `ufod` instances on 123.123.123.123 as it has GPUs
+installed. To limit the number, you can use the `limit` argument, i.e.
+
+```bash
+fab start:cmd='ufo-launch',limit=2
+```
