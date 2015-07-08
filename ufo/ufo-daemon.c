@@ -115,10 +115,10 @@ ufo_daemon_new (const gchar *listen_address)
 }
 
 static gboolean
-retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, const gchar *str)
+send_message (UfoMessenger *msger, UfoMessage *msg, const gchar *str)
 {
     GError *error = NULL;
-    guint counter = retries;
+    guint counter = 3;
 
     while (counter) {
         ufo_messenger_send_blocking (msger, msg, &error);
@@ -130,7 +130,7 @@ retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, const g
                 error = NULL;
             }
             else {
-                g_printerr ("Failed to send %s after %u times: \"%s\" Giving up...\n", str, retries,error->message);
+                g_printerr ("Failed to send %s: `%s'", str, error->message);
                 g_error_free (error);
                 return FALSE;
             }
@@ -149,7 +149,7 @@ send_ack (UfoMessenger *messenger)
     gboolean result;
 
     ack = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    result = retry_send_n_times (3, messenger, ack, "ACK");
+    result = send_message (messenger, ack, "ACK");
     ufo_message_free (ack);
     return result;
 }
@@ -170,7 +170,7 @@ handle_get_num_devices (UfoDaemon *daemon, UfoMessage *request)
 
     *(guint16 *) reply->data = (guint16) num_devices;
 
-    retry_send_n_times (3, priv->messenger, reply, "num devices");
+    send_message (priv->messenger, reply, "num devices");
     ufo_message_free (reply);
 }
 
@@ -304,7 +304,7 @@ handle_get_structure (UfoDaemon *daemon, UfoMessage *request)
     reply = ufo_message_new (UFO_MESSAGE_ACK, sizeof (struct _Structure));
     *(struct _Structure *) (reply->data) = message_data;
 
-    retry_send_n_times (3, priv->messenger, reply, "get structure reply");
+    send_message (priv->messenger, reply, "get structure reply");
     ufo_message_free (reply);
 }
 
@@ -347,7 +347,7 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
     g_debug ("daemon: released input buffer");
 
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    retry_send_n_times (3, priv->messenger, reply, "inputs reply");
+    send_message (priv->messenger, reply, "inputs reply");
     ufo_message_free (reply);
 }
 
@@ -363,7 +363,7 @@ handle_get_requisition (UfoDaemon *daemon, UfoMessage *request)
 
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, sizeof (UfoRequisition));
     memcpy (reply->data, &requisition, reply->data_size);
-    retry_send_n_times (3, priv->messenger, reply, "requisition reply");
+    send_message (priv->messenger, reply, "requisition reply");
     ufo_message_free (reply);
 }
 
@@ -379,7 +379,7 @@ void handle_get_result (UfoDaemon *daemon, UfoMessage *request)
 
     UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, size);
     memcpy (reply->data, ufo_buffer_get_host_array (buffer, NULL), size);
-    retry_send_n_times (3, priv->messenger, reply, "results");
+    send_message (priv->messenger, reply, "results");
     ufo_message_free (reply);
     ufo_output_task_release_output_buffer (UFO_OUTPUT_TASK (priv->output_task), buffer);
 }
@@ -568,7 +568,7 @@ ufo_daemon_stop (UfoDaemon *daemon, GError **error)
     }
 
     UfoMessage *request = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
-    if (!retry_send_n_times (3, priv->messenger, request, "terminate request")) {
+    if (!send_message (priv->messenger, request, "terminate request")) {
         g_set_error (&tmp_error, UFO_MESSENGER_ERROR, UFO_MESSENGER_CONNECTION_PROBLEM,
                      "Failed to send terminate request");
         ufo_message_free (request);
