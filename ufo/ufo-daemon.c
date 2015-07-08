@@ -114,7 +114,7 @@ ufo_daemon_new (const gchar *listen_address)
     return daemon;
 }
 
-static inline gboolean
+static gboolean
 retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, const gchar *str)
 {
     GError *error = NULL;
@@ -140,6 +140,18 @@ retry_send_n_times (guint retries, UfoMessenger *msger, UfoMessage *msg, const g
             break;
     }
     return TRUE;
+}
+
+static gboolean
+send_ack (UfoMessenger *messenger)
+{
+    UfoMessage *ack;
+    gboolean result;
+
+    ack = ufo_message_new (UFO_MESSAGE_ACK, 0);
+    result = retry_send_n_times (3, messenger, ack, "ACK");
+    ufo_message_free (ack);
+    return result;
 }
 
 static void
@@ -200,21 +212,14 @@ handle_replicate_json (UfoDaemon *daemon, UfoMessage *request)
     UfoBaseScheduler *scheduler;
     gchar *json;
     UfoTaskGraph *graph;
-    UfoMessage *reply;
     GError *error = NULL;
 
     priv = UFO_DAEMON_GET_PRIVATE (daemon);
 
-    reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-
-    if (!retry_send_n_times (3, priv->messenger, reply, "replicate JSON ACK")) {
-        ufo_message_free (reply);
+    if (!send_ack (priv->messenger))
         return;
-    }
 
-    ufo_message_free (reply);
     json = read_json (daemon, request);
-
     graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
     ufo_task_graph_read_from_data (graph, priv->manager, json, &error);
 
@@ -246,13 +251,8 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *request)
     priv = UFO_DAEMON_GET_PRIVATE (daemon);
     json = read_json (daemon, request);
 
-    /* send ack */
-    UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    if (!retry_send_n_times (3, priv->messenger, reply, "stream JSON ACK")) {
-        ufo_message_free (reply);
+    if (!send_ack (priv->messenger))
         return;
-    }
-    ufo_message_free (reply);
 
     /* Setup local task graph */
     priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
@@ -402,9 +402,8 @@ void handle_cleanup (UfoDaemon *daemon, UfoMessage *request)
      * We send the ACK early on, because we don't want to let the host wait for
      * actually cleaning up (and waiting some time to unref the input task).
      */
-    UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    retry_send_n_times (3, priv->messenger, reply, "cleanup ACK");
-    ufo_message_free (reply);
+    if (!send_ack (priv->messenger))
+        return;
 
     /* TODO: check that we don't need to execute this branch wen priv->input is null */
     if (priv->input_task && priv->input) {
@@ -427,9 +426,8 @@ handle_terminate (UfoDaemon *daemon, UfoMessage *request)
 {
     UfoDaemonPrivate *priv = UFO_DAEMON_GET_PRIVATE (daemon);
     
-    UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    retry_send_n_times (3, priv->messenger, reply, "terminate ACK");
-    ufo_message_free (reply);
+    if (!send_ack (priv->messenger))
+        return;
 
     if (priv->scheduler_thread != NULL) {
         g_message ("Waiting for scheduler to finish ...");
