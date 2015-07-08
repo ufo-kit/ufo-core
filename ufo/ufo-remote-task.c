@@ -116,7 +116,6 @@ ufo_remote_task_process (UfoTask *task,
     priv = UFO_REMOTE_TASK_GET_PRIVATE (UFO_REMOTE_TASK (task));
 
     ufo_remote_node_get_result (priv->remote, output);
-    g_debug ("remote: received result");
     return TRUE;
 }
 

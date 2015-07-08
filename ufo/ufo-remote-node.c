@@ -262,7 +262,7 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
 
     ufo_buffer_get_requisition (buffer, &requisition);
 
-    g_debug ("remote: recvd result sized [%zu, %zu, ...]",
+    g_debug ("remote: recv result [%zu, %zu, ...]",
              requisition.dims[0], requisition.dims[1]);
 
     ufo_message_free (request);

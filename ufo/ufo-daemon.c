@@ -139,6 +139,9 @@ send_message (UfoMessenger *msger, UfoMessage *msg, const gchar *str)
         else
             break;
     }
+
+    g_debug ("daemon: sent message [type=%i]", msg->type);
+
     return TRUE;
 }
 
@@ -337,18 +340,14 @@ handle_send_inputs (UfoDaemon *daemon, UfoMessage *request)
             ufo_buffer_resize (priv->input, &requisition);
     }
 
-    g_debug ("daemon: received input sized [%zu, %zu, ...]", requisition.dims[0], requisition.dims[1]);
+    g_debug ("daemon: recv input [%zu, %zu, ...]", requisition.dims[0], requisition.dims[1]);
 
     memcpy (ufo_buffer_get_host_array (priv->input, NULL),
             base + sizeof (struct Header),
             ufo_buffer_get_size (priv->input));
 
     ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task), priv->input);
-    g_debug ("daemon: released input buffer");
-
-    UfoMessage *reply = ufo_message_new (UFO_MESSAGE_ACK, 0);
-    send_message (priv->messenger, reply, "inputs reply");
-    ufo_message_free (reply);
+    send_ack (priv->messenger);
 }
 
 static void
@@ -481,6 +480,7 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
     while (wait_for_messages) {
         GError *err = NULL;
         UfoMessage *message = ufo_messenger_recv_blocking (priv->messenger, &err);
+        g_debug ("daemon: recv message [type=%i]", message->type);
 
         if (err != NULL) {
             /* If daemon is stopped, socket will be closed and message_recv will
