@@ -1004,8 +1004,10 @@ ufo_resources_finalize (GObject *object)
     g_list_free_full (priv->kernels, (GDestroyNotify) release_kernel);
     g_list_free_full (priv->programs, (GDestroyNotify) release_program);
 
-    if (priv->context)
+    if (priv->context) {
+        g_debug ("Release context=%p", priv->context);
         UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
+    }
 
     g_string_free (priv->build_opts, TRUE);
 

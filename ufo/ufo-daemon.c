@@ -257,15 +257,17 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *request)
     if (!send_ack (priv->messenger))
         return;
 
+    priv->resources = ufo_resources_new (&error);
+
+    if (error != NULL)
+        goto handle_error;
+
     /* Setup local task graph */
     priv->task_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
     ufo_task_graph_read_from_data (priv->task_graph, priv->manager, json, &error);
 
-    if (error != NULL) {
-        g_printerr ("%s\n", error->message);
-        /* Send error to master */
-        return;
-    }
+    if (error != NULL)
+        goto handle_error;
 
     roots = ufo_graph_get_roots (UFO_GRAPH (priv->task_graph));
     g_assert (g_list_length (roots) == 1);
@@ -286,6 +288,10 @@ handle_stream_json (UfoDaemon *daemon, UfoMessage *request)
 
     priv->scheduler_thread = g_thread_create ((GThreadFunc) run_scheduler, daemon, TRUE, NULL);
     g_free (json);
+    return;
+
+handle_error:
+    g_printerr ("%s\n", error->message);
 }
 
 static void
@@ -418,6 +424,7 @@ void handle_cleanup (UfoDaemon *daemon, UfoMessage *request)
 
     unref_and_free ((GObject **) &priv->output_task);
     unref_and_free ((GObject **) &priv->task_graph);
+    unref_and_free ((GObject **) &priv->resources);
 }
 
 static void
@@ -460,7 +467,6 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
     GError *error = NULL;
 
     priv = UFO_DAEMON_GET_PRIVATE (daemon);
-    priv->resources = ufo_resources_new (&error);
 
     if (error != NULL) {
         g_warning ("%s\n", error->message);
