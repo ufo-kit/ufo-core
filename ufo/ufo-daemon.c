@@ -433,8 +433,6 @@ handle_terminate (UfoDaemon *daemon, UfoMessage *request)
         g_thread_join (priv->scheduler_thread);
         g_message ("Done.");
     }
-
-    ufo_messenger_disconnect (priv->messenger);
 }
 
 static gpointer
@@ -480,21 +478,20 @@ ufo_daemon_start_impl (UfoDaemon *daemon)
     while (wait_for_messages) {
         GError *err = NULL;
         UfoMessage *message = ufo_messenger_recv_blocking (priv->messenger, &err);
-        g_debug ("daemon: recv message [type=%i]", message->type);
 
         if (err != NULL) {
             /* If daemon is stopped, socket will be closed and message_recv will
              * yield an error - we stop. */
+            g_message ("Could not receive message: %s", err->message);
             wait_for_messages = FALSE;
         }
         else {
+            g_debug ("daemon: recv message [type=%i]", message->type);
+
             if (message->type >= UFO_MESSAGE_INVALID_REQUEST)
                 g_error ("Invalid request");
             else
                 handlers[message->type](daemon, message);
-
-            if (message->type == UFO_MESSAGE_TERMINATE)
-                wait_for_messages = FALSE;
         }
 
         ufo_message_free (message);
