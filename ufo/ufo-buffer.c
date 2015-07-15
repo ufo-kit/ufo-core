@@ -550,7 +550,7 @@ transfer_image_to_device (UfoBufferPrivate *src_priv,
  * @priv: buffer to be created for directgma (not pinned)
  * this function create a buffer that can be used for directGMA, without pinning it on GPU memory
  */
-static void
+static int
 alloc_device_array_direct_gma (UfoBufferPrivate *priv)
 {
     cl_int err;
@@ -558,8 +558,16 @@ alloc_device_array_direct_gma (UfoBufferPrivate *priv)
 
     if (priv->device_array != NULL)
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
-    /*check size*/
-    /* check flag?*/
+    
+    if(priv->size>128000000){
+      g_printerr("the requested buffer size for directgma is too big");
+      return 1;
+    }
+    
+    if(priv->location != UFO_BUFFER_LOCATION_DEVICE_DIRECT_GMA){
+      g_printerr("wrong buffer type for directGMA");
+      return 2;
+    }
 
     mem = clCreateBuffer (priv->context,
                           CL_MEM_BUS_ADDRESSABLE_AMD,
@@ -568,6 +576,7 @@ alloc_device_array_direct_gma (UfoBufferPrivate *priv)
 
     UFO_RESOURCES_CHECK_CLERR (err);
     priv->device_array = mem;
+    return 0;
 }
 
 /**
@@ -580,14 +589,17 @@ alloc_device_array_direct_gma (UfoBufferPrivate *priv)
 static cl_bus_address_amd 
 make_buffer_resident_amd(UfoBufferPrivate *priv, cl_command_queue command_queue,){
   clEnqueueMakeBuffersResidentAMD_fn clEnqueueMakeBuffersResidentAMD=NULL;
-  int err2=0;
+  gint err2=0;
   cl_bus_address_amd busaddress;
     
 clEnqueueMakeBuffersResidentAMD = (clEnqueueMakeBuffersResidentAMD_fn) clGetExtensionFunctionAddressForPlatform(SelectedPlatform,"clEnqueueMakeBuffersResidentAMD");
-  /* error checking   if(clEnqueueMakeBuffersResidentAMD == NULL) ;*/
+ if(clEnqueueMakeBuffersResidentAMD == NULL) {
+   g_printerr("impossible to get the clEnqueueMakeBuffersResdidentAMD function");
+   return NULL;
+ }
   
   err2=clEnqueueMakeBuffersResidentAMD(command_queue,1,priv->device_array, CL_TRUE, &busaddress,0,0,0);
-  UFO_RESOURCES_CHECK_CLERR (errcode);
+  UFO_RESOURCES_CHECK_CLERR (err2);
 
   return busaddress;
 }
@@ -598,24 +610,31 @@ clEnqueueMakeBuffersResidentAMD = (clEnqueueMakeBuffersResidentAMD_fn) clGetExte
  *
  * share the beginning pcibus address of the buffer for directGMA on the GPU
  */
-void
+int
 ufo_direct_gma_address_share(cl_bus_address_amd busadress){
-  long bus_gpu;
-  key_t key=987654;
+  glong bus_gpu;
+  gint key=987654;
 
-    shmid=shmget(key, sizeof(long), IPC_CREAT| IPC_EXCL | 0666);
+    shmid=shmget(key, sizeof(glong), IPC_CREAT| IPC_EXCL | 0666);
     if(errno==EEXIST){
-        shmid=shmget(key,sizeof(long),0666);
-        if(shmid<0) printf("impossible to get a shm1,errno %i\n",errno); /**< error? + exit*/
-    }else if(shmid<0) printf("impossible to get a shm2, errno %i\n",errno); /** error? + exit*/
+        shmid=shmget(key,sizeof(glong),0666);
+        if(shmid<0) {
+	  g_printerr("impossible to get a shm1,errno %i",errno); /**< exit*/
+	  return 1;
+	}
+    }else if(shmid<0){
+      g_printerr("impossible to get a shm2, errno %i",errno); /**exit*/
+      return 1;
+    }      
 
     bus_gpu=shmat(shmid,(void*)0,0);
-    if(bus_gpu==(long*)(-1)){
-      printf("error getting shmat\n");/**<error?*/
-	/*exit?*/
+    if(bus_gpu==(glong*)(-1)){
+      g_printerr("error getting shmat");
+      return 2;
     }
 
-    bus_gpu=busadress.surface_bus_address; /* we wil care about offset and alignment in fpga part*/
+    bus_gpu=busadress.surface_bus_address; /* we will care about offset and alignment in fpga part*/
+    return 0;
 }
   
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

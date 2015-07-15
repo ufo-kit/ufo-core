@@ -268,6 +268,7 @@ platform_has_gpus (cl_platform_id platform)
 }
 
 //--------------------------------------------------------------------------------------------------
+
 /**
  * CheckSupportExtension
  * @deviceID : the ID of the device that will be checked against an extension
