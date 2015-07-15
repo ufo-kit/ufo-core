@@ -106,7 +106,8 @@ typedef enum {
     UFO_BUFFER_LOCATION_HOST = 0,
     UFO_BUFFER_LOCATION_DEVICE,
     UFO_BUFFER_LOCATION_DEVICE_IMAGE,
-    UFO_BUFFER_LOCATION_INVALID
+    UFO_BUFFER_LOCATION_INVALID,
+    UFO_BUFFER_LOCATION_DEVICE_DIRECT_GMA
 } UfoBufferLocation;
 
 UfoBuffer*  ufo_buffer_new                  (UfoRequisition *requisition,

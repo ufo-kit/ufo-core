@@ -544,6 +544,81 @@ transfer_image_to_device (UfoBufferPrivate *src_priv,
     UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
 }
 
+//----------------------------------------------------------------------------------------------------------------
+/**
+ * alloc_device_array_direct_gma
+ * @priv: buffer to be created for directgma (not pinned)
+ * this function create a buffer that can be used for directGMA, without pinning it on GPU memory
+ */
+static void
+alloc_device_array_direct_gma (UfoBufferPrivate *priv)
+{
+    cl_int err;
+    cl_mem mem;
+
+    if (priv->device_array != NULL)
+        UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
+    /*check size*/
+    /* check flag?*/
+
+    mem = clCreateBuffer (priv->context,
+                          CL_MEM_BUS_ADDRESSABLE_AMD,
+                          priv->size,
+                          NULL, &err);
+
+    UFO_RESOURCES_CHECK_CLERR (err);
+    priv->device_array = mem;
+}
+
+/**
+ * make_buffer_resident_amd
+ * @priv: the buffer we want to open for directgma on the gpu
+ * @command_queue: the command queue running
+ *
+ * this function opens the buffer for directgma on gpu, with size of priv
+ */ 
+static cl_bus_address_amd 
+make_buffer_resident_amd(UfoBufferPrivate *priv, cl_command_queue command_queue,){
+  clEnqueueMakeBuffersResidentAMD_fn clEnqueueMakeBuffersResidentAMD=NULL;
+  int err2=0;
+  cl_bus_address_amd busaddress;
+    
+clEnqueueMakeBuffersResidentAMD = (clEnqueueMakeBuffersResidentAMD_fn) clGetExtensionFunctionAddressForPlatform(SelectedPlatform,"clEnqueueMakeBuffersResidentAMD");
+  /* error checking   if(clEnqueueMakeBuffersResidentAMD == NULL) ;*/
+  
+  err2=clEnqueueMakeBuffersResidentAMD(command_queue,1,priv->device_array, CL_TRUE, &busaddress,0,0,0);
+  UFO_RESOURCES_CHECK_CLERR (errcode);
+
+  return busaddress;
+}
+
+/**
+ * ufo_direct_gma_address_share:
+ * @busadress: struct #cl_bus_address_amd returned by ufo_make_buffer_resident_amd
+ *
+ * share the beginning pcibus address of the buffer for directGMA on the GPU
+ */
+void
+ufo_direct_gma_address_share(cl_bus_address_amd busadress){
+  long bus_gpu;
+  key_t key=987654;
+
+    shmid=shmget(key, sizeof(long), IPC_CREAT| IPC_EXCL | 0666);
+    if(errno==EEXIST){
+        shmid=shmget(key,sizeof(long),0666);
+        if(shmid<0) printf("impossible to get a shm1,errno %i\n",errno); /**< error? + exit*/
+    }else if(shmid<0) printf("impossible to get a shm2, errno %i\n",errno); /** error? + exit*/
+
+    bus_gpu=shmat(shmid,(void*)0,0);
+    if(bus_gpu==(long*)(-1)){
+      printf("error getting shmat\n");/**<error?*/
+	/*exit?*/
+    }
+
+    bus_gpu=busadress.surface_bus_address; /* we wil care about offset and alignment in fpga part*/
+}
+  
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * ufo_buffer_copy:
@@ -804,8 +879,13 @@ ufo_buffer_get_device_array (UfoBuffer *buffer, gpointer cmd_queue)
 
     update_last_queue (priv, cmd_queue);
 
-    if (priv->device_array == NULL)
+    if (priv->device_array == NULL && priv->location!= UFO_BUFFER_LOCATION_DEVICE_DIRECT_GMA)
         alloc_device_array (priv);
+    
+    if (priv->device_array == NULL && priv->location== UFO_BUFFER_LOCATION_DEVICE_DIRECT_GMA){
+        alloc_device_array_direct_gma (priv);
+        make_buffer_resident_amd(priv);
+    }
 
     if (priv->location == UFO_BUFFER_LOCATION_HOST && priv->host_array)
         transfer_host_to_device (priv, priv, priv->last_queue);
