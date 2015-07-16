@@ -410,21 +410,10 @@ void handle_cleanup (UfoDaemon *daemon, UfoMessage *request)
     if (!send_ack (priv->messenger))
         return;
 
-    /* TODO: check that we don't need to execute this branch wen priv->input is null */
     if (priv->input_task && priv->input) {
         ufo_input_task_stop (UFO_INPUT_TASK (priv->input_task));
-
-        ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task),
-                                             priv->input);
-
-        g_usleep (1.5 * G_USEC_PER_SEC);
-        unref_and_free ((GObject **) &priv->input_task);
-        unref_and_free ((GObject **) &priv->input);
+        ufo_input_task_release_input_buffer (UFO_INPUT_TASK (priv->input_task), priv->input);
     }
-
-    unref_and_free ((GObject **) &priv->output_task);
-    unref_and_free ((GObject **) &priv->task_graph);
-    unref_and_free ((GObject **) &priv->resources);
 }
 
 static void
@@ -436,9 +425,8 @@ handle_terminate (UfoDaemon *daemon, UfoMessage *request)
         return;
 
     if (priv->scheduler_thread != NULL) {
-        g_message ("Waiting for scheduler to finish ...");
+        g_debug ("daemon: waiting for scheduler to finish ...");
         g_thread_join (priv->scheduler_thread);
-        g_message ("Done.");
     }
 }
 
@@ -447,14 +435,24 @@ run_scheduler (UfoDaemon *daemon)
 {
     UfoDaemonPrivate *priv;
     UfoBaseScheduler *scheduler;
+    gdouble elapsed;
 
     priv = UFO_DAEMON_GET_PRIVATE (daemon);
 
     g_message ("Run scheduler ...");
     scheduler = ufo_scheduler_new ();
+
     ufo_base_scheduler_set_resources (scheduler, priv->resources);
     ufo_base_scheduler_run (scheduler, priv->task_graph, NULL);
-    g_message ("Done.");
+
+    unref_and_free ((GObject **) &priv->input_task);
+    unref_and_free ((GObject **) &priv->output_task);
+    unref_and_free ((GObject **) &priv->input);
+    unref_and_free ((GObject **) &priv->task_graph);
+    unref_and_free ((GObject **) &priv->resources);
+
+    g_object_get (scheduler, "time", &elapsed, NULL);
+    g_message ("Finished in %3.5fs.", elapsed);
 
     g_object_unref (scheduler);
     return NULL;
