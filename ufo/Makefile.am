@@ -23,7 +23,6 @@ ufo_sources = \
     ufo-graph.c \
     ufo-group.c \
     ufo-input-task.c \
-    ufo-json-routines.c \
     ufo-local-scheduler.c \
     ufo-messenger-iface.c \
     ufo-method-iface.c \
@@ -58,7 +57,6 @@ ufo_headers = \
     ufo-graph.h \
     ufo-group.h \
     ufo-input-task.h \
-    ufo-json-routines.h \
     ufo-local-scheduler.h \
     ufo-messenger-iface.h \
     ufo-method-iface.h \
