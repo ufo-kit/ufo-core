@@ -114,6 +114,13 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
     g_timer_destroy (timer);
 }
 
+/**
+ * ufo_base_scheduler_set_resources:
+ * @scheduler: A #UfoBaseScheduler object
+ * @resources: (transfer full): A #UfoResources object
+ *
+ * Assigns @resources to @scheduler for specific use cases.
+ */
 void
 ufo_base_scheduler_set_resources (UfoBaseScheduler *scheduler,
                                   UfoResources *resources)
