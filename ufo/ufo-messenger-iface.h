@@ -41,26 +41,6 @@ typedef struct _UfoMessenger         UfoMessenger;
 typedef struct _UfoMessengerIface    UfoMessengerIface;
 typedef struct _UfoMessage           UfoMessage;
 
-
-/**
- * UfoMessageType:
- * @UFO_MESSAGE_STREAM_JSON: insert
- * @UFO_MESSAGE_REPLICATE_JSON: insert
- * @UFO_MESSAGE_GET_NUM_DEVICES: insert
- * @UFO_MESSAGE_GET_STRUCTURE: insert
- * @UFO_MESSAGE_STRUCTURE: insert
- * @UFO_MESSAGE_GET_REQUISITION: insert
- * @UFO_MESSAGE_REQUISITION: insert
- * @UFO_MESSAGE_SEND_INPUTS: insert
- * @UFO_MESSAGE_GET_RESULT: insert
- * @UFO_MESSAGE_RESULT: insert
- * @UFO_MESSAGE_CLEANUP: insert
- * @UFO_MESSAGE_ACK: insert
- * @UFO_MESSAGE_TERMINATE: insert
- *
- * The type of a message.
- *
- */
 typedef enum {
     /*
      * NOTE: Make sure the order is kept intact and corresponds to the handlers
@@ -84,15 +64,6 @@ typedef enum {
     UFO_MESSAGE_ACK,
 } UfoMessageType;
 
-/**
- * UfoMessage:
- * @type: #UfoMessageType
- * @data_size: The size of the data field.
- * @data: A #gpointer to the transferred data
- *
- * A message transfered via IPC.
- *
- */
 struct _UfoMessage {
     UfoMessageType type;
     guint64 data_size;
@@ -112,13 +83,6 @@ typedef enum {
     UFO_MESSENGER_UNKNOWN_PROTOCOL
 } UfoMessengerError;
 
-/**
- * UfoMessengerRole:
- * @UFO_MESSENGER_CLIENT: insert
- * @UFO_MESSENGER_SERVER: insert
- *
- * The role of an connection endpoint.
- */
 typedef enum {
     UFO_MESSENGER_CLIENT,
     UFO_MESSENGER_SERVER

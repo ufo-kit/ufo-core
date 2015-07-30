@@ -31,6 +31,42 @@
 
 typedef UfoMessengerIface UfoMessengerInterface;
 
+/**
+ * UfoMessageType:
+ * @UFO_MESSAGE_STREAM_JSON: use data distribution mode
+ * @UFO_MESSAGE_REPLICATE_JSON: use replication mode
+ * @UFO_MESSAGE_GET_NUM_DEVICES: get remote number of devices
+ * @UFO_MESSAGE_GET_STRUCTURE: get remote structure
+ * @UFO_MESSAGE_STRUCTURE: returned structure
+ * @UFO_MESSAGE_GET_REQUISITION: get remote requisition
+ * @UFO_MESSAGE_REQUISITION: returned requisition
+ * @UFO_MESSAGE_SEND_INPUTS: insert
+ * @UFO_MESSAGE_GET_RESULT: get result
+ * @UFO_MESSAGE_RESULT: returned result
+ * @UFO_MESSAGE_CLEANUP: demand cleanup
+ * @UFO_MESSAGE_ACK: acknowledge
+ * @UFO_MESSAGE_TERMINATE: terminate connection
+ * @UFO_MESSAGE_INVALID_REQUEST: invalid request reply
+ *
+ * The type of a message.
+ */
+
+/**
+ * UfoMessage:
+ * @type: #UfoMessageType
+ * @data_size: The size of the data field.
+ * @data: A #gpointer to the transferred data
+ *
+ * A message transfered via a communication channel.
+ */
+
+/**
+ * UfoMessengerRole:
+ * @UFO_MESSENGER_CLIENT: Messenger is a client
+ * @UFO_MESSENGER_SERVER: Messenger is a server
+ *
+ * The role of a connection endpoint.
+ */
 
 /**
  * ufo_messenger_create:
