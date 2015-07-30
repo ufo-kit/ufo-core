@@ -86,6 +86,35 @@ ufo_base_scheduler_error_quark (void)
     return g_quark_from_static_string ("ufo-scheduler-error-quark");
 }
 
+static void
+enable_tracing (UfoTaskGraph *graph)
+{
+    GList *nodes;
+    GList *it;
+
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
+
+    g_list_for (nodes, it) {
+        UfoProfiler *profiler;
+
+        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (it->data));
+        ufo_profiler_enable_tracing (profiler, TRUE);
+    }
+
+    g_list_free (nodes);
+}
+
+static void
+write_tracing_data (UfoTaskGraph *graph)
+{
+    GList *nodes;
+
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
+    ufo_write_profile_events (nodes);
+    ufo_write_opencl_events (nodes);
+    g_list_free (nodes);
+}
+
 void
 ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
                         UfoTaskGraph *graph,
@@ -103,6 +132,9 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
     if (!ufo_task_graph_is_alright (graph, error))
         return;
 
+    if (scheduler->priv->trace)
+        enable_tracing (graph);
+
 #ifdef WITH_PYTHON
     PyEval_InitThreads();
 #endif
@@ -110,6 +142,9 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
     timer = g_timer_new ();
     (*klass->run)(scheduler, graph, error);
     scheduler->priv->time = g_timer_elapsed (timer, NULL);
+
+    if (scheduler->priv->trace)
+        write_tracing_data (graph);
 
     g_timer_destroy (timer);
 }

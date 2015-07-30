@@ -223,7 +223,6 @@ run_task (TaskLocalData *tld)
     UfoBuffer *output;
     UfoTaskNode *node;
     UfoTaskMode mode;
-    UfoProfiler *profiler;
     UfoRequisition requisition;
     gboolean produces;
     gboolean active;
@@ -231,7 +230,6 @@ run_task (TaskLocalData *tld)
     node = UFO_TASK_NODE (tld->task);
     active = TRUE;
     output = NULL;
-    profiler = g_object_ref (ufo_task_node_get_profiler (node));
 
     if (UFO_IS_REMOTE_TASK (tld->task)) {
         run_remote_task (tld);
@@ -273,9 +271,7 @@ run_task (TaskLocalData *tld)
         switch (mode) {
             case UFO_TASK_MODE_PROCESSOR:
             case UFO_TASK_MODE_SINK:
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
                 active = ufo_task_process (tld->task, inputs, output, &requisition);
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
                 break;
 
             case UFO_TASK_MODE_REDUCTOR:
@@ -283,9 +279,7 @@ run_task (TaskLocalData *tld)
                     gboolean go_on = TRUE;
 
                     do {
-                        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
                         go_on = ufo_task_process (tld->task, inputs, output, &requisition);
-                        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
 
                         release_inputs (tld, inputs);
                         active = get_inputs (tld, inputs);
@@ -293,9 +287,7 @@ run_task (TaskLocalData *tld)
                     } while (go_on);
 
                     do {
-                        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_BEGIN);
                         go_on = ufo_task_generate (tld->task, output, &requisition);
-                        ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
 
                         if (go_on) {
                             ufo_group_push_output_buffer (group, output);
@@ -307,9 +299,7 @@ run_task (TaskLocalData *tld)
                 break;
 
             case UFO_TASK_MODE_GENERATOR:
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_BEGIN);
                 active = ufo_task_generate (tld->task, output, &requisition);
-                ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
                 break;
 
             default:
@@ -327,7 +317,6 @@ run_task (TaskLocalData *tld)
             ufo_group_finish (group);
     }
 
-    g_object_unref (profiler);
     return NULL;
 }
 
@@ -414,7 +403,6 @@ setup_tasks (UfoBaseScheduler *scheduler,
 
     for (guint i = 0; i < n_nodes; i++) {
         UfoNode *node;
-        UfoProfiler *profiler;
         TaskLocalData *tld;
 
         node = g_list_nth_data (nodes, i);
@@ -436,9 +424,6 @@ setup_tasks (UfoBaseScheduler *scheduler,
         if (!check_target_connections (task_graph, node, tld->n_inputs, error)) {
             return NULL;
         }
-
-        profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (node));
-        ufo_profiler_enable_tracing (profiler, tracing_enabled);
 
         tld->finished = g_new0 (gboolean, tld->n_inputs);
 
@@ -674,19 +659,6 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
 #endif
 
     /* Cleanup */
-    if (trace) {
-        GList *nodes = NULL;
-
-        for (guint i = 0; i < n_nodes; i++) {
-            nodes = g_list_append (nodes, tlds[i]->task);
-        }
-
-        ufo_write_profile_events (nodes);
-        ufo_write_opencl_events (nodes);
-
-        g_list_free (nodes);
-    }
-
     cleanup_task_local_data (tlds, n_nodes);
     g_list_foreach (groups, (GFunc) g_object_unref, NULL);
     g_list_free (groups);

@@ -113,8 +113,14 @@ ufo_task_process (UfoTask *task,
                   UfoBuffer *output,
                   UfoRequisition *requisition)
 {
+    UfoProfiler *profiler;
     gboolean result;
+
+    profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (task));
+    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_BEGIN);
     result = UFO_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
+    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
+
     ufo_signal_emit (task, signals[PROCESSED], 0);
     ufo_task_node_increase_processed (UFO_TASK_NODE (task));
 
@@ -126,8 +132,14 @@ ufo_task_generate (UfoTask *task,
                    UfoBuffer *output,
                    UfoRequisition *requisition)
 {
+    UfoProfiler *profiler;
     gboolean result;
+
+    profiler = ufo_task_node_get_profiler (UFO_TASK_NODE(task));
+    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_BEGIN);
     result = UFO_TASK_GET_IFACE (task)->generate (task, output, requisition);
+    ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
+
     ufo_signal_emit (task, signals[GENERATED], 0);
 
     return result;
