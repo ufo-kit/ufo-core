@@ -12,3 +12,4 @@ accompanying filter suite is described.
 
     linux.rst
     mac.rst
+    docker.rst
