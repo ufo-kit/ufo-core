@@ -146,7 +146,7 @@ ufo_write_opencl_events (GList *nodes)
     }
 
     container.events = g_list_sort (container.events, (GCompareFunc) compare_events);
-    write_trace_json (".opencl.%i.json", container.events);
+    write_trace_json ("opencl.%i.json", container.events);
     g_list_free (container.events);
 }
 
@@ -156,7 +156,7 @@ ufo_write_profile_events (GList *nodes)
     GList *sorted;
 
     sorted = get_sorted_trace_events (nodes);
-    write_trace_json (".trace.%i.json", sorted);
+    write_trace_json ("trace.%i.json", sorted);
     g_list_foreach (sorted, (GFunc) g_free, NULL);
     g_list_free (sorted);
 }
