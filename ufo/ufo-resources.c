@@ -382,7 +382,7 @@ initialize_opencl (UfoResourcesPrivate *priv)
     errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
     UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
 
-    g_debug ("Platform `%p' has %i devices", (gpointer) priv->platform, priv->n_devices);
+    g_debug ("Platform `%p' has %i device(s)", (gpointer) priv->platform, priv->n_devices);
 
     if (errcode != CL_SUCCESS)
         return FALSE;
@@ -396,11 +396,21 @@ initialize_opencl (UfoResourcesPrivate *priv)
         return FALSE;
 
     restrict_to_gpu_subset (priv);
+    g_debug ("Using %i device(s):", priv->n_devices);
 
-    priv->context = clCreateContext (NULL,
-                                     priv->n_devices, priv->devices,
-                                     NULL, NULL, &errcode);
+    for (guint i = 0; i < priv->n_devices; i++) {
+        size_t size;
+        gchar *name;
 
+        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, 0, NULL, &size));
+        name = g_malloc0 (size);
+
+        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, size, name, NULL));
+        g_debug("  Device %i: %s", i, name);
+        g_free (name);
+    }
+
+    priv->context = clCreateContext (NULL, priv->n_devices, priv->devices, NULL, NULL, &errcode);
     UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
 
     if (errcode != CL_SUCCESS)
@@ -481,12 +491,10 @@ get_device_build_options (UfoResourcesPrivate *priv,
     if (additional != NULL)
         g_string_append (opts, additional);
 
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index],
-                                                CL_DEVICE_NAME, 0, NULL, &size));
+    UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index], CL_DEVICE_NAME, 0, NULL, &size));
     name = g_malloc0 (size);
 
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index],
-                                                CL_DEVICE_NAME, size, name, NULL));
+    UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index], CL_DEVICE_NAME, size, name, NULL));
 
     g_string_append_printf (opts, " -DDEVICE=%s", escape_device_name (name));
     g_free (name);
