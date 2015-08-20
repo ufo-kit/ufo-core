@@ -787,6 +787,7 @@ ufo_graph_expand (UfoGraph *graph,
             label = ufo_graph_get_edge_label (graph, orig, next);
             ufo_graph_connect_nodes (graph, current, copy, label);
             graph->priv->copies = g_list_append (graph->priv->copies, copy);
+            graph->priv->copies = g_list_append (graph->priv->copies, next);
             current = copy;
         }
         else {
