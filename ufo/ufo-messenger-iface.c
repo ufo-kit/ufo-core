@@ -111,7 +111,10 @@ ufo_messenger_create (const gchar *address, GError **error)
                      UFO_MESSENGER_ERROR,
                      UFO_MESSENGER_UNKNOWN_PROTOCOL,
                      "Don't know how to handle protocol '%s://'", protocol[0]);
+
+#if defined(WITH_ZMQ) || (WITH_MPI)
 done:
+#endif
         g_strfreev (protocol);
     }
     else {
