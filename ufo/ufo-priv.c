@@ -88,7 +88,7 @@ make_event (const gchar *kernel, gconstpointer queue, gchar type, gulong timesta
     event->pid = (gsize) queue;
     event->type = type;
     /* Convert from OpenCL ns to seconds in order to get µs in the trace view */
-    event->timestamp = timestamp * 10e-9;
+    event->timestamp = timestamp * 1.0e-9;
 
     return event;
 }
