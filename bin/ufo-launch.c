@@ -47,6 +47,7 @@ DEFINE_CAST (uchar,     atoi)
 DEFINE_CAST (int,       atoi)
 DEFINE_CAST (long,      atol)
 DEFINE_CAST (uint,      atoi)
+DEFINE_CAST (uint64,    atoi)
 DEFINE_CAST (ulong,     atol)
 DEFINE_CAST (float,     atof)
 DEFINE_CAST (double,    atof)
@@ -97,6 +98,7 @@ parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UCHAR,   value_transform_uchar);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_INT,     value_transform_int);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT,    value_transform_uint);
+    g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UINT64,  value_transform_uint64);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_LONG,    value_transform_long);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_ULONG,   value_transform_ulong);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_FLOAT,   value_transform_float);
