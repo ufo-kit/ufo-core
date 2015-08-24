@@ -122,7 +122,7 @@ gpointer         ufo_resources_get_kernel               (UfoResources   *resourc
                                                          GError        **error);
 gpointer         ufo_resources_get_kernel_with_opts     (UfoResources   *resources,
                                                          const gchar    *filename,
-                                                         const gchar    *kernel,
+                                                         const gchar    *kernel_name,
                                                          const gchar    *options,
                                                          GError        **error);
 gpointer         ufo_resources_get_cached_kernel        (UfoResources   *resources,

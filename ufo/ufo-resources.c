@@ -641,7 +641,7 @@ create_cache_key (const gchar *filename,
  * ufo_resources_get_kernel_with_opts:
  * @resources: A #UfoResources object
  * @filename: Name of the .cl kernel file
- * @kernel: Name of a kernel, or %NULL
+ * @kernel_name: Name of a kernel, or %NULL
  * @options: Options passed to the OpenCL compiler
  * @error: Return location for a GError from #UfoResourcesError, or %NULL
  *
@@ -654,7 +654,7 @@ create_cache_key (const gchar *filename,
 gpointer
 ufo_resources_get_kernel_with_opts (UfoResources   *resources,
                                     const gchar    *filename,
-                                    const gchar    *kernel,
+                                    const gchar    *kernel_name,
                                     const gchar    *options,
                                     GError        **error)
 {
@@ -662,10 +662,13 @@ ufo_resources_get_kernel_with_opts (UfoResources   *resources,
     gchar *path;
     gchar *buffer;
     cl_program program;
+    cl_kernel kernel;
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
                           (filename != NULL), NULL);
 
+    kernel = NULL;
+    buffer = NULL;
     priv = resources->priv;
     path = lookup_kernel_path (priv, filename);
 
@@ -676,23 +679,25 @@ ufo_resources_get_kernel_with_opts (UfoResources   *resources,
     }
 
     buffer = read_file (path);
-    g_free (path);
 
     if (buffer == NULL) {
         g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
                      "Could not open `%s'", filename);
-        return NULL;
+        goto exit;
     }
 
     program = add_program_from_source (priv, buffer, options, error);
 
     if (program == NULL)
-        return NULL;
+        goto exit;
 
-    g_debug ("Added program %p from `%s`", (gpointer) program, filename);
+    g_debug ("Loaded `%s' kernel from %s", kernel_name, path);
+    kernel = create_kernel (priv, program, kernel_name, error);
+
+exit:
     g_free (buffer);
-
-    return create_kernel (priv, program, kernel, error);
+    g_free (path);
+    return kernel;
 }
 
 /**
