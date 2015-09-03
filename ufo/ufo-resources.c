@@ -513,9 +513,7 @@ handle_build_error (cl_program program,
     gsize log_size;
     gchar *log;
 
-    g_set_error (error,
-                 UFO_RESOURCES_ERROR,
-                 UFO_RESOURCES_ERROR_BUILD_PROGRAM,
+    g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_BUILD_PROGRAM,
                  "Failed to build OpenCL program: %s", ufo_resources_clerr (errcode));
 
     UFO_RESOURCES_CHECK_CLERR (clGetProgramBuildInfo (program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size));
@@ -541,14 +539,13 @@ add_program_from_source (UfoResourcesPrivate *priv,
                                          1, &source, NULL, &errcode);
 
     if (errcode != CL_SUCCESS) {
-        g_set_error (error,
-                     UFO_RESOURCES_ERROR,
-                     UFO_RESOURCES_ERROR_CREATE_PROGRAM,
+        g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_CREATE_PROGRAM,
                      "Failed to create OpenCL program: %s", ufo_resources_clerr (errcode));
         return NULL;
     }
 
     build_options = get_device_build_options (priv, 0, options);
+    g_debug ("Building with `%s'", build_options);
 
     errcode = clBuildProgram (program,
                               priv->n_devices, priv->devices,
@@ -619,9 +616,7 @@ create_kernel (UfoResourcesPrivate *priv,
     g_free (name);
 
     if (kernel == NULL || errcode != CL_SUCCESS) {
-        g_set_error (error,
-                     UFO_RESOURCES_ERROR,
-                     UFO_RESOURCES_ERROR_CREATE_KERNEL,
+        g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_CREATE_KERNEL,
                      "Failed to create kernel `%s`: %s", kernel_name, ufo_resources_clerr (errcode));
         return NULL;
     }
@@ -691,7 +686,7 @@ ufo_resources_get_kernel_with_opts (UfoResources   *resources,
     if (program == NULL)
         goto exit;
 
-    g_debug ("Loaded `%s' kernel from %s", kernel_name, path);
+    g_debug ("Compiled `%s' kernel from %s", kernel_name, path);
     kernel = create_kernel (priv, program, kernel_name, error);
 
 exit:
