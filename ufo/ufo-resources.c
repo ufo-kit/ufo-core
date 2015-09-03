@@ -324,10 +324,10 @@ add_vendor_to_build_opts (GString *opts,
                           cl_platform_id platform)
 {
     if (platform_vendor_has_prefix (platform, "NVIDIA"))
-        g_string_append (opts, "-cl-nv-verbose -DVENDOR=NVIDIA");
+        g_string_append (opts, "-cl-nv-verbose -DVENDOR_NVIDIA");
 
     if (platform_vendor_has_prefix (platform, "Advanced Micro Devices"))
-        g_string_append (opts, "-DVENDOR=AMD");
+        g_string_append (opts, "-DVENDOR_AMD");
 }
 
 static void
@@ -496,7 +496,7 @@ get_device_build_options (UfoResourcesPrivate *priv,
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index], CL_DEVICE_NAME, size, name, NULL));
 
-    g_string_append_printf (opts, " -DDEVICE=%s", escape_device_name (name));
+    g_string_append_printf (opts, " -DDEVICE_%s", escape_device_name (name));
     g_free (name);
 
     g_list_foreach (priv->paths, (GFunc) append_include_path, opts);
