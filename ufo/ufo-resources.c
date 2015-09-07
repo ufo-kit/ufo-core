@@ -333,36 +333,53 @@ add_vendor_to_build_opts (GString *opts,
 static void
 restrict_to_gpu_subset (UfoResourcesPrivate *priv)
 {
-    /*
-     * Selects a single GPU which can be set via the UFO_USE_GPU
-     * environment variable, even if more GPUs are available. The specifc GPU
-     * is selected via the integer value of UFO_USE_GPU (index starts at 1).
-     * Used for debugging and evaluation.
-     */
+    const gchar* var;
+    gchar **set;
+    guint n_set;
+    guint *device_indices;
+    guint n_devices;
+    cl_device_id *subset;
 
-    const gchar* env_gpu = g_getenv ("UFO_USE_GPU");
+    var = g_getenv ("UFO_DEVICES");
 
-    if (env_gpu == NULL || g_strcmp0 (env_gpu, "") == 0)
+    if (var == NULL || g_strcmp0 (var, "") == 0)
         return;
 
-    guint device_index = (guint) g_ascii_strtoull (env_gpu, NULL, 0);
+    set = g_strsplit (var, ",", 0);
+    n_set = g_strv_length (set);
+    device_indices = g_malloc0 (n_set);
 
-    if (device_index == 0) {
-        g_error ("Unrecognized format for env var UFO_USE_GPU");
-        return;
+    n_devices = 0;
+
+    for (guint i = 0; i < n_set; i++) {
+        gchar *endptr;
+        guint index;
+
+        index = (guint) g_ascii_strtoull (set[i], &endptr, 0);
+
+        if (endptr != set[i]) {
+            if (index < priv->n_devices)
+                device_indices[n_devices++] = index;
+            else
+                g_warning ("Device index %u exceeds number of devices", index);
+        }
+        else {
+            g_warning ("`%s' is not a valid device index", set[i]);
+        }
     }
 
-    if (device_index > priv->n_devices) {
-        g_error ("Can't select UFO_USE_GPU=%d gpus as it exceeds number of available devices", device_index);
-        return;
-    }
+    subset = g_malloc0 (n_devices * sizeof (cl_device_id));
 
-    // TODO allow restriction to real subset, like 1,3,5 etc.
-    cl_device_id *devices_subset = g_malloc0 (1 * sizeof (cl_device_id));
-    devices_subset[0] = priv->devices[device_index - 1];
+    for (guint i = 0; i < n_devices; i++)
+        subset[i] = priv->devices[device_indices[i]];
+
+    /* Not cool but ... who cares */
     g_free (priv->devices);
-    priv->devices = devices_subset;
-    priv->n_devices = 1;
+    priv->devices = subset;
+    priv->n_devices = n_devices;
+
+    g_free (device_indices);
+    g_strfreev (set);
 }
 
 static gboolean
