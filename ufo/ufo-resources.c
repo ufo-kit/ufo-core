@@ -457,7 +457,7 @@ escape_device_name (gchar *name)
     while (*tmp) {
         gchar c = *tmp;
 
-        if (c == ' ')
+        if (c == ' ' || c == '(' || c == ')' || c == '-' || c == '@' || c == '.')
             *tmp = '_';
         else
             *tmp = g_ascii_toupper (c);
