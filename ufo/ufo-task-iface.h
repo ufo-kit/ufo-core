@@ -97,6 +97,8 @@ struct _UfoTaskIface {
                                          guint          input);
     UfoTaskMode
             (*get_mode)                 (UfoTask        *task);
+    UfoTaskMode
+            (*get_preferred_mode)       (UfoTask        *task);
     void    (*get_requisition)          (UfoTask        *task,
                                          UfoBuffer     **inputs,
                                          UfoRequisition *requisition);
@@ -120,6 +122,8 @@ guint   ufo_task_get_num_dimensions (UfoTask        *task,
                                      guint           input);
 UfoTaskMode
         ufo_task_get_mode           (UfoTask        *task);
+UfoTaskMode
+        ufo_task_get_preferred_mode (UfoTask        *task);
 void    ufo_task_get_requisition    (UfoTask        *task,
                                      UfoBuffer     **inputs,
                                      UfoRequisition *requisition);

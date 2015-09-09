@@ -225,6 +225,18 @@ ufo_task_get_mode_real (UfoTask *task)
     return 0;
 }
 
+static UfoTaskMode
+ufo_task_get_preferred_mode_real (UfoTask *task)
+{
+    UfoTaskMode mode;
+
+    mode = ufo_task_get_mode (task) & UFO_TASK_MODE_PROCESSOR_MASK;
+
+    /* In case we get both modes an no preffered mode by the task itself, we
+     * will assume GPU processing is preferred. */
+    return mode & UFO_TASK_MODE_GPU ? UFO_TASK_MODE_GPU : UFO_TASK_MODE_CPU;
+}
+
 static gboolean
 ufo_task_process_real (UfoTask *task,
                        UfoBuffer **inputs,
@@ -252,6 +264,7 @@ ufo_task_default_init (UfoTaskInterface *iface)
     iface->get_num_inputs = ufo_task_get_num_inputs_real;
     iface->get_num_dimensions = ufo_task_get_num_dimensions_real;
     iface->get_mode = ufo_task_get_mode_real;
+    iface->get_preferred_mode = ufo_task_get_preferred_mode_real;
     iface->set_json_object_property = ufo_task_set_json_object_property_real;
     iface->process = ufo_task_process_real;
     iface->generate = ufo_task_generate_real;
