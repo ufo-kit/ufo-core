@@ -275,7 +275,7 @@ ufo_buffer_new (UfoRequisition *requisition,
 
 /**
  * ufo_buffer_new_with_size:
- * @dims: (element-type guint64): size requisition
+ * @dims: (element-type guint): size requisition
  * @context: (allow-none): cl_context to use for creating the device array
  *
  * Create a new #UfoBuffer with a list of dimensions.
