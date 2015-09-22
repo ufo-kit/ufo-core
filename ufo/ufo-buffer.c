@@ -784,6 +784,44 @@ ufo_buffer_get_host_array (UfoBuffer *buffer, gpointer cmd_queue)
 }
 
 /**
+ * ufo_buffer_set_device_array:
+ * @buffer: A #UfoBuffer.
+ * @array: A cl_mem object.
+ * @free_data: %TRUE if @buffer is supposed to call clReleaseMemObject on the
+ *      existing device array.
+ *
+ * Set the current cl_mem object.
+ */
+void ufo_buffer_set_device_array (UfoBuffer *buffer, gpointer array, gboolean free_data)
+{
+    UfoBufferPrivate *priv;
+    gsize size;
+
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+
+    priv = buffer->priv;
+
+    UFO_RESOURCES_CHECK_CLERR (clGetMemObjectInfo (array, CL_MEM_SIZE, sizeof (gsize), &size, NULL));
+
+    if (size < priv->size) {
+        g_error ("Array size %zu less than buffer size %zu",
+                 size, priv->size);
+        return;
+    }
+
+    if (size > priv->size) {
+        g_warning ("Array size %zu larger than buffer size %zu",
+                   size, priv->size);
+    }
+
+    if (priv->free && priv->device_array)
+         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
+
+    priv->device_array = array;
+    update_location (priv, UFO_BUFFER_LOCATION_DEVICE);
+}
+
+/**
  * ufo_buffer_get_device_array:
  * @buffer: A #UfoBuffer.
  * @cmd_queue: (allow-none): A cl_command_queue object or %NULL.

@@ -131,6 +131,9 @@ void        ufo_buffer_set_host_array       (UfoBuffer      *buffer,
                                              gboolean        free_data);
 gfloat*     ufo_buffer_get_host_array       (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
+void        ufo_buffer_set_device_array     (UfoBuffer      *buffer,
+                                             gpointer        array,
+                                             gboolean        free_data);
 gpointer    ufo_buffer_get_device_array     (UfoBuffer      *buffer,
                                              gpointer        cmd_queue);
 gpointer    ufo_buffer_get_device_array_view(UfoBuffer      *buffer,
