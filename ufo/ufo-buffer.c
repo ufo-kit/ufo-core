@@ -109,6 +109,14 @@ struct _UfoBufferPrivate {
 };
 
 static void
+update_location (UfoBufferPrivate *priv,
+                 UfoBufferLocation new_location)
+{
+    priv->last_location = priv->location;
+    priv->location = new_location;
+}
+
+static void
 copy_requisition (UfoRequisition *src,
                   UfoRequisition *dst)
 {
@@ -321,6 +329,7 @@ ufo_buffer_new_with_data (UfoRequisition *requisition,
 
     priv->free = FALSE;
     priv->host_array = data;
+    update_location (priv, UFO_BUFFER_LOCATION_HOST);
 
     return buffer;
 }
@@ -712,14 +721,6 @@ update_last_queue (UfoBufferPrivate *priv,
 {
     if (queue != NULL)
         priv->last_queue = queue;
-}
-
-static void
-update_location (UfoBufferPrivate *priv,
-                 UfoBufferLocation new_location)
-{
-    priv->last_location = priv->location;
-    priv->location = new_location;
 }
 
 /**
