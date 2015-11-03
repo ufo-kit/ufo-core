@@ -5,6 +5,43 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.9
+===========
+
+Release on November 3rd 2015.
+
+Enhancements:
+
+- Generally improved debug output
+- Add support for plugin packages as demonstrated by the ART plugins
+- Add Docker installation method
+- Add simple fabfile to start ufod instances
+- Allow reductors to pause processing
+- Add ufo-query binary to retrieve info about tasks
+- Add ufo_buffer_set_device_array API call
+- Python: add ufo.numpy.empty_like
+- ufo-launch: add --dump flag to serialize to JSON
+- ufo-launch: add Bash completion script
+- ufo-launch: pass address list
+
+Fixes:
+
+- Fix segfault with long-running tasks
+- Prevent daemon from leaking OpenCL resources
+- Fix broken continuous daemon operation
+- ufo-launch: fix parsing uint64
+- Use same reductor policy for both schedulers
+- Fix ufo_buffer_new_with_data
+- Fix nano second to second conversion
+
+Breaks:
+
+- Specify device subset with UFO_DEVICES
+- Do not prepend . to trace and profile output
+- Change ufo_buffer_set_host_array signature
+- Use common timestamp unit for both trace types
+
+
 Version 0.8
 ===========
 
