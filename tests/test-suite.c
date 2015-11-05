@@ -55,7 +55,6 @@ int main(int argc, char *argv[])
 
 #ifdef WITH_ZMQ
     test_add_zmq_messenger ();
-    test_add_remote_node ();
 #endif
 
     g_test_run();
