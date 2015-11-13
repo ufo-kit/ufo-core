@@ -207,6 +207,7 @@ if(GTK_DOC_FOUND)
         set(docs_out "${docs_dir}/reference")
         set(docs_xml_in "${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml")
         set(docs_xml_out "${docs_out}/Ufo-docs.xml")
+        set(docs_ignore_headers "ufo-zmq-messenger.h" "ufo-mpi-messenger.h")
 
         set(GTK_DOC_CFLAGS)
         set(GTK_DOC_LDFLAGS)
@@ -241,7 +242,7 @@ if(GTK_DOC_FOUND)
             COMMAND ${GTK_DOC_SCAN}
                     --module=Ufo
                     --source-dir=${CMAKE_CURRENT_SOURCE_DIR}
-                    --ignore-headers=ufo-mpi-messenger.h
+                    --ignore-headers="${docs_ignore_headers}"
             DEPENDS ufo
             COMMENT "Running gtkdoc-scan"
             WORKING_DIRECTORY ${docs_out})

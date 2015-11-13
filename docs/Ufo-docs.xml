@@ -51,7 +51,6 @@
     <chapter id="networking">
       <title>Networking</title>
       <xi:include href="xml/ufo-messenger-iface.xml"/>
-      <xi:include href="xml/ufo-zmq-messenger.xml"/>
     </chapter>
   </part>
 
