@@ -16,7 +16,7 @@ endif ()
 
 add_executable(${SUITE_BIN} ${TEST_SRCS})
 
-target_link_libraries(${SUITE_BIN} ufo ${UFOCORE_DEPS})
+target_link_libraries(${SUITE_BIN} ufo m ${UFOCORE_DEPS})
 
 add_test(${SUITE_BIN} ${SUITE_BIN})
 

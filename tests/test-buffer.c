@@ -18,6 +18,7 @@
  */
 
 #include <string.h>
+#include <math.h>
 #include <ufo/ufo.h>
 #include "test-suite.h"
 
@@ -136,7 +137,7 @@ test_insert_metadata (Fixture *fixture,
 
     other = ufo_buffer_get_metadata (fixture->buffer, "foo");
     g_assert (other != NULL);
-    g_assert (g_value_get_float (other) == 3.14f);
+    g_assert (fabs (g_value_get_float (other) - 3.14f) < 0.0001f);
 }
 
 static void
