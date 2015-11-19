@@ -724,6 +724,25 @@ update_last_queue (UfoBufferPrivate *priv,
 }
 
 /**
+ * ufo_buffer_copy_host_array:
+ * @buffer: A #UfoBuffer
+ * @array: (type gulong): A pointer to a float array with suitable size.
+ *
+ * Copy data into the buffer.
+ */
+void
+ufo_buffer_copy_host_array (UfoBuffer *buffer, gpointer array)
+{
+    UfoBufferPrivate *priv;
+	gpointer host_array;
+
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+	priv = buffer->priv;
+	host_array = ufo_buffer_get_host_array (buffer, NULL);
+	memcpy (host_array, array, priv->size);
+}
+
+/**
  * ufo_buffer_set_host_array:
  * @buffer: A #UfoBuffer
  * @array: (type gulong): A pointer to a float array with suitable size.
