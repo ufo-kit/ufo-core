@@ -80,8 +80,16 @@ class Task(object):
     def __iter__(self):
         return self.items()
 
-    def run(self):
+    def run(self, **props):
+        """
+        Run the tasks.
+
+        Args:
+            props (dict): parameter dict used to create the scheduler.
+        """
+
         sched = Ufo.Scheduler()
+        sched.set_properties(**props)
 
         def run_scheduler():
             self.env.done = False
