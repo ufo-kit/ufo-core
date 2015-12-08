@@ -15,12 +15,13 @@ Writing a task in C
 
 .. highlight:: bash
 
-Writing a new UFO filter is simple and by calling ::
+Writing a new UFO filter consists of filling out a pre-defined class structure.
+To avoid writing the GObject boild plate code, you can call ::
 
-    ./mkfilter.py AwesomeFoo
+    ufo-mkfilter AwesomeFoo
 
-in the ``tools/`` directory, you can avoid writing that tedious GObject boiler
-plate code on your own. The name is a camel-cased version of your new filter.
+to generate the header and source file templates. The name must be a camel-cased
+version of your new filter.
 
 You are now left with two files ``ufo-awesome-foo-task.c`` and
 ``ufo-awesome-foo-task.h``. If you intend to distribute that filter with the
@@ -53,10 +54,10 @@ The ``ufo__awesome_foo_task_class_init()`` method on the other hand ist the
 *class constructor* that is used to *override* virtual methods by setting
 function pointers in each classes' vtable.
 
-You *must* override the following methods: ``ufo_awesome_task_get_inum_inputs``,
+You *must* override the following methods: ``ufo_awesome_task_get_num_inputs``,
 ``ufo_awesome_task_get_num_dimensions``, ``ufo_awesome_task_get_mode``,
-``ufo_awesome_task_setup``, ``ufo_awesome_task_get_requisition`` and
-``ufo_awesome_task_process``.
+``ufo_awesome_task_setup``, ``ufo_awesome_task_get_requisition``,
+``ufo_awesome_task_process`` and/or ``ufo_awesome_task_generate``.
 
 ``get_num_inputs``, ``get_num_dimensions`` and ``get_mode`` are called by the
 run-time in order to determine how many inputs your task expects, which
