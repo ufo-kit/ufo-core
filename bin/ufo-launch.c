@@ -203,6 +203,8 @@ main(int argc, char* argv[])
     UfoTaskGraph *graph;
     UfoBaseScheduler *sched;
     GList *pipeline;
+    GList *nodes;
+    GList *it;
     GOptionContext *context;
     UfoResources *resources = NULL;
     GValueArray *address_list = NULL;
@@ -243,6 +245,9 @@ main(int argc, char* argv[])
     pipeline = tokenize_args (argc - 1, &argv[1]);
     pm = ufo_plugin_manager_new ();
     graph = parse_pipeline (pipeline, pm, &error);
+
+    /* get nodes before any expansion */
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
 
     if (error != NULL) {
         g_print ("Error parsing pipeline: %s\n", error->message);
@@ -302,6 +307,11 @@ main(int argc, char* argv[])
         if (error != NULL)
             g_print ("Error dumping task graph: %s\n", error->message);
     }
+
+    g_list_for (nodes, it)
+        g_object_unref (it->data);
+
+    g_list_free (nodes),
 
     g_object_unref (graph);
     g_object_unref (pm);
