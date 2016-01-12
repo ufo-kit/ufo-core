@@ -5,6 +5,24 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.9.1
+=============
+
+Release on January 12th 2016.
+
+Enhancements:
+
+- Pass a property map to scheduler in the Python wrapper
+- Added convenience wrapper to copy into a buffer
+
+Fixes:
+
+- Fix version numbering from 0.8.x to 0.9.x
+- Fix documentation issues
+- Fix build problems if libzmq is not present
+- ufo-launch unrefs non-intermediate nodes
+
+
 Version 0.9
 ===========
 
