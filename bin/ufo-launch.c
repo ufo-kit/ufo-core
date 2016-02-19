@@ -204,6 +204,8 @@ main(int argc, char* argv[])
     UfoBaseScheduler *sched;
     GList *pipeline;
     GList *nodes;
+    GList *roots;
+    GList *leaves;
     GList *it;
     GOptionContext *context;
     UfoResources *resources = NULL;
@@ -248,6 +250,8 @@ main(int argc, char* argv[])
 
     /* get nodes before any expansion */
     nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
+    roots = ufo_graph_get_roots (UFO_GRAPH (graph));
+    leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
 
     if (error != NULL) {
         g_print ("Error parsing pipeline: %s\n", error->message);
@@ -256,12 +260,8 @@ main(int argc, char* argv[])
 
     if (progress) {
         UfoTaskNode *leaf;
-        GList *leaves;
 
-        leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
         leaf = UFO_TASK_NODE (leaves->data);
-        g_list_free (leaves);
-
         g_signal_connect (leaf, "processed", G_CALLBACK (progress_update), NULL);
     }
 
@@ -308,10 +308,14 @@ main(int argc, char* argv[])
             g_print ("Error dumping task graph: %s\n", error->message);
     }
 
-    g_list_for (nodes, it)
-        g_object_unref (it->data);
+    g_list_for (nodes, it) {
+        if ((g_list_find (roots, it->data) == NULL) && (g_list_find (leaves, it->data) == NULL))
+            g_object_unref (it->data);
+    }
 
-    g_list_free (nodes),
+    g_list_free (nodes);
+    g_list_free (roots);
+    g_list_free (leaves);
 
     g_object_unref (graph);
     g_object_unref (pm);
