@@ -43,10 +43,7 @@ Because the UFO core system is unable to locate the filters. By default it looks
 into ``${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/ufo``, where the installation
 prefix is usually something like ``/usr`` or ``/usr/local``. If you don't want
 to install the filters system-wide, you can tell the system to try other paths
-as well::
-
-  >>> from gi.repository import Ufo
-  >>> graph = Ufo.Graph(paths='/home/user/path/to/filters:/another/path')
+as well by appending paths to the ``UFO_PLUGIN_PATHS`` environment variable.
 
 
 Can I split a linear data stream?
@@ -110,22 +107,9 @@ process Numpy arrays data::
     arrays = [ i*np.eye(100, dtype=np.float32) for i in range(1, 10) ]
     buffers = [ ufo.numpy.fromarray(a) for a in arrays ]
 
-    g = Ufo.Graph()
-    numpy_input = g.get_filter('bufferinput')
+    pm = Ufo.PluginManager()
+    numpy_input = pm.get_task('bufferinput')
     numpy_input.set_properties(buffers=buffers)
-
-
-How can I instantiate and pass parameters when creating a filter?
------------------------------------------------------------------
-
-Yes, the same module that is used to access Numpy buffers has a convenience
-wrapper around the :c:type:`UfoGraph` class that provides a ``new_filter`` method::
-
-    import ufotools.patch
-
-    g = ufotools.patch.Graph()
-    rd = g.new_filter('reader', path='/home/src', count=5)
-    wr = g.new_filter('writer', path='/home/dst', prefix='foo-')
 
 
 .. _faq-synchronize-properties:
@@ -142,9 +126,9 @@ known. In Python you can use the ``bind_property`` function from the
     from gi.repository import Ufo
     import ufotools.bind_property
 
-    g = Ufo.Graph()
-    cor = g.get_filter('centerofrotation')
-    bp = g.get_filter('backproject')
+    pm = Ufo.PluginManager()
+    cor = g.get_task('centerofrotation')
+    bp = g.get_task('backproject')
 
     # Now connect the properties
     ufotools.bind_property(cor, 'center', bp, 'axis-pos')
