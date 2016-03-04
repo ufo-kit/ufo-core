@@ -48,7 +48,7 @@ list_properties (UfoPluginManager *pm, const gchar *name)
     task = ufo_plugin_manager_get_task (pm, name, &error);
 
     if (error != NULL) {
-        g_print ("Error: %s\n", error->message);
+        g_printerr ("Error: %s\n", error->message);
         return;
     }
 
@@ -87,7 +87,7 @@ main(int argc, char* argv[])
     g_option_context_add_main_entries (context, entries, NULL);
 
     if (!g_option_context_parse (context, &argc, &argv, &error)) {
-        g_print ("Error parsing options: %s\n", error->message);
+        g_printerr ("Error parsing options: %s\n", error->message);
         return 1;
     }
 
