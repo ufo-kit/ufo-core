@@ -10,7 +10,7 @@ _ufo_launch()
     tasks="$(ufo-query -l)"
 
     if [[ "${tasks}" == *"${prev}"* ]]; then
-        COMPREPLY=( $(compgen -W "$(ufo-query -p ${prev})" -- ${cur}) )
+        COMPREPLY=( $(compgen -W "$(ufo-query -p ${prev} 2> /dev/null)" -- ${cur}) )
         return 0
     fi
     
