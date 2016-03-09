@@ -11,21 +11,12 @@ Building from source
 UFO has only a few hard source dependencies, namely
 
   - `GLib 2.0 <http://developer.gnome.org/glib/stable/>`_,
-  - `JSON-GLib 1.0 <http://live.gnome.org/JsonGlib>`_
-  - `ZeroMQ 3.2 <http://zeromq.org>`_ and
+  - `JSON-GLib 1.0 <http://live.gnome.org/JsonGlib>`_ and
   - a valid OpenCL installation.
 
 Furthermore, it is necessary to build the framework with a recent version of
 `CMake <http://cmake.org>`_.  `Sphinx <http://sphinx.pocoo.org>`_ is used to
 create this documentation.
-
-In case you use openSUSE, just issue ::
-
-    $ zypper install gcc gcc-c++ glib2-devel json-glib-devel
-    $ zypper install gtk-doc python-Sphinx
-    $ zypper install libtiff-devel
-
-to install dependencies from the package repositories.
 
 OpenCL development files must be installed in order to build UFO. However, we
 cannot give general advices as installation procedures vary between different
@@ -33,18 +24,33 @@ vendors. However, our CMake build facility is in most cases intelligent enough
 to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
 
 
-Quick deployment
-================
+Ubuntu/Debian
+=============
 
-UFO comes with a ``deploy.sh`` script located in ``$UFO_ROOT/tools``. The
-easiest way to install UFO is::
+On Debian or Debian-based system the following packages are required to build
+ufo-core::
 
-    wget -O - https://raw.github.com/ufo-kit/ufo-core/master/tools/deploy.sh | bash
+    $ sudo apt-get install build-essentials cmake libglib2.0-dev libjson-glib-dev
 
-However, you are strongly advised to read the script and check for malicious
-intentions. If you run it directly you can also provide a prefix and a lib dir::
+To use the ``ufo-mkfilter`` script you also need the jinja2 Python package::
 
-    ./deploy.sh $HOME/usr $HOME/usr/lib64
+    $ sudo apt-get install python-jinja2
+
+Additionally the following packages are recommended for some of the plugins::
+
+    $ sudo apt-get install libtiff5-dev
+
+
+openSUSE
+========
+
+For openSUSE the following packages should get you started::
+
+    $ zypper install cmake gcc gcc-c++ glib2-devel json-glib-devel
+
+Additionally the following packages are recommended for some of the plugins::
+
+    $ zypper install libtiff-devel
 
 
 Retrieving the source code
