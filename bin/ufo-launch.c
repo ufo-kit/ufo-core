@@ -248,15 +248,15 @@ main(int argc, char* argv[])
     pm = ufo_plugin_manager_new ();
     graph = parse_pipeline (pipeline, pm, &error);
 
-    /* get nodes before any expansion */
-    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
-    roots = ufo_graph_get_roots (UFO_GRAPH (graph));
-    leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
-
     if (error != NULL) {
         g_print ("Error parsing pipeline: %s\n", error->message);
         return 1;
     }
+
+    /* get nodes before any expansion */
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
+    roots = ufo_graph_get_roots (UFO_GRAPH (graph));
+    leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
 
     if (progress) {
         UfoTaskNode *leaf;
