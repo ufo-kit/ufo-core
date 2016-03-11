@@ -203,10 +203,7 @@ main(int argc, char* argv[])
     UfoTaskGraph *graph;
     UfoBaseScheduler *sched;
     GList *pipeline;
-    GList *nodes;
-    GList *roots;
     GList *leaves;
-    GList *it;
     GOptionContext *context;
     UfoResources *resources = NULL;
     GValueArray *address_list = NULL;
@@ -253,9 +250,6 @@ main(int argc, char* argv[])
         return 1;
     }
 
-    /* get nodes before any expansion */
-    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
-    roots = ufo_graph_get_roots (UFO_GRAPH (graph));
     leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
 
     if (progress) {
@@ -308,13 +302,6 @@ main(int argc, char* argv[])
             g_print ("Error dumping task graph: %s\n", error->message);
     }
 
-    g_list_for (nodes, it) {
-        if ((g_list_find (roots, it->data) == NULL) && (g_list_find (leaves, it->data) == NULL))
-            g_object_unref (it->data);
-    }
-
-    g_list_free (nodes);
-    g_list_free (roots);
     g_list_free (leaves);
 
     g_object_unref (graph);
