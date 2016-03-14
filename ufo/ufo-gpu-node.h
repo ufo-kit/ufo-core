@@ -65,6 +65,7 @@ struct _UfoGpuNodeClass {
 /**
  * UfoGpuNodeInfo:
  * @UFO_GPU_NODE_INFO_GLOBAL_MEM_SIZE: Global memory size
+ * @UFO_GPU_NODE_INFO_MAX_MEM_ALLOC_SIZE: Maximum allocatable global memory size
  * @UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE: Local memory size
  *
  * OpenCL device info types. Refer to the OpenCL standard for complete details
@@ -72,6 +73,7 @@ struct _UfoGpuNodeClass {
  */
 typedef enum {
     UFO_GPU_NODE_INFO_GLOBAL_MEM_SIZE = 0,
+    UFO_GPU_NODE_INFO_MAX_MEM_ALLOC_SIZE,
     UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE
 } UfoGpuNodeInfo;
 
