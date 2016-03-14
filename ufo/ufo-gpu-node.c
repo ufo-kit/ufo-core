@@ -98,6 +98,10 @@ ufo_gpu_node_get_info (UfoGpuNode *node,
             UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
             break;
 
+        case UFO_GPU_NODE_INFO_MAX_MEM_ALLOC_SIZE:
+            UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
+            break;
+
         case UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE:
             UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
             break;
