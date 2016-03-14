@@ -68,4 +68,5 @@ def test_resource_info():
     assert(nodes)
     node = nodes[0]
     assert(node.get_info(Ufo.GpuNodeInfo.LOCAL_MEM_SIZE) > 0)
+    assert(node.get_info(Ufo.GpuNodeInfo.MAX_MEM_ALLOC_SIZE) > 0)
     assert(node.get_info(Ufo.GpuNodeInfo.GLOBAL_MEM_SIZE) > node.get_info(Ufo.GpuNodeInfo.LOCAL_MEM_SIZE))
