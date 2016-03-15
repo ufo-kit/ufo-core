@@ -16,71 +16,25 @@ The ``Ufo.Scheduler`` on the other hand is an implementation of a strategy *how*
 to execute the filters contained in a graph. Therefore, the scheduler is passed
 a graph object on execution.
 
-Configuration
-=============
-
-There are two different notions of configuration in the Ufo framework: per-node
-configuration and execution configuration. The former is realized with GObject
-properties. In Python, these properties can be set as a named parameter with
-``set_properties`` or assigned to the property as part of the ``props``::
-
-    writer = pm.get_filter('reader')
-
-    writer.props.prefix = 'foo'
-    writer.set_properties(prefix='foo')
-
-The execution configuration is independent of the parameters of the actual
-computation and used to determine environment specific foos. For example, if the
-filters are not installed system wide, there need to be a way to tell the
-framework were these are located. This information is stored in an
-``Ufo.Configuration`` object. Each part of the framework that implements the
-``Ufo.Configurable`` interface accepts such an object at construction time and
-uses necessary information stored within::
-
-    # Lets assume that filters and .cl files are stored in the parent directory.
-    # So we create a new configuration object and set its `paths' property.
-    config = Ufo.Configuration(paths=['..'])
-
-    # The PluginManager is configurable ...
-    pm = Ufo.PluginManager(configuration=config)
-
-    # ... so is the scheduler
-    scheduler = Ufo.Scheduler(configuration=config)
-
 
 Profiling
 =========
 
-Profiling is disabled by default but can be enabled with the ``profile-level``
-property of a configuration object. This property receives values from the
-``UfoProfilerLevel`` flags enum ::
+By default, the scheduler measures the run-time between from initial setup to
+the processing of the last data item. You can get the time in seconds via the
+``time`` property ::
 
-    # track only OpenCL events
-    config = Ufo.Configuration(profile_level=Ufo.ProfilerLevel.OPENCL)
+    g = Ufo.TaskGraph()
+    scheduler = Ufo.Scheduler()
+    scheduler.run(g)
+    print("Time spent: {}s".format(scheduler.time))
 
-    scheduler = Ufo.Scheduler(configuration=config)
+To get more fine-grained insight into the execution, you can enable tracing ::
 
-If you do not specify an output file name (``profile_output`` property), the
-profiling information is output to ``stdout``.
+    scheduler.props.enable_tracing = True
+    scheduler.run(g)
 
-The profiling information can be analysed with the ``clprof`` tool, as part of
-the standard distribution::
-
-    $ clprof stats
-    Kernel               Submit Delay   Exec Delay  Kernel Exec   Total Exec   Queue Dist
-    -------------------------------------------------------------------------------------
-    filter                     0.0033       1.0551       0.0491       0.4915          1.0
-    fft_spread                 0.0079       1.0265       0.0398       0.3982          1.0
-    backproject_tex            0.0022       0.5808       4.9480      49.4805          1.0
-    fft_pack                   0.0034       0.1187       0.0311       0.3113          1.0
-
-The output is the averaged time in milli seconds for submission delay, execution
-delay and kernel execution:
-
-* *Submission delay*: time between calling the kernel and actually submission
-  into the command queue
-* *Execution delay*: time between enqueueing and execution of the kernel
-* *Execution*: time for executing the kernel
-
-Moreover, the total execution time in milli seconds and the kernel distribution
-among the command queues is shown.
+which will generate traces for OpenCL (saved in ``opencl.PID.json``) and general
+events (saved in ``trace.PID.json``). To visualize the trace events, you can use
+the Google Chrome or Chromium browser, go to chrome://tracing and load the JSON
+files.
