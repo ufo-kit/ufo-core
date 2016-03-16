@@ -19,7 +19,6 @@
 
 #include <ufo/ufo-task-iface.h>
 #include <ufo/ufo-task-node.h>
-#include <ufo/ufo-misc.h>
 
 /**
  * SECTION:ufo-task-iface
@@ -107,6 +106,22 @@ ufo_task_set_json_object_property (UfoTask *task,
     UFO_TASK_GET_IFACE (task)->set_json_object_property (task, prop_name, object);
 }
 
+static void
+emit_signal (gpointer instance, guint signal_id, GQuark detail)
+{
+#ifdef WITH_PYTHON
+    if (Py_IsInitialized ()) {
+        PyGILState_STATE state = PyGILState_Ensure ();
+#endif
+
+    g_signal_emit (instance, signal_id, detail, G_TYPE_NONE);
+
+#ifdef WITH_PYTHON
+        PyGILState_Release (state);
+    }
+#endif
+}
+
 gboolean
 ufo_task_process (UfoTask *task,
                   UfoBuffer **inputs,
@@ -121,7 +136,7 @@ ufo_task_process (UfoTask *task,
     result = UFO_TASK_GET_IFACE (task)->process (task, inputs, output, requisition);
     ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_PROCESS | UFO_TRACE_EVENT_END);
 
-    ufo_signal_emit (task, signals[PROCESSED], 0);
+    emit_signal (task, signals[PROCESSED], 0);
     ufo_task_node_increase_processed (UFO_TASK_NODE (task));
 
     return result;
@@ -140,7 +155,7 @@ ufo_task_generate (UfoTask *task,
     result = UFO_TASK_GET_IFACE (task)->generate (task, output, requisition);
     ufo_profiler_trace_event (profiler, UFO_TRACE_EVENT_GENERATE | UFO_TRACE_EVENT_END);
 
-    ufo_signal_emit (task, signals[GENERATED], 0);
+    emit_signal (task, signals[GENERATED], 0);
 
     return result;
 }
