@@ -26,7 +26,6 @@ ufo_sources = \
     ufo-local-scheduler.c \
     ufo-messenger-iface.c \
     ufo-method-iface.c \
-    ufo-misc.c \
     ufo-node.c \
     ufo-output-task.c \
     ufo-plugin-manager.c \
@@ -60,7 +59,6 @@ ufo_headers = \
     ufo-local-scheduler.h \
     ufo-messenger-iface.h \
     ufo-method-iface.h \
-    ufo-misc.h \
     ufo-node.h \
     ufo-output-task.h \
     ufo-plugin-manager.h \
