@@ -17,7 +17,11 @@
  * License along with runjson.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _POSIX_C_SOURCE     1
+
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <ufo/ufo.h>
 #include "ufo/compat.h"
 
@@ -171,9 +175,7 @@ static void
 progress_update (gpointer user)
 {
     static int n = 0;
-
-    if ((n++ % 5) == 0)
-        g_print (".");
+    g_print ("\33[2K\r%i items processed ...", ++n);
 }
 
 static GValueArray *
@@ -205,20 +207,19 @@ main(int argc, char* argv[])
     GList *pipeline;
     GList *leaves;
     GOptionContext *context;
+    gboolean have_tty;
     UfoResources *resources = NULL;
     GValueArray *address_list = NULL;
     GError *error = NULL;
 
-    static gboolean progress = FALSE;
+    static gboolean quiet = FALSE;
     static gboolean trace = FALSE;
-    static gboolean do_time = FALSE;
     static gchar **addresses = NULL;
     static gchar *dump = NULL;
 
     static GOptionEntry entries[] = {
-        { "progress", 'p', 0, G_OPTION_ARG_NONE, &progress, "show progress", NULL },
+        { "quiet", 'q', 0, G_OPTION_ARG_NONE, &quiet, "be quiet", NULL },
         { "trace", 't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
-        { "time", 0, 0, G_OPTION_ARG_NONE, &do_time, "print run time", NULL },
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
         { "dump", 'd', 0, G_OPTION_ARG_STRING, &dump, "Dump to JSON file", NULL },
         { NULL }
@@ -251,8 +252,9 @@ main(int argc, char* argv[])
     }
 
     leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
+    have_tty = isatty (fileno (stdin));
 
-    if (progress) {
+    if (!quiet && have_tty) {
         UfoTaskNode *leaf;
 
         leaf = UFO_TASK_NODE (leaves->data);
@@ -280,15 +282,14 @@ main(int argc, char* argv[])
         g_print ("Error executing pipeline: %s\n", error->message);
     }
 
-    if (progress) {
-        g_print ("\n");
-    }
-
-    if (do_time) {
+    if (!quiet) {
         gdouble run_time;
 
+        if (have_tty)
+            g_print ("\n");
+
         g_object_get (sched, "time", &run_time, NULL);
-        g_print ("%3.5fs\n", run_time);
+        g_print ("Finished in %3.5fs\n", run_time);
     }
 
     if (resources) {
