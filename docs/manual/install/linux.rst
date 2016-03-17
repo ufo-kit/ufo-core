@@ -32,9 +32,27 @@ ufo-core::
 
     $ sudo apt-get install build-essentials cmake libglib2.0-dev libjson-glib-dev
 
+You will also need an OpenCL ICD loader. To simply get the build running, you
+can install ::
+
+    $ sudo apt-get install ocl-icd-opencl-dev
+
+Generating the introspection files for interfacing with third-party languages
+such as Python you must install ::
+
+    $ sudo apt-get install gobject-introspection libgirepository1.0-dev
+
+and advised to install ::
+
+    $ sudo apt-get install python-dev
+
 To use the ``ufo-mkfilter`` script you also need the jinja2 Python package::
 
     $ sudo apt-get install python-jinja2
+
+Building the reference documentation and the Sphinx manual requires::
+
+    $ sudo apt-get install gtk-doc-tools python-sphinx
 
 Additionally the following packages are recommended for some of the plugins::
 
