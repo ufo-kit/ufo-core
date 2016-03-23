@@ -21,6 +21,12 @@
 #include <ufo/ufo.h>
 #include "ufo/compat.h"
 
+
+static gboolean list = FALSE;
+static gchar *prop_name = NULL;
+static gboolean verbose = FALSE;
+
+
 static void
 list_tasks (UfoPluginManager *pm)
 {
@@ -55,8 +61,17 @@ list_properties (UfoPluginManager *pm, const gchar *name)
     props = g_object_class_list_properties (G_OBJECT_GET_CLASS (task), &n_props);
 
     for (guint i = 0; i < n_props; i++) {
-        if (g_strcmp0 (props[i]->name, "num-processed"))
-            g_print ("%s\n", props[i]->name);
+        if (g_strcmp0 (props[i]->name, "num-processed")) {
+            g_print ("%s\n", g_param_spec_get_name (props[i]));
+
+            if (verbose) {
+                g_print ("  type: %s\n", g_type_name (props[i]->value_type));
+                g_print ("  help: %s\n", g_param_spec_get_blurb (props[i]));
+
+                if (i < n_props - 1)
+                    g_print ("\n");
+            }
+        }
     }
 
     g_free (props);
@@ -70,12 +85,10 @@ main(int argc, char* argv[])
     GOptionContext *context;
     GError *error = NULL;
 
-    static gboolean list = FALSE;
-    static gchar *props = NULL;
-
     static GOptionEntry entries[] = {
         { "list", 'l', 0, G_OPTION_ARG_NONE, &list, "list available tasks", NULL },
-        { "props", 'p', 0, G_OPTION_ARG_STRING, &props, "Properties of given task", NULL },
+        { "props", 'p', 0, G_OPTION_ARG_STRING, &prop_name, "Properties of given task", NULL },
+        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Be verbose", NULL },
         { NULL }
     };
 
@@ -96,8 +109,8 @@ main(int argc, char* argv[])
     if (list)
         list_tasks (pm);
 
-    if (props)
-        list_properties (pm, props);
+    if (prop_name)
+        list_properties (pm, prop_name);
 
     return 0;
 }
