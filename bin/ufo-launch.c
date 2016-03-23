@@ -57,47 +57,122 @@ DEFINE_CAST (float,     atof)
 DEFINE_CAST (double,    atof)
 DEFINE_CAST (boolean,   str_to_boolean)
 
+typedef enum {
+    STRING      = 1,
+    SPACE       = 1 << 1,
+    ASSIGNMENT  = 1 << 2,
+    EXCLAMATION = 1 << 3,
+    PAREN_OPEN  = 1 << 4,
+    PAREN_CLOSE = 1 << 5,
+    COMMA       = 1 << 6
+} TokenType;
+
+
+typedef struct {
+    TokenType type;
+    GString *str;
+    guint pos;
+} Token;
+
 
 static GList *
-tokenize_args (int n, char* argv[])
+tokenize_args (const gchar *pipeline)
 {
-    enum {
-        NEW_TASK,
-        NEW_PROP,
-    } state = NEW_TASK;
-    GList *tasks = NULL;
-    TaskDescription *current;
+    GList *tokens = NULL;
+    Token *current = NULL;
+    guint pos = 0;
 
-    for (int i = 0; i < n; i++) {
-        if (state == NEW_TASK) {
-            current = g_new0 (TaskDescription, 1);
-            current->name = argv[i];
-            tasks = g_list_append (tasks, current);
-            state = NEW_PROP;
+    struct {
+        gchar c;
+        gint type;
+    } map[] =
+    {
+        {'=', ASSIGNMENT},
+        {'!', EXCLAMATION},
+        {',', COMMA},
+        {'[', PAREN_OPEN},
+        {']', PAREN_CLOSE},
+        {' ', SPACE},
+        {0, 0}
+    };
+
+    for (const gchar *s = pipeline; *s != '\0'; ++s, pos++) {
+        guint i = 0;
+
+        for (; map[i].c != 0; i++) {
+            if (*s == map[i].c) {
+                Token *t = g_new0 (Token, 1);
+                t->type = map[i].type;
+                t->pos = pos;
+                tokens = g_list_append (tokens, t);
+                current = NULL;
+                break;
+            }
         }
-        else {
-            if (!g_strcmp0 (g_strstrip (argv[i]), "!"))
-                state = NEW_TASK;
-            else
-                current->props = g_list_append (current->props, argv[i]);
+
+        /* we have a string */
+        if (map[i].c == 0) {
+            if (current == NULL) {
+                current = g_new0 (Token, 1);
+                current->type = STRING;
+                current->str = g_string_new (NULL);
+                current->pos = pos;
+                tokens = g_list_append (tokens, current);
+            }
+
+            g_string_append_c (current->str, *s);
         }
     }
 
-    return tasks;
+    return tokens;
+}
+
+
+static void
+set_property (UfoTaskNode *task, const gchar *key, const gchar *pvalue)
+{
+    GParamSpec *pspec;
+    GValue value = {0};
+
+    g_value_init (&value, G_TYPE_STRING);
+    g_value_set_string (&value, pvalue);
+
+    pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (task), key);
+
+    if (pspec != NULL) {
+        GValue target_value = {0};
+
+        g_value_init (&target_value, pspec->value_type);
+        g_value_transform (&value, &target_value);
+        g_object_set_property (G_OBJECT (task), key, &target_value);
+    }
+    else {
+        g_warning ("`%s' does not have property `%s'", G_OBJECT_TYPE_NAME (task), key);
+    }
 }
 
 static UfoTaskGraph *
-parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
+parse (const gchar *pipeline, GList *tokens, UfoPluginManager *pm, GError **error)
 {
     GList *it;
-    GRegex *assignment;
+    GQueue *stack;
     UfoTaskGraph *graph;
-    UfoTaskNode *prev = NULL;
+    UfoTaskNode *task = NULL;
+    gchar *key = NULL;
+    GList *group = NULL;
 
-    assignment = g_regex_new ("\\s*([A-Za-z0-9-]*)=(.*)\\s*", 0, 0, error);
+    stack = g_queue_new ();
 
-    if (*error)
-        return NULL;
+    typedef enum {
+        NEW_TASK    = 1,
+        PROP_KEY    = 1 << 1,
+        PROP_VALUE  = 1 << 2,
+        CONNECT     = 1 << 3
+    } Action;
+
+    Action action = NEW_TASK;
+
+    gint expected = PAREN_OPEN | STRING;
 
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UCHAR,   value_transform_uchar);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_INT,     value_transform_int);
@@ -111,63 +186,90 @@ parse_pipeline (GList *pipeline, UfoPluginManager *pm, GError **error)
 
     graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
 
-    g_list_for (pipeline, it) {
-        GList *jt;
-        GMatchInfo *match;
-        TaskDescription *desc;
-        UfoTaskNode *task;
+    /* push default group */
+    g_queue_push_head (stack, NULL);
 
-        desc = (TaskDescription *) (it->data);
-        task = ufo_plugin_manager_get_task (pm, desc->name, error);
+    g_list_for (tokens, it) {
+        Token *t = (Token *) it->data;
 
-        if (task == NULL)
+        if ((expected & t->type) == 0) {
+            g_print ("Error: cannot parse pipeline specification\n  %s\n", pipeline);
+
+            for (guint i = 0; i < t->pos + 2; i++)
+                g_print (" ");
+
+            g_print ("^\n");
             return NULL;
-
-        g_list_for (desc->props, jt) {
-            gchar *prop_assignment;
-
-            prop_assignment = (gchar *) jt->data;
-            g_regex_match (assignment, prop_assignment, 0, &match);
-
-            if (g_match_info_matches (match)) {
-                GParamSpec *pspec;
-                GValue value = {0};
-
-                gchar *prop = g_match_info_fetch (match, 1);
-                gchar *string_value = g_match_info_fetch (match, 2);
-
-                g_value_init (&value, G_TYPE_STRING);
-                g_value_set_string (&value, string_value);
-
-                pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (task), prop);
-
-                if (pspec != NULL) {
-                    GValue target_value = {0};
-
-                    g_value_init (&target_value, pspec->value_type);
-                    g_value_transform (&value, &target_value);
-                    g_object_set_property (G_OBJECT (task), prop, &target_value);
-                }
-                else {
-                    g_warning ("`%s' does not have property `%s'", desc->name, prop);
-                }
-
-                g_match_info_free (match);
-                g_free (prop);
-                g_free (string_value);
-            }
-            else {
-                g_warning ("Expected property assignment or `!' but got `%s' instead", prop_assignment);
-            }
         }
 
-        if (prev != NULL)
-            ufo_task_graph_connect_nodes (graph, prev, task);
+        switch (t->type) {
+            case PAREN_OPEN:
+                g_queue_push_head (stack, NULL);
+                expected = PAREN_OPEN | STRING;
+                break;
+            case PAREN_CLOSE:
+                group = g_queue_pop_head (stack);
+                expected = EXCLAMATION | SPACE;
+                break;
+            case EXCLAMATION:
+                action = NEW_TASK | CONNECT;
+                expected = STRING | SPACE;
+                break;
+            case STRING:
+                {
+                    gchar *s = t->str->str;
 
-        prev = task;
+                    if (action & NEW_TASK) {
+                        task = ufo_plugin_manager_get_task (pm, s, error);
+
+                        if (task == NULL)
+                            return NULL;
+
+                        if (action & CONNECT) {
+                            GList *jt;
+                            guint i = 0;
+
+                            g_list_for (group, jt)
+                                ufo_task_graph_connect_nodes_full (graph, UFO_TASK_NODE (jt->data), task, i++);
+
+                            /* create new group for this task */
+                            g_queue_pop_head (stack);
+                            g_queue_push_head (stack, NULL);
+                        }
+
+                        group = g_queue_pop_head (stack);
+                        group = g_list_append (group, task);
+                        g_queue_push_head (stack, group);
+
+                        action = PROP_KEY;
+                        expected = STRING | PAREN_CLOSE | SPACE;
+                    }
+                    else if (action & PROP_KEY) {
+                        key = s;
+                        expected = ASSIGNMENT;
+                    }
+                    else if (action & PROP_VALUE) {
+                        set_property (task, key, s);
+                        action = PROP_KEY;
+                        expected = PAREN_CLOSE | COMMA | SPACE;
+                    }
+                }
+                break;
+            case COMMA:
+                action = NEW_TASK;
+                expected = STRING | SPACE;
+                break;
+            case ASSIGNMENT:
+                action = PROP_VALUE;
+                expected = STRING;
+                break;
+            case SPACE:
+                expected = STRING | SPACE | PAREN_OPEN | PAREN_CLOSE | EXCLAMATION;
+                break;
+        }
     }
 
-    g_regex_unref (assignment);
+    g_queue_free (stack);
     return graph;
 }
 
@@ -204,7 +306,8 @@ main(int argc, char* argv[])
     UfoPluginManager *pm;
     UfoTaskGraph *graph;
     UfoBaseScheduler *sched;
-    GList *pipeline;
+    gchar *pipeline;
+    GList *tokens;
     GList *leaves;
     GOptionContext *context;
     gboolean have_tty;
@@ -242,12 +345,16 @@ main(int argc, char* argv[])
         return 0;
     }
 
-    pipeline = tokenize_args (argc - 1, &argv[1]);
     pm = ufo_plugin_manager_new ();
-    graph = parse_pipeline (pipeline, pm, &error);
+    pipeline = g_strjoinv (" ", &argv[1]);
+    tokens = tokenize_args (pipeline);
+    graph = parse (pipeline, tokens, pm, &error);
+    g_free (pipeline);
 
-    if (error != NULL) {
-        g_print ("Error parsing pipeline: %s\n", error->message);
+    if (graph == NULL) {
+        if (error != NULL)
+            g_print ("Error parsing pipeline: %s\n", error->message);
+
         return 1;
     }
 
