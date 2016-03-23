@@ -29,6 +29,12 @@ image you would something like this::
 
     $ ufo-launch read path=lena.tif ! gaussian-blur size=20 sigma=5 ! write
 
+Some tasks receive multiple inputs which requires the use of brackets to collect
+all arguments. For example, a simple flat field correction would look like
+this::
+
+    $ ufo-launch [read path=radios, read path=darks, read path=flats]! flat-field-correct ! write filename=foo.tif
+
 
 Using a JSON description
 ========================
