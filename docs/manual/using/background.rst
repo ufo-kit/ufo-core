@@ -20,8 +20,8 @@ a graph object on execution.
 Profiling
 =========
 
-By default, the scheduler measures the run-time between from initial setup to
-the processing of the last data item. You can get the time in seconds via the
+By default, the scheduler measures the run-time from initial setup until
+processing of the last data item finished. You can get the time in seconds via the
 ``time`` property ::
 
     g = Ufo.TaskGraph()
@@ -34,7 +34,7 @@ To get more fine-grained insight into the execution, you can enable tracing ::
     scheduler.props.enable_tracing = True
     scheduler.run(g)
 
-which will generate traces for OpenCL (saved in ``opencl.PID.json``) and general
-events (saved in ``trace.PID.json``). To visualize the trace events, you can use
-the Google Chrome or Chromium browser, go to chrome://tracing and load the JSON
-files.
+and analyse the generated traces for OpenCL (saved in ``opencl.PID.json``) and
+general events (saved in ``trace.PID.json``). To visualize the trace events, you
+can either use the distributed ``ufo-prof`` tool or Google Chrome or Chromium by
+going to chrome://tracing and loading the JSON files.
