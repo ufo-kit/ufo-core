@@ -61,7 +61,7 @@ typedef enum {
     UFO_MESSAGE_STRUCTURE,
     UFO_MESSAGE_REQUISITION,
     UFO_MESSAGE_RESULT,
-    UFO_MESSAGE_ACK,
+    UFO_MESSAGE_ACK
 } UfoMessageType;
 
 struct _UfoMessage {
