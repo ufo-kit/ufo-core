@@ -100,11 +100,11 @@ def main():
 
     args = parser.parse_args()
 
-    if args.trace or re.match(r'trace\.[0-9]*\.json', args.input[1]):
+    if args.trace or re.match(r'trace\..*\.json', args.input[1]):
         analyse_trace(args.input[0])
         sys.exit(0)
 
-    if args.opencl or re.match(r'opencl\.[0-9]*\.json', args.input[1]):
+    if args.opencl or re.match(r'opencl\..*\.json', args.input[1]):
         analyse_opencl(args.input[0])
         sys.exit(0)
 

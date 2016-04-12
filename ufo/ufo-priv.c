@@ -106,12 +106,14 @@ static void
 write_trace_json (const gchar *filename_template, GList *events)
 {
     FILE *fp;
-    gchar *filename;
     GList *it;
-    guint pid;
+    GDateTime *now;
+    gchar *filename;
+    gchar *timestr;
 
-    pid = (guint) getpid ();
-    filename = g_strdup_printf (filename_template, pid);
+    now = g_date_time_new_now_local ();
+    timestr = g_date_time_format (now, "%FT%T%z");
+    filename = g_strdup_printf (filename_template, timestr);
 
     fp = fopen (filename, "w");
     fprintf (fp, "{ \"traceEvents\": [");
@@ -128,6 +130,8 @@ write_trace_json (const gchar *filename_template, GList *events)
 
     fprintf (fp, "] }");
     fclose (fp);
+    g_date_time_unref (now);
+    g_free (timestr);
     g_free (filename);
 }
 
@@ -147,7 +151,7 @@ ufo_write_opencl_events (GList *nodes)
     }
 
     container.events = g_list_sort (container.events, (GCompareFunc) compare_events);
-    write_trace_json ("opencl.%i.json", container.events);
+    write_trace_json ("opencl.%s.json", container.events);
     g_list_free (container.events);
 }
 
@@ -157,7 +161,7 @@ ufo_write_profile_events (GList *nodes)
     GList *sorted;
 
     sorted = get_sorted_trace_events (nodes);
-    write_trace_json ("trace.%i.json", sorted);
+    write_trace_json ("trace.%s.json", sorted);
     g_list_foreach (sorted, (GFunc) g_free, NULL);
     g_list_free (sorted);
 }
