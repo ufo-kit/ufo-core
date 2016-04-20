@@ -29,7 +29,9 @@
 #include <string.h>
 #include <ufo/ufo.h>
 
-static UfoDaemon *global_daemon;
+
+static UfoDaemon *global_daemon = NULL;
+static gboolean done = FALSE;
 
 typedef struct {
     gchar **paths;
@@ -89,24 +91,13 @@ opts_free (Options *opts)
 static void
 terminate (int signum)
 {
-    GError *error = NULL;
-
     if (signum == SIGTERM)
         g_print ("Received SIGTERM, exiting...\n");
 
     if (signum == SIGINT)
         g_print ("Received SIGINT, exiting...\n");
 
-    if (global_daemon != NULL) {
-        ufo_daemon_stop (global_daemon, &error);
-
-        if (error != NULL)
-            g_printerr ("Error: %s\n", error->message);
-
-        g_object_unref (global_daemon);
-    }
-
-    exit (EXIT_SUCCESS);
+    done = TRUE;
 }
 
 int
@@ -137,9 +128,10 @@ main (int argc, char * argv[])
 
     g_print ("ufod %s - waiting for requests on %s ...\n", UFO_VERSION, opts->addr);
 
-    while (TRUE) {
-        g_usleep (G_MAXULONG);
-    }
+    while (!done)
+        g_usleep (G_USEC_PER_SEC);
+
+    ufo_daemon_stop (global_daemon, &error);
 
 error:
     if (error != NULL)
