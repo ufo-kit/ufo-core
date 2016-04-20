@@ -89,9 +89,10 @@ ufo_messenger_create (const gchar *address, GError **error)
         g_propagate_error (error, error_internal);
         return NULL;
     }
+
     if (g_regex_match_all (regex, address, 0, NULL)) {
         gchar **protocol = g_strsplit (address, ":", 2);
-        g_debug ("Creating messenger for the '%s://' protocol", protocol[0]);
+        g_debug ("Creating messenger for `%s'", protocol[0]);
 
 #ifdef WITH_ZMQ
         if (!g_strcmp0 (protocol[0], "tcp")) {
@@ -107,9 +108,7 @@ ufo_messenger_create (const gchar *address, GError **error)
         }
 #endif
 
-        g_set_error (error,
-                     UFO_MESSENGER_ERROR,
-                     UFO_MESSENGER_UNKNOWN_PROTOCOL,
+        g_set_error (error, UFO_MESSENGER_ERROR, UFO_MESSENGER_UNKNOWN_PROTOCOL,
                      "Don't know how to handle protocol '%s://'", protocol[0]);
 
 #if defined(WITH_ZMQ) || (WITH_MPI)
@@ -118,10 +117,8 @@ done:
         g_strfreev (protocol);
     }
     else {
-        g_set_error (error,
-                     UFO_MESSENGER_ERROR,
-                     UFO_MESSENGER_INVALID_ADDRESS,
-                     "The given address has invalid format. (Expecting \"<protocol>://<address | device>:<port>\")");
+        g_set_error (error, UFO_MESSENGER_ERROR, UFO_MESSENGER_INVALID_ADDRESS,
+                     "Given address has invalid format, expecting `<protocol>://<address | device>:<port>'.");
     }
 
     g_regex_unref (regex);

@@ -88,11 +88,10 @@ static RequestHandler handlers[] = {
 };
 
 UfoDaemon *
-ufo_daemon_new (const gchar *listen_address)
+ufo_daemon_new (const gchar *listen_address, GError **error)
 {
     UfoDaemonPrivate *priv;
     UfoDaemon *daemon;
-    GError *error = NULL;
 
     g_return_val_if_fail (listen_address != NULL, NULL);
 
@@ -101,15 +100,7 @@ ufo_daemon_new (const gchar *listen_address)
 
     priv->listen_address = g_strdup (listen_address);
     priv->manager = ufo_plugin_manager_new ();
-
-    priv->messenger = ufo_messenger_create (priv->listen_address, &error);
-
-    if (error != NULL) {
-        g_printerr ("Error while creating ufo-daemon: %s\n", error->message);
-        g_error_free (error);
-        g_object_unref (daemon);
-        return NULL;
-    }
+    priv->messenger = ufo_messenger_create (priv->listen_address, error);
 
     return daemon;
 }

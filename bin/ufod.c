@@ -125,22 +125,28 @@ main (int argc, char * argv[])
     (void) signal (SIGTERM, terminate);
     (void) signal (SIGINT, terminate);
 
-    global_daemon = ufo_daemon_new (opts->addr);
+    global_daemon = ufo_daemon_new (opts->addr, &error);
+
+    if (error != NULL)
+        goto error;
+
     ufo_daemon_start (global_daemon, &error);
 
-    if (error != NULL) {
-        g_printerr ("Error: %s\n", error->message);
-        g_object_unref (global_daemon);
-        return 1;
-    }
+    if (error != NULL)
+        goto error;
 
-    g_print ("ufod %s - waiting for requests on %s ...\n", UFO_VERSION,
-                                                           opts->addr);
+    g_print ("ufod %s - waiting for requests on %s ...\n", UFO_VERSION, opts->addr);
 
     while (TRUE) {
         g_usleep (G_MAXULONG);
     }
 
+error:
+    if (error != NULL)
+        g_printerr ("Error: %s\n", error->message);
+
+    g_object_unref (global_daemon);
     opts_free (opts);
-    return 0;
+
+    return error != NULL ? 1 : 0;
 }
