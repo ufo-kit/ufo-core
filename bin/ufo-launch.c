@@ -309,6 +309,8 @@ main(int argc, char* argv[])
     gchar *pipeline;
     GList *tokens;
     GList *leaves;
+    GList *nodes;
+    GList *it;
     GOptionContext *context;
     gboolean have_tty;
     UfoResources *resources = NULL;
@@ -410,9 +412,16 @@ main(int argc, char* argv[])
             g_print ("Error dumping task graph: %s\n", error->message);
     }
 
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
+
+    g_list_for (nodes, it)
+        g_object_unref (G_OBJECT (it->data));
+
     g_list_free (leaves);
+    g_list_free (nodes);
 
     g_object_unref (graph);
+    g_object_unref (sched);
     g_object_unref (pm);
     g_strfreev (addresses);
 
