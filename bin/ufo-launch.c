@@ -361,6 +361,7 @@ main(int argc, char* argv[])
     }
 
     leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
     have_tty = isatty (fileno (stdin));
 
     if (!quiet && have_tty) {
@@ -411,8 +412,6 @@ main(int argc, char* argv[])
         if (error != NULL)
             g_print ("Error dumping task graph: %s\n", error->message);
     }
-
-    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
 
     g_list_for (nodes, it)
         g_object_unref (G_OBJECT (it->data));
