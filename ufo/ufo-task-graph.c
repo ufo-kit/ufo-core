@@ -943,8 +943,11 @@ create_full_json_from_task_node (UfoTaskNode *task_node)
     json_object_set_string_member (node_object, "name", name);
 
     prop_node = json_gobject_serialize (G_OBJECT (task_node));
-    prop_object = json_node_get_object(prop_node);
 
+    /* Remove num-processed which is a read-only property */
+    json_object_remove_member (json_node_get_object (prop_node), "num-processed");
+
+    prop_object = json_node_get_object (prop_node);
     pspecs = g_object_class_list_properties (G_OBJECT_GET_CLASS (task_node), &n_pspecs);
 
     for (guint i = 0; i < n_pspecs; i++) {
