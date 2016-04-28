@@ -17,14 +17,17 @@
  * License along with runjson.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _POSIX_C_SOURCE     1
+
 #include "config.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <ufo/ufo.h>
 
 #ifdef WITH_MPI
 #include <mpi.h>
 #include <ufo/ufo-mpi-messenger.h>
-#include <unistd.h>
 #endif
 
 static void
@@ -58,13 +61,21 @@ string_array_to_value_array (gchar **array)
 }
 
 static void
+progress_update (gpointer user)
+{
+    static int n = 0;
+    g_print ("\33[2K\r%i items processed ...", ++n);
+}
+
+static void
 execute_json (const gchar *filename,
               gchar **addresses)
 {
-    UfoTaskGraph    *task_graph;
-    UfoResources    *resources = NULL;
+    UfoTaskGraph *task_graph;
+    UfoResources *resources;
     UfoBaseScheduler *scheduler;
     UfoPluginManager *manager;
+    GList *leaves;
     GValueArray *address_list = NULL;
     GError *error = NULL;
 
@@ -74,21 +85,29 @@ execute_json (const gchar *filename,
     ufo_task_graph_read_from_file (task_graph, manager, filename, &error);
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
-    scheduler = ufo_scheduler_new ();
+    leaves = ufo_graph_get_leaves (UFO_GRAPH (task_graph));
 
+    if (isatty (fileno (stdin))) {
+        UfoTaskNode *leaf;
+
+        leaf = UFO_TASK_NODE (leaves->data);
+        g_signal_connect (leaf, "processed", G_CALLBACK (progress_update), NULL);
+    }
+
+    scheduler = ufo_scheduler_new ();
     address_list = string_array_to_value_array (addresses);
+
     if (address_list) {
         resources = UFO_RESOURCES (ufo_resources_new (NULL));
-        g_object_set (G_OBJECT (resources),
-                      "remotes", address_list,
-                      NULL);
+        g_object_set (G_OBJECT (resources), "remotes", address_list, NULL);
         g_value_array_free (address_list);
         ufo_base_scheduler_set_resources (scheduler, resources);
     }
 
-
     ufo_base_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
+
+    g_list_free (leaves);
 
     g_object_unref (task_graph);
     g_object_unref (scheduler);
@@ -220,7 +239,8 @@ int main(int argc, char *argv[])
 
     if (rank == 0) {
         addresses = mpi_build_addresses (size);
-    } else {
+    }
+    else {
         gchar *addr = g_strdup_printf("%d", rank);
         UfoDaemon *daemon = ufo_daemon_new (addr);
         ufo_daemon_start (daemon);
