@@ -811,7 +811,8 @@ create_node_from_json (JsonNode *json_node,
 
             if (json_object_has_member (node_object, "plugin")) {
                 UfoTaskNode *inner_node = create_node_from_json (node, manager, prop_sets, error);
-                g_object_set (G_OBJECT(ret_node), key, inner_node, NULL);
+                g_object_force_floating (G_OBJECT (inner_node));
+                g_object_set (G_OBJECT (ret_node), key, inner_node, NULL);
             }
             else {
                 ufo_task_set_json_object_property (UFO_TASK (node), key, node_object);

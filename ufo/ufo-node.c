@@ -85,7 +85,10 @@ copy_properties (GObject *dst,
             g_object_get_property (src, props[i]->name, &value);
 
             if (UFO_IS_NODE_CLASS (&(props[i]->value_type))) {
-                g_value_set_object (&value, ufo_node_copy_real (UFO_NODE(g_value_get_object(&value)), NULL));
+                GObject *prop_object;
+                prop_object = G_OBJECT (ufo_node_copy_real (UFO_NODE (g_value_get_object (&value)), NULL));
+                g_object_force_floating (prop_object);
+                g_value_take_object (&value, prop_object);
             }
 
             g_object_set_property (dst, props[i]->name, &value);
