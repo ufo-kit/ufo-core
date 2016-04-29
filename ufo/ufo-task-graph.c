@@ -426,9 +426,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
     g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
-    path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph),
-                                        (UfoFilterPredicate) is_gpu_task,
-                                        NULL);
+    path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph), (UfoFilterPredicate) is_gpu_task, NULL);
 
     /* Check if any node on the path contains multiple inputs and stop expansion */
     /* TODO: we need a better strategy at this point */
@@ -437,12 +435,14 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         return;
     }
 
-    if (path != NULL && g_list_length (path) >= 1) {
+    if (path != NULL && g_list_length (path) > 0) {
         GList *predecessors;
         GList *successors;
 
-        g_object_unref (UFO_NODE (g_list_first(path)->data));
-        g_object_unref (UFO_NODE (g_list_last(path)->data));
+        g_object_unref (UFO_NODE (g_list_first (path)->data));
+
+        if (g_list_length (path) > 1)
+            g_object_unref (UFO_NODE (g_list_last (path)->data));
 
         /* Add predecessor and successor nodes to path */
         predecessors = ufo_graph_get_predecessors (UFO_GRAPH (task_graph),
@@ -701,7 +701,7 @@ add_nodes_from_json (UfoTaskGraph *self,
         GList *it;
 
         g_list_for (elements, it) {
-            UfoTaskNode *new_node = create_node_from_json(it->data, priv->manager, priv->prop_sets, error);
+            UfoTaskNode *new_node = create_node_from_json (it->data, priv->manager, priv->prop_sets, error);
             if(new_node != NULL) {
                 const char *name = ufo_task_node_get_identifier(new_node);
 
