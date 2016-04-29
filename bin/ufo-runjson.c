@@ -72,12 +72,13 @@ execute_json (const gchar *filename,
               gchar **addresses)
 {
     UfoTaskGraph *task_graph;
-    UfoResources *resources;
     UfoBaseScheduler *scheduler;
     UfoPluginManager *manager;
     GList *leaves;
+    UfoResources *resources = NULL;
     GValueArray *address_list = NULL;
     GError *error = NULL;
+    gboolean has_tty;
 
     manager = ufo_plugin_manager_new ();
 
@@ -85,9 +86,10 @@ execute_json (const gchar *filename,
     ufo_task_graph_read_from_file (task_graph, manager, filename, &error);
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
+    has_tty = isatty (fileno (stdin));
     leaves = ufo_graph_get_leaves (UFO_GRAPH (task_graph));
 
-    if (isatty (fileno (stdin))) {
+    if (has_tty) {
         UfoTaskNode *leaf;
 
         leaf = UFO_TASK_NODE (leaves->data);
@@ -107,13 +109,16 @@ execute_json (const gchar *filename,
     ufo_base_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
 
+    if (has_tty)
+        g_print ("\n");
+
     g_list_free (leaves);
 
     g_object_unref (task_graph);
     g_object_unref (scheduler);
     g_object_unref (manager);
 
-    if (resources)
+    if (resources != NULL)
         g_object_unref (resources);
 }
 
