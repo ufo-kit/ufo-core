@@ -250,3 +250,32 @@ def test_uca_direct():
             assert(len(result) == 3)
     except ImportError:
         pass
+
+
+def test_memory_in():
+    with tempdir() as d:
+        from ufo import MemoryIn, Write
+
+        ref = random.astype(np.float32)
+        read = MemoryIn(pointer=ref.__array_interface__['data'][0], number=1,
+                        width=ref.shape[1], height=ref.shape[0])
+        write = Write(filename=d.path('foo.tif'))
+
+        write(read()).run().join()
+        result = tifffile.imread(d.path('foo.tif'))
+        assert(np.all(ref == result))
+
+
+def test_memory_out():
+    with tempdir() as d:
+        from ufo import MemoryOut, Read
+
+        ref = random.astype(np.float32)
+        out = np.zeros_like(ref).astype(np.float32)
+        tifffile.imsave(d.path('foo.tif'), ref)
+
+        read = Read(path=d.path('foo.tif'))
+        write = MemoryOut(pointer=out.__array_interface__['data'][0], max_size=ref.nbytes)
+
+        write(read()).run().join()
+        assert(np.all(out == ref))
