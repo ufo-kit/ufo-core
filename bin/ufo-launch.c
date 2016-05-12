@@ -81,6 +81,7 @@ tokenize_args (const gchar *pipeline)
     GList *tokens = NULL;
     Token *current = NULL;
     guint pos = 0;
+    gboolean inside_quote = FALSE;
 
     struct {
         gchar c;
@@ -99,7 +100,12 @@ tokenize_args (const gchar *pipeline)
     for (const gchar *s = pipeline; *s != '\0'; ++s, pos++) {
         guint i = 0;
 
-        for (; map[i].c != 0; i++) {
+        if (*s == '\'') {
+            inside_quote = !inside_quote;
+            continue;
+        }
+
+        for (; map[i].c != 0 && !inside_quote; i++) {
             if (*s == map[i].c) {
                 Token *t = g_new0 (Token, 1);
                 t->type = map[i].type;
@@ -111,7 +117,7 @@ tokenize_args (const gchar *pipeline)
         }
 
         /* we have a string */
-        if (map[i].c == 0) {
+        if (map[i].c == 0 || inside_quote) {
             if (current == NULL) {
                 current = g_new0 (Token, 1);
                 current->type = STRING;
