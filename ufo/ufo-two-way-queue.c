@@ -106,12 +106,12 @@ ufo_two_way_queue_producer_push (UfoTwoWayQueue *queue, gpointer data)
 }
 
 /**
- * ufo_two_way_queue_get_inserted:
+ * ufo_two_way_queue_get_inserted: (skip)
  * @queue: A #UfoTwoWayQueue
  *
  * Fetch all items ever inserted.
  *
- * Returns: (transfer none) (element-type gpointer): A list with all items.
+ * Returns: (element-type gpointer) (transfer none): A list with all items.
  */
 GList *
 ufo_two_way_queue_get_inserted (UfoTwoWayQueue *queue)
