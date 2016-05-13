@@ -63,6 +63,7 @@ typedef struct {
 typedef struct {
     GList *connections;
     GList *tasks;
+    GList *queues;
 } ProcessData;
 
 typedef struct {
@@ -437,6 +438,7 @@ setup_tasks (UfoGraph *graph,
 
     data->connections = NULL;
     data->tasks = NULL;
+    data->queues = NULL;
 
     nodes = ufo_graph_get_nodes (graph);
     gpu_nodes = ufo_resources_get_gpu_nodes (resources);
@@ -467,6 +469,7 @@ setup_tasks (UfoGraph *graph,
             connection->port = (guint) GPOINTER_TO_INT (ufo_graph_get_edge_label (graph, source_node, dest_node));
             connection->queue = ufo_two_way_queue_new (NULL);
 
+            data->queues = g_list_append (data->queues, connection->queue);
             data->connections = g_list_append (data->connections, connection);
             data->tasks = append_if_not_existing (data->tasks, dest_task);
         }
@@ -557,6 +560,20 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 #else
     join_threads (threads);
 #endif
+
+    g_list_for (pdata->queues, it) {
+        UfoTwoWayQueue *queue;
+        GList *buffers;
+        GList *jt;
+
+        queue = (UfoTwoWayQueue *) it->data;
+        buffers = ufo_two_way_queue_get_inserted (queue);
+
+        g_list_for (buffers, jt)
+            g_object_unref (jt->data);
+
+        ufo_two_way_queue_free (queue);
+    }
 
     g_list_free (threads);
 }

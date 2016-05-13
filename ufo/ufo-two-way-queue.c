@@ -24,6 +24,7 @@
 struct _UfoTwoWayQueue {
     GAsyncQueue *producer_queue;
     GAsyncQueue *consumer_queue;
+    GList *inserted;
     guint capacity;
 };
 
@@ -45,6 +46,7 @@ ufo_two_way_queue_new (GList *init)
 
     queue->producer_queue = g_async_queue_new ();
     queue->consumer_queue = g_async_queue_new ();
+    queue->inserted = NULL;
     queue->capacity = 0;
 
     g_list_for (init, it) {
@@ -59,6 +61,7 @@ ufo_two_way_queue_free (UfoTwoWayQueue *queue)
 {
     g_async_queue_unref (queue->producer_queue);
     g_async_queue_unref (queue->consumer_queue);
+    g_list_free (queue->inserted);
     g_free (queue);
 }
 
@@ -102,10 +105,25 @@ ufo_two_way_queue_producer_push (UfoTwoWayQueue *queue, gpointer data)
     g_async_queue_push (queue->consumer_queue, data);
 }
 
+/**
+ * ufo_two_way_queue_get_inserted:
+ * @queue: A #UfoTwoWayQueue
+ *
+ * Fetch all items ever inserted.
+ *
+ * Returns: (transfer none) (element-type gpointer): A list with all items.
+ */
+GList *
+ufo_two_way_queue_get_inserted (UfoTwoWayQueue *queue)
+{
+    return queue->inserted;
+}
+
 void
 ufo_two_way_queue_insert (UfoTwoWayQueue *queue, gpointer data)
 {
     g_async_queue_push (queue->producer_queue, data);
+    queue->inserted = g_list_append (queue->inserted, data);
     queue->capacity++;
 }
 

@@ -41,6 +41,7 @@ void              ufo_two_way_queue_producer_push   (UfoTwoWayQueue *queue,
 void              ufo_two_way_queue_insert          (UfoTwoWayQueue *queue,
                                                      gpointer data);
 guint             ufo_two_way_queue_get_capacity    (UfoTwoWayQueue *queue);
+GList           * ufo_two_way_queue_get_inserted    (UfoTwoWayQueue *queue);
 
 G_END_DECLS
 
