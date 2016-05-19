@@ -70,8 +70,14 @@ typedef struct {
     UfoGraph *graph;
     UfoTask *task;
     GList *connections;
+    UfoTwoWayQueue **in_queues;
+    UfoTwoWayQueue *out_queue;
     cl_context context;
 } TaskData;
+
+struct _UfoFixedSchedulerPrivate {
+    GHashTable *task_data;
+};
 
 enum {
     PROP_0,
@@ -208,29 +214,32 @@ generate_loop (TaskData *data)
 {
     UfoRequisition requisition;
     UfoBuffer *output;
-    GList *out_queues;
-    GList *it;
+    /* GList *out_queues; */
+    /* GList *it; */
     gboolean active = TRUE;
 
-    out_queues = get_output_queue_list (data);
+    /* out_queues = get_output_queue_list (data); */
 
     while (active) {
-        g_list_for (out_queues, it) {
-            UfoTwoWayQueue *out_queue = (UfoTwoWayQueue *) it->data;
+        /* g_list_for (out_queues, it) { */
+            /* UfoTwoWayQueue *out_queue = (UfoTwoWayQueue *) it->data; */
 
             ufo_task_get_requisition (data->task, NULL, &requisition);
-            output = pop_output_data (out_queue, &requisition, data->context);
+            output = pop_output_data (data->out_queue, &requisition, data->context);
             active = ufo_task_generate (data->task, output, &requisition);
 
             if (!active)
                 break;
 
-            ufo_two_way_queue_producer_push (out_queue, output);
-        }
+            ufo_two_way_queue_producer_push (data->out_queue, output);
+        /* } */
     }
 
-    finish_successors (out_queues);
-    g_list_free (out_queues);
+    /* finish_successors (out_queues); */
+    ufo_two_way_queue_producer_push (data->out_queue, POISON_PILL);
+    ufo_two_way_queue_producer_push (data->out_queue, POISON_PILL);
+    g_print ("%s: done\n", G_OBJECT_TYPE_NAME (data->task));
+    /* g_list_free (out_queues); */
 }
 
 static void
@@ -239,22 +248,24 @@ process_loop (TaskData *data)
     UfoRequisition requisition;
     UfoBuffer **inputs;
     UfoBuffer *output;
-    UfoTwoWayQueue **in_queues;
+    /* UfoTwoWayQueue **in_queues; */
     gboolean *finished;
-    GList *out_queues;
+    /* GList *out_queues; */
     GList *it;
     guint n_inputs;
     gboolean active = TRUE;
     gboolean is_sink;
 
-    in_queues = get_input_queues (data, &n_inputs);
-    out_queues = get_output_queue_list (data);
+    /* in_queues = get_input_queues (data, &n_inputs); */
+    /* out_queues = get_output_queue_list (data); */
+    n_inputs = ufo_task_get_num_inputs (data->task);
     inputs = g_new0 (UfoBuffer *, n_inputs);
     finished = g_new0 (gboolean, n_inputs);
-    is_sink = g_list_length (out_queues) == 0;
+    is_sink = ufo_task_get_mode (data->task) & UFO_TASK_MODE_SINK; //  g_list_length (out_queues) == 0;
 
     while (active) {
-        active = pop_input_data (in_queues, finished, inputs, n_inputs);
+        g_print ("%s-%p: reading data from %p\n", G_OBJECT_TYPE_NAME (data->task), data->task, data->in_queues[0]);
+        active = pop_input_data (data->in_queues, finished, inputs, n_inputs);
 
         if (!active)
             break;
@@ -265,10 +276,10 @@ process_loop (TaskData *data)
             active = ufo_task_process (data->task, inputs, NULL, &requisition);
         }
         else {
-            g_list_for (out_queues, it) {
-                UfoTwoWayQueue *out_queue = (UfoTwoWayQueue *) it->data;
+            /* g_list_for (out_queues, it) { */
+            /*     UfoTwoWayQueue *out_queue = (UfoTwoWayQueue *) it->data; */
 
-                output = pop_output_data (out_queue, &requisition, data->context);
+                output = pop_output_data (data->out_queue, &requisition, data->context);
 
                 for (guint i = 0; i < n_inputs; i++)
                     ufo_buffer_copy_metadata (inputs[i], output);
@@ -278,27 +289,33 @@ process_loop (TaskData *data)
                 if (!active)
                     break;
 
-                ufo_two_way_queue_producer_push (out_queue, output);
-            }
+                g_print ("%s-%p: pushed data to %p\n", G_OBJECT_TYPE_NAME (data->task), data->task, data->out_queue);
+                ufo_two_way_queue_producer_push (data->out_queue, output);
+            /* } */
         }
 
-        release_input_data (in_queues, inputs, n_inputs);
+        release_input_data (data->in_queues, inputs, n_inputs);
     }
 
-    finish_successors (out_queues);
+    if (!is_sink) {
+    /* finish_successors (out_queues); */
+    /* ufo_two_way_queue_producer_push (data->out_queue, POISON_PILL); */
+    g_print ("%s: pushed pill to %p\n", G_OBJECT_TYPE_NAME (data->task), data->out_queue);
+    }
 
-    g_free (in_queues);
+    /* g_free (in_queues); */
     g_free (inputs);
     g_free (finished);
-    g_list_free (out_queues);
+    /* g_list_free (out_queues); */
 }
 
 static void
 reduce_loop (TaskData *data)
 {
+#if 0
     UfoRequisition requisition;
-    UfoTwoWayQueue **in_queues;
-    UfoTwoWayQueue **output_queues;
+    /* UfoTwoWayQueue **in_queues; */
+    /* UfoTwoWayQueue **output_queues; */
     UfoBuffer **inputs;
     UfoBuffer **outputs;
     gboolean *finished;
@@ -308,15 +325,15 @@ reduce_loop (TaskData *data)
     guint n_outputs;
     gboolean active = TRUE;
 
-    in_queues = get_input_queues (data, &n_inputs);
-    out_queues = get_output_queue_list (data);
+    /* in_queues = get_input_queues (data, &n_inputs); */
+    /* out_queues = get_output_queue_list (data); */
     inputs = g_new0 (UfoBuffer *, n_inputs);
     finished = g_new0 (gboolean, n_inputs);
 
-    n_outputs = g_list_length (out_queues);
-    outputs = g_new0 (UfoBuffer *, n_outputs);
-    output_queues = g_new0 (UfoTwoWayQueue *, n_outputs);
-    it = g_list_first (out_queues);
+    /* n_outputs = g_list_length (out_queues); */
+    /* outputs = g_new0 (UfoBuffer *, n_outputs); */
+    /* output_queues = g_new0 (UfoTwoWayQueue *, n_outputs); */
+    /* it = g_list_first (out_queues); */
 
     for (guint i = 0; it != NULL; it = g_list_next (it)) {
         output_queues[i] = (UfoTwoWayQueue *) it->data;
@@ -371,6 +388,7 @@ reduce_loop (TaskData *data)
     g_free (output_queues);
     g_free (finished);
     g_list_free (out_queues);
+#endif
 }
 
 static gpointer
@@ -414,6 +432,7 @@ join_threads (GList *threads)
     }
 }
 
+#if 0
 static GList *
 append_if_not_existing (GList *list, UfoTask *task)
 {
@@ -507,6 +526,21 @@ setup_tasks (UfoGraph *graph,
 
     return data;
 }
+#endif
+
+static void
+create_task_data (UfoGraph *graph, UfoTask *task, GHashTable *task_to_data)
+{
+    GList *successors;
+    GList *it;
+
+    successors = ufo_graph_get_successors (graph, dest);
+
+    g_list_for (successors, it)
+        create_task_data (graph, UFO_TASK (it->data), task_to_data);
+
+    g_list_free (successors);
+}
 
 static void
 ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
@@ -516,13 +550,85 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
     UfoResources *resources;
     ProcessData *pdata;
     GList *threads;
+    GList *nodes;
+    GList *gpu_nodes; /* FIXME: free */
     GList *it;
     GError *tmp_error = NULL;
+    GHashTable *task_to_data;
 
     g_return_if_fail (UFO_IS_FIXED_SCHEDULER (scheduler));
 
     resources = ufo_base_scheduler_get_resources (scheduler);
-    pdata = setup_tasks (UFO_GRAPH (task_graph), scheduler, resources, &tmp_error);
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
+    gpu_nodes = ufo_resources_get_gpu_nodes (resources);
+    task_to_data = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, NULL);
+
+#if 0
+    /* Create in-queues */
+    g_list_for (nodes, it) {
+        UfoTask *task;
+        TaskData *data;
+        guint n_inputs;
+
+        data = g_new0 (TaskData, 1);
+        task = UFO_TASK (it->data);
+        n_inputs = ufo_task_get_num_inputs (task);
+
+        data->task = task;
+        data->context = ufo_resources_get_context (resources);
+        data->in_queues = g_new0 (UfoTwoWayQueue *, n_inputs);
+
+        for (guint i = 0; i < n_inputs; i++)
+            data->in_queues[i] = ufo_two_way_queue_new (NULL);
+
+        if (ufo_task_get_mode (task) & UFO_TASK_MODE_GPU) {
+            if (ufo_task_node_get_proc_node (UFO_TASK_NODE (task)) == NULL) {
+                if (g_list_length (gpu_nodes) == 0) {
+                    g_set_error_literal (error, UFO_BASE_SCHEDULER_ERROR, UFO_BASE_SCHEDULER_ERROR_SETUP,
+                                         "Using GPU tasks but no GPU available");
+                    break;
+                }
+
+                g_debug ("Setting default GPU %p for %s-%p",
+                         g_list_nth_data (gpu_nodes, 0),
+                         ufo_task_node_get_plugin_name (UFO_TASK_NODE (task)), (gpointer) task);
+
+                ufo_task_node_set_proc_node (UFO_TASK_NODE (task), g_list_nth_data (gpu_nodes, 0));
+            }
+        }
+
+        ufo_task_setup (task, resources, &tmp_error);
+        g_hash_table_insert (task_to_data, task, data);
+    }
+
+    /* Hook up out-queues */
+    g_list_for (nodes, it) {
+        UfoNode *dest;
+        TaskData *dest_data;
+        GList *predecessors;
+        GList *jt;
+
+        dest = UFO_NODE (it->data);
+        dest_data = g_hash_table_lookup (task_to_data, dest);
+        predecessors = ufo_graph_get_predecessors (UFO_GRAPH (task_graph), dest);
+
+        g_list_for (predecessors, jt) {
+            UfoNode *source;
+            TaskData *source_data;
+            guint port;
+            
+            source = UFO_NODE (jt->data);
+            source_data = g_hash_table_lookup (task_to_data, source);
+            g_assert (source_data != NULL);
+            port = (guint) GPOINTER_TO_INT (ufo_graph_get_edge_label (UFO_GRAPH (task_graph), source, dest));
+
+            g_print ("%s-%p -> [%i] -> %s-%p\n", G_OBJECT_TYPE_NAME (source), source, port, G_OBJECT_TYPE_NAME (dest), dest);
+            g_assert (dest_data->in_queues[port] != NULL);
+            source_data->out_queue = dest_data->in_queues[port];
+        }
+
+        g_list_free (predecessors);
+    }
 
     if (tmp_error != NULL) {
         g_propagate_error (error, tmp_error);
@@ -531,6 +637,18 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 
     threads = NULL;
 
+    g_list_for (nodes, it) {
+        GThread *thread;
+        TaskData *data;
+
+        data = g_hash_table_lookup (task_to_data, it->data);
+        g_print ("starting %s-%p\n", G_OBJECT_TYPE_NAME (data->task), data->task);
+        thread = g_thread_create ((GThreadFunc) run_local, data, TRUE, error);
+        threads = g_list_append (threads, thread);
+    }
+#endif
+
+#if 0
     g_list_for (pdata->tasks, it) {
         GThread *thread;
         TaskData *tdata;
@@ -543,7 +661,9 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
         thread = g_thread_create ((GThreadFunc) run_local, tdata, TRUE, error);
         threads = g_list_append (threads, thread);
     }
+#endif
 
+#if 0
 #ifdef WITH_PYTHON
     if (Py_IsInitialized ()) {
         PyGILState_STATE state = PyGILState_Ensure ();
@@ -574,6 +694,7 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 
         ufo_two_way_queue_free (queue);
     }
+#endif
 
     g_list_free (threads);
 }
@@ -585,6 +706,8 @@ ufo_fixed_scheduler_class_init (UfoFixedSchedulerClass *klass)
 
     sclass = UFO_BASE_SCHEDULER_CLASS (klass);
     sclass->run = ufo_fixed_scheduler_run;
+
+    g_type_class_add_private (klass, sizeof (UfoFixedSchedulerPrivate));
 }
 
 static void
