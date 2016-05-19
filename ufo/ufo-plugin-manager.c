@@ -383,7 +383,7 @@ GList *
 ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
-    GRegex *regex = g_regex_new ("libufofilter([A-Za-z]+).so", 0, 0, NULL);
+    GRegex *regex = g_regex_new ("libufofilter(\\w+).so", 0, 0, NULL);
 
     GList *result = ufo_plugin_get_all_plugin_names(manager, regex, "libufofilter*.so");
 
