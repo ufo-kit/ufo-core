@@ -154,6 +154,8 @@ set_property (UfoTaskNode *task, const gchar *key, const gchar *pvalue)
     else {
         g_warning ("`%s' does not have property `%s'", G_OBJECT_TYPE_NAME (task), key);
     }
+
+    g_value_unset (&value);
 }
 
 static UfoTaskGraph *

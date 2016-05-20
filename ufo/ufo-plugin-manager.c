@@ -249,8 +249,8 @@ ufo_plugin_manager_finalize (GObject *gobject)
      */
 
     g_list_free_full (priv->paths, g_free);
-
     g_hash_table_destroy (priv->new_funcs);
+    g_slist_free_full (priv->modules, (GDestroyNotify) g_module_close);
     G_OBJECT_CLASS (ufo_plugin_manager_parent_class)->finalize (gobject);
 }
 

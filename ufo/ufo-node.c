@@ -92,6 +92,7 @@ copy_properties (GObject *dst,
             }
 
             g_object_set_property (dst, props[i]->name, &value);
+            g_value_unset (&value);
         }
     }
 

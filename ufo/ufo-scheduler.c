@@ -662,6 +662,7 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     cleanup_task_local_data (tlds, n_nodes);
     g_list_foreach (groups, (GFunc) g_object_unref, NULL);
     g_list_free (groups);
+    g_list_free (gpu_nodes);
     g_free (threads);
 
     priv->ran = TRUE;
