@@ -133,7 +133,6 @@ tokenize_args (const gchar *pipeline)
     return tokens;
 }
 
-
 static void
 set_property (UfoTaskNode *task, const gchar *key, const gchar *pvalue)
 {
@@ -357,7 +356,7 @@ main(int argc, char* argv[])
     pipeline = g_strjoinv (" ", &argv[1]);
     tokens = tokenize_args (pipeline);
     graph = parse (pipeline, tokens, pm, &error);
-    g_free (pipeline);
+    g_list_free_full (tokens, g_free);
 
     if (graph == NULL) {
         if (error != NULL)
@@ -429,6 +428,7 @@ main(int argc, char* argv[])
     g_object_unref (sched);
     g_object_unref (pm);
     g_strfreev (addresses);
+    g_option_context_free (context);
 
     return 0;
 }
