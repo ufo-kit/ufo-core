@@ -85,7 +85,7 @@ struct _UfoResourcesPrivate {
 
     GList       *paths;         /* List of paths containing kernels and header files */
     GHashTable  *kernel_cache;
-    GList       *programs;
+    GHashTable  *programs;      /* Maps source to program */
     GList       *kernels;
     GString     *build_opts;
 
@@ -553,8 +553,12 @@ add_program_from_source (UfoResourcesPrivate *priv,
     gchar *build_options;
     GTimer *timer;
 
-    program = clCreateProgramWithSource (priv->context,
-                                         1, &source, NULL, &errcode);
+    program = g_hash_table_lookup (priv->programs, source);
+
+    if (program != NULL)
+        return program;
+
+    program = clCreateProgramWithSource (priv->context, 1, &source, NULL, &errcode);
 
     if (errcode != CL_SUCCESS) {
         g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_CREATE_PROGRAM,
@@ -579,7 +583,7 @@ add_program_from_source (UfoResourcesPrivate *priv,
         return NULL;
     }
 
-    priv->programs = g_list_append (priv->programs, program);
+    g_hash_table_insert (priv->programs, g_strdup (source), program);
 
     g_free (build_options);
     return program;
@@ -1032,7 +1036,8 @@ ufo_resources_finalize (GObject *object)
     g_list_free_full (priv->remotes, g_free);
     g_list_free_full (priv->paths, g_free);
     g_list_free_full (priv->kernels, (GDestroyNotify) release_kernel);
-    g_list_free_full (priv->programs, (GDestroyNotify) release_program);
+
+    g_hash_table_destroy (priv->programs);
 
     if (priv->context) {
         g_debug ("Release context=%p", (gpointer) priv->context);
@@ -1146,7 +1151,7 @@ ufo_resources_init (UfoResources *self)
     self->priv = priv = UFO_RESOURCES_GET_PRIVATE (self);
 
     priv->construct_error = NULL;
-    priv->programs = NULL;
+    priv->programs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) release_program);
     priv->kernels = NULL;
     priv->kernel_cache = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->build_opts = g_string_new ("-cl-mad-enable ");
