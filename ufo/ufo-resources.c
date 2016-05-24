@@ -551,6 +551,7 @@ add_program_from_source (UfoResourcesPrivate *priv,
     cl_program program;
     cl_int errcode = CL_SUCCESS;
     gchar *build_options;
+    GTimer *timer;
 
     program = clCreateProgramWithSource (priv->context,
                                          1, &source, NULL, &errcode);
@@ -562,12 +563,16 @@ add_program_from_source (UfoResourcesPrivate *priv,
     }
 
     build_options = get_device_build_options (priv, 0, options);
-    g_debug ("Building with `%s'", build_options);
+    timer = g_timer_new ();
 
     errcode = clBuildProgram (program,
                               priv->n_devices, priv->devices,
                               build_options,
                               NULL, NULL);
+
+    g_timer_stop (timer);
+    g_debug ("Built with `%s' in %3.5fs", build_options, g_timer_elapsed (timer, NULL));
+    g_timer_destroy (timer);
 
     if (errcode != CL_SUCCESS) {
         handle_build_error (program, priv->devices[0], errcode, error);
