@@ -5,6 +5,40 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.10
+============
+
+Released on May 24th 2016
+
+Enhancements:
+
+- Add UFO_GPU_NODE_INFO_MAX_MEM_ALLOC_SIZE
+- Fix #103: allow ufo-launch to use arbitrary graphs with new workflow
+  specification and more robust parsing
+- Look for AMD APP SDK 3.0
+- Cache programs to avoid rebuilding them
+- ufo-runjson now also outputs the number of processed items
+- Fix #104: output type and blurb with -v
+
+Fixes:
+
+- Fix #106: match word characters to find plugins
+- Fix #101: really unref non-intermediate nodes
+- ufo-launch: query only valid graph
+- Fixed misleading documentation
+- Fixed some leaks and unreferenced resources
+- Stop num-processed from being serialized into JSON field
+- ufod: fix segfault if no address is specified
+
+Breaks:
+
+- ufo-query: print errors on stderr instead of stdout
+- ufo-launch: removed --progress and --time in favor of --quiet
+- Removed public ufo_signal_emit symbol
+- Use date and time to differentiate trace profiles
+- Replace clprof with ufo-prof
+
+
 Version 0.9.1
 =============
 
