@@ -55,6 +55,7 @@ ELSE (APPLE)
               /opt/nvidia-current
               /opt/AMDAPP/lib
               /opt/AMDAPP/lib/x86_64
+              /opt/AMDAPPSDK-3.0/lib/x86_64
             )
 
             GET_FILENAME_COMPONENT(OPENCL_LIB_DIR ${OPENCL_LIBRARIES} PATH)
