@@ -506,7 +506,7 @@ get_device_build_options (UfoResourcesPrivate *priv,
     opts = g_string_new (priv->build_opts->str);
 
     if (additional != NULL)
-        g_string_append (opts, additional);
+        g_string_append_printf (opts, " %s", additional);
 
     UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index], CL_DEVICE_NAME, 0, NULL, &size));
     name = g_malloc0 (size);
