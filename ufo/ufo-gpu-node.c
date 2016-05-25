@@ -105,6 +105,15 @@ ufo_gpu_node_get_info (UfoGpuNode *node,
         case UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE:
             UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
             break;
+
+        case UFO_GPU_NODE_INFO_MAX_WORK_GROUP_SIZE:
+            {
+                size_t size;
+
+                UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof (size_t), &size, NULL));
+                ulong_value = (cl_ulong) size;
+            }
+            break;
     }
 
     g_value_set_ulong (value, ulong_value);
