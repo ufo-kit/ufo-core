@@ -368,6 +368,12 @@ main(int argc, char* argv[])
     }
 
     leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
+
+    if (leaves == NULL) {
+        g_print ("Incomplete pipeline specification, no leaves found.\n");
+        return 1;
+    }
+
     nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
     have_tty = isatty (fileno (stdin));
 
