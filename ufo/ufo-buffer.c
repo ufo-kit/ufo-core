@@ -157,10 +157,8 @@ alloc_device_array (UfoBufferPrivate *priv)
     if (priv->device_array != NULL)
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
 
-    mem = clCreateBuffer (priv->context,
-                          CL_MEM_READ_WRITE,
-                          priv->size,
-                          NULL, &err);
+    mem = clCreateBuffer (priv->context, CL_MEM_READ_WRITE, priv->size, NULL, &err);
+    g_debug ("Allocated %p [size=%3.2f MB, type=buffer]", (gpointer) mem, priv->size / 1024. / 1024.);
 
     UFO_RESOURCES_CHECK_CLERR (err);
     priv->device_array = mem;
@@ -235,16 +233,12 @@ alloc_device_image (UfoBufferPrivate *priv)
     depth = priv->requisition.dims[2];
 
     if (priv->requisition.n_dims == 2) {
-        mem = clCreateImage2D (priv->context,
-                               flags, &format,
-                               width, height, 0,
-                               NULL, &err);
+        mem = clCreateImage2D (priv->context, flags, &format, width, height, 0, NULL, &err);
+        g_debug ("Allocated %p [size=%3.2f MB, type=2D image]", (gpointer) mem, width * height * 4 / 1024. / 1024.);
     }
     else if (priv->requisition.n_dims == 3) {
-        mem = clCreateImage3D (priv->context,
-                               flags, &format,
-                               width, height, depth, 0, 0,
-                               NULL, &err);
+        mem = clCreateImage3D (priv->context, flags, &format, width, height, depth, 0, 0, NULL, &err);
+        g_debug ("Allocated %p [size=%3.2f MB, type=3D image]", (gpointer) mem, width * height * depth * 4 / 1024. / 1024.);
     }
 
     UFO_RESOURCES_CHECK_CLERR (err);
@@ -970,6 +964,7 @@ ufo_buffer_get_device_array_view (UfoBuffer *buffer,
     dst_slice_pitch = sizeof(float) * region->size[1];
 
     mem = clCreateBuffer (priv->context, CL_MEM_READ_WRITE, size, NULL, &errcode);
+    g_debug ("Allocated %p [size=%3.2f MB, type=buffer]", (gpointer) mem, size / 1024. / 1024.);
     UFO_RESOURCES_CHECK_CLERR (errcode);
 
     if (priv->location == UFO_BUFFER_LOCATION_HOST && priv->host_array) {
