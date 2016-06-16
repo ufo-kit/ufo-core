@@ -17,7 +17,8 @@
  * License along with runjson.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* #include <stdlib.h> */
+#include "config.h"
+
 #include <ufo/ufo.h>
 #include "ufo/compat.h"
 
@@ -25,6 +26,7 @@
 static gboolean list = FALSE;
 static gchar *prop_name = NULL;
 static gboolean verbose = FALSE;
+static gboolean version = FALSE;
 
 
 static void
@@ -86,9 +88,10 @@ main(int argc, char* argv[])
     GError *error = NULL;
 
     static GOptionEntry entries[] = {
-        { "list", 'l', 0, G_OPTION_ARG_NONE, &list, "list available tasks", NULL },
-        { "props", 'p', 0, G_OPTION_ARG_STRING, &prop_name, "Properties of given task", NULL },
+        { "list",    'l', 0, G_OPTION_ARG_NONE, &list, "list available tasks", NULL },
+        { "props",   'p', 0, G_OPTION_ARG_STRING, &prop_name, "Properties of given task", NULL },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Be verbose", NULL },
+        { "version",   0, 0, G_OPTION_ARG_NONE, &version, "Show version information", NULL },
         { NULL }
     };
 
@@ -103,6 +106,12 @@ main(int argc, char* argv[])
         g_printerr ("Error parsing options: %s\n", error->message);
         return 1;
     }
+
+    if (version) {
+        g_print ("%s version " UFO_VERSION "\n", argv[0]);
+        return 0;
+    }
+
 
     pm = ufo_plugin_manager_new ();
 

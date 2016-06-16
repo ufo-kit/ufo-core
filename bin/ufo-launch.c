@@ -25,6 +25,8 @@
 #include <ufo/ufo.h>
 #include "ufo/compat.h"
 
+#include "config.h"
+
 
 typedef struct {
     char *name;
@@ -326,14 +328,16 @@ main(int argc, char* argv[])
 
     static gboolean quiet = FALSE;
     static gboolean trace = FALSE;
+    static gboolean version = FALSE;
     static gchar **addresses = NULL;
     static gchar *dump = NULL;
 
     static GOptionEntry entries[] = {
-        { "quiet", 'q', 0, G_OPTION_ARG_NONE, &quiet, "be quiet", NULL },
-        { "trace", 't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
+        { "quiet",   'q', 0, G_OPTION_ARG_NONE, &quiet, "be quiet", NULL },
+        { "trace",   't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
-        { "dump", 'd', 0, G_OPTION_ARG_STRING, &dump, "Dump to JSON file", NULL },
+        { "dump",    'd', 0, G_OPTION_ARG_STRING, &dump, "Dump to JSON file", NULL },
+        { "version",   0, 0, G_OPTION_ARG_NONE, &version, "Show version information", NULL },
         { NULL }
     };
 
@@ -349,8 +353,8 @@ main(int argc, char* argv[])
         return 1;
     }
 
-    if (argc == 1) {
-        g_print ("%s", g_option_context_get_help (context, TRUE, NULL));
+    if (version) {
+        g_print ("%s version " UFO_VERSION "\n", argv[0]);
         return 0;
     }
 
@@ -370,8 +374,8 @@ main(int argc, char* argv[])
     leaves = ufo_graph_get_leaves (UFO_GRAPH (graph));
 
     if (leaves == NULL) {
-        g_print ("Incomplete pipeline specification, no leaves found.\n");
-        return 1;
+        g_print ("%s", g_option_context_get_help (context, TRUE, NULL));
+        return 0;
     }
 
     nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));

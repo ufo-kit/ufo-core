@@ -49,12 +49,9 @@ opts_parse (gint *argc, gchar ***argv)
     opts = g_new0 (Options, 1);
 
     GOptionEntry entries[] = {
-        { "listen", 'l', 0, G_OPTION_ARG_STRING, &opts->addr,
-          "Address to listen on (see http://api.zeromq.org/3-2:zmq-tcp)", NULL },
-        { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &opts->paths,
-          "Path to node plugins or OpenCL kernels", NULL },
-        { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
-          "Show version information", NULL },
+        { "listen", 'l', 0, G_OPTION_ARG_STRING, &opts->addr, "Address to listen on (see http://api.zeromq.org/3-2:zmq-tcp)", NULL },
+        { "path",   'p', 0, G_OPTION_ARG_STRING_ARRAY, &opts->paths, "Path to node plugins or OpenCL kernels", NULL },
+        { "version",  0, 0, G_OPTION_ARG_NONE, &show_version, "Show version information", NULL },
         { NULL }
     };
 
@@ -68,7 +65,7 @@ opts_parse (gint *argc, gchar ***argv)
     }
 
     if (show_version) {
-        g_print ("ufod %s\n", UFO_VERSION);
+        g_print ("%s version " UFO_VERSION "\n", argv[0][0]);
         exit (EXIT_SUCCESS);
     }
 
