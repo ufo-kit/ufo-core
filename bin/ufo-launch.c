@@ -327,16 +327,18 @@ main(int argc, char* argv[])
     GError *error = NULL;
 
     static gboolean quiet = FALSE;
+    static gboolean quieter = FALSE;
     static gboolean trace = FALSE;
     static gboolean version = FALSE;
     static gchar **addresses = NULL;
     static gchar *dump = NULL;
 
     static GOptionEntry entries[] = {
-        { "quiet",   'q', 0, G_OPTION_ARG_NONE, &quiet, "be quiet", NULL },
         { "trace",   't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
         { "dump",    'd', 0, G_OPTION_ARG_STRING, &dump, "Dump to JSON file", NULL },
+        { "quiet",   'q', 0, G_OPTION_ARG_NONE, &quiet, "be quiet", NULL },
+        { "quieter",   0, 0, G_OPTION_ARG_NONE, &quieter, "be quieter", NULL },
         { "version",   0, 0, G_OPTION_ARG_NONE, &version, "Show version information", NULL },
         { NULL }
     };
@@ -357,6 +359,8 @@ main(int argc, char* argv[])
         g_print ("%s version " UFO_VERSION "\n", argv[0]);
         return 0;
     }
+
+    quiet = quiet || quieter;
 
     pm = ufo_plugin_manager_new ();
     pipeline = g_strjoinv (" ", &argv[1]);
@@ -409,10 +413,10 @@ main(int argc, char* argv[])
         g_print ("Error executing pipeline: %s\n", error->message);
     }
 
-    if (!quiet) {
+    if (!quieter) {
         gdouble run_time;
 
-        if (have_tty)
+        if (!quiet && have_tty)
             g_print ("\n");
 
         g_object_get (sched, "time", &run_time, NULL);
