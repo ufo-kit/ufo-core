@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os
 import argparse
@@ -13,13 +14,21 @@ import numpy as np
 CHARS = ['⣿', '⣷', '⣶', '⣦', '⣤', '⣄', '⡄', '⡀', '']
 
 
+def get_terminal_size():
+    if hasattr(shutil, 'get_terminal_size'):
+        return shutil.get_terminal_size()
+
+    rows, cols = os.popen('stty size', 'r').read().split()
+    return (int(rows), int(cols))
+
+
 def make_bars(begins, ends, total, width):
     line = ''
     previous = 0
 
     for i, (begin, end) in enumerate(zip(begins, ends)):
         span = float(end - begin) / total
-        num_full_chars = math.floor(width * span)
+        num_full_chars = int(math.floor(width * span))
         remaining = width * span - num_full_chars
         full_bar = CHARS[0] * num_full_chars
         remaining_bar = CHARS[int((len(CHARS) - 1)* (1 - remaining))]
@@ -48,7 +57,7 @@ def analyse(fp, name_fmt_func, name_header):
 
     start = starts[0][1]
     total = ends[-1][1] - start
-    term_width = shutil.get_terminal_size()[0]
+    term_width = get_terminal_size()[0]
 
     begins = {t: select('ts', lambda e: e['tid'] == t and e['ph'] == 'B') for t in tasks}
     ends = {t: select('ts', lambda e: e['tid'] == t and e['ph'] == 'E') for t in tasks}
