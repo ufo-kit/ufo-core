@@ -65,7 +65,8 @@ def analyse(fp, name_fmt_func, name_header):
 
     for task in tasks:
         name = name_fmt_func(task)
-        name = name[:7] + '…' if len(name) > 8 else name + ' ' * (8 - len(name))
+        name = name[:7] + u'…' if len(name) > 8 else name + u' ' * (8 - len(name))
+        name = name.encode('utf-8')
         print('{} {}'.format(name, make_bars(begins[task], ends[task], total, term_width - 11)))
 
     print("\n {: <16} | {: >4} | {: >12} | {: >12} | {: >5}".format(name_header, '#', 'Total (ms)', 'Mean (ms)', '%'))
