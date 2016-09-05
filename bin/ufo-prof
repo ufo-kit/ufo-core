@@ -78,7 +78,7 @@ def analyse(fp, name_fmt_func, name_header):
         mean_time = np.mean(tt) / 1000.0
         num_events = len(tt)
         percentage = float(np.sum(tt)) / total * 100
-        fmt = ' {: <16} | {: >4} | {: >12.2f} | {: >12.2f} | {: >3.2f}'
+        fmt = ' {: <16} | {: >4} | {: >12.4f} | {: >12.4f} | {: >3.2f}'
         print(fmt.format(name, num_events, total_time, mean_time, percentage))
 
 
