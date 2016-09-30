@@ -392,9 +392,9 @@ initialize_opencl (UfoResourcesPrivate *priv)
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
 
     device_type = 0;
-    device_type |= priv->device_type && UFO_DEVICE_CPU ? CL_DEVICE_TYPE_CPU : 0;
-    device_type |= priv->device_type && UFO_DEVICE_GPU ? CL_DEVICE_TYPE_GPU : 0;
-    device_type |= priv->device_type && UFO_DEVICE_ACC ? CL_DEVICE_TYPE_ACCELERATOR : 0;
+    device_type |= priv->device_type & UFO_DEVICE_CPU ? CL_DEVICE_TYPE_CPU : 0;
+    device_type |= priv->device_type & UFO_DEVICE_GPU ? CL_DEVICE_TYPE_GPU : 0;
+    device_type |= priv->device_type & UFO_DEVICE_ACC ? CL_DEVICE_TYPE_ACCELERATOR : 0;
 
     errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
     UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
