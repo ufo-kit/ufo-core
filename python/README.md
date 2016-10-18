@@ -67,20 +67,16 @@ for slice_data in backproject([sinogram]):
 
 ### TomoPy integration
 
-Using the `tomopy` module we can hook into the TomoPy pipeline and provide
-additional `ufo_fbp`, `ufo_dfi` and `ufo_sart` methods:
+Using the `tomopy` module we can hook into the TomoPy pipeline:
 
 ```python
 import tomopy
 import ufo.tomopy
 
-d = tomopy.xtomo_dataset()
-d.dataset(data, white, dark, theta)
-d.normalize()
-d.center = 42.0
-d.ufo_fbp()
-
-tomopy.xtomo_writer(d.data_recon, 'result-', axis=0)
+proj, flat, dark = dxchange.read_aps_32id('aps_data.h5', sino=(0, 2))
+proj = tomopy.minus_log(tomopy.normalize(proj, flat, dark))
+center = tomopy.find_center(proj, theta, init=290, ind=0, tol=0.5)
+tomopy.recon(proj, theta, center=center, algorithm=ufo.tomopy.fbp, ncore=1)
 ```
 
 
