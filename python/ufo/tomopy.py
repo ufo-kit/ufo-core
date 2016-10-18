@@ -1,108 +1,94 @@
 from __future__ import absolute_import
 import math
-import tomopy
 import numpy as np
 
 
-def _set_data(dset, volume, overwrite):
-    if overwrite:
-        dset.data_recon = volume
-    else:
-        return volume
+class Parameters(object):
+
+    def __init__(self, data):
+        self.num_sinograms = data.shape[0]
+        self.num_projections = data.shape[1]
+        self.width = data.shape[2]
+        self.data = data
+
+    def __repr__(self):
+        return 'Parameters(n_sinos={}, n_proj={}, width={})'.format(self.num_sinograms, self.num_projections, self.width)
+
+    @property
+    def sinograms(self):
+        return (self.data[i,:,:] for i in range(self.num_sinograms))
 
 
-def _prepare(dset):
-    data = dset.data
-    n_proj, proj_height, proj_width = data.shape
+def _fbp(data, center, volume, theta, kwargs):
+    from ufo import Fft, Ifft, Filter, Backproject
 
-    center = dset.center if hasattr(dset, 'center') else proj_width / 2
-    theta = dset.theta[1] - dset.theta[0] if hasattr(dset, 'theta') else 180.0 / n_proj
+    p = Parameters(data)
+    theta = theta[1] - theta[0]
+    center = np.mean(center)
 
-    if np.max(dset.theta) > 90.0:
-        theta = np.radians(theta)
-
-    volume = np.empty((proj_height, proj_width, proj_width), dtype=np.float32)
-    projections = (data[i,:,:] for i in range(n_proj))
-
-    return center, theta, n_proj, proj_width, proj_height, projections, volume
-
-
-def fbp(dset, overwrite=True):
-    from ufo import Fft, Ifft, Filter, Backproject, TransposeProjections
-
-    center, theta, n_proj, proj_width, _, projections, volume = _prepare(dset)
-
-    transpose = TransposeProjections(number=n_proj)
-    bp = Backproject(axis_pos=center, angle_step=theta)
+    bp = Backproject(axis_pos=center, angle_step=theta, angle_offset=np.pi)
     fft = Fft()
-    ifft = Ifft(crop_width=proj_width)
+    ifft = Ifft(crop_width=p.width)
     flt = Filter()
 
-    for i, slce in enumerate(bp(ifft(flt(fft(transpose(projections)))))):
+    for i, slce in enumerate(bp(ifft(flt(fft(p.sinograms))))):
         volume[i,:,:] = slce
 
-    dset.logger.info("ufo-fb [ok]")
-    return _set_data(dset, volume, overwrite)
+
+def fbp(*args, **kwargs):
+    """
+    Reconstruct object using UFO's filtered backprojection algorithm
+
+    Note
+    ----
+    You have to set ``ncore`` to 1 because UFO provides multi-threading on its
+    own.
+    """
+
+    # Erm ... okay?
+    result = [_fbp]
+    result.extend(args)
+    result.append(kwargs)
+    return result
 
 
-def dfi(dset, oversampling=1, overwrite=True):
-    from ufo import Zeropad, Fft, Ifft, DfiSinc, Ifft, SwapQuadrants, TransposeProjections
+def _dfi(data, center, volume, theta, kwargs):
+    from ufo import Crop, Zeropad, Fft, Ifft, DfiSinc, Ifft, SwapQuadrants
 
-    center, theta, n_proj, proj_width, _, projections, volume = _prepare(dset)
-    padded_size = pow(2, int(math.ceil(math.log(proj_width, 2))))
-    frm = padded_size / 2 - proj_width / 2
-    to = padded_size / 2 + proj_width / 2
+    oversampling = kwargs['options'].get('oversampling', 1)
+    p = Parameters(data)
+    theta = theta[1] - theta[0]
+    center = np.mean(center)
+    padded_size = pow(2, int(math.ceil(math.log(p.width, 2))))
+    frm = padded_size / 2 - p.width / 2
+    to = padded_size / 2 + p.width / 2
 
-    transpose = TransposeProjections(number=n_proj)
-    pad = Zeropad(oversampling=oversampling, center_of_rotation=center)
-    fft = Fft(dimensions=1, auto_zeropadding=0)
+    pad = Zeropad(oversampling=1, center_of_rotation=center)
+    fft = Fft(dimensions=1, auto_zeropadding=False)
     dfi = DfiSinc()
     ifft = Ifft(dimensions=2)
     swap_forward = SwapQuadrants()
     swap_backward = SwapQuadrants()
 
-    for i, slce in enumerate(swap_backward(ifft(swap_forward(dfi(fft(pad(transpose(projections)))))))):
+    for i, slce in enumerate(swap_backward(ifft(swap_forward(dfi(fft(p.sinograms)))))):
         volume[i,:,:] = slce[frm:to, frm:to]
 
-    dset.logger.info("ufo-dfi [ok]")
-    return _set_data(dset, volume, overwrite)
 
+def dfi(*args, **kwargs):
+    """
+    Reconstruct object using UFO's direct Fourier inversion algorithm
 
-try:
-    def sart(dset, overwrite=True):
-        from ufo import Null, Ir, TransposeProjections, Buffer
+    Extra options
+    -------------
+    oversampling : int, optional
+       Oversampling factor.
 
-        center, theta, n_proj, proj_width, _, projections, volume = _prepare(dset)
-
-        # FIXME: stupid hack
-        transpose = TransposeProjections(number=n_proj)
-        env = transpose.env
-
-        geometry = env.pm.get_plugin('ufo_ir_parallel_geometry_new',
-                                     'libufoir_parallel_geometry.so')
-
-        projector = env.pm.get_plugin('ufo_ir_cl_projector_new',
-                                      'libufoir_cl_projector.so')
-
-        sart = env.pm.get_plugin('ufo_ir_sart_method_new',
-                                 'libufoir_sart_method.so')
-
-        geometry.set_properties(num_angles=n_proj, angle_step=theta * 180.0 / np.pi)
-        projector.set_properties(model='Joseph')
-        sart.set_properties(relaxation_factor=0.25, max_iterations=1)
-        ir = Ir(geometry=geometry, projector=projector, method=sart)
-        bffr = Buffer()
-
-        for i, slce in enumerate(bffr(ir(transpose(projections)))):
-            volume[i,:,:] = slce[:,:]
-
-        dset.logger.info("ufo-sart [ok]")
-        return _set_data(dset, volume, overwrite)
-
-    setattr(tomopy.xtomo.xtomo_dataset.XTomoDataset, 'ufo_sart', sart)
-except ImportError:
-    pass
-
-
-setattr(tomopy.xtomo.xtomo_dataset.XTomoDataset, 'ufo_fbp', fbp)
-setattr(tomopy.xtomo.xtomo_dataset.XTomoDataset, 'ufo_dfi', dfi)
+    Note
+    ----
+    You have to set ``ncore`` to 1 because UFO provides multi-threading on its
+    own.
+    """
+    result = [_dfi]
+    result.extend(args)
+    result.append(kwargs)
+    return result
