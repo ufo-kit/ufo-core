@@ -93,7 +93,12 @@ ufo_cpu_node_equal_real (UfoNode *n1,
 {
     UfoCpuNodePrivate *priv1;
     UfoCpuNodePrivate *priv2;
+
+#ifndef __APPLE__
     const gsize MAX_CPUS = MIN (16, CPU_SETSIZE);
+#else
+    const gsize MAX_CPUS = 16;
+#endif
 
     g_return_val_if_fail (UFO_IS_CPU_NODE (n1) && UFO_IS_CPU_NODE (n2), FALSE);
     priv1 = UFO_CPU_NODE_GET_PRIVATE (n1);
