@@ -17,7 +17,11 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
 #include <CL/cl.h>
+#endif
 #include <ufo/ufo-group.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-two-way-queue.h>

@@ -17,7 +17,11 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
 #include <CL/cl.h>
+#endif
 #include <string.h>
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-gpu-node.h>
