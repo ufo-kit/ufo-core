@@ -27,7 +27,11 @@ G_DEFINE_TYPE (UfoCpuNode, ufo_cpu_node, UFO_TYPE_NODE)
 
 
 struct _UfoCpuNodePrivate {
+#ifdef __APPLE__
+    gpointer mask;
+#else
     cpu_set_t *mask;
+#endif
 };
 
 UfoNode *
@@ -37,7 +41,11 @@ ufo_cpu_node_new (gpointer mask)
 
     g_return_val_if_fail (mask != NULL, NULL);
     node = UFO_CPU_NODE (g_object_new (UFO_TYPE_CPU_NODE, NULL));
-    node->priv->mask = g_memdup (mask, sizeof(cpu_set_t));
+#ifdef __APPLE__
+    node->priv->mask = g_memdup (mask, sizeof (gpointer));
+#else
+    node->priv->mask = g_memdup (mask, sizeof (cpu_set_t));
+#endif
     return UFO_NODE (node);
 }
 
@@ -91,10 +99,12 @@ ufo_cpu_node_equal_real (UfoNode *n1,
     priv1 = UFO_CPU_NODE_GET_PRIVATE (n1);
     priv2 = UFO_CPU_NODE_GET_PRIVATE (n2);
 
+#ifndef __APPLE__
     for (gsize i = 0; i < MAX_CPUS; i++) {
         if (CPU_ISSET (i, priv1->mask) != CPU_ISSET (i, priv2->mask))
             return FALSE;
     }
+#endif
 
     return TRUE;
 }
