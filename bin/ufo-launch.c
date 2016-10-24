@@ -407,7 +407,8 @@ main(int argc, char* argv[])
         ufo_base_scheduler_set_resources (sched, resources);
     }
 
-    ufo_base_scheduler_run (sched, graph, &error);
+    if (!dump)
+        ufo_base_scheduler_run (sched, graph, &error);
 
     if (error != NULL) {
         g_print ("Error executing pipeline: %s\n", error->message);
