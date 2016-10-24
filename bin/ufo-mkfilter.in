@@ -32,10 +32,16 @@ def generate_file(args, env, suffix='h'):
     uppercased = underscored.upper()
 
     template = env.get_template('ufo-task.{0}.in'.format(suffix))
+    task_mode = [ 'UFO_TASK_MODE_{}'.format(args.type.upper()) ]
+
+    if args.use_gpu:
+        task_mode.append('UFO_TASK_MODE_GPU')
+
     res = template.render(camelcased=camelcased,
                           uppercased=uppercased,
                           hyphenated=hyphenated,
                           underscored=underscored,
+                          task_mode=task_mode,
                           args=args)
 
     filename = "ufo-%s-task.%s" % (hyphenated, suffix)
@@ -51,6 +57,12 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--disable-comments',
                         action='store_false',
                         help='Do not insert comments into source files')
+    parser.add_argument('--use-gpu',
+                        action='store_true',
+                        help='The task requires a GPU')
+    parser.add_argument('--type', choices=['sink', 'filter', 'reductor', 'generator'],
+                        default='filter',
+                        help='Type of the generated task')
     parser.add_argument('name', type=str,
                         action=FilternameAction,
                         help='Name of the new filter in CamelCase')
@@ -67,7 +79,7 @@ if __name__ == '__main__':
         template_dir = 'templates'
 
     loader = jinja2.FileSystemLoader(template_dir)
-    env = jinja2.Environment(loader=loader)
+    env = jinja2.Environment(loader=loader, trim_blocks=True)
 
     generate_file(args, env, 'h')
     generate_file(args, env, 'c')
