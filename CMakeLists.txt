@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.1)
+cmake_policy(SET CMP0053 OLD)
+cmake_policy(SET CMP0054 OLD)
+
 project(ufo C)
 
 set(TARNAME "libufo")
@@ -66,7 +69,7 @@ pkg_check_modules(PYTHON python)
 
 set(UFOCORE_DEPS
     m
-    ${OPENCL_LIBRARIES}
+    ${OpenCL_LIBRARIES}
     ${GLIB2_LIBRARIES}
     ${GOBJECT2_LIBRARIES}
     ${GMODULE2_LIBRARIES}
@@ -114,7 +117,7 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
     ${GLIB2_INCLUDE_DIRS}
     ${GIO2_INCLUDE_DIRS}
-    ${OPENCL_INCLUDE_DIRS}
+    ${OpenCL_INCLUDE_DIRS}
     ${JSON_GLIB_INCLUDE_DIRS})
 #}}}
 #}}}
