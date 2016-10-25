@@ -122,25 +122,7 @@ include_directories(
 #}}}
 #}}}
 #{{{ Definitions
-add_definitions("-std=c99 -pedantic -Wall -Wextra -fPIC")
-
-if (CMAKE_COMPILER_IS_GNUCC OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang"))
-    add_definitions("-Wcast-align
-                     -Wcast-qual
-                     -Winline
-                     -Wmissing-declarations
-                     -Wmissing-prototypes
-                     -Wnested-externs
-                     -Wno-deprecated-declarations
-                     -Wno-long-long
-                     -Wno-missing-field-initializers
-                     -Wno-unused-parameter
-                     -Wpointer-arith
-                     -Wredundant-decls
-                     -Wshadow
-                     -Wstrict-prototypes
-                     -Wwrite-strings")
-endif()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra -fPIC -Wno-unused-parameter -Wno-deprecated-declarations")
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 
