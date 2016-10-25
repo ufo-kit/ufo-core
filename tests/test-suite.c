@@ -35,7 +35,10 @@ ignore_log (const gchar     *domain,
 
 int main(int argc, char *argv[])
 {
+#if !(GLIB_CHECK_VERSION (2, 36, 0))
     g_type_init ();
+#endif
+
     g_test_init (&argc, &argv, NULL);
     g_test_bug_base ("https://github.com/ufo-kit/ufo-core/issues");
 

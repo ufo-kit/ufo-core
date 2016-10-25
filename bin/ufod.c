@@ -103,8 +103,13 @@ main (int argc, char * argv[])
     Options *opts;
     GError *error = NULL;
 
+#if !(GLIB_CHECK_VERSION (2, 36, 0))
     g_type_init ();
+#endif
+
+#if !(GLIB_CHECK_VERSION (2, 32, 0))
     g_thread_init (NULL);
+#endif
 
     if ((opts = opts_parse (&argc, &argv)) == NULL)
         return 1;
