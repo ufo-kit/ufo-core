@@ -251,7 +251,7 @@ parse (const gchar *pipeline, GList *tokens, UfoPluginManager *pm, GError **erro
                         g_queue_push_head (stack, group);
 
                         action = PROP_KEY;
-                        expected = STRING | PAREN_CLOSE | SPACE;
+                        expected = STRING | PAREN_CLOSE | SPACE | COMMA;
                     }
                     else if (action & PROP_KEY) {
                         key = s;
