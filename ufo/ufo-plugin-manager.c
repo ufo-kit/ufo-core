@@ -328,7 +328,7 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     g_free (func_name);
     g_free (module_name);
 
-    g_debug ("UfoPluginManager: Created %s-%p", name, (gpointer) node);
+    g_debug ("NEW  %s", ufo_task_node_get_identifier (node));
     return node;
 }
 
@@ -365,7 +365,7 @@ ufo_plugin_manager_get_task_from_package (UfoPluginManager   *manager,
     g_free (func_name);
     g_free (so_name);
 
-    g_debug ("UfoPluginManager: Created %s-%p", name, (gpointer) node);
+    g_debug ("NEW  %s", ufo_task_node_get_identifier (node));
     return node;
 }
 

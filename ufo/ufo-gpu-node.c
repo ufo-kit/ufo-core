@@ -150,7 +150,7 @@ ufo_gpu_node_finalize (GObject *object)
     priv = UFO_GPU_NODE_GET_PRIVATE (object);
 
     if (priv->cmd_queue != NULL) {
-        g_debug ("Release cmd_queue=%p", (gpointer) priv->cmd_queue);
+        g_debug ("FREE cmd_queue=%p", (gpointer) priv->cmd_queue);
         UFO_RESOURCES_CHECK_CLERR (clReleaseCommandQueue (priv->cmd_queue));
         priv->cmd_queue = NULL;
 

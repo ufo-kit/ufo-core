@@ -468,14 +468,14 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
             n_remotes = g_list_length (remotes);
 
             if (n_remotes > 0) {
-                g_debug ("Expand for %i remote nodes", n_remotes);
+                g_debug ("INFO Expand for %i remote nodes", n_remotes);
                 expand_remotes (task_graph, remotes, path);
             }
 
             g_list_free (remotes);
         }
 
-        g_debug ("Expand for %i GPU nodes", n_gpus);
+        g_debug ("INFO Expand for %i GPU nodes", n_gpus);
 
         for (guint i = 1; i < n_gpus; i++)
             ufo_graph_expand (UFO_GRAPH (task_graph), path);
@@ -513,9 +513,8 @@ map_proc_node (UfoGraph *graph,
     if ((ufo_task_uses_gpu (UFO_TASK (node)) || UFO_IS_INPUT_TASK (node)) &&
         (!ufo_task_node_get_proc_node (UFO_TASK_NODE (node)))) {
 
-        g_debug ("Mapping UfoGpuNode-%p to %s-%p",
-                 (gpointer) proc_node,
-                 G_OBJECT_TYPE_NAME (node), (gpointer) node);
+        g_debug ("MAP  UfoGpuNode-%p -> %s",
+                 (gpointer) proc_node, ufo_task_node_get_identifier (UFO_TASK_NODE (node)));
 
         ufo_task_node_set_proc_node (UFO_TASK_NODE (node), proc_node);
     }
@@ -658,6 +657,7 @@ ufo_task_graph_connect_nodes_full (UfoTaskGraph *graph,
                                    UfoTaskNode *n2,
                                    guint input)
 {
+    g_debug ("CONN %s -> %s [input=%i]", ufo_task_node_get_identifier (n1), ufo_task_node_get_identifier (n2), input);
     ufo_graph_connect_nodes (UFO_GRAPH (graph), UFO_NODE (n1), UFO_NODE (n2), GINT_TO_POINTER (input));
 }
 

@@ -158,7 +158,7 @@ alloc_device_array (UfoBufferPrivate *priv)
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_array));
 
     mem = clCreateBuffer (priv->context, CL_MEM_READ_WRITE, priv->size, NULL, &err);
-    g_debug ("Allocated %p [size=%3.2f MB, type=buffer]", (gpointer) mem, priv->size / 1024. / 1024.);
+    g_debug ("ALOC %p [size=%3.2f MB, type=buffer]", (gpointer) mem, priv->size / 1024. / 1024.);
 
     UFO_RESOURCES_CHECK_CLERR (err);
     priv->device_array = mem;
@@ -234,11 +234,11 @@ alloc_device_image (UfoBufferPrivate *priv)
 
     if (priv->requisition.n_dims == 2) {
         mem = clCreateImage2D (priv->context, flags, &format, width, height, 0, NULL, &err);
-        g_debug ("Allocated %p [size=%3.2f MB, type=2D image]", (gpointer) mem, width * height * 4 / 1024. / 1024.);
+        g_debug ("ALOC %p [size=%3.2f MB, type=2D image]", (gpointer) mem, width * height * 4 / 1024. / 1024.);
     }
     else if (priv->requisition.n_dims == 3) {
         mem = clCreateImage3D (priv->context, flags, &format, width, height, depth, 0, 0, NULL, &err);
-        g_debug ("Allocated %p [size=%3.2f MB, type=3D image]", (gpointer) mem, width * height * depth * 4 / 1024. / 1024.);
+        g_debug ("ALOC %p [size=%3.2f MB, type=3D image]", (gpointer) mem, width * height * depth * 4 / 1024. / 1024.);
     }
 
     UFO_RESOURCES_CHECK_CLERR (err);

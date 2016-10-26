@@ -213,14 +213,14 @@ read_file (const gchar *filename)
 static void
 release_kernel (cl_kernel kernel)
 {
-    g_debug ("Release kernel=%p", (gpointer) kernel);
+    g_debug ("FREE kernel=%p", (gpointer) kernel);
     UFO_RESOURCES_CHECK_CLERR (clReleaseKernel (kernel));
 }
 
 static void
 release_program (cl_program program)
 {
-    g_debug ("Release program=%p", (gpointer) program);
+    g_debug ("FREE program=%p", (gpointer) program);
     UFO_RESOURCES_CHECK_CLERR (clReleaseProgram (program));
 }
 
@@ -279,7 +279,7 @@ get_preferably_gpu_based_platform (UfoResourcesPrivate *priv)
     platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
 
-    g_debug ("Found %i OpenCL platforms %i", n_platforms, priv->platform_index);
+    g_debug ("INFO found %i OpenCL platforms %i", n_platforms, priv->platform_index);
 
     /* Check if user set a preferred platform */
     if (priv->platform_index >= 0 && priv->platform_index < (gint) n_platforms) {
@@ -400,8 +400,6 @@ initialize_opencl (UfoResourcesPrivate *priv)
     errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
     UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
 
-    g_debug ("Platform `%p' has %i device(s)", (gpointer) priv->platform, priv->n_devices);
-
     if (errcode != CL_SUCCESS)
         return FALSE;
 
@@ -414,7 +412,6 @@ initialize_opencl (UfoResourcesPrivate *priv)
         return FALSE;
 
     restrict_to_gpu_subset (priv);
-    g_debug ("Using %i device(s):", priv->n_devices);
 
     for (guint i = 0; i < priv->n_devices; i++) {
         size_t size;
@@ -424,7 +421,6 @@ initialize_opencl (UfoResourcesPrivate *priv)
         name = g_malloc0 (size);
 
         UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, size, name, NULL));
-        g_debug("  Device %i: %s", i, name);
         g_free (name);
     }
 
@@ -437,7 +433,20 @@ initialize_opencl (UfoResourcesPrivate *priv)
     priv->gpu_nodes = NULL;
 
     for (guint i = 0; i < priv->n_devices; i++) {
-        priv->gpu_nodes = g_list_append (priv->gpu_nodes, ufo_gpu_node_new (priv->context, priv->devices[i]));
+        UfoGpuNode *node;
+        size_t size;
+        gchar *name;
+
+        node = UFO_GPU_NODE (ufo_gpu_node_new (priv->context, priv->devices[i]));
+
+        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, 0, NULL, &size));
+        name = g_malloc0 (size);
+
+        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, size, name, NULL));
+
+        g_debug("NEW  UfoGpuNode-%p [device=%s]", (gpointer) node, name);
+        priv->gpu_nodes = g_list_append (priv->gpu_nodes, node);
+        g_free (name);
     }
 
     return TRUE;
@@ -577,7 +586,7 @@ add_program_from_source (UfoResourcesPrivate *priv,
                               NULL, NULL);
 
     g_timer_stop (timer);
-    g_debug ("Built with `%s' in %3.5fs", build_options, g_timer_elapsed (timer, NULL));
+    g_debug ("INFO Built with `%s' in %3.5fs", build_options, g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
 
     if (errcode != CL_SUCCESS) {
@@ -714,7 +723,7 @@ ufo_resources_get_kernel_with_opts (UfoResources   *resources,
     if (program == NULL)
         goto exit;
 
-    g_debug ("Compiled `%s' kernel from %s", kernel_name, path);
+    g_debug ("INFO Compiled `%s' kernel from %s", kernel_name, path);
     kernel = create_kernel (priv, program, kernel_name, error);
 
 exit:
@@ -827,7 +836,7 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
     if (program == NULL)
         return NULL;
 
-    g_debug ("Added program %p from source", (gpointer) program);
+    g_debug ("INFO Added program %p from source", (gpointer) program);
     return create_kernel (priv, program, kernel, error);
 }
 
@@ -1042,7 +1051,7 @@ ufo_resources_finalize (GObject *object)
     g_hash_table_destroy (priv->programs);
 
     if (priv->context) {
-        g_debug ("Release context=%p", (gpointer) priv->context);
+        g_debug ("FREE context=%p", (gpointer) priv->context);
         UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
     }
 
