@@ -61,7 +61,8 @@ typedef enum {
     EXCLAMATION = 1 << 3,
     PAREN_OPEN  = 1 << 4,
     PAREN_CLOSE = 1 << 5,
-    COMMA       = 1 << 6
+    COMMA       = 1 << 6,
+    STOP        = 1 << 7
 } TokenType;
 
 typedef struct {
@@ -132,6 +133,11 @@ tokenize_args (const gchar *pipeline)
             g_string_append_c (current->str, *s);
         }
     }
+
+    current = g_new0 (Token, 1);
+    current->type = STOP;
+
+    tokens = g_list_append (tokens, current);
 
     return tokens;
 }
@@ -291,9 +297,15 @@ read_params (Environment *env)
 
     skip (env);
 
-    while (1) {
+    while ((*env->error) == NULL) {
         UfoTaskNode *previous = NULL;
         UfoTaskNode *last = NULL;
+
+        if (peek (env)->type == STOP) {
+            g_set_error_literal (env->error, UFO_TASK_ERROR, UFO_TASK_ERROR_SETUP,
+                                 "Expected ',', ']', new task or task property.");
+            break;
+        }
 
         if (peek (env)->type == PAREN_CLOSE) {
             consume (env);
@@ -310,7 +322,6 @@ read_params (Environment *env)
             previous = read_connection (env, previous);
         } while (previous != NULL && *(env->error) == NULL);
 
-        g_assert (UFO_IS_TASK_NODE (last));
         result = g_list_append (result, last);
     }
 
