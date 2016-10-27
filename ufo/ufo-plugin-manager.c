@@ -322,13 +322,14 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     gchar *func_name = ufo_transform_string ("ufo_%s_task_new", name, "_");
     node = UFO_TASK_NODE (ufo_plugin_manager_get_plugin (manager, func_name, module_name, error));
 
-    if (node != NULL)
+    if (node != NULL) {
         ufo_task_node_set_plugin_name (node, name);
+        g_debug ("NEW  %s", ufo_task_node_get_identifier (node));
+    }
 
     g_free (func_name);
     g_free (module_name);
 
-    g_debug ("NEW  %s", ufo_task_node_get_identifier (node));
     return node;
 }
 
