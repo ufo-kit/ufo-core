@@ -28,11 +28,6 @@
 #include "config.h"
 
 
-typedef struct {
-    char *name;
-    GList *props;
-} TaskDescription;
-
 
 static gboolean
 str_to_boolean (const gchar *s)
@@ -69,12 +64,18 @@ typedef enum {
     COMMA       = 1 << 6
 } TokenType;
 
-
 typedef struct {
     TokenType type;
     GString *str;
     guint pos;
 } Token;
+
+typedef struct {
+    UfoPluginManager *pm;
+    UfoTaskGraph *graph;
+    GList *current;
+    GError **error;
+} Environment;
 
 
 static GList *
@@ -160,28 +161,223 @@ set_property (UfoTaskNode *task, const gchar *key, const gchar *pvalue)
     g_value_unset (&value);
 }
 
+static Token *
+token (GList *it)
+{
+    return (it == NULL) ? NULL : (Token *) it->data;
+}
+
+static Token *
+consume (Environment *env)
+{
+    Token *t = token (env->current);
+    env->current = env->current->next;
+    return t;
+}
+
+static Token *
+peek (Environment *env)
+{
+    return token (env->current);
+}
+
+static void
+skip (Environment *env)
+{
+    env->current = env->current->next;
+}
+
+static void
+consume_spaces (Environment *env)
+{
+    while (env->current != NULL && (token (env->current))->type == SPACE)
+        env->current = env->current->next;
+}
+
+static gboolean
+consume_maybe (Environment *env, TokenType type)
+{
+    gboolean result;
+    GList *tmp;
+
+    consume_spaces (env);
+    tmp = env->current;
+    result = env->current == NULL ? FALSE : (consume (env))->type == type;
+
+    if (!result)
+        env->current = tmp;
+
+    return result;
+}
+
+static UfoTaskNode * read_connection (Environment *env, UfoTaskNode *previous);
+
+static gboolean
+try_consume_assignment (Environment *env, UfoTaskNode *task)
+{
+    Token *key;
+    Token *equal;
+    Token *value;
+
+    if (env->current == NULL)
+        return FALSE;
+
+    key = consume (env);
+
+    if (key->type != STRING)
+        return FALSE;
+
+    equal = consume (env);
+
+    if (equal == NULL || equal->type != ASSIGNMENT)
+        return FALSE;
+
+    value = consume (env);
+
+    if (value == NULL || key->type != STRING)
+        return FALSE;
+
+    set_property (task, key->str->str, value->str->str);
+
+    return TRUE;
+}
+
+static UfoTaskNode *
+try_consume_task (Environment *env)
+{
+    Token *t;
+    UfoTaskNode *node = NULL;
+
+    t = consume (env);
+
+    if (t->type != STRING)
+        return NULL;
+
+    node = ufo_plugin_manager_get_task (env->pm, t->str->str, env->error);
+
+    if (node == NULL)
+        return NULL;
+
+    consume_spaces (env);
+
+    while (1) {
+        GList *tmp;
+
+        tmp = env->current;
+
+        if (!try_consume_assignment (env, node)) {
+            env->current = tmp;
+            break;
+        }
+
+        consume_spaces (env);
+    }
+
+    return node;
+}
+
+static GList *
+read_params (Environment *env)
+{
+    /*
+     * params is something like "[A, B ! C, D]". The returned list should
+     * contain [A, C, D] which are the actual output streams for the subsequent
+     * task.
+     */
+    GList *result = NULL;
+
+    if (peek (env)->type != PAREN_OPEN)
+        return NULL;
+
+    skip (env);
+
+    while (1) {
+        UfoTaskNode *previous = NULL;
+        UfoTaskNode *last = NULL;
+
+        if (peek (env)->type == PAREN_CLOSE) {
+            consume (env);
+            break;
+        }
+
+        if (peek (env)->type == COMMA) {
+            consume (env);
+            continue;
+        }
+
+        do {
+            last = previous;
+            previous = read_connection (env, previous);
+        } while (previous != NULL && *(env->error) == NULL);
+
+        g_assert (UFO_IS_TASK_NODE (last));
+        result = g_list_append (result, last);
+    }
+
+    return result;
+}
+
+static UfoTaskNode *
+read_connection (Environment *env, UfoTaskNode *previous)
+{
+    UfoTaskNode *next;
+    GList *params = NULL;
+
+    if (env->current == NULL)
+        return NULL;
+
+    consume_spaces (env);
+
+    if (peek (env)->type != PAREN_OPEN && peek (env)->type != STRING)
+        return NULL;
+
+    params = read_params (env);
+    previous = try_consume_task (env);
+
+    if (*(env->error) != NULL)
+        return NULL;
+
+    do {
+        if (consume_maybe (env, EXCLAMATION)) {
+            consume_spaces (env);
+            next = try_consume_task (env);
+
+            if (next == NULL)
+                return previous;
+
+            if (params == NULL) {
+                ufo_task_graph_connect_nodes (env->graph, previous, next);
+            }
+            else {
+                GList *it;
+                guint i = 0;
+                g_list_for (params, it) {
+                    UfoTaskNode *from;
+
+                    from = UFO_TASK_NODE (it->data);
+                    ufo_task_graph_connect_nodes_full (env->graph, from, next, i++);
+                }
+
+                g_list_free (params);
+                params = NULL;
+            }
+
+            previous = next;
+        }
+        else {
+            next = NULL;
+        }
+    }
+    while (next != NULL);
+
+    return previous;
+}
+
 static UfoTaskGraph *
 parse (const gchar *pipeline, GList *tokens, UfoPluginManager *pm, GError **error)
 {
-    GList *it;
-    GQueue *stack;
-    UfoTaskGraph *graph;
-    UfoTaskNode *task = NULL;
-    gchar *key = NULL;
-    GList *group = NULL;
-
-    stack = g_queue_new ();
-
-    typedef enum {
-        NEW_TASK    = 1,
-        PROP_KEY    = 1 << 1,
-        PROP_VALUE  = 1 << 2,
-        CONNECT     = 1 << 3
-    } Action;
-
-    Action action = NEW_TASK;
-
-    gint expected = PAREN_OPEN | STRING;
+    UfoTaskNode *previous = NULL;
+    Environment env;
 
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_UCHAR,   value_transform_uchar);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_INT,     value_transform_int);
@@ -193,93 +389,16 @@ parse (const gchar *pipeline, GList *tokens, UfoPluginManager *pm, GError **erro
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_DOUBLE,  value_transform_double);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_BOOLEAN, value_transform_boolean);
 
-    graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+    env.current = tokens;
+    env.pm = pm;
+    env.graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
+    env.error = error;
 
-    /* push default group */
-    g_queue_push_head (stack, NULL);
+    do {
+        previous = read_connection (&env, previous);
+    } while (previous != NULL && *(env.error) == NULL);
 
-    g_list_for (tokens, it) {
-        Token *t = (Token *) it->data;
-
-        if ((expected & t->type) == 0) {
-            g_print ("Error: cannot parse pipeline specification\n  %s\n", pipeline);
-
-            for (guint i = 0; i < t->pos + 2; i++)
-                g_print (" ");
-
-            g_print ("^\n");
-            return NULL;
-        }
-
-        switch (t->type) {
-            case PAREN_OPEN:
-                g_queue_push_head (stack, NULL);
-                expected = PAREN_OPEN | STRING;
-                break;
-            case PAREN_CLOSE:
-                group = g_queue_pop_head (stack);
-                expected = EXCLAMATION | SPACE;
-                break;
-            case EXCLAMATION:
-                action = NEW_TASK | CONNECT;
-                expected = STRING | SPACE;
-                break;
-            case STRING:
-                {
-                    gchar *s = t->str->str;
-
-                    if (action & NEW_TASK) {
-                        task = ufo_plugin_manager_get_task (pm, s, error);
-
-                        if (task == NULL)
-                            return NULL;
-
-                        if (action & CONNECT) {
-                            GList *jt;
-                            guint i = 0;
-
-                            g_list_for (group, jt)
-                                ufo_task_graph_connect_nodes_full (graph, UFO_TASK_NODE (jt->data), task, i++);
-
-                            /* create new group for this task */
-                            g_queue_pop_head (stack);
-                            g_queue_push_head (stack, NULL);
-                        }
-
-                        group = g_queue_pop_head (stack);
-                        group = g_list_append (group, task);
-                        g_queue_push_head (stack, group);
-
-                        action = PROP_KEY;
-                        expected = STRING | PAREN_CLOSE | SPACE | COMMA;
-                    }
-                    else if (action & PROP_KEY) {
-                        key = s;
-                        expected = ASSIGNMENT;
-                    }
-                    else if (action & PROP_VALUE) {
-                        set_property (task, key, s);
-                        action = PROP_KEY;
-                        expected = PAREN_CLOSE | COMMA | SPACE;
-                    }
-                }
-                break;
-            case COMMA:
-                action = NEW_TASK;
-                expected = STRING | SPACE;
-                break;
-            case ASSIGNMENT:
-                action = PROP_VALUE;
-                expected = STRING;
-                break;
-            case SPACE:
-                expected = STRING | SPACE | PAREN_OPEN | PAREN_CLOSE | EXCLAMATION;
-                break;
-        }
-    }
-
-    g_queue_free (stack);
-    return graph;
+    return (*env.error != NULL) ? NULL : env.graph;
 }
 
 static void
