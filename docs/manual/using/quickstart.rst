@@ -27,7 +27,7 @@ multi EDF file to single TIFFs you would do::
 You can concatenate an arbitrary number of tasks. For example to blur the lena
 image you would something like this::
 
-    $ ufo-launch read path=lena.tif ! gaussian-blur size=20 sigma=5 ! write
+    $ ufo-launch read path=lena.tif ! blur size=20 sigma=5 ! write
 
 Some tasks receive multiple inputs which requires the use of brackets to collect
 all arguments. For example, a simple flat field correction would look like
@@ -58,7 +58,7 @@ one-dimensional Fourier-transform on a set of input files::
             {
                 "plugin": "writer",
                 "name": "writer",
-                "properties" : { "prefix": "fft-" }
+                "properties" : { "filename": "fft-%05i.tif" }
             }
         ],
         "edges" : [
