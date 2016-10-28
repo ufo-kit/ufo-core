@@ -423,13 +423,28 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
                        gboolean expand_remote)
 {
     GList *path;
+    GList *roots;
+    guint num_roots;
 
     g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
+    /*
+     * Check if we start with multiple roots. If so, do not expand and map from
+     * the beginning.
+     */
+    roots = ufo_graph_get_roots (UFO_GRAPH (task_graph));
+    num_roots = g_list_length (roots);
+    g_list_free (roots);
+
+    if (num_roots > 1)
+        return;
+
     path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph), (UfoFilterPredicate) is_gpu_task, NULL);
 
-    /* Check if any node on the path contains multiple inputs and stop expansion */
-    /* TODO: we need a better strategy at this point */
+    /*
+     * Check if any node on the path contains multiple inputs and stop expansion
+     * TODO: we need a better strategy at this point ...
+     */
     if (has_common_ancestries (task_graph, path)) {
         g_list_free (path);
         return;
@@ -450,7 +465,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
         successors = ufo_graph_get_successors (UFO_GRAPH (task_graph),
                                                UFO_NODE (g_list_last (path)->data));
-        
+
         if (predecessors != NULL)
             path = g_list_prepend (path, g_list_first (predecessors)->data);
 
@@ -924,7 +939,7 @@ create_full_json_from_task_node (UfoTaskNode *task_node)
     const gchar *plugin_name;
     const gchar *package_name;
     const gchar *name;
-        
+
     node_object = json_object_new ();
     plugin_name = ufo_task_node_get_plugin_name (task_node);
 
