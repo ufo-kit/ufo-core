@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
+
+if (POLICY CMP0053)
 cmake_policy(SET CMP0053 OLD)
+endif ()
+
+if (POLICY CMP0054)
 cmake_policy(SET CMP0054 OLD)
+endif ()
 
 project(ufo C)
 
