@@ -151,6 +151,7 @@ ufo_plugin_manager_get_plugin (UfoPluginManager *manager,
         }
 
         module = g_module_open (path, G_MODULE_BIND_LAZY);
+        g_debug ("OPEN %s", path);
         g_free (path);
 
         if (!module) {
