@@ -1,7 +1,7 @@
 .. _installation-mac:
 
-Installation on MacOS X (Lion 10.7)
-===================================
+Installation on MacOS X
+=======================
 
 Preface: This information is kindly provided by Andrey Shkarin and Roman
 Shkarin.

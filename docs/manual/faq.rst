@@ -40,10 +40,9 @@ Why do I get a "libfilter<foo>.so not found" message?
 -------------------------------------------------------
 
 Because the UFO core system is unable to locate the filters. By default it looks
-into ``${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/ufo``, where the installation
-prefix is usually something like ``/usr`` or ``/usr/local``. If you don't want
-to install the filters system-wide, you can tell the system to try other paths
-as well by appending paths to the ``UFO_PLUGIN_PATHS`` environment variable.
+into ``${LIBDIR}/ufo``. If you don't want to install the filters system-wide,
+you can tell the system to try other paths as well by appending paths to the
+``UFO_PLUGIN_PATHS`` environment variable.
 
 
 Can I split a linear data stream?

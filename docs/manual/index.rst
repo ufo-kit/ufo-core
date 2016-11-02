@@ -10,7 +10,8 @@ Users
 
     install/index
     using/index
-    json
+    devel
+    faq
 
 
 Developers
@@ -20,7 +21,6 @@ Developers
     :maxdepth: 2
 
     bugs
-    faq
     changelog
 
 

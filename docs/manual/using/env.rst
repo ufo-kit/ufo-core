@@ -1,8 +1,4 @@
-.. _using-details:
-
-==============
-Detailed usage
-==============
+.. _using-env:
 
 Environment variables
 =====================

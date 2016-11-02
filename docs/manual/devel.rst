@@ -1,8 +1,8 @@
 .. _filters:
 
-=====
-Tasks
-=====
+===========================
+Developing new task filters
+===========================
 
 .. default-domain:: c
 

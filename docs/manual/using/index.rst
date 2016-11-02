@@ -24,7 +24,7 @@ own image processing pipeline or implement a new filter.
     :maxdepth: 2
 
     quickstart.rst
-    details.rst
+    env.rst
     background.rst
     cluster.rst
-    filters.rst
+    json.rst
