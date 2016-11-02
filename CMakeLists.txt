@@ -137,7 +137,7 @@ include_directories(
 #}}}
 #}}}
 #{{{ Definitions
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra -fPIC -Wno-unused-parameter -Wno-deprecated-declarations")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -Wextra -fPIC -Wno-unused-parameter -Wno-deprecated-declarations")
 
 add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
 
