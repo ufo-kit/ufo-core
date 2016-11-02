@@ -42,7 +42,7 @@ Why do I get a "libfilter<foo>.so not found" message?
 Because the UFO core system is unable to locate the filters. By default it looks
 into ``${LIBDIR}/ufo``. If you don't want to install the filters system-wide,
 you can tell the system to try other paths as well by appending paths to the
-``UFO_PLUGIN_PATHS`` environment variable.
+``UFO_PLUGIN_PATH`` :ref:`environment variable <using-env>`.
 
 
 Can I split a linear data stream?

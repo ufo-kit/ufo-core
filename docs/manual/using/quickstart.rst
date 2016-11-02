@@ -42,10 +42,10 @@ this::
 Using a JSON description
 ========================
 
-The custom JSON format, described :ref:`here <json-configuration>`, has the
-advantage to be language-agnostic and portable across different versions of the
-UFO framework. Let's start with a simple example, that computes the
-one-dimensional Fourier-transform on a set of input files::
+Our :ref:`UFO <json-configuration>` JSON format has the advantage to be
+language-agnostic and portable across different versions of the UFO framework.
+Let's start with a simple example, that computes the one-dimensional
+Fourier-transform on a set of input files::
 
     {
         "nodes" : [
@@ -80,15 +80,6 @@ Save this to a file named ``fft.json`` and execute it by calling the
 ``ufo-runjson`` tool::
 
     $ ufo-runjson fft.json
-
-``ufo-runjson`` takes two optional parameters. ``-p`` or ``--path`` expects a
-path name to a location where UFO plugins are stored. This can be useful if the
-standard nodes were installed in a user-defined location or third-party nodes
-should be looked up too.
-
-The ``-a`` or ``--address`` parameter expects a ZeroMQ-conform address where a
-``ufod`` server is running. Part of the work is then distributed to that
-machine. For more information, read up on :ref:`clustering <using-cluster>`.
 
 
 C interface
