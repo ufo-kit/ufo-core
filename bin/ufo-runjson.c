@@ -183,13 +183,10 @@ int main(int argc, char *argv[])
 {
     GOptionContext *context;
     GError *error = NULL;
-    gchar **paths = NULL;
     gchar **addresses = NULL;
     gboolean show_version = FALSE;
 
     GOptionEntry entries[] = {
-        { "path", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &paths,
-          "Path to node plugins or OpenCL kernels", NULL },
 #ifndef WITH_MPI
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
           "Address of remote server running `ufod'", NULL },
@@ -251,7 +248,6 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    g_strfreev (paths);
     g_strfreev (addresses);
     g_option_context_free (context);
 
