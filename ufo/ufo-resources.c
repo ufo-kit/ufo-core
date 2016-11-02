@@ -1131,7 +1131,7 @@ ufo_resources_class_init (UfoResourcesClass *klass)
         g_param_spec_flags ("device-type",
                             "Device type for all employed devices",
                             "Device type for all employed devices",
-                            UFO_TYPE_DEVICE_TYPE, UFO_DEVICE_ALL,
+                            UFO_TYPE_DEVICE_TYPE, UFO_DEVICE_GPU,
                             G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
     properties[PROP_REMOTES] =
