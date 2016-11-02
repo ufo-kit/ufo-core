@@ -70,7 +70,7 @@ def _dfi(data, center, volume, theta, kwargs):
     swap_forward = SwapQuadrants()
     swap_backward = SwapQuadrants()
 
-    for i, slce in enumerate(swap_backward(ifft(swap_forward(dfi(fft(p.sinograms)))))):
+    for i, slce in enumerate(swap_backward(ifft(swap_forward(dfi(fft(pad(p.sinograms))))))):
         volume[i,:,:] = slce[frm:to, frm:to]
 
 
