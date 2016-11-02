@@ -11,7 +11,7 @@ as possible with on-line reconstruction as the ultimate goal.
 .. _Synchrotron: http://en.wikipedia.org/wiki/Synchrotron
 
 It is written in C using the GLib_ and GObject_ libraries to provide an
-object-oriented :ref:`API <ufo-api>`.
+object-oriented API.
 
 .. _GLib: http://developer.gnome.org/glib/
 .. _GObject: http://developer.gnome.org/gobject/stable/index.html

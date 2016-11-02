@@ -6,10 +6,13 @@ Quick start guide
 
 There are three ways to specify and execute a graph of tasks. The simplest
 method requires you to construct a pipeline on the command line using the
-``ufo-launch`` tool which is similar to the gst-launch_ tool from the GStreamer
-package. The second method involves writing a :ref:`JSON file
-<json-configuration>` that is executed by the ``ufo-runjson`` utility, the other
-way uses the provided language bindings to setup the task graph specifically.
+``ufo-launch`` tool which is similar to gst-launch_ from the GStreamer package.
+The second method involves writing a :ref:`JSON file <json-configuration>` that
+is executed by the ``ufo-runjson`` utility, the other way uses the provided
+language bindings to setup the task graph specifically.
+
+To influence the execution from the process environment check the existing
+:ref:`environment variables <using-env>`.
 
 .. _gst-launch: http://docs.gstreamer.com/display/GstSDK/gst-launch
 
