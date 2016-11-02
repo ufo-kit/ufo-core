@@ -383,6 +383,37 @@ restrict_to_gpu_subset (UfoResourcesPrivate *priv)
     g_strfreev (set);
 }
 
+static cl_device_type
+get_device_type_from_env (void)
+{
+    const gchar *var;
+    gchar **set;
+    guint n_set;
+    cl_device_type type = 0;
+
+    var = g_getenv ("UFO_DEVICE_TYPE");
+
+    if (var == NULL || g_strcmp0 (var, "") == 0)
+        return 0;
+
+    set = g_strsplit (var, ",", 0);
+    n_set = g_strv_length (set);
+
+    for (guint i = 0; i < n_set; i++) {
+        if (g_strcmp0 (set[i], "cpu") == 0)
+            type |= CL_DEVICE_TYPE_CPU;
+
+        if (g_strcmp0 (set[i], "gpu") == 0)
+            type |= CL_DEVICE_TYPE_GPU;
+
+        if (g_strcmp0 (set[i], "acc") == 0)
+            type |= CL_DEVICE_TYPE_ACCELERATOR;
+    }
+
+    g_strfreev (set);
+    return type;
+}
+
 static gboolean
 initialize_opencl (UfoResourcesPrivate *priv)
 {
@@ -392,10 +423,15 @@ initialize_opencl (UfoResourcesPrivate *priv)
     priv->platform = get_preferably_gpu_based_platform (priv);
     add_vendor_to_build_opts (priv->build_opts, priv->platform);
 
-    device_type = 0;
+    device_type = get_device_type_from_env ();
     device_type |= priv->device_type & UFO_DEVICE_CPU ? CL_DEVICE_TYPE_CPU : 0;
     device_type |= priv->device_type & UFO_DEVICE_GPU ? CL_DEVICE_TYPE_GPU : 0;
     device_type |= priv->device_type & UFO_DEVICE_ACC ? CL_DEVICE_TYPE_ACCELERATOR : 0;
+
+    g_debug ("INFO Using CPUs=%i GPUs=%i Accelerators=%i",
+             (device_type & CL_DEVICE_TYPE_CPU) != 0,
+             (device_type & CL_DEVICE_TYPE_GPU) != 0,
+             (device_type & CL_DEVICE_TYPE_ACCELERATOR) != 0);
 
     errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
     UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);

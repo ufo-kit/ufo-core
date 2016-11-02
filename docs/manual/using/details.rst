@@ -19,3 +19,9 @@ You can modify the run-time behaviour by setting environment variables:
     Controls which OpenCL devices should be used. It works similar to the
     `CUDA_VISIBLE_DEVICES` environment variables, i.e. set it to `0,2` to choose
     the first and third device that's available.
+
+.. envvar:: UFO_DEVICE_TYPE
+
+    Controls which OpenCL device types should be considered for execution. The
+    variable is a comma-separated list with strings being `cpu`, `gpu` and
+    `acc`, i.e. to use both CPU and GPUs set `UFO_DEVICE_TYPE="cpu,gpu"`.
