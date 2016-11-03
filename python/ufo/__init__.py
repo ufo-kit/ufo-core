@@ -27,11 +27,11 @@ class Environment(object):
 
 class Task(object):
 
-    def __init__(self, env, name, cargs):
+    def __init__(self, env, name, cargs, task=None):
         self.env = env
         self.name = name
         self.cargs = cargs
-        self.task = self.env.pm.get_task(self.name)
+        self.task = task or self.env.pm.get_task(self.name)
 
     def connect(self, *args, **kwargs):
         self.task.connect(*args, **kwargs)
