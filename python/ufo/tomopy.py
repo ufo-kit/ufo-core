@@ -65,7 +65,7 @@ def _dfi(data, center, volume, theta, kwargs):
 
     pad = Zeropad(oversampling=1, center_of_rotation=center)
     fft = Fft(dimensions=1, auto_zeropadding=False)
-    dfi = DfiSinc()
+    dfi = DfiSinc(angle_step=theta)
     ifft = Ifft(dimensions=2)
     swap_forward = SwapQuadrants()
     swap_backward = SwapQuadrants()
@@ -89,6 +89,73 @@ def dfi(*args, **kwargs):
     own.
     """
     result = [_dfi]
+    result.extend(args)
+    result.append(kwargs)
+    return result
+
+
+def _ir(data, center, volume, theta, kwargs):
+    from ufo import Null, Task
+    p = Parameters(data)
+    theta = theta[1] - theta[0]
+    center = np.mean(center)
+
+    null = Null()
+    env = null.env
+
+
+    allowed_methods = ('sart', 'sirt', 'asdpocs', 'sbtv')
+
+    opts = kwargs['options']
+    method_name = opts.get('method', 'sart')
+    method_name = method_name if method_name in allowed_methods else 'sart'
+
+    projector = env.pm.get_task_from_package('ir', 'parallel-projector')
+    projector.set_properties(model='joseph', is_forward=False, axis_position=center, step=theta)
+
+    method = env.pm.get_task_from_package('ir', method_name)
+    method.set_properties(projector=projector, num_iterations=opts.get('num_iterations', 5))
+
+    if method_name in ('sart', 'sirt'):
+        method.set_properties(relaxation_factor=opts.get('relaxation_factor', 0.25))
+
+    if method_name == 'asdpocs':
+        minimizer = env.pm.get_task_from_package('ir', 'sirt')
+        method.set_properties(df_minimizer=minimizer)
+
+    if method_name == 'sbtv':
+        method.set_properties(mu=opts.get('mu', 0.5))
+
+    method = Task(env, 'ir', {}, method)
+
+    for i, slce in enumerate(method(p.sinograms)):
+        volume[i,:,:] = slce[:,:]
+
+
+def ir(*args, **kwargs):
+    """
+    Reconstruct object using UFO's direct iterative reconstruction methods
+
+    Extra options
+    -------------
+    method : str
+        Any of `sart`, `sirt`, `asdpocs` and `sbtv`.
+
+    num_iterations : int, optional
+        Number of iterations before stopping reconstruction.
+
+    relaxation_factor : float
+        Relaxation factor for SART and SIRT methods.
+
+    mu : float
+        mu for Split Bregman Total Variation algorithm.
+
+    Note
+    ----
+    You have to set ``ncore`` to 1 because UFO provides multi-threading on its
+    own.
+    """
+    result = [_ir]
     result.extend(args)
     result.append(kwargs)
     return result
