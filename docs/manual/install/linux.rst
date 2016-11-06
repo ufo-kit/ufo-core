@@ -105,13 +105,13 @@ CMake will notify you, if some of the dependencies are not met. In case you want
 to install the library system-wide on a 64-bit machine you should generate the
 Makefiles with ::
 
-  $ cmake -DLIBDIR=/usr/lib64 <path-to-ufo>
+  $ cmake -DCMAKE_INSTALL_LIBDIR=/usr/lib64 <path-to-ufo>
 
 For earlier versions of PyGObject, it is necessary that the introspection files
 are located under ``/usr`` not ``/usr/local``. You can force the prefix by
 calling ::
 
-  $ cmake -DPREFIX=/usr <path-to-ufo>
+  $ cmake -DCMAKE_INSTALL_PREFIX=/usr <path-to-ufo>
 
 Last but not least build the framework, introspection files, API reference and
 the documentation using ::
@@ -180,7 +180,7 @@ have to configure ufo-core like this ::
 
   $ mkdir -p build/ufo-core
   $ cd build/ufo-core
-  $ cmake <path-to-ufo> -DPREFIX=/home/user/tmp/usr
+  $ cmake <path-to-ufo> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
   $ make && make install
 
 Now, we have to adjust the ``pkg-config`` path, so that the library can be
@@ -189,7 +189,7 @@ found when configuring the filters ::
   $ export PKG_CONFIG_PATH=/home/user/tmp/usr/lib/pkgconfig
   $ mkdir -p build/ufo-filters
   $ cd build/ufo-filters
-  $ cmake <path-to-ufo-core> -DPREFIX=/home/user/tmp/usr
+  $ cmake <path-to-ufo-core> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
   $ make && make install
 
 After installation you have to set the typelib and linker path so that
