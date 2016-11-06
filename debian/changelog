@@ -1,0 +1,5 @@
+ufo-core (0.10.0-0) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)
+
+ -- Picca Frédéric-Emmanuel <picca@debian.org>  Sat, 27 Jul 2013 09:07:17 +0200

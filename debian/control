@@ -1,0 +1,138 @@
+Source: ufo-core
+Maintainer: Picca Frédéric-Emmanuel <picca@debian.org>
+Section: libs
+Priority: extra
+Build-Depends: debhelper (>= 10),
+               cmake,
+               dh-python,
+               gobject-introspection,
+               gtk-doc-tools,
+               libglib2.0-dev,
+               libgirepository1.0-dev,
+               libjson-glib-dev,
+               libzmq3-dev,
+               ocl-icd-opencl-dev,
+               python-dev,
+	       python-sphinx
+Standards-Version: 3.9.8
+Vcs-Browser: http://anonscm.debian.org/cgit/debian-pan/packages/ufo-core.git
+Vcs-Git: git://git.debian.org/git/debian-pan/packages/ufo-core.git
+Homepage: http://ufo.kit.edu/
+
+Package: libufo-dev
+Architecture: any
+Multi-Arch: same
+Section: libdevel
+Depends: ${misc:Depends},
+         gir1.2-ufo-0.0 (= ${binary:Version}),
+         libglib2.0-dev,
+         libjson-glib-dev,
+         libufo0 (= ${binary:Version}),
+         libzmq3-dev,
+         ocl-icd-opencl-dev,
+         libpython-dev
+Pre-Depends: ${misc:Pre-Depends}
+Description: Library for high-performance, GPU-based computing - devel
+ The UFO data processing framework is a C library suited to build
+ general purpose streams data processing on heterogeneous
+ architectures such as CPUs, GPUs or clusters. It is extensively used
+ at the Karlsruhe Institute of Technology for Ultra-fast X-ray Imaging
+ (radiography, tomography and laminography).
+ .
+ A gobject-instrospection binding is also provided to write scripts or
+ user interfaces.
+ .
+ This package contain the development files for libufo.
+
+Package: libufo0
+Architecture: any
+Multi-Arch: same
+Section: libs
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         libufo-data (= ${source:Version})
+Pre-Depends: ${misc:Pre-Depends}
+Description: Library for high-performance, GPU-based computing - runtime
+ The UFO data processing framework is a C library suited to build
+ general purpose streams data processing on heterogeneous
+ architectures such as CPUs, GPUs or clusters. It is extensively used
+ at the Karlsruhe Institute of Technology for Ultra-fast X-ray Imaging
+ (radiography, tomography and laminography).
+ .
+ A gobject-instrospection binding is also provided to write scripts or
+ user interfaces.
+ .
+ This package provides the runtime for libufo.
+
+Package: libufo-doc
+Architecture: all
+Section: doc
+Depends: ${misc:Depends}
+Description: Library for high-performance, GPU-based computing - documentation
+ The UFO data processing framework is a C library suited to build
+ general purpose streams data processing on heterogeneous
+ architectures such as CPUs, GPUs or clusters. It is extensively used
+ at the Karlsruhe Institute of Technology for Ultra-fast X-ray Imaging
+ (radiography, tomography and laminography).
+ .
+ A gobject-instrospection binding is also provided to write scripts or
+ user interfaces.
+ .
+ This package provides the documentation for libufo.
+
+Package: libufo-data
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: Library for high-performance, GPU-based computing - data
+ The UFO data processing framework is a C library suited to build
+ general purpose streams data processing on heterogeneous
+ architectures such as CPUs, GPUs or clusters. It is extensively used
+ at the Karlsruhe Institute of Technology for Ultra-fast X-ray Imaging
+ (radiography, tomography and laminography).
+ .
+ A gobject-instrospection binding is also provided to write scripts or
+ user interfaces.
+ .
+ This package provides the openCL kernel files and templates to write
+ ufo filters
+
+Package: libufo-bin
+Architecture: any
+Depends: ${misc:Depends},
+         ${python:Depends},
+         ${shlibs:Depends},
+         libufo0 (= ${binary:Version})
+Description: Library for high-performance, GPU-based computing - tools
+ The UFO data processing framework is a C library suited to build
+ general purpose streams data processing on heterogeneous
+ architectures such as CPUs, GPUs or clusters. It is extensively used
+ at the Karlsruhe Institute of Technology for Ultra-fast X-ray Imaging
+ (radiography, tomography and laminography).
+ .
+ A gobject-instrospection binding is also provided to write scripts or
+ user interfaces.
+ .
+ This package contains binaries to run JSON descriptions of task graphs and
+ the ufod daemon that serves computation requests from a remote master node.
+
+Package: gir1.2-ufo-0.0
+Architecture: any
+Multi-Arch: same
+Section: introspection
+Depends: ${gir:Depends},
+         ${misc:Depends},
+         ${shlibs:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Description: Library for high-performance, GPU-based computing - gir binding
+ The UFO data processing framework is a C library suited to build
+ general purpose streams data processing on heterogeneous
+ architectures such as CPUs, GPUs or clusters. It is extensively used
+ at the Karlsruhe Institute of Technology for Ultra-fast X-ray Imaging
+ (radiography, tomography and laminography).
+ .
+ A gobject-instrospection binding is also provided to write scripts or
+ user interfaces.
+ .
+ This package can be used by other packages using the GIRepository
+ format to generate dynamic bindings.
