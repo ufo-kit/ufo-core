@@ -272,7 +272,7 @@ if(GTK_DOC_FOUND)
         add_custom_target(reference ALL DEPENDS ${docs_dir}/html.stamp)
 
         install(DIRECTORY ${docs_out}/
-                DESTINATION ${UFO_DATADIR}/gtk-doc/html/Ufo
+                DESTINATION ${CMAKE_INSTALL_DATADIR}/gtk-doc/html/Ufo
                 FILES_MATCHING REGEX ".*\\.(html|png|devhelp2|css)$")
     endif()
 endif(GTK_DOC_FOUND)
