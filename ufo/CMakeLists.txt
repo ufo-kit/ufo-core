@@ -95,16 +95,15 @@ target_link_libraries(ufo ${UFOCORE_DEPS})
 
 #{{{ install target
 install(TARGETS ufo
-        ARCHIVE DESTINATION ${UFO_LIBDIR}
-        LIBRARY DESTINATION ${UFO_LIBDIR})
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 install(FILES ${ufocore_HDRS}
               ${CMAKE_CURRENT_SOURCE_DIR}/ufo.h
               ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.h
-        DESTINATION ${UFO_INCLUDEDIR}/ufo)
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ufo)
 
 install(FILES ufo-basic-ops.cl
-        DESTINATION ${UFO_KERNELDIR})
+        DESTINATION ${CMAKE_INSTALL_KERNELDIR})
 #}}}
 #}}}
 #{{{ glib-mkenums
@@ -183,10 +182,10 @@ if (GOBJECT_INTROSPECTION_FOUND)
         add_dependencies(gir ufo)
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_XML}
-                DESTINATION ${UFO_GIRDIR})
+                DESTINATION ${CMAKE_INSTALL_GIRDIR})
 
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${GIR_TYPELIB}
-                DESTINATION ${UFO_TYPELIBDIR})
+                DESTINATION ${CMAKE_INSTALL_TYPELIBDIR})
     endif()
 endif()
 #}}}
@@ -285,5 +284,5 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ufo.pc.in"
                "${CMAKE_CURRENT_BINARY_DIR}/ufo.pc" @ONLY IMMEDIATE)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufo.pc
-        DESTINATION ${UFO_PKGCONFIGDIR})
+        DESTINATION ${CMAKE_INSTALL_PKGCONFIGDIR})
 #}}}

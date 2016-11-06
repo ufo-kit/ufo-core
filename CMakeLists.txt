@@ -37,13 +37,15 @@ enable_testing()
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 
 # Add configure-like prefixes and directories
-include(ConfigurePaths)
+include(GNUInstallDirs)
 include(PkgConfigVars)
-configure_paths(UFO)
 
-set(UFO_INCLUDEDIR  "${UFO_INCLUDEDIR}/ufo-${UFO_VERSION_MAJOR}")
-set(UFO_KERNELDIR   "${UFO_DATADIR}/ufo")
-set(UFO_PLUGINDIR   "${UFO_LIBDIR}/ufo")
+set(CMAKE_INSTALL_INCLUDEDIR    "${CMAKE_INSTALL_INCLUDEDIR}/ufo-${UFO_VERSION_MAJOR}")
+set(CMAKE_INSTALL_KERNELDIR     "${CMAKE_INSTALL_DATAROOTDIR}/ufo")
+set(CMAKE_INSTALL_GIRDIR        "${CMAKE_INSTALL_DATAROOTDIR}/gir-1.0")
+set(CMAKE_INSTALL_PLUGINDIR     "${CMAKE_INSTALL_LIBDIR}/ufo")
+set(CMAKE_INSTALL_TYPELIBDIR    "${CMAKE_INSTALL_LIBDIR}/girepository-1.0")
+set(CMAKE_INSTALL_PKGCONFIGDIR  "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 #}}}
 #{{{ Options
 

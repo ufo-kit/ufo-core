@@ -14,16 +14,10 @@ target_link_libraries(ufo-runjson ufo ${UFOCORE_DEPS})
 target_link_libraries(ufod ufo ${UFOCORE_DEPS})
 
 install(TARGETS ufod ufo-launch ufo-query ufo-runjson
-        RUNTIME DESTINATION ${UFO_BINDIR})
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/ufo-prof
-        DESTINATION ${UFO_BINDIR})
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ufod.service.in
-               ${CMAKE_CURRENT_BINARY_DIR}/ufod.service)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufod.service
-        DESTINATION ${WITH_SYSTEMDSYSTEMUNITDIR})
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 option(INSTALL_COMPLETION "Install Bash completion script" OFF)
 
@@ -36,7 +30,7 @@ if (INSTALL_COMPLETION)
 endif()
 #}}}
 #{{{ ufo-mkfilter
-set(UFO_FILTER_TEMPLATE_DIR "${UFO_DATADIR}/ufo/templates")
+set(CMAKE_INSTALL_TEMPLATEDIR "${CMAKE_INSTALL_DATADIR}/ufo/templates")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ufo-mkfilter.in
                ${CMAKE_CURRENT_BINARY_DIR}/ufo-mkfilter
@@ -45,8 +39,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ufo-mkfilter.in
 file(GLOB templates "templates/*.in")
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ufo-mkfilter
-        DESTINATION ${UFO_BINDIR})
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES ${templates}
-        DESTINATION ${UFO_FILTER_TEMPLATE_DIR})
+    DESTINATION ${CMAKE_INSTALL_TEMPLATEDIR})
 #}}}
