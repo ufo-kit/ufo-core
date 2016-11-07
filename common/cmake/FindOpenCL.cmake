@@ -32,6 +32,8 @@
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
+find_package(PackageHandleStandardArgs)
+
 function(_FIND_OPENCL_VERSION)
   include(CheckSymbolExists)
   include(CMakePushCheckState)
@@ -117,8 +119,7 @@ if(WIN32)
         OpenCL/common/lib/x64)
   endif()
 else()
-  find_library(OpenCL_LIBRARY
-    NAMES OpenCL)
+    find_library(OpenCL_LIBRARY NAMES OpenCL)
 endif()
 
 set(OpenCL_LIBRARIES ${OpenCL_LIBRARY})
@@ -126,9 +127,8 @@ set(OpenCL_INCLUDE_DIRS ${OpenCL_INCLUDE_DIR})
 
 find_package_handle_standard_args(
   OpenCL
-  FOUND_VAR OpenCL_FOUND
-  REQUIRED_VARS OpenCL_LIBRARY OpenCL_INCLUDE_DIR
-  VERSION_VAR OpenCL_VERSION_STRING)
+  DEFAULT_MSG
+  OpenCL_LIBRARY OpenCL_INCLUDE_DIRS)
 
 mark_as_advanced(
   OpenCL_INCLUDE_DIR
