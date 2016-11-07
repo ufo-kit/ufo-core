@@ -1,0 +1,61 @@
+ufo-launch(1)
+=============
+
+NAME
+----
+ufo-launch - Run UFO workflows
+
+
+SYNOPSIS
+--------
+[verse]
+'ufo-launch' [-t] [-a] [-d] [-q | --quieter] [--version]
+           <task1> [KEY=VALUE] ! <task2> ! ...
+
+
+DESCRIPTION
+-----------
+
+Runs the workflow as specified on the command line. Plugins are specified one by
+one and separated by exclamation marks. Further parameterization is possible by
+specifying key-value assignments before finishing with an exclamation marks.
+
+To push data from multiple streams enclose input streams in brackets.
+
+
+OPTIONS
+-------
+*--trace*::
+*-t*::
+        Output execution profiles that can be analysed with ufo-prof.
+
+*--address*::
+*-a*::
+        Host address of one or more ufod instances.
+
+*-q*::
+        Disable output of "[n] items processed ...".
+
+*--quieter*::
+        Disable all output.
+
+*--version*::
+        Output version number.
+
+
+Examples
+--------
+
+* Convert TIFF to HDF5:
++
+-------------
+$ ufo-launch read path=input*.tif ! write filename=output.h5:/foo
+-------------
+
+
+* Do flat-field-correction:
++
+-------------
+$ ufo-launch [read path=radios, read path=darks, read path=flats] ! \
+             flat-field-correct ! null
+-------------

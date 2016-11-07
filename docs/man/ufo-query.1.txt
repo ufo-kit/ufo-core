@@ -1,0 +1,33 @@
+ufo-query(1)
+============
+
+NAME
+----
+ufo-query - List filters and their properties
+
+
+SYNOPSIS
+--------
+[verse]
+'ufo-query' [-l] [-p <plugin>] [-v] [--version]
+
+
+DESCRIPTION
+-----------
+
+Lists all plugins or queries properties of a single plugin.
+
+
+OPTIONS
+-------
+
+*--list*::
+*-l*::
+        List all available plugins.
+
+*--props* 'plugin'::
+*-p* 'plugin'::
+        List all properties of the given 'plugin'.
+
+*--version*::
+        Output version number.

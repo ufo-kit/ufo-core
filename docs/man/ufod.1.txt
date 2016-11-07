@@ -1,0 +1,26 @@
+ufod(1)
+=======
+
+NAME
+----
+ufod - Start ufo daemon
+
+
+SYNOPSIS
+--------
+[verse]
+'ufo-query' [-l <address>]
+
+
+DESCRIPTION
+-----------
+
+Start the ufod daemon for connection requests by a master process.
+
+
+OPTIONS
+-------
+
+*--listen*::
+*-l*::
+        Interface and port to listen for incoming requests.

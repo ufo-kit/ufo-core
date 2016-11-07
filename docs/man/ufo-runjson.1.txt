@@ -1,0 +1,28 @@
+ufo-runjson(1)
+==============
+
+NAME
+----
+ufo-runjson - Run UFO workflows defined as JSON
+
+
+SYNOPSIS
+--------
+[verse]
+'ufo-runjson' [-a] [-v] 'FILE.json'
+
+
+DESCRIPTION
+-----------
+
+Execute the workflow defined in 'FILE.json'.
+
+
+OPTIONS
+-------
+*--address*::
+*-a*::
+        Host address of one or more ufod instances.
+
+*--version*::
+        Output version number.

@@ -1,0 +1,34 @@
+ufo-mkfilter(1)
+===============
+
+NAME
+----
+ufo-mkfilter - Create filter skeletons
+
+
+SYNOPSIS
+--------
+[verse]
+ufo-mkfilter [-d] [--use-gpu] [--type <type>] 'NAME'
+
+
+DESCRIPTION
+-----------
+
+Creates source and header files for a skeleton task. The camel-cased 'NAME' is
+transformed to hyphen-separated lowercase names with .c and .h extensions.
+
+
+OPTIONS
+-------
+
+*--disable-comments*::
+*-d*::
+        Do not output any comments in the source file.
+
+*--use-gpu*::
+        Specify that this task uses GPUs.
+
+*--type* 'TYPE'::
+        'TYPE' must be one of "sink", "filter", "reductor" or "generator".
+        Appropriate support code is generated.
