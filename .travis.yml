@@ -11,21 +11,10 @@ before_install:
   - sudo apt-get install -y --force-yes gobject-introspection gir1.2-glib-2.0 gir1.2-json-1.0 opencl-headers ocl-icd-opencl-dev libjson-glib-dev libzmq3-dev autoconf-archive gtk-doc-tools
 
 before_script:
-  # Configure with Autotools
-  - ./autogen.sh
-  - ./configure
-
-  # Configure with CMake
   - mkdir build
   - cd build
   - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_GIR=OFF -DWITH_GTK_DOC=ON -DWITH_PYTHON=OFF
 
 script:
-  # Build with Autotools
-  - cd ..
-  - make
-
-  # Build with CMake
-  - cd build
   - make
   - ./tests/test-suite -p /no-opencl
