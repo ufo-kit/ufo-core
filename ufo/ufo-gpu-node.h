@@ -67,6 +67,7 @@ struct _UfoGpuNodeClass {
  * @UFO_GPU_NODE_INFO_GLOBAL_MEM_SIZE: Global memory size
  * @UFO_GPU_NODE_INFO_MAX_MEM_ALLOC_SIZE: Maximum allocatable global memory size
  * @UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE: Local memory size
+ * @UFO_GPU_NODE_INFO_MAX_WORK_GROUP_SIZE: Maximum work group size
  *
  * OpenCL device info types. Refer to the OpenCL standard for complete details
  * about each information.
