@@ -34,7 +34,6 @@ static UfoDaemon *global_daemon = NULL;
 static gboolean done = FALSE;
 
 typedef struct {
-    gchar **paths;
     gchar *addr;
 } Options;
 
@@ -50,12 +49,11 @@ opts_parse (gint *argc, gchar ***argv)
 
     GOptionEntry entries[] = {
         { "listen", 'l', 0, G_OPTION_ARG_STRING, &opts->addr, "Address to listen on (see http://api.zeromq.org/3-2:zmq-tcp)", NULL },
-        { "path",   'p', 0, G_OPTION_ARG_STRING_ARRAY, &opts->paths, "Path to node plugins or OpenCL kernels", NULL },
         { "version",  0, 0, G_OPTION_ARG_NONE, &show_version, "Show version information", NULL },
         { NULL }
     };
 
-    context = g_option_context_new ("FILE");
+    context = g_option_context_new (NULL);
     g_option_context_add_main_entries (context, entries, NULL);
 
     if (!g_option_context_parse (context, argc, argv, &error)) {
@@ -80,7 +78,6 @@ opts_parse (gint *argc, gchar ***argv)
 static void
 opts_free (Options *opts)
 {
-    g_strfreev (opts->paths);
     g_free (opts->addr);
     g_free (opts);
 }
