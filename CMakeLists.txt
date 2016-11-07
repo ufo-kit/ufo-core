@@ -36,7 +36,7 @@ enable_testing()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake")
 
-# Add configure-like prefixes and directories
+include(FindPackageHandleStandardArgs)
 include(GNUInstallDirs)
 include(PkgConfigVars)
 
