@@ -5,6 +5,39 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.11
+============
+
+Release on November 11th 2016
+
+Enhancements:
+
+- Build manpages for the tools
+- Update TomoPy integration
+- Add UFO_DEVICE_TYPE environment variable
+- Properly build on MacOS
+- Unify debug message output format
+- ufo-launch: rewrite specification parser allowing more flexible descriptions
+- ufo-launch: add --quieter
+- ufo-mkfilter: add --type and --use-gpu
+
+Fixes:
+
+- Check if we have with multiple roots to exit early
+- Show version information consistently
+- ufo-prof: support Python < 3.0
+
+Breaks:
+
+- GNUInstallDirs instead is now used instead of our own ConfigurePaths CMake
+  module which might affect installation paths on your system. Please note that
+  for example -DPREFIX thus becomes -DCMAKE_INSTALL_PREFIX.
+- Remove CPack
+- ufod: unused --paths option removed
+- ufo-runjson: unused --path option removed
+- ufo-launch: do not execute graph when --dump'ing
+
+
 Version 0.10
 ============
 
