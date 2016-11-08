@@ -12,6 +12,7 @@ project(ufo C)
 
 set(TARNAME "libufo")
 
+set(UFO_NAME                "libufo")
 set(UFO_DESCRIPTION         "UFO high-speed image processing core library")
 set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
 
@@ -19,17 +20,8 @@ set(UFO_DESCRIPTION_SUMMARY "UFO high-speed image processing core library")
 set(UFO_VERSION_MAJOR "0")
 set(UFO_VERSION_MINOR "11")
 set(UFO_VERSION_PATCH "0")
+set(UFO_VERSION "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}.${UFO_VERSION_PATCH}")
 set(UFO_GIR_VERSION "${UFO_VERSION_MAJOR}.0")
-#}}}
-#{{{ Package version
-set(PACKAGE_VERSION_MAJOR ${UFO_VERSION_MAJOR})
-set(PACKAGE_VERSION_MINOR ${UFO_VERSION_MINOR})
-set(PACKAGE_VERSION_PATCH ${UFO_VERSION_PATCH})
-set(PACKAGE_VERSION "${PACKAGE_VERSION_MAJOR}.${PACKAGE_VERSION_MINOR}.${PACKAGE_VERSION_PATCH}")
-set(PACKAGE_NAME ${TARNAME})
-set(PACKAGE_TARNAME ${TARNAME})
-set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
-set(PACKAGE_BUGREPORT "http://ufo.kit.edu/ufo/newticket")
 #}}}
 #{{{ CMake
 enable_testing()
@@ -47,14 +39,12 @@ set(CMAKE_INSTALL_TYPELIBDIR    "${CMAKE_INSTALL_LIBDIR}/girepository-1.0")
 set(CMAKE_INSTALL_PKGCONFIGDIR  "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 #}}}
 #{{{ Options
-
 option(WITH_TESTS "Build test suite" ON)
 option(WITH_DEPRECATED_OPENCL_1_1_API "Build with deprecated OpenCL 1.1 API" ON)
 
 if (WITH_DEPRECATED_OPENCL_1_1_API)
     add_definitions ("-DCL_USE_DEPRECATED_OPENCL_1_1_APIS")
 endif ()
-
 #}}}
 #{{{ Dependencies
 set(PKG_GLIB2_MIN_REQUIRED "2.30")
@@ -86,7 +76,6 @@ set(UFOCORE_DEPS
     ${JSON_GLIB_LIBRARIES})
 
 if (PYTHON_FOUND OR PYTHON27_FOUND)
-
     option(WITH_PYTHON "Enable Python multithreading support" ON)
 
     if (WITH_PYTHON)
