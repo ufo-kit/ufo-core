@@ -64,7 +64,7 @@ Description: Library for high-performance, GPU-based computing - runtime
  .
  This package provides the runtime for libufo.
 
-Package: libufo-doc
+Package: ufo-core-doc
 Architecture: all
 Section: doc
 Depends: ${misc:Depends}
