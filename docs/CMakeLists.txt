@@ -41,6 +41,7 @@ if (A2X)
         file(MAKE_DIRECTORY ${MAN_BUILD_DIR})
 
         set(A2X_OPTS
+            -L
             -D ${MAN_BUILD_DIR}
             -d manpage
             -f manpage
