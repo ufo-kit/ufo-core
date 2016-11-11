@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
 #{{{ Binaries
-set(WITH_SYSTEMDSYSTEMUNITDIR "${UFO_PREFIX}/lib/systemd/system" CACHE STRING "systemd unit directory")
-
 add_executable(ufo-launch ufo-launch.c)
 add_executable(ufo-query ufo-query.c)
 add_executable(ufo-runjson ufo-runjson.c)
@@ -28,6 +26,23 @@ if (INSTALL_COMPLETION)
             DESTINATION ${BASH_COMPLETION_COMPLETIONSDIR}
             OPTIONAL)
 endif()
+#}}}
+#{{{ systemd .service file
+pkg_check_modules(SYSTEMD systemd)
+
+if (SYSTEMD_FOUND)
+    pkg_check_variable(systemd systemdsystemunitdir)
+
+    option(WITH_SYSTEMD "Install systemd unit file" OFF)
+
+    if (WITH_SYSTEMD)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ufod.service.in
+                       ${CMAKE_CURRENT_BINARY_DIR}/ufod.service
+                       @ONLY IMMEDIATE)
+       install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ufod.service
+               DESTINATION ${SYSTEMD_SYSTEMDSYSTEMUNITDIR})
+    endif ()
+endif ()
 #}}}
 #{{{ ufo-mkfilter
 set(CMAKE_INSTALL_TEMPLATEDIR "${CMAKE_INSTALL_FULL_DATADIR}/ufo/templates")
