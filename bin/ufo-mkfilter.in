@@ -73,7 +73,7 @@ if __name__ == '__main__':
         print err
         sys.exit(1)
 
-    template_dir = '@UFO_FILTER_TEMPLATE_DIR@'
+    template_dir = '@CMAKE_INSTALL_TEMPLATEDIR@'
 
     if not os.path.exists(template_dir):
         template_dir = 'templates'

@@ -30,7 +30,7 @@ if (INSTALL_COMPLETION)
 endif()
 #}}}
 #{{{ ufo-mkfilter
-set(CMAKE_INSTALL_TEMPLATEDIR "${CMAKE_INSTALL_DATADIR}/ufo/templates")
+set(CMAKE_INSTALL_TEMPLATEDIR "${CMAKE_INSTALL_FULL_DATADIR}/ufo/templates")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ufo-mkfilter.in
                ${CMAKE_CURRENT_BINARY_DIR}/ufo-mkfilter
@@ -42,5 +42,5 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ufo-mkfilter
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES ${templates}
-    DESTINATION ${CMAKE_INSTALL_TEMPLATEDIR})
+        DESTINATION ${CMAKE_INSTALL_TEMPLATEDIR})
 #}}}
