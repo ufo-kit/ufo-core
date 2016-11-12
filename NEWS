@@ -5,10 +5,23 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.11.1
+==============
+
+Bugfix release released on November 12th 2016.
+
+- Install systemd unit file through pkg-config
+- Fix #110: install templates correctly
+- Do not run xmllint on manpage generation output
+- Remove unused CMake modules
+- Remove executable bit from source files
+- Remove PACKAGE_* variables
+
+
 Version 0.11
 ============
 
-Release on November 11th 2016
+Released on November 8th 2016
 
 Enhancements:
 
