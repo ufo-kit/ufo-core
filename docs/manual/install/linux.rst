@@ -24,6 +24,22 @@ vendors. However, our CMake build facility is in most cases intelligent enough
 to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
 
 
+Retrieving the source code
+==========================
+
+In an empty directory, issue the following commands to retrieve the current
+unstable version of the source::
+
+    $ git clone https://github.com/ufo-kit/ufo-core
+    $ git clone https://github.com/ufo-kit/ufo-filters
+
+The latter is used for developers who have write-access to the corresponding
+repositories. All stable versions are tagged. To see a list of all releases
+issue::
+
+    $ git tag -l
+
+
 Ubuntu/Debian
 =============
 
@@ -59,32 +75,16 @@ Additionally the following packages are recommended for some of the plugins::
     $ sudo apt-get install libtiff5-dev
 
 
-openSUSE
+openSUSE and CentOS7
 ========
 
-For openSUSE the following packages should get you started::
+For openSUSE (zypper) and CentOS7 the following packages should get you started::
 
-    $ zypper install cmake gcc gcc-c++ glib2-devel json-glib-devel
+    $ [zypper|yum] install cmake gcc gcc-c++ glib2-devel json-glib-devel
 
 Additionally the following packages are recommended for some of the plugins::
 
-    $ zypper install libtiff-devel
-
-
-Retrieving the source code
-==========================
-
-In an empty directory, issue the following commands to retrieve the current
-unstable version of the source::
-
-    $ git clone https://github.com/ufo-kit/ufo-core
-    $ git clone https://github.com/ufo-kit/ufo-filters
-
-The latter is used for developers who have write-access to the corresponding
-repositories. All stable versions are tagged. To see a list of all releases
-issue::
-
-    $ git tag -l
+    $ [zypper|yum] install libtiff-devel
 
 
 System-wide installation
