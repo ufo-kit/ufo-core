@@ -1,0 +1,28 @@
+ufo-prof(1)
+===========
+
+NAME
+----
+ufo-prof - Analyse profile output from UFO
+
+
+SYNOPSIS
+--------
+[verse]
+'ufo-prof' [--trace | --opencl]
+
+
+DESCRIPTION
+-----------
+
+Evaluates the run-time and OpenCL profiling output from the UFO tools. If passed
+the files generated, it can determine the input type automatically. Otherwise,
+the *--trace* and *--opencl* flags have to be passed.
+
+OPTIONS
+-------
+*--trace*::
+        Denotes the input is run-time trace data.
+
+*--opencl*::
+        Denotes the input is OpenCL trace data.
