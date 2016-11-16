@@ -4,10 +4,6 @@
 Installation on Linux
 #####################
 
-====================
-Building from source
-====================
-
 UFO has only a few hard source dependencies, namely
 
   - `GLib 2.0 <http://developer.gnome.org/glib/stable/>`_,
@@ -125,14 +121,6 @@ You should now run some basic tests with ::
 If everything went well, you can install the library with ::
 
   $ make install
-
-You can also build ``RPM`` and ``DEB`` packages with ::
-
-  $ make package
-
-and source tarballs with ::
-
-  $ make package_source
 
 .. seealso:: :ref:`faq-linker-cant-find-libufo`
 
