@@ -9,7 +9,7 @@ ufo-runjson - Run UFO workflows defined as JSON
 SYNOPSIS
 --------
 [verse]
-'ufo-runjson' [-a] [-v] 'FILE.json'
+'ufo-runjson' [-t] [-a] [-v] 'FILE.json'
 
 
 DESCRIPTION
@@ -20,6 +20,10 @@ Execute the workflow defined in 'FILE.json'.
 
 OPTIONS
 -------
+*--trace*::
+*-t*::
+        Output execution profiles that can be analysed with ufo-prof.
+
 *--address*::
 *-a*::
         Host address of one or more ufod instances.

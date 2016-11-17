@@ -69,6 +69,7 @@ progress_update (gpointer user)
 
 static void
 execute_json (const gchar *filename,
+              gboolean trace,
               gchar **addresses)
 {
     UfoTaskGraph *task_graph;
@@ -97,6 +98,10 @@ execute_json (const gchar *filename,
     }
 
     scheduler = ufo_scheduler_new ();
+
+    if (trace)
+        g_object_set (scheduler, "enable-tracing", TRUE, NULL);
+
     address_list = string_array_to_value_array (addresses);
 
     if (address_list) {
@@ -184,9 +189,11 @@ int main(int argc, char *argv[])
     GOptionContext *context;
     GError *error = NULL;
     gchar **addresses = NULL;
+    gboolean trace = FALSE;
     gboolean show_version = FALSE;
 
     GOptionEntry entries[] = {
+        { "trace",   't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
 #ifndef WITH_MPI
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
           "Address of remote server running `ufod'", NULL },
@@ -239,7 +246,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    execute_json (argv[argc-1], addresses);
+    execute_json (argv[argc-1], trace, addresses);
 
 #ifdef WITH_MPI
     if (rank == 0) {
