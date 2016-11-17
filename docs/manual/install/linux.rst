@@ -72,7 +72,7 @@ Additionally the following packages are recommended for some of the plugins::
 
 
 openSUSE and CentOS7
-========
+====================
 
 For openSUSE (zypper) and CentOS7 the following packages should get you started::
 
