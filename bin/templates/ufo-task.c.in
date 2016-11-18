@@ -86,7 +86,7 @@ ufo_{{underscored}}_task_get_mode (UfoTask *task)
     return {{ task_mode | join(" | ") }};
 }
 
-{% if args.type == 'filter' or args.type == 'reductor' or args.type == 'sink' %}
+{% if args.type == 'processor' or args.type == 'reductor' or args.type == 'sink' %}
 static gboolean
 ufo_{{underscored}}_task_process (UfoTask *task,
                          UfoBuffer **inputs,
@@ -155,7 +155,7 @@ ufo_task_interface_init (UfoTaskIface *iface)
     iface->get_num_dimensions = ufo_{{underscored}}_task_get_num_dimensions;
     iface->get_mode = ufo_{{underscored}}_task_get_mode;
     iface->get_requisition = ufo_{{underscored}}_task_get_requisition;
-{% if args.type == 'filter' or args.type == 'reductor' or args.type == 'sink' %}
+{% if args.type == 'processor' or args.type == 'reductor' or args.type == 'sink' %}
     iface->process = ufo_{{underscored}}_task_process;
 {% endif %}
 {% if args.type == 'generator' or args.type == 'reductor' %}
