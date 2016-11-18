@@ -60,8 +60,8 @@ if __name__ == '__main__':
     parser.add_argument('--use-gpu',
                         action='store_true',
                         help='The task requires a GPU')
-    parser.add_argument('--type', choices=['sink', 'filter', 'reductor', 'generator'],
-                        default='filter',
+    parser.add_argument('--type', choices=['sink', 'processor', 'reductor', 'generator'],
+                        default='processor',
                         help='Type of the generated task')
     parser.add_argument('name', type=str,
                         action=FilternameAction,
