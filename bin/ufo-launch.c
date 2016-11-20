@@ -35,6 +35,27 @@ str_to_boolean (const gchar *s)
     return g_ascii_strncasecmp (s, "true", 4) == 0;
 }
 
+static void
+value_transform_enum (const GValue *src_value, GValue *dest_value)
+{
+    GEnumClass *enum_class;
+    GEnumValue *enum_value;
+    const gchar *str_value;
+
+    str_value = g_value_get_string (src_value);
+    enum_class = g_type_class_ref (G_VALUE_TYPE (dest_value));
+    enum_value = g_enum_get_value_by_name (enum_class, str_value);
+    enum_value = enum_value == NULL ? g_enum_get_value_by_nick (enum_class, str_value) : enum_value;
+
+    if (enum_value != NULL)
+        g_value_set_enum (dest_value, enum_value->value);
+    else
+        g_warning ("%s does not have an enum value %s",
+                   G_VALUE_TYPE_NAME (dest_value), str_value);
+
+    g_type_class_unref (enum_class);
+}
+
 #define DEFINE_CAST(suffix, trans_func)                 \
 static void                                             \
 value_transform_##suffix (const GValue *src_value,      \
@@ -399,6 +420,7 @@ parse (const gchar *pipeline, GList *tokens, UfoPluginManager *pm, GError **erro
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_FLOAT,   value_transform_float);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_DOUBLE,  value_transform_double);
     g_value_register_transform_func (G_TYPE_STRING, G_TYPE_BOOLEAN, value_transform_boolean);
+    g_value_register_transform_func (G_TYPE_STRING, G_TYPE_ENUM,    value_transform_enum);
 
     env.current = tokens;
     env.pm = pm;
