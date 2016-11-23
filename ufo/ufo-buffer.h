@@ -94,6 +94,7 @@ struct _UfoRegion {
 };
 
 typedef enum {
+    UFO_BUFFER_DEPTH_INVALID,
     UFO_BUFFER_DEPTH_8U,
     UFO_BUFFER_DEPTH_16U,
     UFO_BUFFER_DEPTH_16S,
