@@ -226,6 +226,33 @@ For more information on how to write OpenCL kernels, consult the official
 __ http://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/
 
 
+Reporting errors at run-time
+----------------------------
+
+.. highlight:: c
+
+From within a filter (or any library for that matter) never call functions such
+as ``exit()`` or ``abort()``. This prevents the calling application from
+identification of the problem as well as recovery. Instead use the builtin
+``GError`` infrastructure that – as a bonus – map nicely to exceptions in
+Python::
+
+    static void
+    ufo_awesome_task_setup (UfoTask *task,
+                            UfoResources *resources,
+                            GError **error)
+    {
+        if (error_condition) {
+            g_set_error (error, UFO_TASK_ERROR, UFO_TASK_ERROR_SETUP,
+                         "Error because of condition");
+            return;
+        }
+    }
+
+Note that ``g_set_error`` receives printf-style format strings which means you
+should be as specific as possible with the given error message.
+
+
 The GObject property system
 ===========================
 
