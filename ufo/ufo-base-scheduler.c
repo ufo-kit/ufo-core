@@ -127,7 +127,7 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
 
     klass = UFO_BASE_SCHEDULER_GET_CLASS (scheduler);
 
-    g_return_if_fail (klass->run != NULL);
+    g_return_if_fail (klass != NULL && klass->run != NULL);
 
     if (!ufo_task_graph_is_alright (graph, error))
         return;

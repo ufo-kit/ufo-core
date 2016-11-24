@@ -89,8 +89,8 @@ ufo_task_node_get_plugin_name (UfoTaskNode *task_node)
 const gchar *
 ufo_task_node_get_package_name (UfoTaskNode *task_node)
 {
-    g_assert (UFO_IS_TASK_NODE (task_node));
-    return UFO_TASK_NODE_GET_CLASS(task_node)->get_package_name(task_node);
+    g_assert (UFO_IS_TASK_NODE (task_node) && UFO_TASK_NODE_GET_CLASS (task_node) != NULL);
+    return UFO_TASK_NODE_GET_CLASS (task_node)->get_package_name (task_node);
 }
 
 void

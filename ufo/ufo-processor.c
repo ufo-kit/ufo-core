@@ -253,10 +253,11 @@ ufo_processor_setup (UfoProcessor *processor,
                      UfoResources *resources,
                      GError       **error)
 {
-    g_return_if_fail(UFO_IS_PROCESSOR (processor) &&
-                     UFO_IS_RESOURCES (resources));
+    g_return_if_fail (UFO_IS_PROCESSOR (processor) &&
+                      UFO_IS_RESOURCES (resources));
 
     UfoProcessorClass *klass = UFO_PROCESSOR_GET_CLASS (processor);
+    g_return_if_fail (klass != NULL);
     g_object_set (processor, "ufo-resources", resources, NULL);
     klass->setup (processor, resources, error);
 }
@@ -264,7 +265,6 @@ ufo_processor_setup (UfoProcessor *processor,
 void
 ufo_processor_configure (UfoProcessor *processor)
 {
-    g_return_if_fail (UFO_IS_PROCESSOR (processor));
-    UfoProcessorClass *klass = UFO_PROCESSOR_GET_CLASS (processor);
-    klass->configure(processor);
+    g_return_if_fail (UFO_IS_PROCESSOR (processor) && UFO_PROCESSOR_GET_CLASS (processor) != NULL);
+    UFO_PROCESSOR_GET_CLASS (processor)->configure (processor);
 }

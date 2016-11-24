@@ -321,7 +321,7 @@ build_remote_graph (UfoTaskGraph *remote_graph,
     UfoTaskNode *node = NULL;
     UfoTaskNode *predecessor = NULL;
 
-    for (GList *it = g_list_next (first); it != last; it = g_list_next (it)) {
+    for (GList *it = g_list_next (first); it != last && it != NULL; it = g_list_next (it)) {
         node = UFO_TASK_NODE (it->data);
 
         if (predecessor != NULL)
