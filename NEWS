@@ -5,6 +5,30 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.12.0
+==============
+
+Released on November 24th 2016
+
+Enhancements:
+
+- ufo-launch: convert string to enum values
+- ufo-runjson: add -t/--trace flag doing the same thing as ufo-launch
+- Documentation updates
+
+Fixes:
+
+- Fix manual heading
+- ufo-mkfilter: fix template and type handling
+- Add manpage for ufo-prof
+
+Breaks:
+
+- Add UFO_BUFFER_DEPTH_INVALID with value zero which means adding to the API and
+  breaking ABI
+- Remove package target from the build system
+
+
 Version 0.11.1
 ==============
 
