@@ -214,9 +214,9 @@ alloc_device_image (UfoBufferPrivate *priv)
 {
     cl_image_format format;
     cl_mem_flags flags;
-    cl_int err;
     gsize width, height, depth;
     cl_mem mem = NULL;
+    cl_int err = CL_SUCCESS;
 
     g_assert ((priv->requisition.n_dims == 2) ||
               (priv->requisition.n_dims == 3));
