@@ -129,7 +129,7 @@ include_directories(
 #{{{ Definitions
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -Wextra -fPIC -Wno-unused-parameter -Wno-deprecated-declarations")
 
-add_definitions(-DG_LOG_DOMAIN=\"Ufo\")
+add_definitions(-DG_LOG_DOMAIN=\"Ufo\" -D_FORTIFY_SOURCE=1)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
