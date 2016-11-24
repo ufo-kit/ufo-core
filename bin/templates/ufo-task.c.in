@@ -190,3 +190,4 @@ ufo_{{underscored}}_task_init(Ufo{{camelcased}}Task *self)
 {
     self->priv = UFO_{{uppercased}}_TASK_GET_PRIVATE(self);
 }
+

@@ -51,3 +51,4 @@ GType     ufo_{{underscored}}_task_get_type  (void);
 G_END_DECLS
 
 #endif
+
