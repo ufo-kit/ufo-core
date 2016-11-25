@@ -4,19 +4,21 @@
 Installation on Linux
 #####################
 
-Installing packages
-===================
+Installing RPM packages
+=======================
 
-We provide openSUSE packages for stable released versions. First you have to add
-the openSUSE repository matching your installation. Go to our `OBS
+We provide RPM-based packages for openSUSE, RHEL and CentOS7. First you have to
+add the openSUSE repository matching your installation. Go to our `OBS
 <https://build.opensuse.org/repositories/home:ufo-kit>`_ page, copy the URL that
 says "Go to download repository" and use that URL with::
 
-    $ zypper addrepo <URL> repo-ufo-kit
+    opensuse $ zypper addrepo <URL> repo-ufo-kit
+    centos $ wget <URL> -O /etc/yum.repos.d/ufo-kit.repo
 
 Now update the repositories and install the framework and plugins::
 
-    $ zypper install ufo-core ufo-filters
+    opensuse $ zypper install ufo-core ufo-filters
+    centos $ yum install ufo-core ufo-filters
 
 
 Installing from source
