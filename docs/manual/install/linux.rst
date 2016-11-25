@@ -4,24 +4,31 @@
 Installation on Linux
 #####################
 
-UFO has only a few hard source dependencies, namely
+Installing packages
+===================
 
-  - `GLib 2.0 <http://developer.gnome.org/glib/stable/>`_,
-  - `JSON-GLib 1.0 <http://live.gnome.org/JsonGlib>`_ and
-  - a valid OpenCL installation.
+We provide openSUSE packages for stable released versions. First you have to add
+the openSUSE repository matching your installation. Go to our `OBS
+<https://build.opensuse.org/repositories/home:ufo-kit>`_ page, copy the URL that
+says "Go to download repository" and use that URL with::
 
-Furthermore, it is necessary to build the framework with a recent version of
-`CMake <http://cmake.org>`_.  `Sphinx <http://sphinx.pocoo.org>`_ is used to
-create this documentation.
+    $ zypper addrepo <URL> repo-ufo-kit
 
-OpenCL development files must be installed in order to build UFO. However, we
-cannot give general advices as installation procedures vary between different
-vendors. However, our CMake build facility is in most cases intelligent enough
-to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
+Now update the repositories and install the framework and plugins::
+
+    $ zypper install ufo-core ufo-filters
+
+
+Installing from source
+======================
+
+If you want to build the most recent development version, you have to clone the
+source from our repository, install all required dependencies and compile the
+source.
 
 
 Retrieving the source code
-==========================
+--------------------------
 
 In an empty directory, issue the following commands to retrieve the current
 unstable version of the source::
@@ -36,8 +43,26 @@ issue::
     $ git tag -l
 
 
+Installing dependencies
+-----------------------
+
+UFO has only a few hard source dependencies: `GLib 2.0
+<http://developer.gnome.org/glib/stable/>`_, `JSON-GLib 1.0
+<http://live.gnome.org/JsonGlib>`_ and a valid OpenCL installation.
+Furthermore, it is necessary to build the framework with a recent version of
+`CMake <http://cmake.org>`_. `Sphinx <http://sphinx.pocoo.org>`_ is used to
+create this documentation. This gives you a bare minimum with reduced
+functionality. To build all plugins, you also have to install dependencies
+required by the plugins.
+
+OpenCL development files must be installed in order to build UFO. However, we
+cannot give general advices as installation procedures vary between different
+vendors. However, our CMake build facility is in most cases intelligent enough
+to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
+
+
 Ubuntu/Debian
-=============
+~~~~~~~~~~~~~
 
 On Debian or Debian-based system the following packages are required to build
 ufo-core::
@@ -72,7 +97,7 @@ Additionally the following packages are recommended for some of the plugins::
 
 
 openSUSE and CentOS7
-====================
+~~~~~~~~~~~~~~~~~~~~
 
 For openSUSE (zypper) and CentOS7 the following packages should get you started::
 
@@ -82,12 +107,6 @@ Additionally the following packages are recommended for some of the plugins::
 
     $ [zypper|yum] install libtiff-devel
 
-
-System-wide installation
-========================
-
-If you have root access on the build machine, you can install the libraries and
-tools system-wide so that every user can access them.
 
 Building ufo-core
 -----------------
@@ -155,41 +174,3 @@ NumPy module and the high-level interface run ::
     $ cd python/ && python setup install
 
 Refer to the README for additional information.
-
-
-.. _inst-installing-into-non-standard-directories:
-
-Installing into non-standard directories
-========================================
-
-It is possible to install the library in a non-standard directory, for example
-in the home directory of a user. In case we want to install in ``~/tmp/usr``, we
-have to configure ufo-core like this ::
-
-  $ mkdir -p build/ufo-core
-  $ cd build/ufo-core
-  $ cmake <path-to-ufo> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
-  $ make && make install
-
-Now, we have to adjust the ``pkg-config`` path, so that the library can be
-found when configuring the filters ::
-
-  $ export PKG_CONFIG_PATH=/home/user/tmp/usr/lib/pkgconfig
-  $ mkdir -p build/ufo-filters
-  $ cd build/ufo-filters
-  $ cmake <path-to-ufo-core> -DCMAKE_INSTALL_PREFIX=/home/user/tmp/usr
-  $ make && make install
-
-After installation you have to set the typelib and linker path so that
-everything is found at run-time ::
-
-  $ export GI_TYPELIB_PATH=/home/user/tmp/usr/lib/girepository-1.0
-  $ export LD_LIBRARY_PATH=/home/user/tmp/usr/lib:$LD_LIBRARY_PATH
-
-.. note::
-
-    It is strongly discouraged to abuse the library path for permanent
-    usage. Read some good arguments `here`__ and `here`__.
-
-__ http://web.archive.org/web/20060719201954/http://www.visi.com/~barr/ldpath.html
-__ http://linuxmafia.com/faq/Admin/ld-lib-path.html
