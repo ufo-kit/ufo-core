@@ -5,6 +5,20 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.12.1
+==============
+
+Bugfix release released on November 28th 2016.
+
+- Do not install the Docbook XML build dir
+- Document UFO_BUFFER_DEPTH_INVALID
+- Enable Large File Support
+- Check ftell and return NULL on error
+- Add forgotten manpage to the build list
+- Initialize uninitialized variable
+- Enable _FORTIFY_SOURCE feature flag
+
+
 Version 0.12.0
 ==============
 
