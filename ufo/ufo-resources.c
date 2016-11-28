@@ -184,22 +184,28 @@ ufo_resources_clerr (int error)
 static gchar *
 read_file (const gchar *filename)
 {
+    gssize length;
+    gssize buffer_length;
     FILE *fp = fopen (filename, "r");
 
     if (fp == NULL)
         return NULL;
 
     fseek (fp, 0, SEEK_END);
-    const gsize length = (gsize) ftell (fp);
+    length = (gsize) ftell (fp);
+
+    if (length < 0)
+        return NULL;
+
     rewind (fp);
-    gchar *buffer = (gchar *) g_malloc0(length + 1);
+    gchar *buffer = (gchar *) g_malloc0 (length + 1);
 
     if (buffer == NULL) {
         fclose (fp);
         return NULL;
     }
 
-    size_t buffer_length = fread (buffer, 1, length, fp);
+    buffer_length = fread (buffer, 1, length, fp);
     fclose (fp);
 
     if (buffer_length != length) {
