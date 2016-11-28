@@ -273,7 +273,8 @@ if(GTK_DOC_FOUND)
 
         install(DIRECTORY ${docs_out}/
                 DESTINATION ${CMAKE_INSTALL_DATADIR}/gtk-doc/html/Ufo
-                FILES_MATCHING REGEX ".*\\.(html|png|devhelp2|css)$")
+                FILES_MATCHING REGEX ".*\\.(html|png|devhelp2|css)$"
+                PATTERN "xml" EXCLUDE)
     endif()
 endif(GTK_DOC_FOUND)
 #}}}
