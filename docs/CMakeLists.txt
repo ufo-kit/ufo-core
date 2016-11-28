@@ -51,6 +51,7 @@ if (A2X)
             ufo-launch.1
             ufo-mkfilter.1
             ufo-query.1
+            ufo-prof.1
             ufo-runjson.1
             ufod.1
             )
