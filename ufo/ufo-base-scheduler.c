@@ -78,7 +78,7 @@ static GParamSpec *properties[N_PROPERTIES] = { NULL, };
 /**
  * UfoBaseSchedulerError:
  * @UFO_BASE_SCHEDULER_ERROR_SETUP: Could not start scheduler due to error
- * @UFO_BASE_SCHEDULER_ERROR_EXECUTION: Error occured during execution
+ * @UFO_BASE_SCHEDULER_ERROR_EXECUTION: Error occurred during execution
  */
 GQuark
 ufo_base_scheduler_error_quark (void)

@@ -249,7 +249,7 @@ ufo_remote_node_get_result (UfoRemoteNode *node,
     request = ufo_message_new (UFO_MESSAGE_GET_RESULT, 0);
 
     if (!retry_send_n_times (3, priv->msger, request, "result request", &response)) {
-        g_printerr ("A communication error occured while trying to get the results from the peer.");
+        g_printerr ("A communication error occurred while trying to get the results from the peer.");
         ufo_message_free (request);
         return;
     }
@@ -281,7 +281,7 @@ ufo_remote_node_get_requisition (UfoRemoteNode *node,
     priv = node->priv;
     request = ufo_message_new (UFO_MESSAGE_GET_REQUISITION, 0);
     if (!retry_send_n_times (3, priv->msger, request, "requisition request", &response)) {
-        g_printerr ("A communication error occured while trying to get requisition from the peer.");
+        g_printerr ("A communication error occurred while trying to get requisition from the peer.");
         ufo_message_free (request);
         return;
     }

@@ -71,7 +71,7 @@ typedef enum {
  * @error: OpenCL error code
  *
  * Check the return value of OpenCL functions and issue a warning with file and
- * line number if an error occured.
+ * line number if an error occurred.
  */
 #define UFO_RESOURCES_CHECK_CLERR(error) { \
     if ((error) != CL_SUCCESS) g_log("ocl", G_LOG_LEVEL_CRITICAL, "Error <%s:%i>: %s", __FILE__, __LINE__, ufo_resources_clerr((error))); }
