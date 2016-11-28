@@ -61,6 +61,7 @@
 
 /**
  * UfoBufferDepth:
+ * @UFO_BUFFER_DEPTH_INVALID: default for unknown/unset values
  * @UFO_BUFFER_DEPTH_8U: 8 bit unsigned
  * @UFO_BUFFER_DEPTH_16U: 16 bit unsigned
  * @UFO_BUFFER_DEPTH_16S: 16 bit signed
