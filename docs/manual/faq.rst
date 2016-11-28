@@ -27,8 +27,7 @@ on openSUSE systems.
 
 If this is not working, the library is neither installed into ``/usr/lib`` nor
 ``/usr/local/lib`` on 32-bit systems or ``/usr/lib64`` and ``/usr/local/lib64``
-on 64-bit systems. Make sure not to mess with the ``CMAKE_INSTALL_PREFIX``
-during source :ref:`configuration <inst-installing-into-non-standard-directories>`.
+on 64-bit systems.
 
 
 Usage
