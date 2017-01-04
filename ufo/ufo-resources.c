@@ -781,7 +781,7 @@ exit:
  * @kernel: Name of a kernel, or %NULL
  * @error: Return location for a GError from #UfoResourcesError, or %NULL
  *
- * Loads a and builds a kernel from a file. The file is searched in the current
+ * Loads and builds a kernel from a file. The file is searched in the current
  * working directory and all paths added through ufo_resources_add_path (). If
  * @kernel is %NULL, the first encountered kernel is returned.
  *
@@ -881,6 +881,54 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
     g_debug ("INFO Added program %p from source", (gpointer) program);
     return create_kernel (priv, program, kernel, error);
 }
+
+/**
+ * ufo_resources_get_kernel_source:
+ * @resources: A #UfoResources object
+ * @filename: Name of the .cl kernel file
+ * @error: Return location for a GError from #UfoResourcesError, or %NULL
+ *
+ * Loads a file present in the kernel PATH search list. The file is searched in the current
+ * working directory and all paths added through ufo_resources_add_path ().
+ *
+ * Returns: (transfer none): a string (gchar*) load from @filename or %NULL on error, user is
+ * responsible for free() it after using it.
+ */
+gchar *
+ufo_resources_get_kernel_source (UfoResources   *resources,
+                                 const gchar    *filename,
+                                 GError        **error)
+{
+    UfoResourcesPrivate *priv;
+    gchar *path;
+    gchar *buffer;
+
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
+                          (filename != NULL), NULL);
+
+    buffer = NULL;
+    priv = resources->priv;
+    path = lookup_kernel_path (priv, filename);
+
+    if (path == NULL) {
+        g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
+                     "Could not find `%s'. Use add_paths() to add additional kernel paths", filename);
+        return NULL;
+    }
+
+    buffer = read_file (path);
+
+    if (buffer == NULL) {
+        g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
+                     "Could not open `%s'", filename);
+        goto exit;
+    }
+
+exit:
+    g_free (path);
+    return buffer;
+}
+
 
 /**
  * ufo_resources_get_context: (skip)

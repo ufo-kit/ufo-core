@@ -133,6 +133,9 @@ gpointer         ufo_resources_get_kernel_from_source   (UfoResources   *resourc
                                                          const gchar    *source,
                                                          const gchar    *kernel,
                                                          GError        **error);
+gchar          * ufo_resources_get_kernel_source        (UfoResources   *resources,
+                                                         const gchar    *filename,
+                                                         GError        **error);
 gpointer         ufo_resources_get_context              (UfoResources   *resources);
 GList          * ufo_resources_get_cmd_queues           (UfoResources   *resources);
 GList          * ufo_resources_get_devices              (UfoResources   *resources);
