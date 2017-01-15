@@ -37,6 +37,12 @@ set(CMAKE_INSTALL_GIRDIR        "${CMAKE_INSTALL_DATAROOTDIR}/gir-1.0")
 set(CMAKE_INSTALL_PLUGINDIR     "${CMAKE_INSTALL_LIBDIR}/ufo")
 set(CMAKE_INSTALL_TYPELIBDIR    "${CMAKE_INSTALL_LIBDIR}/girepository-1.0")
 set(CMAKE_INSTALL_PKGCONFIGDIR  "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+
+if (APPLE)
+    set(CMAKE_MACOSX_RPATH      "ON")
+    set(CMAKE_INSTALL_RPATH     "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
 #}}}
 #{{{ Options
 option(WITH_TESTS "Build test suite" ON)
