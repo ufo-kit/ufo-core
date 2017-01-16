@@ -23,6 +23,7 @@
 #include <ufo/ufo-plugin-manager.h>
 #include <ufo/ufo-task-node.h>
 #include <ufo/ufo-dummy-task.h>
+#include <ufo/ufo-copy-task.h>
 #include "compat.h"
 
 /**
@@ -318,6 +319,8 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
 
     if (!g_strcmp0 (name, "[dummy]"))
         return UFO_TASK_NODE (ufo_dummy_task_new ());
+    if (!g_strcmp0 (name, "[copy]"))
+        return UFO_TASK_NODE (ufo_copy_task_new ());
 
     gchar *module_name = ufo_transform_string ("libufofilter%s.so", name, NULL);
     gchar *func_name = ufo_transform_string ("ufo_%s_task_new", name, "_");

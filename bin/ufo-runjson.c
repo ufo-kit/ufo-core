@@ -47,9 +47,9 @@ string_array_to_value_array (gchar **array)
 
     if (array == NULL)
         return NULL;
-    
+
     result = g_value_array_new (0);
-    
+
     for (guint i = 0; array[i] != NULL; i++) {
         GValue *tmp = (GValue *) g_malloc0 (sizeof (GValue));
         g_value_init (tmp, G_TYPE_STRING);
@@ -70,10 +70,11 @@ progress_update (gpointer user)
 static void
 execute_json (const gchar *filename,
               gboolean trace,
+              const gchar *sched_name,
               gchar **addresses)
 {
     UfoTaskGraph *task_graph;
-    UfoBaseScheduler *scheduler;
+    UfoBaseScheduler *scheduler = NULL;
     UfoPluginManager *manager;
     GList *leaves;
     UfoResources *resources = NULL;
@@ -97,7 +98,28 @@ execute_json (const gchar *filename,
         g_signal_connect (leaf, "processed", G_CALLBACK (progress_update), NULL);
     }
 
-    scheduler = ufo_scheduler_new ();
+    if ( (NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "fixed")) ) {
+      fprintf(stdout, "using a fixed-scheduler to run the workflow.\n");
+      scheduler = ufo_fixed_scheduler_new ();
+    }
+    /*
+    if ( (NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "local")) ) {
+      fprintf(stdout, "using a local-scheduler to run the workflow.\n");
+      scheduler = ufo_local_scheduler_new ();
+    }
+    if ( (NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "group")) ) {
+      fprintf(stdout, "using a group-scheduler to run the workflow.\n");
+      scheduler = ufo_group_scheduler_new ();
+    }
+    */
+    if ( (NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "dynamic")) ) {
+      fprintf(stdout, "using a (default) dynamic scheduler to run the workflow.\n");
+      scheduler = ufo_scheduler_new ();
+    }
+    if ( ! scheduler ) {
+      fprintf(stdout, "scheduler defaulting to (dynamic)-scheduler since no option given or unrecognised scheduler request.\n");
+      scheduler = ufo_scheduler_new ();
+    }
 
     if (trace)
         g_object_set (scheduler, "enable-tracing", TRUE, NULL);
@@ -190,10 +212,13 @@ int main(int argc, char *argv[])
     GError *error = NULL;
     gchar **addresses = NULL;
     gboolean trace = FALSE;
+    gchar *sched_name = NULL;
     gboolean show_version = FALSE;
 
     GOptionEntry entries[] = {
         { "trace",   't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
+        { "scheduler", 's', 0, G_OPTION_ARG_STRING, &sched_name, "selecting a scheduler",
+          "dynamic|fixed"},
 #ifndef WITH_MPI
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
           "Address of remote server running `ufod'", NULL },
@@ -246,7 +271,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    execute_json (argv[argc-1], trace, addresses);
+    execute_json (argv[argc-1], trace, sched_name, addresses);
 
 #ifdef WITH_MPI
     if (rank == 0) {
