@@ -9,7 +9,7 @@ ufo-runjson - Run UFO workflows defined as JSON
 SYNOPSIS
 --------
 [verse]
-'ufo-runjson' [-t] [-a] [-v] 'FILE.json'
+'ufo-runjson' [-t] [-a] [-s dynamic|fixed] [-v] 'FILE.json'
 
 
 DESCRIPTION
@@ -27,6 +27,10 @@ OPTIONS
 *--address*::
 *-a*::
         Host address of one or more ufod instances.
+
+*--scheduler*::
+*-s*::
+        Choose a scheduler other than the default dynamic scheduler.
 
 *--version*::
         Output version number.
