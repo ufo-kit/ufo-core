@@ -5,6 +5,24 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.13.0
+==============
+
+Released on January 25th 2017.
+
+Enhancements:
+
+- ufo-runjson: Add the -s/--scheduler flag to choose a scheduler different from
+  the regular one.
+- Restructure docs and add section about broadcasts
+- Added ufo_resources_get_kernel_source function to have an API to access
+  directly a source file from CL/kernel path.
+
+Fixes:
+
+- Fixup for compilation and installation on MacOS
+
+
 Version 0.12.1
 ==============
 
@@ -22,7 +40,7 @@ Bugfix release released on November 28th 2016.
 Version 0.12.0
 ==============
 
-Released on November 24th 2016
+Released on November 24th 2016.
 
 Enhancements:
 
