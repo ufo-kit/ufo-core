@@ -164,6 +164,15 @@ tokenize_args (const gchar *pipeline)
 }
 
 static void
+free_tokens (Token *token)
+{
+    if (token->str != NULL)
+        g_string_free (token->str, TRUE);
+
+    g_free (token);
+}
+
+static void
 set_property (UfoTaskNode *task, const gchar *key, const gchar *pvalue)
 {
     GParamSpec *pspec;
@@ -518,7 +527,8 @@ main(int argc, char* argv[])
     pipeline = g_strjoinv (" ", &argv[1]);
     tokens = tokenize_args (pipeline);
     graph = parse (pipeline, tokens, pm, &error);
-    g_list_free_full (tokens, g_free);
+    g_free (pipeline);
+    g_list_free_full (tokens, (GDestroyNotify) free_tokens);
 
     if (graph == NULL) {
         if (error != NULL)
