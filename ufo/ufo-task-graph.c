@@ -436,8 +436,10 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     num_roots = g_list_length (roots);
     g_list_free (roots);
 
-    if (num_roots > 1)
+    if (num_roots > 1) {
+        g_debug ("WARN Multiple root nodes, not going to expand");
         return;
+    }
 
     path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph), (UfoFilterPredicate) is_gpu_task, NULL);
 
@@ -446,6 +448,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
      * TODO: we need a better strategy at this point ...
      */
     if (has_common_ancestries (task_graph, path)) {
+        g_debug ("WARN One or more nodes have multiple inputs, not going to expand");
         g_list_free (path);
         return;
     }
