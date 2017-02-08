@@ -434,10 +434,10 @@ initialize_opencl (UfoResourcesPrivate *priv)
     device_type |= priv->device_type & UFO_DEVICE_GPU ? CL_DEVICE_TYPE_GPU : 0;
     device_type |= priv->device_type & UFO_DEVICE_ACC ? CL_DEVICE_TYPE_ACCELERATOR : 0;
 
-    g_debug ("INFO Using CPUs=%i GPUs=%i Accelerators=%i",
-             (device_type & CL_DEVICE_TYPE_CPU) != 0,
-             (device_type & CL_DEVICE_TYPE_GPU) != 0,
-             (device_type & CL_DEVICE_TYPE_ACCELERATOR) != 0);
+    g_debug ("INFO Using CPUs=%c GPUs=%c Accelerators=%c",
+             (device_type & CL_DEVICE_TYPE_CPU) != 0 ? 'y' : 'n',
+             (device_type & CL_DEVICE_TYPE_GPU) != 0 ? 'y' : 'n',
+             (device_type & CL_DEVICE_TYPE_ACCELERATOR) != 0 ? 'y' : 'n');
 
     errcode = clGetDeviceIDs (priv->platform, device_type, 0, NULL, &priv->n_devices);
     UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
