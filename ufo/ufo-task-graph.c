@@ -392,17 +392,18 @@ expand_remotes (UfoTaskGraph *task_graph,
     g_object_unref (remote_graph);
 }
 
-static gboolean
-has_common_ancestries (UfoTaskGraph *graph, GList *path)
+static GList *
+nodes_with_common_ancestries (UfoTaskGraph *graph, GList *path)
 {
+    GList *result = NULL;
     GList *it;
 
     g_list_for (path, it) {
         if (ufo_graph_get_num_predecessors (UFO_GRAPH (graph), UFO_NODE (it->data)) > 1)
-            return TRUE;
+            result = g_list_append (result, it->data);
     }
 
-    return FALSE;
+    return result;
 }
 
 /**
@@ -423,34 +424,38 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
                        gboolean expand_remote)
 {
     GList *path;
-    GList *roots;
-    guint num_roots;
+    GList *common;
 
     g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
 
-    /*
-     * Check if we start with multiple roots. If so, do not expand and map from
-     * the beginning.
-     */
-    roots = ufo_graph_get_roots (UFO_GRAPH (task_graph));
-    num_roots = g_list_length (roots);
-    g_list_free (roots);
+    path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph), (UfoFilterPredicate) is_gpu_task, NULL);
 
-    if (num_roots > 1) {
-        g_debug ("WARN Multiple root nodes, not going to expand");
+    common = nodes_with_common_ancestries (task_graph, path);
+
+    if (g_list_length (common) > 1) {
+        g_debug ("WARN More than one nodes have multiple inputs, not going to expand");
+        g_list_free (common);
+        g_list_free (path);
         return;
     }
 
-    path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph), (UfoFilterPredicate) is_gpu_task, NULL);
+    if (g_list_length (common) == 1) {
+        GList *it;
 
-    /*
-     * Check if any node on the path contains multiple inputs and stop expansion
-     * TODO: we need a better strategy at this point ...
-     */
-    if (has_common_ancestries (task_graph, path)) {
-        g_debug ("WARN One or more nodes have multiple inputs, not going to expand");
-        g_list_free (path);
-        return;
+        g_debug ("INFO Found node with multiple inputs, going to prune it");
+
+        g_list_for (path, it) {
+            if (ufo_graph_get_num_predecessors (UFO_GRAPH (task_graph), UFO_NODE (it->data)) > 1) {
+                GList *predecessor;
+
+                predecessor = g_list_previous (it);
+
+                if (predecessor != NULL)
+                    path = g_list_remove_link (path, predecessor);
+            }
+        }
+
+        g_list_free (common);
     }
 
     if (path != NULL && g_list_length (path) > 0) {
