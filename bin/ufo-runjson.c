@@ -70,6 +70,7 @@ progress_update (gpointer user)
 static void
 execute_json (const gchar *filename,
               gboolean trace,
+              gboolean timestamps,
               const gchar *sched_name,
               gchar **addresses)
 {
@@ -121,8 +122,10 @@ execute_json (const gchar *filename,
       scheduler = ufo_scheduler_new ();
     }
 
-    if (trace)
-        g_object_set (scheduler, "enable-tracing", TRUE, NULL);
+    g_object_set (scheduler,
+                  "enable-tracing", trace,
+                  "timestamps", timestamps,
+                  NULL);
 
     address_list = string_array_to_value_array (addresses);
 
@@ -212,19 +215,20 @@ int main(int argc, char *argv[])
     GError *error = NULL;
     gchar **addresses = NULL;
     gboolean trace = FALSE;
+    gboolean timestamps = FALSE;
     gchar *sched_name = NULL;
     gboolean show_version = FALSE;
 
     GOptionEntry entries[] = {
-        { "trace",   't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
+        { "trace",     't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
         { "scheduler", 's', 0, G_OPTION_ARG_STRING, &sched_name, "selecting a scheduler",
           "dynamic|fixed"},
 #ifndef WITH_MPI
-        { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
+        { "address",   'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
           "Address of remote server running `ufod'", NULL },
 #endif
-        { "version", 'v', 0, G_OPTION_ARG_NONE, &show_version,
-          "Show version information", NULL },
+        { "timestamps",   0, 0, G_OPTION_ARG_NONE, &timestamps, "enable timestamps", NULL },
+        { "version",    'v', 0, G_OPTION_ARG_NONE, &show_version, "Show version information", NULL },
         { NULL }
     };
 
@@ -271,7 +275,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    execute_json (argv[argc-1], trace, sched_name, addresses);
+    execute_json (argv[argc-1], trace, timestamps, sched_name, addresses);
 
 #ifdef WITH_MPI
     if (rank == 0) {

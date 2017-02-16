@@ -62,6 +62,7 @@ typedef struct {
     guint           *dims;
     gboolean        *finished;
     gboolean         strict;
+    gboolean         timestamps;
 } TaskLocalData;
 
 
@@ -299,7 +300,18 @@ run_task (TaskLocalData *tld)
                 break;
 
             case UFO_TASK_MODE_GENERATOR:
-                active = ufo_task_generate (tld->task, output, &requisition);
+                {
+                    if (tld->timestamps) {
+                        GValue v = { 0, };
+
+                        g_value_init (&v, G_TYPE_INT64);
+                        g_value_set_int64 (&v, g_get_real_time ());
+                        ufo_buffer_set_metadata (output, "ts", &v);
+                    }
+
+                    active = ufo_task_generate (tld->task, output, &requisition);
+
+                }
                 break;
 
             default:
@@ -391,10 +403,14 @@ setup_tasks (UfoBaseScheduler *scheduler,
     TaskLocalData **tlds;
     GList *nodes;
     guint n_nodes;
+    gboolean timestamps;
     gboolean tracing_enabled;
 
     resources = ufo_base_scheduler_get_resources (scheduler);
-    g_object_get (scheduler, "enable-tracing", &tracing_enabled, NULL);
+    g_object_get (scheduler,
+                  "enable-tracing", &tracing_enabled,
+                  "timestamps", &timestamps,
+                  NULL);
 
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
     n_nodes = g_list_length (nodes);
@@ -414,6 +430,7 @@ setup_tasks (UfoBaseScheduler *scheduler,
         tld->mode = ufo_task_get_mode (tld->task);
         tld->n_inputs = ufo_task_get_num_inputs (tld->task);
         tld->dims = g_new0 (guint, tld->n_inputs);
+        tld->timestamps = timestamps;
 
         /* TODO: make this configurable from outside */
         tld->strict = FALSE;

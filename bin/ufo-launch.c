@@ -491,6 +491,7 @@ main(int argc, char* argv[])
     static gboolean quieter = FALSE;
     static gboolean trace = FALSE;
     static gboolean version = FALSE;
+    static gboolean timestamps = FALSE;
     static gchar **addresses = NULL;
     static gchar *dump = NULL;
 
@@ -498,6 +499,7 @@ main(int argc, char* argv[])
         { "trace",   't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
         { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
         { "dump",    'd', 0, G_OPTION_ARG_STRING, &dump, "Dump to JSON file", NULL },
+        { "timestamps",0, 0, G_OPTION_ARG_NONE, &timestamps, "generate timestamps", NULL },
         { "quiet",   'q', 0, G_OPTION_ARG_NONE, &quiet, "be quiet", NULL },
         { "quieter",   0, 0, G_OPTION_ARG_NONE, &quieter, "be quieter", NULL },
         { "version",   0, 0, G_OPTION_ARG_NONE, &version, "Show version information", NULL },
@@ -556,9 +558,10 @@ main(int argc, char* argv[])
 
     sched = ufo_scheduler_new ();
 
-    if (trace) {
-        g_object_set (sched, "enable-tracing", TRUE, NULL);
-    }
+    g_object_set (sched,
+                  "enable-tracing", trace,
+                  "timestamps", timestamps,
+                  NULL);
 
     address_list = string_array_to_value_array (addresses);
 

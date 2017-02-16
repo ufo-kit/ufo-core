@@ -62,6 +62,7 @@ struct _UfoBaseSchedulerPrivate {
     gboolean         expand;
     gboolean         trace;
     gboolean         ran;
+    gboolean         timestamps;
     gdouble          time;
 };
 
@@ -69,6 +70,7 @@ enum {
     PROP_0,
     PROP_EXPAND,
     PROP_ENABLE_TRACING,
+    PROP_TIMESTAMPS,
     PROP_TIME,
     N_PROPERTIES,
 };
@@ -243,6 +245,10 @@ ufo_base_scheduler_set_property (GObject *object,
             priv->trace = g_value_get_boolean (value);
             break;
 
+        case PROP_TIMESTAMPS:
+            priv->timestamps = g_value_get_boolean (value);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -264,6 +270,10 @@ ufo_base_scheduler_get_property (GObject *object,
 
         case PROP_ENABLE_TRACING:
             g_value_set_boolean (value, priv->trace);
+            break;
+
+        case PROP_TIMESTAMPS:
+            g_value_set_boolean (value, priv->timestamps);
             break;
 
         case PROP_TIME:
@@ -363,6 +373,13 @@ ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
                               FALSE,
                               G_PARAM_READWRITE);
 
+    properties[PROP_TIMESTAMPS] =
+        g_param_spec_boolean ("timestamps",
+                              "Enable generating timestamp metadata",
+                              "Enable generating timestamp metadata",
+                              FALSE,
+                              G_PARAM_READWRITE);
+
     properties[PROP_TIME] =
         g_param_spec_double ("time",
                              "Finished execution time",
@@ -384,6 +401,7 @@ ufo_base_scheduler_init (UfoBaseScheduler *scheduler)
     scheduler->priv = priv = UFO_BASE_SCHEDULER_GET_PRIVATE (scheduler);
     priv->expand = TRUE;
     priv->trace = FALSE;
+    priv->timestamps = FALSE;
     priv->ran = FALSE;
     priv->time = 0.0;
     priv->gpu_nodes = NULL;
