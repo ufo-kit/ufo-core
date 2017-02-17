@@ -99,27 +99,31 @@ execute_json (const gchar *filename,
         g_signal_connect (leaf, "processed", G_CALLBACK (progress_update), NULL);
     }
 
-    if ( (NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "fixed")) ) {
-      fprintf(stdout, "using a fixed-scheduler to run the workflow.\n");
-      scheduler = ufo_fixed_scheduler_new ();
+    if ((NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "fixed"))) {
+        fprintf (stdout, "using a fixed-scheduler to run the workflow.\n");
+        scheduler = ufo_fixed_scheduler_new ();
     }
+
     /*
-    if ( (NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "local")) ) {
-      fprintf(stdout, "using a local-scheduler to run the workflow.\n");
-      scheduler = ufo_local_scheduler_new ();
+    if ((NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "local"))) {
+        fprintf (stdout, "using a local-scheduler to run the workflow.\n");
+        scheduler = ufo_local_scheduler_new ();
     }
-    if ( (NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "group")) ) {
-      fprintf(stdout, "using a group-scheduler to run the workflow.\n");
-      scheduler = ufo_group_scheduler_new ();
+
+    if ((NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "group"))) {
+        fprintf (stdout, "using a group-scheduler to run the workflow.\n");
+        scheduler = ufo_group_scheduler_new ();
     }
     */
-    if ( (NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "dynamic")) ) {
-      fprintf(stdout, "using a (default) dynamic scheduler to run the workflow.\n");
-      scheduler = ufo_scheduler_new ();
+
+    if ((NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "dynamic"))) {
+        fprintf (stdout, "using a (default) dynamic scheduler to run the workflow.\n");
+        scheduler = ufo_scheduler_new ();
     }
-    if ( ! scheduler ) {
-      fprintf(stdout, "scheduler defaulting to (dynamic)-scheduler since no option given or unrecognised scheduler request.\n");
-      scheduler = ufo_scheduler_new ();
+
+    if (!scheduler) {
+        fprintf (stdout, "scheduler defaulting to (dynamic)-scheduler since no option given or unrecognised scheduler request.\n");
+        scheduler = ufo_scheduler_new ();
     }
 
     g_object_set (scheduler,
