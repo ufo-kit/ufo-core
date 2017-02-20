@@ -606,14 +606,10 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     GThread **threads;
     TaskLocalData **tlds;
     gboolean expand;
-    gboolean trace;
 
     priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
 
-    g_object_get (scheduler,
-                  "enable-tracing", &trace,
-                  "expand", &expand,
-                  NULL);
+    g_object_get (scheduler, "expand", &expand, NULL);
 
     graph = task_graph;
     resources = ufo_base_scheduler_get_resources (scheduler);
