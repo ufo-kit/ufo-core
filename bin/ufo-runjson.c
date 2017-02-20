@@ -30,6 +30,16 @@
 #include <ufo/ufo-mpi-messenger.h>
 #endif
 
+typedef struct {
+    gchar **addresses;
+    gchar *scheduler;
+    gboolean trace;
+    gboolean timestamps;
+    gboolean version;
+    gboolean quiet;
+    gboolean quieter;
+} Options;
+
 static void
 handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
 {
@@ -69,10 +79,7 @@ progress_update (gpointer user)
 
 static void
 execute_json (const gchar *filename,
-              gboolean trace,
-              gboolean timestamps,
-              const gchar *sched_name,
-              gchar **addresses)
+              const Options *options)
 {
     UfoTaskGraph *task_graph;
     UfoBaseScheduler *scheduler = NULL;
@@ -81,7 +88,7 @@ execute_json (const gchar *filename,
     UfoResources *resources = NULL;
     GValueArray *address_list = NULL;
     GError *error = NULL;
-    gboolean has_tty;
+    gboolean have_tty;
 
     manager = ufo_plugin_manager_new ();
 
@@ -89,49 +96,49 @@ execute_json (const gchar *filename,
     ufo_task_graph_read_from_file (task_graph, manager, filename, &error);
     handle_error ("Reading JSON", error, UFO_GRAPH (task_graph));
 
-    has_tty = isatty (fileno (stdin));
+    have_tty = isatty (fileno (stdin));
     leaves = ufo_graph_get_leaves (UFO_GRAPH (task_graph));
 
-    if (has_tty) {
+    if (!options->quiet && have_tty) {
         UfoTaskNode *leaf;
 
         leaf = UFO_TASK_NODE (leaves->data);
         g_signal_connect (leaf, "processed", G_CALLBACK (progress_update), NULL);
     }
 
-    if ((NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "fixed"))) {
-        fprintf (stdout, "using a fixed-scheduler to run the workflow.\n");
+    if ((NULL != options->scheduler) && (0 == g_ascii_strcasecmp (options->scheduler, "fixed"))) {
+        g_debug ("INFO: run-json: using fixed-scheduler");
         scheduler = ufo_fixed_scheduler_new ();
     }
 
     /*
-    if ((NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "local"))) {
-        fprintf (stdout, "using a local-scheduler to run the workflow.\n");
+    if ((NULL != options->scheduler) && (0 == g_ascii_strcasecmp (options->scheduler, "local"))) {
+        g_debug ("INFO: run-json: using local-scheduler");
         scheduler = ufo_local_scheduler_new ();
     }
 
-    if ((NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "group"))) {
-        fprintf (stdout, "using a group-scheduler to run the workflow.\n");
+    if ((NULL != options->scheduler) && (0 == g_ascii_strcasecmp (options->scheduler, "group"))) {
+        g_debug ("INFO: run-json: using group-scheduler");
         scheduler = ufo_group_scheduler_new ();
     }
     */
 
-    if ((NULL != sched_name) && (0 == g_ascii_strcasecmp(sched_name, "dynamic"))) {
-        fprintf (stdout, "using a (default) dynamic scheduler to run the workflow.\n");
+    if ((NULL != options->scheduler) && (0 == g_ascii_strcasecmp (options->scheduler, "dynamic"))) {
+        g_debug ("INFO: run-json: using dynamic scheduler");
         scheduler = ufo_scheduler_new ();
     }
 
     if (!scheduler) {
-        fprintf (stdout, "scheduler defaulting to (dynamic)-scheduler since no option given or unrecognised scheduler request.\n");
+        g_debug ("INFO: run-json: using dynamic scheduler by default");
         scheduler = ufo_scheduler_new ();
     }
 
     g_object_set (scheduler,
-                  "enable-tracing", trace,
-                  "timestamps", timestamps,
+                  "enable-tracing", options->trace,
+                  "timestamps", options->timestamps,
                   NULL);
 
-    address_list = string_array_to_value_array (addresses);
+    address_list = string_array_to_value_array (options->addresses);
 
     if (address_list) {
         resources = UFO_RESOURCES (ufo_resources_new (NULL));
@@ -143,8 +150,15 @@ execute_json (const gchar *filename,
     ufo_base_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
 
-    if (has_tty)
-        g_print ("\n");
+    if (!options->quieter) {
+        gdouble run_time;
+
+        if (!options->quiet && have_tty)
+            g_print ("\n");
+
+        g_object_get (scheduler, "time", &run_time, NULL);
+        g_print ("Finished in %3.5fs\n", run_time);
+    }
 
     g_list_free (leaves);
 
@@ -208,7 +222,6 @@ mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
 
     sleep (3);
 #endif
-
 }
 
 #endif
@@ -217,22 +230,26 @@ int main(int argc, char *argv[])
 {
     GOptionContext *context;
     GError *error = NULL;
-    gchar **addresses = NULL;
-    gboolean trace = FALSE;
-    gboolean timestamps = FALSE;
-    gchar *sched_name = NULL;
-    gboolean show_version = FALSE;
+
+    static Options options = {
+        .addresses = NULL,
+        .scheduler = NULL,
+        .trace = FALSE,
+        .timestamps = FALSE,
+        .version = FALSE,
+        .quiet = FALSE,
+        .quieter = FALSE,
+    };
 
     GOptionEntry entries[] = {
-        { "trace",     't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
-        { "scheduler", 's', 0, G_OPTION_ARG_STRING, &sched_name, "selecting a scheduler",
+        { "trace",     't', 0, G_OPTION_ARG_NONE, &options.trace, "enable tracing", NULL },
+        { "scheduler", 's', 0, G_OPTION_ARG_STRING, &options.scheduler, "selecting a scheduler",
           "dynamic|fixed"},
-#ifndef WITH_MPI
-        { "address",   'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses,
-          "Address of remote server running `ufod'", NULL },
-#endif
-        { "timestamps",   0, 0, G_OPTION_ARG_NONE, &timestamps, "enable timestamps", NULL },
-        { "version",    'v', 0, G_OPTION_ARG_NONE, &show_version, "Show version information", NULL },
+        { "address",   'a', 0, G_OPTION_ARG_STRING_ARRAY, &options.addresses, "Address of remote server running `ufod'", NULL },
+        { "timestamps",  0, 0, G_OPTION_ARG_NONE, &options.timestamps, "enable timestamps", NULL },
+        { "quiet",     'q', 0, G_OPTION_ARG_NONE, &options.quiet, "be quiet", NULL },
+        { "quieter",     0, 0, G_OPTION_ARG_NONE, &options.quieter, "be quieter", NULL },
+        { "version",   'v', 0, G_OPTION_ARG_NONE, &options.version, "Show version information", NULL },
         { NULL }
     };
 
@@ -248,7 +265,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (show_version) {
+    if (options.version) {
         g_print ("runjson %s\n", UFO_VERSION);
         exit (EXIT_SUCCESS);
     }
@@ -279,7 +296,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    execute_json (argv[argc-1], trace, timestamps, sched_name, addresses);
+    execute_json (argv[argc-1], &options);
 
 #ifdef WITH_MPI
     if (rank == 0) {
@@ -288,7 +305,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    g_strfreev (addresses);
+    g_strfreev (options.addresses);
     g_option_context_free (context);
 
     return 0;
