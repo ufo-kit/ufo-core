@@ -1,10 +1,10 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=@CMAKE_INSTALL_PREFIX@
-libdir=@CMAKE_INSTALL_LIBDIR@
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
 includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
 girdir=${prefix}/@CMAKE_INSTALL_GIRDIR@
-typelibdir=@CMAKE_INSTALL_TYPELIBDIR@
-plugindir=@CMAKE_INSTALL_PLUGINDIR@
+typelibdir=${exec_prefix}/@CMAKE_INSTALL_TYPELIBDIR@
+plugindir=${exec_prefix}/@CMAKE_INSTALL_PLUGINDIR@
 kerneldir=${prefix}/@CMAKE_INSTALL_KERNELDIR@
 
 Name: @UFO_NAME@
