@@ -117,6 +117,16 @@ if (ZMQ_FOUND)
     endif ()
 endif ()
 
+#{{{ Check for AMD SDK
+include(CheckCSourceCompiles)
+check_c_source_compiles("
+    #include <CL/cl.h>
+    int main()
+    {
+        cl_mem_flags flags = CL_MEM_BUS_ADDRESSABLE_AMD;
+    }"
+HAVE_GMA)
+#}}}
 #{{{ Link dirs of dependencies
 link_directories(
     ${GLIB2_LIBRARY_DIRS}

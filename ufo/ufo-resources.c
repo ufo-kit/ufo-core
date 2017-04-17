@@ -274,6 +274,22 @@ platform_has_gpus (cl_platform_id platform)
     return n_devices > 0;
 }
 
+#ifdef HAVE_GMA
+
+int
+CheckSupportExtension(cl_device_id deviceID, const char* extensionAsked)
+{
+      size_t extensionSize;
+       clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS,0,NULL, &extensionSize);
+
+      char* extensions_pChar = (char*)malloc(extensionSize+1); //+1 for end null character
+      clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS,extensionSize,extensions_pChar, &extensionSize);
+      extensions_pChar[extensionSize] = '\0';
+
+      if(strstr(extensions_pChar,extensionAsked)!=NULL) return 0;
+      else return 1;
+}
+
 static cl_platform_id
 get_preferably_gpu_based_platform (UfoResourcesPrivate *priv)
 {
@@ -286,6 +302,33 @@ get_preferably_gpu_based_platform (UfoResourcesPrivate *priv)
     UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
 
     g_debug ("INFO found %i OpenCL platforms %i", n_platforms, priv->platform_index);
+
+#ifdef HAVE_GMA
+
+    /*get the first AMD platform*/
+    int i;
+    cl_device_id device_id;
+    cl_uint num_of_devices;
+    char pBuffer[128];
+ 
+    for (i = 0; i < num_platforms; ++i)
+    {
+       clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, 128, pBuffer, NULL);
+         if (strcmp(pBuffer, "Advanced Micro Devices, Inc.") == 0)
+         {
+              candidate = platforms[i];
+              break;
+          }
+     }
+    
+    clGetDeviceIDs(candidate, CL_DEVICE_TYPE_GPU, 1, &device_id,&num_of_devices);
+
+    if(CheckSupportExtension(device_id,"cl_amd_bus_addressable_memory")==1){
+      g_printerr("extension required for directgma not found,verify installation");
+      return NULL;
+    }
+
+#endif 
 
     /* Check if user set a preferred platform */
     if (priv->platform_index >= 0 && priv->platform_index < (gint) n_platforms) {
@@ -307,6 +350,7 @@ platform_found:
     g_free (platforms);
     return candidate;
 }
+
 
 static gboolean
 platform_vendor_has_prefix (cl_platform_id platform,
