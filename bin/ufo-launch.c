@@ -577,6 +577,7 @@ main(int argc, char* argv[])
 
     if (error != NULL) {
         g_print ("Error executing pipeline: %s\n", error->message);
+        return 1;
     }
 
     if (!quieter) {
