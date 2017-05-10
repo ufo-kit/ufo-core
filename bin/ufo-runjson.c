@@ -44,7 +44,7 @@ static void
 handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
 {
     if (error) {
-        g_warning ("%s: %s", prefix, error->message);
+        g_printerr ("%s: %s", prefix, error->message);
         g_error_free (error);
         exit (EXIT_FAILURE);
     }
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
     g_option_context_add_main_entries (context, entries, NULL);
 
     if (!g_option_context_parse (context, &argc, &argv, &error)) {
-        g_print ("Option parsing failed: %s\n", error->message);
+        g_printerr ("Option parsing failed: %s\n", error->message);
         return 1;
     }
 

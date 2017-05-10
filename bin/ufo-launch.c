@@ -514,7 +514,7 @@ main(int argc, char* argv[])
     g_option_context_add_main_entries (context, entries, NULL);
 
     if (!g_option_context_parse (context, &argc, &argv, &error)) {
-        g_print ("Error parsing options: %s\n", error->message);
+        g_printerr ("Error parsing options: %s\n", error->message);
         return 1;
     }
 
@@ -534,7 +534,7 @@ main(int argc, char* argv[])
 
     if (graph == NULL) {
         if (error != NULL)
-            g_print ("Error parsing pipeline: %s\n", error->message);
+            g_printerr ("Error parsing pipeline: %s\n", error->message);
 
         return 1;
     }
@@ -576,7 +576,7 @@ main(int argc, char* argv[])
         ufo_base_scheduler_run (sched, graph, &error);
 
     if (error != NULL) {
-        g_print ("Error executing pipeline: %s\n", error->message);
+        g_printerr ("Error executing pipeline: %s\n", error->message);
         return 1;
     }
 
@@ -598,7 +598,7 @@ main(int argc, char* argv[])
         ufo_task_graph_save_to_json (graph, dump, &error);
 
         if (error != NULL)
-            g_print ("Error dumping task graph: %s\n", error->message);
+            g_printerr ("Error dumping task graph: %s\n", error->message);
     }
 
     g_list_for (nodes, it)
