@@ -154,7 +154,7 @@ way ::
 
     $ mkdir -p build/ufo-filters
     $ cd build/ufo-filters
-    $ cmake <path-to-ufo-filters> -DLIBDIR=/usr/lib64 -DPREFIX=/usr
+    $ cmake <path-to-ufo-filters> -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib64
     $ make
     $ make install
 
