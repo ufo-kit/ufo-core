@@ -122,7 +122,7 @@ CMake will notify you, if some of the dependencies are not met. In case you want
 to install the library system-wide on a 64-bit machine you should generate the
 Makefiles with ::
 
-  $ cmake -DCMAKE_INSTALL_LIBDIR=/usr/lib64 <path-to-ufo>
+  $ cmake -DCMAKE_INSTALL_LIBDIR=lib64 <path-to-ufo>
 
 For earlier versions of PyGObject, it is necessary that the introspection files
 are located under ``/usr`` not ``/usr/local``. You can force the prefix by
@@ -154,7 +154,7 @@ way ::
 
     $ mkdir -p build/ufo-filters
     $ cd build/ufo-filters
-    $ cmake <path-to-ufo-filters> -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib64
+    $ cmake <path-to-ufo-filters> -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib64
     $ make
     $ make install
 
