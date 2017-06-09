@@ -26,7 +26,7 @@
 
 /*** BEGIN file-production ***/
 /* enumerations from "@filename@" */
-#include "ufo/@filename@"
+#include "@filename@"
 /*** END file-production ***/
 
 

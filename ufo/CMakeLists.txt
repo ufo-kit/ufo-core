@@ -85,6 +85,8 @@ if (WITH_ZMQ)
     list(APPEND ufocore_HDRS ufo-zmq-messenger.h)
 endif ()
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(ufo SHARED ${ufocore_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/ufo-enums.c)
 
 set_target_properties(ufo PROPERTIES
