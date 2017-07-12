@@ -1,0 +1,7 @@
+#mesondefine WITH_PYTHON
+#mesondefine WITH_ZMQ
+#mesondefine WITH_MPI
+#mesondefine HAVE_VIENNACL
+#mesondefine UFO_PLUGIN_DIR
+#mesondefine UFO_KERNEL_DIR
+#mesondefine UFO_VERSION
