@@ -118,7 +118,7 @@ pkg.generate(
         'kerneldir=${prefix}/@0@/ufo'.format(get_option('datadir')),
     ],
     subdirs: [
-        header_subdir
+        header_dir
     ],
 )
 
