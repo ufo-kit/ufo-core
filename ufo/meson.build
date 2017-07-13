@@ -35,6 +35,7 @@ sources = [
 ]
 
 headers = [
+    'ufo.h',
     'ufo-base-scheduler.h',
     'ufo-basic-ops.h',
     'ufo-buffer.h',
@@ -72,8 +73,8 @@ enums = gnome.mkenums('ufo-enums',
     sources: headers,
     h_template: 'ufo-enums.h.template',
     c_template: 'ufo-enums.c.template',
-    # install_header: true,
-    # install_dir: '', # this is horrible but works and prefixes correctly
+    install_header: true,
+    install_dir: '@0@/@1@'.format(get_option('includedir'), header_subdir),
 )
 
 enums_c = enums[0]

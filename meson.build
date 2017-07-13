@@ -37,7 +37,7 @@ include_dir = include_directories('.')
 
 plugindir = '@0@/@1@/ufo'.format(get_option('prefix'), get_option('libdir'))
 kerneldir = '@0@/@1@/ufo'.format(get_option('prefix'), get_option('datadir'))
-header_subdir = 'ufo-@0@'.format(version_major)
+header_subdir = 'ufo-@0@/ufo'.format(version_major)
 
 conf = configuration_data()
 conf.set_quoted('UFO_PLUGIN_DIR', plugindir)
