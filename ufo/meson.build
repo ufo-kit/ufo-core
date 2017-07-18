@@ -86,7 +86,7 @@ if zmq_dep.found()
     sources += ['ufo-zmq-messenger.c']
 endif
 
-m_dep =  declare_dependency(
+m_dep = declare_dependency(
     dependencies: cc.find_library('m')
 )
 

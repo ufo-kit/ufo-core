@@ -4,8 +4,13 @@ progs = ['ufo-launch',
          'ufod']
 
 foreach prog: progs
-    executable(prog,
+    sources = [
         '@0@.c'.format(prog),
+        enums_h
+    ]
+
+    executable(prog,
+        sources: sources,
         include_directories: include_dir,
         dependencies: deps,
         link_with: lib,
