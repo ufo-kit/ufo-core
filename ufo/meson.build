@@ -99,6 +99,13 @@ lib = shared_library('ufo',
     install: true,
 )
 
+gnome.generate_gir(lib,
+    namespace: 'Ufo',
+    nsversion: '@0@.0'.format(version_major),
+    sources: sources,
+    install: true,
+)
+
 pkg = import('pkgconfig')
 
 pkg.generate(
