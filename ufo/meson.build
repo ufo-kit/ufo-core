@@ -102,8 +102,14 @@ lib = shared_library('ufo',
 gnome.generate_gir(lib,
     namespace: 'Ufo',
     nsversion: '@0@.0'.format(version_major),
-    sources: sources,
+    sources: sources + headers,
     install: true,
+    includes: [
+      'GLib-2.0',
+      'GObject-2.0',
+      'GModule-2.0',
+      'Json-1.0',
+    ],
 )
 
 pkg = import('pkgconfig')
