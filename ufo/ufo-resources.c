@@ -328,17 +328,6 @@ platform_vendor_has_prefix (cl_platform_id platform,
 }
 
 static void
-add_vendor_to_build_opts (GString *opts,
-                          cl_platform_id platform)
-{
-    if (platform_vendor_has_prefix (platform, "NVIDIA"))
-        g_string_append (opts, "-cl-nv-verbose -DVENDOR_NVIDIA");
-
-    if (platform_vendor_has_prefix (platform, "Advanced Micro Devices"))
-        g_string_append (opts, "-DVENDOR_AMD");
-}
-
-static void
 restrict_to_gpu_subset (UfoResourcesPrivate *priv)
 {
     const gchar* var;
@@ -428,7 +417,12 @@ initialize_opencl (UfoResourcesPrivate *priv)
     cl_int errcode = CL_SUCCESS;
 
     priv->platform = get_preferably_gpu_based_platform (priv);
-    add_vendor_to_build_opts (priv->build_opts, priv->platform);
+
+    if (platform_vendor_has_prefix (priv->platform, "NVIDIA"))
+        g_string_append (priv->build_opts, "-cl-nv-verbose -DVENDOR_NVIDIA");
+
+    if (platform_vendor_has_prefix (priv->platform, "Advanced Micro Devices"))
+        g_string_append (priv->build_opts, "-DVENDOR_AMD");
 
     device_type = get_device_type_from_env ();
     device_type |= priv->device_type & UFO_DEVICE_CPU ? CL_DEVICE_TYPE_CPU : 0;
@@ -507,6 +501,21 @@ ufo_resources_add_path (UfoResources *resources,
     resources->priv->paths = g_list_append (resources->priv->paths, g_strdup (path));
 }
 
+static void
+append_include_path (const gchar *path,
+                     GString *str)
+{
+    g_string_append_printf (str, " -I%s", path);
+}
+
+static void
+opt_append_include_paths (GString *str,
+                          UfoResourcesPrivate *priv)
+
+{
+    g_list_foreach (priv->paths, (GFunc) append_include_path, str);
+}
+
 static gchar *
 escape_device_name (gchar *name)
 {
@@ -527,31 +536,12 @@ escape_device_name (gchar *name)
 }
 
 static void
-append_include_path (const gchar *path,
-                     GString *str)
+opt_append_device_options (GString *str,
+                           UfoResourcesPrivate *priv,
+                           guint device_index)
 {
-    g_string_append_printf (str, " -I%s", path);
-}
-
-static gchar *
-get_device_build_options (UfoResourcesPrivate *priv,
-                          guint device_index,
-                          const gchar *additional)
-{
-    GString *opts;
-
     g_assert (device_index < priv->n_devices);
-
-    opts = g_string_new (priv->build_opts->str);
-
-    if (additional != NULL && strlen (additional) > 0) {
-        g_string_append_printf (opts, " %s", additional);
-    }
-
-    g_string_append_printf (opts, " -DDEVICE_%s", escape_device_name (priv->device_names[device_index]));
-    g_list_foreach (priv->paths, (GFunc) append_include_path, opts);
-
-    return g_string_free (opts, FALSE);
+    g_string_append_printf (str, " -DDEVICE_%s", escape_device_name (priv->device_names[device_index]));
 }
 
 static void
@@ -583,7 +573,6 @@ add_program_from_source (UfoResourcesPrivate *priv,
 {
     cl_program program;
     cl_int errcode = CL_SUCCESS;
-    gchar *build_options;
     GTimer *timer;
 
     program = g_hash_table_lookup (priv->programs, source);
@@ -602,15 +591,20 @@ add_program_from_source (UfoResourcesPrivate *priv,
     timer = g_timer_new ();
 
     for (guint i = 0; i < priv->n_devices; i++) {
-        build_options = get_device_build_options (priv, i, options);
-        errcode = clBuildProgram (program, 1, &priv->devices[i], build_options, NULL, NULL);
+        GString *build_options;
+
+        build_options = g_string_new (priv->build_opts->str);
+        opt_append_device_options (build_options, priv, i);
+        opt_append_include_paths (build_options, priv);
+
+        errcode = clBuildProgram (program, 1, &priv->devices[i], build_options->str, NULL, NULL);
 
         if (errcode != CL_SUCCESS) {
             handle_build_error (program, priv->devices[0], errcode, error);
             return NULL;
         }
 
-        g_free (build_options);
+        g_string_free (build_options, TRUE);
     }
 
     g_timer_stop (timer);
