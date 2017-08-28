@@ -599,26 +599,26 @@ add_program_from_source (UfoResourcesPrivate *priv,
         return NULL;
     }
 
-    build_options = get_device_build_options (priv, 0, options);
     timer = g_timer_new ();
 
-    errcode = clBuildProgram (program,
-                              priv->n_devices, priv->devices,
-                              build_options,
-                              NULL, NULL);
+    for (guint i = 0; i < priv->n_devices; i++) {
+        build_options = get_device_build_options (priv, i, options);
+        errcode = clBuildProgram (program, 1, &priv->devices[i], build_options, NULL, NULL);
+
+        if (errcode != CL_SUCCESS) {
+            handle_build_error (program, priv->devices[0], errcode, error);
+            return NULL;
+        }
+
+        g_free (build_options);
+    }
 
     g_timer_stop (timer);
-    g_debug ("INFO Built with `%s' in %3.5fs", build_options, g_timer_elapsed (timer, NULL));
+    g_debug ("INFO Built with `%s%s' for %i devices in %3.5fs", priv->build_opts->str, options, priv->n_devices, g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
-
-    if (errcode != CL_SUCCESS) {
-        handle_build_error (program, priv->devices[0], errcode, error);
-        return NULL;
-    }
 
     g_hash_table_insert (priv->programs, g_strdup (source), program);
 
-    g_free (build_options);
     return program;
 }
 
