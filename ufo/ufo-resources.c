@@ -81,6 +81,7 @@ struct _UfoResourcesPrivate {
     cl_context       context;
     cl_uint          n_devices;         /* Number of OpenCL devices per platform id */
     cl_device_id     *devices;          /* Array of OpenCL devices per platform id */
+    gchar           **device_names;     /* Array of names for each device */
 
     GList       *gpu_nodes;
 
@@ -462,22 +463,21 @@ initialize_opencl (UfoResourcesPrivate *priv)
         return FALSE;
 
     priv->gpu_nodes = NULL;
+    priv->device_names = g_malloc0 (priv->n_devices * sizeof (gchar *));
 
     for (guint i = 0; i < priv->n_devices; i++) {
         UfoGpuNode *node;
         size_t size;
-        gchar *name;
 
         node = UFO_GPU_NODE (ufo_gpu_node_new (priv->context, priv->devices[i]));
 
         UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, 0, NULL, &size));
-        name = g_malloc0 (size);
+        priv->device_names[i] = g_malloc0 (size);
 
-        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, size, name, NULL));
+        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, size, priv->device_names[i], NULL));
 
-        g_debug("NEW  UfoGpuNode-%p [device=%s]", (gpointer) node, name);
+        g_debug("NEW  UfoGpuNode-%p [device=%s]", (gpointer) node, priv->device_names[i]);
         priv->gpu_nodes = g_list_append (priv->gpu_nodes, node);
-        g_free (name);
     }
 
     return TRUE;
@@ -539,8 +539,6 @@ get_device_build_options (UfoResourcesPrivate *priv,
                           const gchar *additional)
 {
     GString *opts;
-    gsize size;
-    gchar *name;
 
     g_assert (device_index < priv->n_devices);
 
@@ -550,14 +548,7 @@ get_device_build_options (UfoResourcesPrivate *priv,
         g_string_append_printf (opts, " %s", additional);
     }
 
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index], CL_DEVICE_NAME, 0, NULL, &size));
-    name = g_malloc0 (size);
-
-    UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[device_index], CL_DEVICE_NAME, size, name, NULL));
-
-    g_string_append_printf (opts, " -DDEVICE_%s", escape_device_name (name));
-    g_free (name);
-
+    g_string_append_printf (opts, " -DDEVICE_%s", escape_device_name (priv->device_names[device_index]));
     g_list_foreach (priv->paths, (GFunc) append_include_path, opts);
 
     return g_string_free (opts, FALSE);
@@ -1129,6 +1120,9 @@ ufo_resources_finalize (GObject *object)
 
     g_hash_table_destroy (priv->programs);
 
+    for (guint i = 0; i < priv->n_devices; i++)
+        g_free (priv->device_names[i]);
+
     if (priv->context) {
         g_debug ("FREE context=%p", (gpointer) priv->context);
         UFO_RESOURCES_CHECK_CLERR (clReleaseContext (priv->context));
@@ -1136,6 +1130,7 @@ ufo_resources_finalize (GObject *object)
 
     g_string_free (priv->build_opts, TRUE);
 
+    g_free (priv->device_names);
     g_free (priv->devices);
 
     priv->kernels = NULL;
