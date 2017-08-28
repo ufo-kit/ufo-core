@@ -251,6 +251,7 @@ static UfoTaskNode * read_connection (Environment *env, UfoTaskNode *previous);
 static gboolean
 try_consume_assignment (Environment *env, UfoTaskNode *task)
 {
+    GParamSpec *pspec;
     Token *key;
     Token *equal;
     Token *value;
@@ -268,12 +269,47 @@ try_consume_assignment (Environment *env, UfoTaskNode *task)
     if (equal == NULL || equal->type != ASSIGNMENT)
         return FALSE;
 
-    value = consume (env);
+    pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (task), key->str->str);
 
-    if (value == NULL || key->type != STRING)
-        return FALSE;
+    if (pspec->value_type == G_TYPE_VALUE_ARRAY) {
+        GParamSpecValueArray *vapspec;
+        GValueArray *array;
+        GValue array_value = { 0, };
+        Token *next;
 
-    set_property (task, key->str->str, value->str->str);
+        vapspec = (GParamSpecValueArray *) pspec;
+        array = g_value_array_new (8);
+
+        do {
+            GValue from_value = { 0, };
+            GValue to_value = { 0, };
+
+            value = consume (env);
+
+            if (value == NULL || value->type != STRING)
+                return FALSE;
+
+            next = consume (env);
+
+            g_value_init (&from_value, G_TYPE_STRING);
+            g_value_init (&to_value, vapspec->element_spec->value_type);
+            g_value_set_string (&from_value, value->str->str);
+            g_value_transform (&from_value, &to_value);
+            g_value_array_append (array, &to_value);
+        } while (next->type == COMMA);
+
+        g_value_init (&array_value, G_TYPE_VALUE_ARRAY);
+        g_value_set_boxed (&array_value, array);
+        g_object_set_property (G_OBJECT (task), key->str->str, &array_value);
+    }
+    else {
+        value = consume (env);
+
+        if (value == NULL || key->type != STRING)
+            return FALSE;
+
+        set_property (task, key->str->str, value->str->str);
+    }
 
     return TRUE;
 }
