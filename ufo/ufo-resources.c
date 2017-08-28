@@ -455,17 +455,6 @@ initialize_opencl (UfoResourcesPrivate *priv)
 
     restrict_to_gpu_subset (priv);
 
-    for (guint i = 0; i < priv->n_devices; i++) {
-        size_t size;
-        gchar *name;
-
-        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, 0, NULL, &size));
-        name = g_malloc0 (size);
-
-        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->devices[i], CL_DEVICE_NAME, size, name, NULL));
-        g_free (name);
-    }
-
     priv->context = clCreateContext (NULL, priv->n_devices, priv->devices, NULL, NULL, &errcode);
     UFO_RESOURCES_CHECK_AND_SET (errcode, &priv->construct_error);
 
