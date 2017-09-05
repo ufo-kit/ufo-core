@@ -5,6 +5,37 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.14.0
+==============
+
+Release on September 5th 2017.
+
+Enhancements:
+
+- meson build system support has been added
+- Improve documentation
+- Improve expansion for multi-input node graphs
+- Output warning in case expansion is not possible
+- Use g_printerr to print errors on stderr instead of stdout
+- ufo-launch returns exit code 1 on execution error
+- Make device usage debug output unambiguous
+- #123: allow vector properties via ufo-launch
+- #120: generate buffer timestamps with the --timestamps option
+
+Fixes:
+
+- Fix a minor memory leak in ufo-launch
+- Fix problem with CMake install dir
+- Fix #119: compile OpenCL programs for each device with device-specific flags
+  to allow kernel developers optimizations for each device
+- Fix #121: use the same command-line interface for both runjson and launch
+
+Breaks:
+
+- We dropped support for Autotools, CMake and meson are the only options to
+  build at the moment.
+
+
 Version 0.13.0
 ==============
 
