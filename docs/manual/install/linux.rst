@@ -69,7 +69,7 @@ Ubuntu/Debian
 On Debian or Debian-based system the following packages are required to build
 ufo-core::
 
-    $ sudo apt-get install build-essentials cmake libglib2.0-dev libjson-glib-dev
+    $ sudo apt-get install build-essential cmake libglib2.0-dev libjson-glib-dev
 
 You will also need an OpenCL ICD loader. To simply get the build running, you
 can install ::

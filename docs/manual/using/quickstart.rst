@@ -50,16 +50,16 @@ Fourier-transform on a set of input files::
     {
         "nodes" : [
             {
-                "plugin": "reader",
+                "plugin": "read",
                 "name": "reader",
                 "properties" : { "path": "*.tif" }
             },
             {
                 "plugin": "fft",
                 "name": "fft"
-            }
+            },
             {
-                "plugin": "writer",
+                "plugin": "write",
                 "name": "writer",
                 "properties" : { "filename": "fft-%05i.tif" }
             }
@@ -96,18 +96,20 @@ this::
     int main (void)
     {
         UfoTaskGraph *graph;
-        UfoScheduler *scheduler;
+        UfoBaseScheduler *scheduler;
         UfoPluginManager *manager;
 
-        g_type_init ();  /* you _must_ call this! */
+        #if !(GLIB_CHECK_VERSION (2, 36, 0))
+            g_type_init ();
+        #endif
 
         graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-        manager = ufo_plugin_manager_new (NULL);
+        manager = ufo_plugin_manager_new ();
 
         ufo_task_graph_read_from_file (graph, manager, "hello-world.json", NULL);
 
-        scheduler = ufo_scheduler_new (NULL, NULL);
-        ufo_scheduler_run (scheduler, graph, NULL);
+        scheduler = ufo_scheduler_new ();
+        ufo_base_scheduler_run (scheduler, graph, NULL);
 
         /* Destroy all objects */
         g_object_unref (graph);
@@ -120,7 +122,7 @@ this::
 
 You can compile this with::
 
-    $ gcc `pkg-config --cflags --libs ufo` foo.c -o foo
+    $ gcc `pkg-config --cflags ufo` foo.c -o foo `pkg-config --libs ufo`
 
 As you can see we simply construct a new ``UfoGraph`` object from a JSON encoded
 :ref:`configuration file <json-configuration>` and execute the computation
@@ -141,9 +143,9 @@ hand::
         UfoTaskNode *reader;
         UfoTaskNode *writer;
 
-    #if !(GLIB_CHECK_VERSION (2, 36, 0))
-        g_type_init ();
-    #endif
+        #if !(GLIB_CHECK_VERSION (2, 36, 0))
+            g_type_init ();
+        #endif
 
         graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
         manager = ufo_plugin_manager_new ();
