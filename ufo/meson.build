@@ -90,7 +90,7 @@ m_dep = declare_dependency(
     dependencies: cc.find_library('m')
 )
 
-lib = shared_library('ufo',
+lib = library('ufo',
     sources: sources,
     dependencies: deps + [m_dep],
     version: version,
