@@ -21,6 +21,15 @@ Now update the repositories and install the framework and plugins::
     centos $ yum install ufo-core ufo-filters
 
 
+Installing Debian packages
+==========================
+
+UFO is part of Debian Sid and thus also available since Ubuntu 17.04. To install
+both the core framework and the filters install::
+
+    $ apt install libufo-bin libufo-dev ufo-filters
+
+
 Installing from source
 ======================
 
