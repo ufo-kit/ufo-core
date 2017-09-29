@@ -13,7 +13,7 @@ add the openSUSE repository matching your installation. Go to our `OBS
 says "Go to download repository" and use that URL with::
 
     opensuse $ zypper addrepo <URL> repo-ufo-kit
-    centos $ wget <URL> -O /etc/yum.repos.d/ufo-kit.repo
+    centos $ wget <URL>/home:ufo-kit.repo -O /etc/yum.repos.d/ufo-kit.repo
 
 Now update the repositories and install the framework and plugins::
 
