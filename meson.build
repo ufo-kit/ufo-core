@@ -60,3 +60,4 @@ add_global_arguments('-DGLIB_DISABLE_DEPRECATION_WARNINGS', language: 'c')
 
 subdir('ufo')
 subdir('bin')
+subdir('docs')
