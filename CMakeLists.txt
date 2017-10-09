@@ -69,7 +69,6 @@ pkg_check_modules(GIO2 gio-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0>=${PKG_JSON_GLIB_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(ZMQ libzmq>=${PKG_ZMQ_MIN_REQUIRED})
 pkg_check_modules(PYTHON python)
-pkg_check_modules(PYTHON27 python-2.7)
 
 set(UFOCORE_DEPS
     m
@@ -81,21 +80,14 @@ set(UFOCORE_DEPS
     ${GIO2_LIBRARIES}
     ${JSON_GLIB_LIBRARIES})
 
-if (PYTHON_FOUND OR PYTHON27_FOUND)
+if (PYTHON_FOUND)
     option(WITH_PYTHON "Enable Python multithreading support" ON)
 
     if (WITH_PYTHON)
-        if (PYTHON_FOUND)
-            include_directories(${PYTHON_INCLUDE_DIRS})
-            list(APPEND UFOCORE_DEPS ${PYTHON_LIBRARIES})
-        endif ()
-
-        if (PYTHON27_FOUND)
-            include_directories(${PYTHON27_INCLUDE_DIRS})
-            list(APPEND UFOCORE_DEPS ${PYTHON27_LIBRARIES})
-        endif ()
+        include_directories(${PYTHON_INCLUDE_DIRS})
+        list(APPEND UFOCORE_DEPS ${PYTHON_LIBRARIES})
     endif ()
-endif ()
+endif()
 
 if (MPI_C_FOUND)
     option(WITH_MPI "Build with MPI support" OFF)
