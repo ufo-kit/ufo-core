@@ -6,10 +6,10 @@ add_executable(ufo-query ufo-query.c)
 add_executable(ufo-runjson ufo-runjson.c)
 add_executable(ufod ufod.c)
 
-target_link_libraries(ufo-launch ufo ${UFOCORE_DEPS})
-target_link_libraries(ufo-query ufo ${UFOCORE_DEPS})
-target_link_libraries(ufo-runjson ufo ${UFOCORE_DEPS})
-target_link_libraries(ufod ufo ${UFOCORE_DEPS})
+target_link_libraries(ufo-launch ufo)
+target_link_libraries(ufo-query ufo)
+target_link_libraries(ufo-runjson ufo)
+target_link_libraries(ufod ufo)
 
 install(TARGETS ufod ufo-launch ufo-query ufo-runjson
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
