@@ -9,8 +9,6 @@ manpage_names = [
     'ufod.1',
 ]
 
-man_pages = []
-
 if a2x.found()
     foreach manpage: manpage_names
         source = 'man/@0@.txt'.format(manpage)
@@ -26,12 +24,10 @@ if a2x.found()
             command: command,
             input: source,
             output: manpage,
+            install: true,
+            install_dir: get_option('mandir'),
         )
-
-        man_pages += man.full_path()
     endforeach
-
-    install_man(man_pages)
 else
     message('a2x not found, cannot generate manpages.')
 endif
