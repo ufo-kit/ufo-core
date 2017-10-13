@@ -386,7 +386,7 @@ get_device_type_from_env (void)
     const gchar *var;
     gchar **set;
     guint n_set;
-    cl_device_type type = CL_DEVICE_TYPE_DEFAULT;
+    cl_device_type type = 0;
 
     var = g_getenv ("UFO_DEVICE_TYPE");
 
@@ -427,7 +427,7 @@ initialize_opencl (UfoResourcesPrivate *priv)
 
     device_type = get_device_type_from_env ();
 
-    if (device_type == CL_DEVICE_TYPE_DEFAULT) {
+    if (device_type == 0) {
         /*
          * If the user did not set anything from the outside, check the
          * device-type property.
