@@ -282,9 +282,10 @@ get_preferably_gpu_based_platform (UfoResourcesPrivate *priv)
     cl_uint n_platforms;
     cl_platform_id candidate = 0;
 
-    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (0, NULL, &n_platforms));
+    UFO_RESOURCES_CHECK_AND_SET (clGetPlatformIDs (0, NULL, &n_platforms), &priv->construct_error);
+
     platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
-    UFO_RESOURCES_CHECK_CLERR (clGetPlatformIDs (n_platforms, platforms, NULL));
+    UFO_RESOURCES_CHECK_AND_SET (clGetPlatformIDs (n_platforms, platforms, NULL), &priv->construct_error);
 
     g_debug ("INFO found %i OpenCL platforms %i", n_platforms, priv->platform_index);
 
@@ -1159,8 +1160,15 @@ ufo_resources_initable_init (GInitable *initable,
     resources = UFO_RESOURCES (initable);
     priv = resources->priv;
 
-    if (priv->construct_error != NULL)
+    if (priv->construct_error != NULL) {
+        /* 
+         * For some very strange reason, using g_propagate_error() does not
+         * work, the error variable is set but does not contain the message.
+         */
+        g_set_error_literal (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_GENERAL,
+                             priv->construct_error->message);
         return FALSE;
+    }
 
     return TRUE;
 }

@@ -521,7 +521,11 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (UFO_IS_FIXED_SCHEDULER (scheduler));
 
-    resources = ufo_base_scheduler_get_resources (scheduler);
+    resources = ufo_base_scheduler_get_resources (scheduler, error);
+
+    if (resources == NULL)
+        return;
+
     pdata = setup_tasks (UFO_GRAPH (task_graph), scheduler, resources, &tmp_error);
 
     if (tmp_error != NULL) {

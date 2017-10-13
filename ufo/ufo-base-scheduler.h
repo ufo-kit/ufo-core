@@ -77,7 +77,8 @@ void            ufo_base_scheduler_run              (UfoBaseScheduler   *schedul
                                                      GError            **error);
 void            ufo_base_scheduler_set_resources    (UfoBaseScheduler   *scheduler,
                                                      UfoResources       *resources);
-UfoResources   *ufo_base_scheduler_get_resources    (UfoBaseScheduler   *scheduler);
+UfoResources   *ufo_base_scheduler_get_resources    (UfoBaseScheduler   *scheduler,
+                                                     GError            **error);
 void            ufo_base_scheduler_set_gpu_nodes    (UfoBaseScheduler   *scheduler,
                                                      GList              *gpu_nodes);
 GType           ufo_base_scheduler_get_type         (void);

@@ -443,7 +443,11 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (UFO_IS_GROUP_SCHEDULER (scheduler));
 
-    resources = ufo_base_scheduler_get_resources (scheduler);
+    resources = ufo_base_scheduler_get_resources (scheduler, error);
+
+    if (resources == NULL)
+        return;
+
     group_graph = build_group_graph (scheduler, task_graph, resources, error);
 
     if (group_graph == NULL)

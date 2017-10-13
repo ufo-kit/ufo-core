@@ -360,7 +360,11 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
 
     g_return_if_fail (UFO_IS_LOCAL_SCHEDULER (scheduler));
 
-    resources = ufo_base_scheduler_get_resources (scheduler);
+    resources = ufo_base_scheduler_get_resources (scheduler, error);
+
+    if (resources == NULL)
+        return;
+
     gpu_nodes = ufo_resources_get_gpu_nodes (resources);
     pp = ufo_pp_new (gpu_nodes);
     g_list_free (gpu_nodes);

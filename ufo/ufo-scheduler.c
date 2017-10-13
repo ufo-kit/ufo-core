@@ -406,7 +406,11 @@ setup_tasks (UfoBaseScheduler *scheduler,
     gboolean timestamps;
     gboolean tracing_enabled;
 
-    resources = ufo_base_scheduler_get_resources (scheduler);
+    resources = ufo_base_scheduler_get_resources (scheduler, error);
+
+    if (resources == NULL)
+        return NULL;
+
     g_object_get (scheduler,
                   "enable-tracing", &tracing_enabled,
                   "timestamps", &timestamps,
@@ -456,7 +460,8 @@ setup_tasks (UfoBaseScheduler *scheduler,
 
 static GList *
 setup_groups (UfoBaseScheduler *scheduler,
-              UfoTaskGraph *task_graph)
+              UfoTaskGraph *task_graph,
+              GError **error)
 {
     UfoResources *resources;
     GList *groups;
@@ -466,7 +471,11 @@ setup_groups (UfoBaseScheduler *scheduler,
 
     groups = NULL;
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
-    resources = ufo_base_scheduler_get_resources (scheduler);
+    resources = ufo_base_scheduler_get_resources (scheduler, error);
+
+    if (resources == NULL)
+        return NULL;
+
     context = ufo_resources_get_context (resources);
 
     g_list_for (nodes, it) {
@@ -612,12 +621,15 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     g_object_get (scheduler, "expand", &expand, NULL);
 
     graph = task_graph;
-    resources = ufo_base_scheduler_get_resources (scheduler);
+    resources = ufo_base_scheduler_get_resources (scheduler, error);
+
+    if (resources == NULL)
+        return;
+
     gpu_nodes = ufo_resources_get_gpu_nodes (resources);
 
-    if (priv->mode == UFO_REMOTE_MODE_REPLICATE) {
+    if (priv->mode == UFO_REMOTE_MODE_REPLICATE)
         replicate_task_graph (graph, resources);
-    }
 
     if (expand) {
         gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
@@ -634,11 +646,13 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     /* Prepare task structures */
     tlds = setup_tasks (scheduler, graph, error);
 
-    if (tlds == NULL) {
+    if (tlds == NULL)
         return;
-    }
 
-    groups = setup_groups (scheduler, graph);
+    groups = setup_groups (scheduler, graph, error);
+
+    if (groups == NULL)
+        return;
 
     if (!correct_connections (graph, error))
         return;

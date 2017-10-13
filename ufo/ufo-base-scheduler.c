@@ -176,28 +176,23 @@ ufo_base_scheduler_set_resources (UfoBaseScheduler *scheduler,
 /**
  * ufo_base_scheduler_get_resources:
  * @scheduler: A #UfoBaseScheduler
+ * @error: Location of a #GError or %NULL
  *
  * Get the current #UfoResources currently associated with @scheduler.
  *
  * Returns: (transfer none): the currently associated #UfoResources object.
  */
 UfoResources *
-ufo_base_scheduler_get_resources (UfoBaseScheduler *scheduler)
+ufo_base_scheduler_get_resources (UfoBaseScheduler *scheduler,
+                                  GError **error)
 {
     UfoBaseSchedulerPrivate *priv;
-    GError *error = NULL;
 
     g_return_val_if_fail (UFO_IS_BASE_SCHEDULER (scheduler), NULL);
     priv = UFO_BASE_SCHEDULER_GET_PRIVATE (scheduler);
 
-    if (priv->resources == NULL) {
-        priv->resources = ufo_resources_new (&error);
-
-        if (error != NULL) {
-            g_error ("Error: %s", error->message);
-            return NULL;
-        }
-    }
+    if (priv->resources == NULL)
+        priv->resources = ufo_resources_new (error);
 
     return priv->resources;
 }
