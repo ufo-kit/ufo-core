@@ -232,7 +232,7 @@ release_program (cl_program program)
 }
 
 static gchar *
-lookup_kernel_path (UfoResourcesPrivate *priv,
+lookup_file_path (UfoResourcesPrivate *priv,
                   const gchar *filename)
 {
     GList *it;
@@ -257,6 +257,29 @@ lookup_kernel_path (UfoResourcesPrivate *priv,
     }
 
     return NULL;
+}
+
+/**
+ * ufo_resources_lookup_and_read_file:
+ * @resources: A #UfoResources object
+ * @filename: filename to read (absolute path or relative path visible to UFO)
+ *
+ * Find filename and read its contents.
+ *
+ * Returns: String with contents of filename
+ */
+gchar *
+ufo_resources_lookup_and_read_file (UfoResources *resources,
+                         const gchar *filename)
+{
+    UfoResourcesPrivate *priv = resources->priv;
+    gchar *path = lookup_file_path (priv, filename);
+
+    if (!path) {
+        return NULL;
+    }
+
+    return read_file (path);
 }
 
 static gboolean
@@ -726,7 +749,7 @@ ufo_resources_get_kernel_with_opts (UfoResources   *resources,
     kernel = NULL;
     buffer = NULL;
     priv = resources->priv;
-    path = lookup_kernel_path (priv, filename);
+    path = lookup_file_path (priv, filename);
 
     if (path == NULL) {
         g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
@@ -890,7 +913,7 @@ ufo_resources_get_kernel_source (UfoResources   *resources,
 
     buffer = NULL;
     priv = resources->priv;
-    path = lookup_kernel_path (priv, filename);
+    path = lookup_file_path (priv, filename);
 
     if (path == NULL) {
         g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
