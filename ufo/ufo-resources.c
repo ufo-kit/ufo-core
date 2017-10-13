@@ -385,7 +385,7 @@ get_device_type_from_env (void)
     const gchar *var;
     gchar **set;
     guint n_set;
-    cl_device_type type = 0;
+    cl_device_type type = CL_DEVICE_TYPE_DEFAULT;
 
     var = g_getenv ("UFO_DEVICE_TYPE");
 
@@ -425,9 +425,16 @@ initialize_opencl (UfoResourcesPrivate *priv)
         g_string_append (priv->build_opts, "-DVENDOR_AMD");
 
     device_type = get_device_type_from_env ();
-    device_type |= priv->device_type & UFO_DEVICE_CPU ? CL_DEVICE_TYPE_CPU : 0;
-    device_type |= priv->device_type & UFO_DEVICE_GPU ? CL_DEVICE_TYPE_GPU : 0;
-    device_type |= priv->device_type & UFO_DEVICE_ACC ? CL_DEVICE_TYPE_ACCELERATOR : 0;
+
+    if (device_type == CL_DEVICE_TYPE_DEFAULT) {
+        /*
+         * If the user did not set anything from the outside, check the
+         * device-type property.
+         */
+        device_type |= priv->device_type & UFO_DEVICE_CPU ? CL_DEVICE_TYPE_CPU : 0;
+        device_type |= priv->device_type & UFO_DEVICE_GPU ? CL_DEVICE_TYPE_GPU : 0;
+        device_type |= priv->device_type & UFO_DEVICE_ACC ? CL_DEVICE_TYPE_ACCELERATOR : 0;
+    }
 
     g_debug ("INFO Using CPUs=%c GPUs=%c Accelerators=%c",
              (device_type & CL_DEVICE_TYPE_CPU) != 0 ? 'y' : 'n',
