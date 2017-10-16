@@ -885,8 +885,7 @@ ufo_resources_get_kernel_source (UfoResources   *resources,
     gchar *path;
     gchar *buffer;
 
-    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
-                          (filename != NULL), NULL);
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources) && (filename != NULL), NULL);
 
     buffer = NULL;
     priv = resources->priv;
@@ -903,10 +902,8 @@ ufo_resources_get_kernel_source (UfoResources   *resources,
     if (buffer == NULL) {
         g_set_error (error, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_LOAD_PROGRAM,
                      "Could not open `%s'", filename);
-        goto exit;
     }
 
-exit:
     g_free (path);
     return buffer;
 }
