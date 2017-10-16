@@ -841,6 +841,42 @@ ufo_resources_get_cached_kernel (UfoResources *resources,
 }
 
 /**
+ * ufo_resources_get_kernel_from_source_with_opts:
+ * @resources: A #UfoResources
+ * @source: OpenCL source string
+ * @kernel: Name of a kernel or %NULL
+ * @options: Options passed to the OpenCL compiler
+ * @error: Return location for a GError from #UfoResourcesError, or NULL
+ *
+ * Loads and builds a kernel from a string. If @kernel is %NULL, the first
+ * kernel defined in @source is used.
+ *
+ * Returns: (transfer none): a cl_kernel object that is load from @filename
+ */
+gpointer
+ufo_resources_get_kernel_from_source_with_opts (UfoResources *resources,
+                                                const gchar *source,
+                                                const gchar *kernel,
+                                                const gchar *options,
+                                                GError **error)
+{
+    UfoResourcesPrivate *priv;
+    cl_program program;
+
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
+                          (source != NULL), NULL);
+
+    priv = UFO_RESOURCES_GET_PRIVATE (resources);
+    program = add_program_from_source (priv, source, options, error);
+
+    if (program == NULL)
+        return NULL;
+
+    g_debug ("INFO Added program %p from source", (gpointer) program);
+    return create_kernel (priv, program, kernel, error);
+}
+
+/**
  * ufo_resources_get_kernel_from_source:
  * @resources: A #UfoResources
  * @source: OpenCL source string
@@ -858,20 +894,7 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
                                       const gchar *kernel,
                                       GError **error)
 {
-    UfoResourcesPrivate *priv;
-    cl_program program;
-
-    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
-                          (source != NULL), NULL);
-
-    priv = UFO_RESOURCES_GET_PRIVATE (resources);
-    program = add_program_from_source (priv, source, NULL, error);
-
-    if (program == NULL)
-        return NULL;
-
-    g_debug ("INFO Added program %p from source", (gpointer) program);
-    return create_kernel (priv, program, kernel, error);
+    return ufo_resources_get_kernel_from_source_with_opts (resources, source, kernel, NULL, error);
 }
 
 /**
