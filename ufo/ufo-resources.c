@@ -604,6 +604,12 @@ add_program_from_source (UfoResourcesPrivate *priv,
         build_options = g_string_new (priv->build_opts->str);
         opt_append_device_options (build_options, priv, i);
         opt_append_include_paths (build_options, priv);
+        if (options) {
+            gchar *stripped_opts = g_strstrip (g_strdup (options));
+            g_string_append (build_options, " ");
+            g_string_append (build_options, stripped_opts);
+            g_free (stripped_opts);
+        }
 
         errcode = clBuildProgram (program, 1, &priv->devices[i], build_options->str, NULL, NULL);
 
@@ -616,7 +622,11 @@ add_program_from_source (UfoResourcesPrivate *priv,
     }
 
     g_timer_stop (timer);
-    g_debug ("INFO Built with `%s%s' for %i devices in %3.5fs", priv->build_opts->str, options, priv->n_devices, g_timer_elapsed (timer, NULL));
+    if (options) {
+        g_debug ("INFO Built with `%s %s' for %i devices in %3.5fs", priv->build_opts->str, options, priv->n_devices, g_timer_elapsed (timer, NULL));
+    } else {
+        g_debug ("INFO Built with `%s' for %i devices in %3.5fs", priv->build_opts->str, priv->n_devices, g_timer_elapsed (timer, NULL));
+    }
     g_timer_destroy (timer);
 
     g_hash_table_insert (priv->programs, g_strdup (source), program);
@@ -831,6 +841,42 @@ ufo_resources_get_cached_kernel (UfoResources *resources,
 }
 
 /**
+ * ufo_resources_get_kernel_from_source_with_opts:
+ * @resources: A #UfoResources
+ * @source: OpenCL source string
+ * @kernel: Name of a kernel or %NULL
+ * @options: Options passed to the OpenCL compiler
+ * @error: Return location for a GError from #UfoResourcesError, or NULL
+ *
+ * Loads and builds a kernel from a string. If @kernel is %NULL, the first
+ * kernel defined in @source is used.
+ *
+ * Returns: (transfer none): a cl_kernel object that is load from @filename
+ */
+gpointer
+ufo_resources_get_kernel_from_source_with_opts (UfoResources *resources,
+                                                const gchar *source,
+                                                const gchar *kernel,
+                                                const gchar *options,
+                                                GError **error)
+{
+    UfoResourcesPrivate *priv;
+    cl_program program;
+
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
+                          (source != NULL), NULL);
+
+    priv = UFO_RESOURCES_GET_PRIVATE (resources);
+    program = add_program_from_source (priv, source, options, error);
+
+    if (program == NULL)
+        return NULL;
+
+    g_debug ("INFO Added program %p from source", (gpointer) program);
+    return create_kernel (priv, program, kernel, error);
+}
+
+/**
  * ufo_resources_get_kernel_from_source:
  * @resources: A #UfoResources
  * @source: OpenCL source string
@@ -848,20 +894,7 @@ ufo_resources_get_kernel_from_source (UfoResources *resources,
                                       const gchar *kernel,
                                       GError **error)
 {
-    UfoResourcesPrivate *priv;
-    cl_program program;
-
-    g_return_val_if_fail (UFO_IS_RESOURCES (resources) &&
-                          (source != NULL), NULL);
-
-    priv = UFO_RESOURCES_GET_PRIVATE (resources);
-    program = add_program_from_source (priv, source, NULL, error);
-
-    if (program == NULL)
-        return NULL;
-
-    g_debug ("INFO Added program %p from source", (gpointer) program);
-    return create_kernel (priv, program, kernel, error);
+    return ufo_resources_get_kernel_from_source_with_opts (resources, source, kernel, NULL, error);
 }
 
 /**
