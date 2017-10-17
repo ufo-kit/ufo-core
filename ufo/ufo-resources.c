@@ -345,7 +345,7 @@ restrict_to_gpu_subset (UfoResourcesPrivate *priv)
 
     set = g_strsplit (var, ",", 0);
     n_set = g_strv_length (set);
-    device_indices = g_malloc0 (n_set);
+    device_indices = g_new0 (guint, n_set);
 
     n_devices = 0;
 
