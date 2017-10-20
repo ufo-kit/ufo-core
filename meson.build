@@ -53,6 +53,7 @@ configure_file(
     configuration: conf
 )
 
+add_global_arguments('-std=c99', language: 'c')
 add_global_arguments('-DUFO_COMPILATION', language: 'c')
 add_global_arguments('-DCL_USE_DEPRECATED_OPENCL_1_1_APIS', language: 'c')
 add_global_arguments('-DCL_USE_DEPRECATED_OPENCL_1_2_APIS', language: 'c')
