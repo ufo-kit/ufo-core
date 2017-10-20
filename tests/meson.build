@@ -8,7 +8,7 @@ sources = [
 
 test('all tests',
     executable('test-suite',
-        sources: sources,
+        sources: sources + [enums_h],
         include_directories: include_dir,
         dependencies: deps,
         link_with: lib,
