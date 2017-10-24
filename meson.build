@@ -1,5 +1,6 @@
 project('ufo', 'c',
-    version: '0.14.0'
+    version: '0.14.0',
+    default_options: ['c_std=c99'],
 )
 
 version = meson.project_version()
@@ -53,7 +54,6 @@ configure_file(
     configuration: conf
 )
 
-add_global_arguments('-std=c99', language: 'c')
 add_global_arguments('-DUFO_COMPILATION', language: 'c')
 add_global_arguments('-DCL_USE_DEPRECATED_OPENCL_1_1_APIS', language: 'c')
 add_global_arguments('-DCL_USE_DEPRECATED_OPENCL_1_2_APIS', language: 'c')
