@@ -21,6 +21,10 @@ json_dep = dependency('json-glib-1.0', version: '>= 0.10.0')
 python_dep = dependency('python', required: false)
 zmq_dep = dependency('libzmq', required: false)
 
+if not cc.has_header('CL/cl.h')
+    error('Cannot find CL/cl.h')
+endif
+
 opencl_dep = declare_dependency(dependencies: cc.find_library('OpenCL'))
 
 deps = [
