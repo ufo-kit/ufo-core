@@ -284,6 +284,9 @@ get_preferably_gpu_based_platform (UfoResourcesPrivate *priv)
 
     UFO_RESOURCES_CHECK_AND_SET (clGetPlatformIDs (0, NULL, &n_platforms), &priv->construct_error);
 
+    if (priv->construct_error != NULL)
+        return NULL;
+
     platforms = g_malloc0 (n_platforms * sizeof (cl_platform_id));
     UFO_RESOURCES_CHECK_AND_SET (clGetPlatformIDs (n_platforms, platforms, NULL), &priv->construct_error);
 
@@ -418,6 +421,9 @@ initialize_opencl (UfoResourcesPrivate *priv)
     cl_int errcode = CL_SUCCESS;
 
     priv->platform = get_preferably_gpu_based_platform (priv);
+
+    if (priv->platform == NULL)
+        return FALSE;
 
     if (platform_vendor_has_prefix (priv->platform, "NVIDIA"))
         g_string_append (priv->build_opts, "-cl-nv-verbose -DVENDOR_NVIDIA");
