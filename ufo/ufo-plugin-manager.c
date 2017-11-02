@@ -146,8 +146,22 @@ ufo_plugin_manager_get_plugin (UfoPluginManager *manager,
         gchar *path = plugin_manager_get_path (priv, module_name);
 
         if (path == NULL) {
+            GString *search_paths;
+            GList *it;
+
+            search_paths = g_string_new (NULL);
+
+            g_list_for (priv->paths, it) {
+                g_string_append (search_paths, (const gchar *) it->data);
+
+                if (it->next != NULL)
+                    g_string_append (search_paths, ", ");
+            }
+
             g_set_error (error, UFO_PLUGIN_MANAGER_ERROR, UFO_PLUGIN_MANAGER_ERROR_MODULE_NOT_FOUND,
-                         "Module %s not found", module_name);
+                         "Module %s not found in %s", module_name, search_paths->str);
+
+            g_string_free (search_paths, TRUE);
             goto handle_error;
         }
 
