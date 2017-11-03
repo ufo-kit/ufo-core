@@ -41,8 +41,9 @@
  * @Title: UfoResources
  *
  * The #UfoResources creates the OpenCL environment and loads OpenCL kernels
- * from text files. Users should in general not create a resources object
- * themselves but use one that is created automatically by #UfoArchGraph.
+ * from disk or directly as a string. By default the kernel search path is in
+ * `$datadir/ufo` but can be extended by the `UFO_KERNEL_PATH` environment
+ * variable.
  */
 
 static void ufo_resources_initable_iface_init (GInitableIface *iface);
@@ -505,6 +506,11 @@ ufo_resources_new (GError **error)
     return g_initable_new (UFO_TYPE_RESOURCES, NULL, error, NULL);
 }
 
+/**
+ * ufo_resources_add_path:
+ * @resources: A #UfoResources object
+ * @path: a path to OpenCL kernel files
+ */
 void
 ufo_resources_add_path (UfoResources *resources,
                         const gchar *path)
@@ -628,13 +634,13 @@ add_program_from_source (UfoResourcesPrivate *priv,
     }
 
     g_timer_stop (timer);
-    if (options) {
-        g_debug ("INFO Built with `%s %s' for %i devices in %3.5fs", priv->build_opts->str, options, priv->n_devices, g_timer_elapsed (timer, NULL));
-    } else {
-        g_debug ("INFO Built with `%s' for %i devices in %3.5fs", priv->build_opts->str, priv->n_devices, g_timer_elapsed (timer, NULL));
-    }
-    g_timer_destroy (timer);
 
+    if (options)
+        g_debug ("INFO Built with `%s %s' for %i devices in %3.5fs", priv->build_opts->str, options, priv->n_devices, g_timer_elapsed (timer, NULL));
+    else
+        g_debug ("INFO Built with `%s' for %i devices in %3.5fs", priv->build_opts->str, priv->n_devices, g_timer_elapsed (timer, NULL));
+
+    g_timer_destroy (timer);
     g_hash_table_insert (priv->programs, g_strdup (source), program);
 
     return program;
@@ -718,10 +724,12 @@ create_cache_key (const gchar *filename,
  * @error: Return location for a GError from #UfoResourcesError, or %NULL
  *
  * Loads a and builds a kernel from a file. The file is searched in the current
- * working directory and all paths added through ufo_resources_add_paths (). If
+ * working directory and all paths added through ufo_resources_add_paths () as
+ * well as paths specified in the `UFO_KERNEL_PATH` environment variable. If
  * @kernel is %NULL, the first encountered kernel is returned.
  *
- * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
+ * Returns: (transfer none): a cl_kernel object that is load from @filename or
+ *  %NULL on error
  */
 gpointer
 ufo_resources_get_kernel_with_opts (UfoResources   *resources,
@@ -783,7 +791,8 @@ exit:
  * working directory and all paths added through ufo_resources_add_path (). If
  * @kernel is %NULL, the first encountered kernel is returned.
  *
- * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
+ * Returns: (transfer none): a cl_kernel object that is load from @filename or
+ *  %NULL on error
  */
 gpointer
 ufo_resources_get_kernel (UfoResources *resources,
@@ -806,7 +815,8 @@ ufo_resources_get_kernel (UfoResources *resources,
  * @kernel is %NULL, the first encountered kernel is returned. The kernel object
  * is cached and should not be used by two threads concurrently.
  *
- * Returns: (transfer none): a cl_kernel object that is load from @filename or %NULL on error
+ * Returns: (transfer none): a cl_kernel object that is load from @filename or
+ *  %NULL on error
  */
 gpointer
 ufo_resources_get_cached_kernel (UfoResources *resources,

@@ -1,5 +1,16 @@
 a2x = find_program(['a2x', 'a2x.py'], required: false)
 
+ignore_headers = [
+    'ufo-mpi-messenger.h',
+    'ufo-priv.h',
+    'ufo-two-way-queue.h',
+    'zmq-shim.h',
+]
+
+if not zmq_dep.found()
+    ignore_headers += ['ufo-zmq-messenger.h']
+endif
+
 manpage_names = [
     'ufo-launch.1',
     'ufo-mkfilter.1',
@@ -35,6 +46,12 @@ endif
 if gtk_doc_dep.found() and get_option('gtk_doc')
     gnome.gtkdoc('Ufo',
         main_xml: 'Ufo-docs.xml',
+        dependencies: lib_dep,
+        gobject_typesfile: 'Ufo.types',
         src_dir: join_paths(meson.source_root(), 'ufo'),
+        scan_args: [
+          '--ignore-headers=' + ' '.join(ignore_headers),
+        ],
+        install: true,
     )
 endif

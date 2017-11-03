@@ -36,13 +36,10 @@
  * The #UfoProfiler provides a drop-in replacement for a manual
  * clEnqueueNDRangeKernel() call and tracks any associated events.
  *
- * Each #UfoFilter is assigned a profiler with ufo_profiler_set_profiler() by
- * the managing #UfoBaseScheduler. Filter implementations should call
- * ufo_filter_get_profiler() to receive their profiler and make profiled kernel
- * calls with ufo_profiler_call().
- *
- * Moreover, a profiler object is used to measure wall clock time for I/O,
- * synchronization and general CPU computation.
+ * Each #UfoTaskNode is assigned a profiler with ufo_task_node_set_profiler() by
+ * the managing #UfoBaseScheduler. Task implementations should call
+ * ufo_task_node_get_profiler() to receive their profiler and make profiled
+ * kernel calls with ufo_profiler_call().
  */
 
 G_DEFINE_TYPE(UfoProfiler, ufo_profiler, G_TYPE_OBJECT)
@@ -145,6 +142,15 @@ ufo_profiler_call (UfoProfiler    *profiler,
     UFO_RESOURCES_CHECK_CLERR (cl_err);
 }
 
+/**
+ * ufo_profiler_register_event:
+ * @profiler: A #UfoProfiler object
+ * @command_queue: Queue the OpenCL event was issued with
+ * @kernel: An OpenCL kernel the event stems from
+ * @event: An OpenCL event
+ *
+ * Register a kernel execution manually
+ */
 void
 ufo_profiler_register_event (UfoProfiler *profiler,
                              gpointer command_queue,
@@ -166,7 +172,7 @@ ufo_profiler_register_event (UfoProfiler *profiler,
 
 /**
  * ufo_profiler_start:
- * @profiler: A #UfoProfiler object.
+ * @profiler: A #UfoProfiler object
  * @timer: Which timer to start
  *
  * Start @timer. The timer is not reset but accumulates the time elapsed between
@@ -182,7 +188,7 @@ ufo_profiler_start (UfoProfiler      *profiler,
 
 /**
  * ufo_profiler_stop:
- * @profiler: A #UfoProfiler object.
+ * @profiler: A #UfoProfiler object
  * @timer: Which timer to stop
  *
  * Stop @timer. The timer is not reset but accumulates the time elapsed between
@@ -196,6 +202,14 @@ ufo_profiler_stop (UfoProfiler       *profiler,
     g_timer_stop (profiler->priv->timers[timer]);
 }
 
+/**
+ * ufo_profiler_trace_event:
+ * @profiler: A #UfoProfiler object
+ * @type: trav event type
+ *
+ * Register a new trace event. The given event type, the thread id and the
+ * global time is stored when this function is called.
+ */
 void
 ufo_profiler_trace_event (UfoProfiler *profiler,
                           UfoTraceEventType type)
@@ -203,6 +217,7 @@ ufo_profiler_trace_event (UfoProfiler *profiler,
     UfoTraceEvent *event;
 
     g_return_if_fail (UFO_IS_PROFILER (profiler));
+
     if (!profiler->priv->trace)
         return;
 
@@ -213,7 +228,14 @@ ufo_profiler_trace_event (UfoProfiler *profiler,
     profiler->priv->trace_events = g_list_append (profiler->priv->trace_events, event);
 }
 
-
+/**
+ * ufo_profiler_enable_tracing:
+ * @profiler: A #UfoProfiler object
+ * @enable: %TRUE if tracing should be enabled
+ *
+ * Enable or disable tracing of @profiler. Calls to ufo_profiler_trace_event()
+ * will be ignored if tracing is disabled.
+ */
 void
 ufo_profiler_enable_tracing (UfoProfiler *profiler,
                              gboolean enable)
@@ -279,7 +301,7 @@ gpu_elapsed (UfoProfilerPrivate *priv)
 
 /**
  * ufo_profiler_elapsed:
- * @profiler: A #UfoProfiler object.
+ * @profiler: A #UfoProfiler object
  * @timer: Which timer to start
  *
  * Get the elapsed time in seconds for @timer.
@@ -312,11 +334,11 @@ get_kernel_name (cl_kernel kernel)
 
 /**
  * ufo_profiler_foreach:
- * @profiler: A #UfoProfiler object.
+ * @profiler: A #UfoProfiler object
  * @func: (scope call): The function to be called for an entry
  * @user_data: User parameters
  *
- * Iterates through the recorded events and calls @func for each entry.
+ * Iterates through the recorded events and calls @func on each entry.
  */
 void
 ufo_profiler_foreach (UfoProfiler    *profiler,

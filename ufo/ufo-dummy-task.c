@@ -26,6 +26,15 @@
 
 #include <ufo/ufo-dummy-task.h>
 
+/**
+ * SECTION:ufo-dummy-task
+ * @Short_description: A dummy task that does nothing
+ * @Title: UfoDummyTask
+ *
+ * A dummy task that can be inserted into a #UfoTaskGraph but does not do
+ * anything.
+ */
+
 static void ufo_task_interface_init (UfoTaskIface *iface);
 
 G_DEFINE_TYPE_WITH_CODE (UfoDummyTask, ufo_dummy_task, UFO_TYPE_TASK_NODE,

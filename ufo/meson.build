@@ -99,6 +99,12 @@ lib = library('ufo',
     install: true,
 )
 
+lib_dep = declare_dependency(
+    link_with: lib,
+    include_directories: include_dir,
+    dependencies: deps + [m_dep]
+)
+
 gnome.generate_gir(lib,
     namespace: 'Ufo',
     nsversion: '@0@.0'.format(version_major),

@@ -57,7 +57,7 @@ typedef enum {
  * @UFO_DEVICE_GPU: Only GPU devices
  * @UFO_DEVICE_ACC: Only accelerator devices such as Xeon Phi
  *
- * Types of OpenCL devices to query for. See UfoConfig:"device-type".
+ * Types of OpenCL devices to query for. See UfoResources:"device-type".
  */
 typedef enum {
     UFO_DEVICE_CPU = 1 << 0,

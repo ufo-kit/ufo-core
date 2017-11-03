@@ -32,10 +32,9 @@
  * @Title: UfoPluginManager
  *
  * The plugin manager opens and loads #UfoTaskNode objects using
- * ufo_plugin_manager_get_task() from shared objects.  The libraries are
+ * ufo_plugin_manager_get_task() from shared objects. The libraries are
  * searched for in the path configured at build time and in paths provided by
- * the UFO_PLUGIN_PATH environment variable. The name of the plugin xyz maps to
- * the library name libufofilterxyz.so.
+ * the `UFO_PLUGIN_PATH` environment variable.
  */
 
 static gchar *ufo_transform_string (const gchar *pattern, const gchar *s, const gchar *separator);

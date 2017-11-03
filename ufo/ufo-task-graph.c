@@ -32,6 +32,10 @@
  * SECTION:ufo-task-graph
  * @Short_description: Hold task nodes
  * @Title: UfoTaskGraph
+ *
+ * The task graph is the central data structure that connects #UfoTaskNode
+ * objects to form computational pipelines and graphs. To execute a task graph,
+ * it has to be passed to a #UfoBaseScheduler.
  */
 
 G_DEFINE_TYPE (UfoTaskGraph, ufo_task_graph, UFO_TYPE_GRAPH)
@@ -269,7 +273,7 @@ task_graph_to_generator (UfoTaskGraph *graph,
 
 /**
  * ufo_task_graph_save_to_json:
- * @graph: A #UfoTaskGraph.
+ * @graph: A #UfoTaskGraph
  * @filename: Path and filename to the JSON file
  * @error: Indicates error in case of failed file saving
  *
@@ -290,6 +294,15 @@ ufo_task_graph_save_to_json (UfoTaskGraph *graph,
     }
 }
 
+/**
+ * ufo_task_graph_get_json_data:
+ * @graph: A #UfoTaskGraph
+ * @error: Indicates error in case of failed serialization
+ *
+ * Serialize @graph to a JSON string.
+ *
+ * Returns: (transfer full): A JSON string describing @graph
+ */
 gchar *
 ufo_task_graph_get_json_data (UfoTaskGraph *graph,
                               GError **error)
@@ -408,17 +421,17 @@ nodes_with_common_ancestries (UfoTaskGraph *graph, GList *path)
 
 /**
  * ufo_task_graph_expand:
- * @task_graph: A #UfoTaskGraph
+ * @graph: A #UfoTaskGraph
  * @resources: A #UfoResources objects
  * @n_gpus: Number of GPUs to expand the graph for
  * @expand_remote: %TRUE if remote nodes should be inserted
  *
- * Expands @task_graph in a way that most of the resources in @arch_graph can be
- * occupied. In the simple pipeline case, the longest possible GPU paths are
- * duplicated as much as there are GPUs in @arch_graph.
+ * Expands @graph in a way that most of the resources in @graph can be occupied.
+ * In the simple pipeline case, the longest possible GPU paths are duplicated as
+ * much as there are GPUs in @arch_graph.
  */
 void
-ufo_task_graph_expand (UfoTaskGraph *task_graph,
+ufo_task_graph_expand (UfoTaskGraph *graph,
                        UfoResources *resources,
                        guint n_gpus,
                        gboolean expand_remote)
@@ -426,11 +439,11 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
     GList *path;
     GList *common;
 
-    g_return_if_fail (UFO_IS_TASK_GRAPH (task_graph));
+    g_return_if_fail (UFO_IS_TASK_GRAPH (graph));
 
-    path = ufo_graph_find_longest_path (UFO_GRAPH (task_graph), (UfoFilterPredicate) is_gpu_task, NULL);
+    path = ufo_graph_find_longest_path (UFO_GRAPH (graph), (UfoFilterPredicate) is_gpu_task, NULL);
 
-    common = nodes_with_common_ancestries (task_graph, path);
+    common = nodes_with_common_ancestries (graph, path);
 
     if (g_list_length (common) > 1) {
         g_debug ("WARN More than one nodes have multiple inputs, not going to expand");
@@ -445,7 +458,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         g_debug ("INFO Found node with multiple inputs, going to prune it");
 
         g_list_for (path, it) {
-            if (ufo_graph_get_num_predecessors (UFO_GRAPH (task_graph), UFO_NODE (it->data)) > 1) {
+            if (ufo_graph_get_num_predecessors (UFO_GRAPH (graph), UFO_NODE (it->data)) > 1) {
                 GList *predecessor;
 
                 predecessor = g_list_previous (it);
@@ -468,10 +481,10 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
             g_object_unref (UFO_NODE (g_list_last (path)->data));
 
         /* Add predecessor and successor nodes to path */
-        predecessors = ufo_graph_get_predecessors (UFO_GRAPH (task_graph),
+        predecessors = ufo_graph_get_predecessors (UFO_GRAPH (graph),
                                                    UFO_NODE (g_list_first (path)->data));
 
-        successors = ufo_graph_get_successors (UFO_GRAPH (task_graph),
+        successors = ufo_graph_get_successors (UFO_GRAPH (graph),
                                                UFO_NODE (g_list_last (path)->data));
 
         if (predecessors != NULL)
@@ -492,7 +505,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
             if (n_remotes > 0) {
                 g_debug ("INFO Expand for %i remote nodes", n_remotes);
-                expand_remotes (task_graph, remotes, path);
+                expand_remotes (graph, remotes, path);
             }
 
             g_list_free (remotes);
@@ -501,7 +514,7 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
         g_debug ("INFO Expand for %i GPU nodes", n_gpus);
 
         for (guint i = 1; i < n_gpus; i++)
-            ufo_graph_expand (UFO_GRAPH (task_graph), path);
+            ufo_graph_expand (UFO_GRAPH (graph), path);
     }
 
     g_list_free (path);
@@ -509,14 +522,14 @@ ufo_task_graph_expand (UfoTaskGraph *task_graph,
 
 /**
  * ufo_task_graph_fuse:
- * @task_graph: A #UfoTaskGraph
+ * @graph: A #UfoTaskGraph
  *
  * Fuses task nodes to increase data locality.
  *
  * Note: This is not implemented and a no-op right now.
  */
 void
-ufo_task_graph_fuse (UfoTaskGraph *task_graph)
+ufo_task_graph_fuse (UfoTaskGraph *graph)
 {
 }
 
@@ -557,7 +570,7 @@ map_proc_node (UfoGraph *graph,
 
 /**
  * ufo_task_graph_is_alright:
- * @task_graph: A #UfoTaskGraph
+ * @graph: A #UfoTaskGraph
  * @error: Location for a GError or %NULL
  *
  * Check if nodes int the task graph are properly connected.
@@ -565,20 +578,20 @@ map_proc_node (UfoGraph *graph,
  * Returns: %TRUE if everything is alright, %FALSE else.
  */
 gboolean
-ufo_task_graph_is_alright (UfoTaskGraph *task_graph,
+ufo_task_graph_is_alright (UfoTaskGraph *graph,
                            GError **error)
 {
     GList *nodes;
     GList *it;
     gboolean alright = TRUE;
 
-    nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
+    nodes = ufo_graph_get_nodes (UFO_GRAPH (graph));
 
     /* Check that nodes don't receive input from reductors and processors */
     g_list_for (nodes, it) {
         GList *predecessors;
 
-        predecessors = ufo_graph_get_predecessors (UFO_GRAPH (task_graph), UFO_NODE (it->data));
+        predecessors = ufo_graph_get_predecessors (UFO_GRAPH (graph), UFO_NODE (it->data));
 
         if (g_list_length (predecessors) > 1) {
             GList *jt;
@@ -607,7 +620,7 @@ ufo_task_graph_is_alright (UfoTaskGraph *task_graph,
     g_list_free (nodes);
 
     /* Check leaves are sinks */
-    nodes = ufo_graph_get_leaves (UFO_GRAPH (task_graph));
+    nodes = ufo_graph_get_leaves (UFO_GRAPH (graph));
 
     g_list_for (nodes, it) {
         if ((ufo_task_get_mode (UFO_TASK (it->data)) & UFO_TASK_MODE_TYPE_MASK) != UFO_TASK_MODE_SINK) {
@@ -626,23 +639,22 @@ ufo_task_graph_is_alright (UfoTaskGraph *task_graph,
 
 /**
  * ufo_task_graph_map:
- * @task_graph: A #UfoTaskGraph
+ * @graph: A #UfoTaskGraph
  * @gpu_nodes: (transfer none) (element-type Ufo.GpuNode): List of #UfoGpuNode objects
  *
- * Map task nodes of @task_graph to the processing nodes of @arch_graph. Not
- * doing this could break execution of @task_graph.
+ * Map task nodes of @graph to the list of @gpu_nodes.
  */
 void
-ufo_task_graph_map (UfoTaskGraph *task_graph,
+ufo_task_graph_map (UfoTaskGraph *graph,
                     GList *gpu_nodes)
 {
     GList *roots;
     GList *it;
 
-    roots = ufo_graph_get_roots (UFO_GRAPH (task_graph));
+    roots = ufo_graph_get_roots (UFO_GRAPH (graph));
 
     g_list_for (roots, it) {
-        map_proc_node (UFO_GRAPH (task_graph), UFO_NODE (it->data), 0, gpu_nodes);
+        map_proc_node (UFO_GRAPH (graph), UFO_NODE (it->data), 0, gpu_nodes);
     }
 
     g_list_free (roots);
@@ -684,6 +696,14 @@ ufo_task_graph_connect_nodes_full (UfoTaskGraph *graph,
     ufo_graph_connect_nodes (UFO_GRAPH (graph), UFO_NODE (n1), UFO_NODE (n2), GINT_TO_POINTER (input));
 }
 
+/**
+ * ufo_task_graph_set_partition:
+ * @graph: A #UfoTaskGraph
+ * @index: index of @total partitions - 1
+ * @total: total number of partitions
+ *
+ * Set the partition of this task graph.
+ */
 void
 ufo_task_graph_set_partition (UfoTaskGraph *graph,
                               guint index,
@@ -695,6 +715,14 @@ ufo_task_graph_set_partition (UfoTaskGraph *graph,
     graph->priv->total = total;
 }
 
+/**
+ * ufo_task_graph_get_partition:
+ * @graph: A #UfoTaskGraph
+ * @index: Location to store index
+ * @total: Location to store the total number of partitions
+ *
+ * Get the partition structure of @graph.
+ */
 void
 ufo_task_graph_get_partition (UfoTaskGraph *graph,
                               guint *index,

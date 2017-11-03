@@ -86,11 +86,11 @@ void         ufo_task_graph_save_to_json        (UfoTaskGraph       *graph,
                                                  GError            **error);
 gchar       *ufo_task_graph_get_json_data       (UfoTaskGraph       *graph,
                                                  GError            **error);
-gboolean     ufo_task_graph_is_alright          (UfoTaskGraph       *task_graph,
+gboolean     ufo_task_graph_is_alright          (UfoTaskGraph       *graph,
                                                  GError            **error);
-void         ufo_task_graph_map                 (UfoTaskGraph       *task_graph,
+void         ufo_task_graph_map                 (UfoTaskGraph       *graph,
                                                  GList              *gpu_nodes);
-void         ufo_task_graph_expand              (UfoTaskGraph       *task_graph,
+void         ufo_task_graph_expand              (UfoTaskGraph       *graph,
                                                  UfoResources       *resources,
                                                  guint               n_gpus,
                                                  gboolean            expand_remote);
@@ -101,11 +101,11 @@ void         ufo_task_graph_connect_nodes_full  (UfoTaskGraph       *graph,
                                                  UfoTaskNode        *n1,
                                                  UfoTaskNode        *n2,
                                                  guint               input);
-void         ufo_task_graph_fuse                (UfoTaskGraph       *task_graph);
-void         ufo_task_graph_set_partition       (UfoTaskGraph       *task_graph,
+void         ufo_task_graph_fuse                (UfoTaskGraph       *graph);
+void         ufo_task_graph_set_partition       (UfoTaskGraph       *graph,
                                                  guint               index,
                                                  guint               total);
-void         ufo_task_graph_get_partition       (UfoTaskGraph       *task_graph,
+void         ufo_task_graph_get_partition       (UfoTaskGraph       *graph,
                                                  guint              *index,
                                                  guint              *total);
 GType        ufo_task_graph_get_type            (void);
