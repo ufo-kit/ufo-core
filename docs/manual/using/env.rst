@@ -15,6 +15,10 @@ You can modify the run-time behaviour by setting environment variables:
     Colon-separated list of paths in which plugin manager looks for additional
     task modules. The plugins are load with descending priority.
 
+.. envvar:: UFO_KERNEL_PATH
+
+    Colon-separated list of search paths for OpenCL kernel files.
+
 .. envvar:: UFO_DEVICES
 
     Controls which OpenCL devices should be used. It works similar to the
