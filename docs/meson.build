@@ -31,3 +31,10 @@ if a2x.found()
 else
     message('a2x not found, cannot generate manpages.')
 endif
+
+if gtk_doc_dep.found() and get_option('gtk_doc')
+    gnome.gtkdoc('Ufo',
+        main_xml: 'Ufo-docs.xml',
+        src_dir: join_paths(meson.source_root(), 'ufo'),
+    )
+endif

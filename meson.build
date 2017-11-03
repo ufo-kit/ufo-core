@@ -18,6 +18,7 @@ gio_dep = dependency('gio-2.0', version: '>= 2.28')
 gobject_dep = dependency('gobject-2.0', version: '>= 2.28')
 gmodule_dep = dependency('gmodule-2.0', version: '>= 2.28')
 json_dep = dependency('json-glib-1.0', version: '>= 0.10.0')
+gtk_doc_dep = dependency('gtk-doc', required: false)
 python_dep = dependency('python', required: false)
 zmq_dep = dependency('libzmq', required: false)
 
