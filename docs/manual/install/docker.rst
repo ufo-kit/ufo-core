@@ -4,55 +4,39 @@
 Installation with Docker
 ########################
 
-==============
-Install Docker
-==============
+Before, proceeding have a look at the `Docker documentation
+<https://docs.docker.com/engine/installation>`_ and install Docker on your
+system.
 
-See `Docker documentation <https://docs.docker.com/installation/>`_ to install Docker on your system.
+=====
+Build
+=====
 
-================
-Build Dockerfile
-================
+Depending on the GPUs in your system you have to use a different Dockerfile.
+Before doing so, create an empty directory and copy the respective Dockerfile
+from the ``docker`` directory and rename it to ``Dockerfile``. In the case of
+the AMD-based Dockerfile you have to download
+`AMD-APP-SDK-v3.0-0.113.50-Beta-linux64
+<http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/>`_,
+and move it into the same directory. Now go into the directory and type::
 
-Download `AMD-APP-SDK-v3.0-0.113.50-Beta-linux64 <http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/>`_, paste it to the directory with Dockerfile in it and run::
-
-    $ docker build -t docker .
+    $ docker build -t ufo .
     
-This will build the image of opensuse 13.1, install all dependencies, AMD drivers, ufo-core, ufo-filters and ufo-ir on it. 
+This will build an image tagged ``ufo`` containing both ufo-core and
+ufo-filters.
     
-==========
-Use Docker
-==========
+============
+Usage on AMD
+============
 
-Run installed image in a new Docker container and use gpu in it::
+Run the image in a new Docker container using::
 
-    $ docker run -i -t --device=/dev/ati/card0 docker /bin/bash
+    $ docker run -it --device=/dev/ati/card0 ufo
     
-See all created containers::
+===============
+Usage on NVIDIA
+===============
 
-    $ docker ps
-    
-See all created images::
+Install nvidia-docker and run::
 
-    $ docker images
-    
-Stop a running container::
-
-    $ docker stop #ID_or_container_name
-    
-Start a stopped container::
-
-    $ docker start #ID_or_container_name
-    
-Attach to a running container::
-
-    $ docker attach #ID_or_container_name
-    
-For more help run::
-
-    $ docker --help
-
-If you need the container IP, call in a running container::
-
-    $ cd etc
-    $ vi hosts
+    $ nvidia-docker run -it ufo
