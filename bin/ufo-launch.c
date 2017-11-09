@@ -271,7 +271,7 @@ try_consume_assignment (Environment *env, UfoTaskNode *task)
 
     pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (task), key->str->str);
 
-    if (pspec->value_type == G_TYPE_VALUE_ARRAY) {
+    if (pspec != NULL && pspec->value_type == G_TYPE_VALUE_ARRAY) {
         GParamSpecValueArray *vapspec;
         GValueArray *array;
         GValue array_value = { 0, };
