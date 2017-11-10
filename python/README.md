@@ -26,11 +26,11 @@ a = ufo.numpy.asarray(b)
 Creating tasks becomes as simple as importing a class:
 
 ```python
-from ufo import Reader, Backproject, Writer
+from ufo import Read, Backproject, Write
 
-read = Reader(path='../*.tif')
+read = Read(path='../*.tif')
 backproject = Backproject(axis_pos=512.2)
-write = Writer(filename='foo-%05i.tif')
+write = Write(filename='foo-%05i.tif')
 ```
 
 Hooking up tasks is wrapped by calls. You can use the outer call to schedule
