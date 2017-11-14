@@ -148,3 +148,4 @@ init_ufo(void)
         return;
 
     import_array();
+}
