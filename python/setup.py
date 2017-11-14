@@ -34,5 +34,6 @@ setup(
     description='ufo extension module',
     long_description='ufo extension module',
     packages=['ufo'],
-    ext_modules=[Extension('_ufo', ['src/ufo.c'], **build_flags)]
+    ext_modules=[Extension('_ufo', ['src/ufo.c'], **build_flags)],
+    zip_safe=False,
 )
