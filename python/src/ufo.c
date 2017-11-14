@@ -148,4 +148,5 @@ init_ufo(void)
         return;
 
     import_array();
+    pygobject_init (-1, -1, -1);
 }

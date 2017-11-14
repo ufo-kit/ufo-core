@@ -19,7 +19,7 @@ if not pkgconfig.installed('ufo', '>=0.4.0'):
 def listify(d):
     return {k: list(v) for k, v in d.items()}
 
-build_flags = listify(pkgconfig.parse('pygobject-2.0 pygobject-3.0 ufo'))
+build_flags = listify(pkgconfig.parse('pygobject-3.0 ufo'))
 
 build_flags['include_dirs'].append(numpy.get_include())
 build_flags['extra_compile_args'] = ['-std=c99']
