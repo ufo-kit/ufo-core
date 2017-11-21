@@ -483,20 +483,7 @@ static void
 progress_update (gpointer user)
 {
     static int n = 0;
-    static GDateTime *previous = NULL;
-
-    GDateTime *now = g_date_time_new_now_local ();
-
-    if (previous != NULL) {
-        gfloat seconds;
-
-        seconds = 1000000.0f / g_date_time_difference (now, previous);
-        g_date_time_unref (previous);
-
-        g_print ("\33[2K\r%i items processed (%3.2f items/s) ...", ++n, seconds);
-    }
-
-    previous = now;
+    g_print ("\33[2K\r%i items processed ...", ++n);
 }
 
 static GValueArray *
