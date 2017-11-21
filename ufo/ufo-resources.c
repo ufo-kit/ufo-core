@@ -616,6 +616,7 @@ add_program_from_source (UfoResourcesPrivate *priv,
         build_options = g_string_new (priv->build_opts->str);
         opt_append_device_options (build_options, priv, i);
         opt_append_include_paths (build_options, priv);
+
         if (options) {
             gchar *stripped_opts = g_strstrip (g_strdup (options));
             g_string_append (build_options, " ");
@@ -630,16 +631,16 @@ add_program_from_source (UfoResourcesPrivate *priv,
             return NULL;
         }
 
+        if (options)
+            g_debug ("INFO Built with `%s %s' for device %i", build_options->str, options, i);
+        else
+            g_debug ("INFO Built with `%s' for device %i", build_options->str, i);
+
         g_string_free (build_options, TRUE);
     }
 
     g_timer_stop (timer);
-
-    if (options)
-        g_debug ("INFO Built with `%s %s' for %i devices in %3.5fs", priv->build_opts->str, options, priv->n_devices, g_timer_elapsed (timer, NULL));
-    else
-        g_debug ("INFO Built with `%s' for %i devices in %3.5fs", priv->build_opts->str, priv->n_devices, g_timer_elapsed (timer, NULL));
-
+    g_debug ("INFO Built program for %i devices in %3.5fs", priv->n_devices, g_timer_elapsed (timer, NULL));
     g_timer_destroy (timer);
     g_hash_table_insert (priv->programs, g_strdup (source), program);
 
