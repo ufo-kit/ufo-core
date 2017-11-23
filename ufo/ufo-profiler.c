@@ -95,6 +95,48 @@ ufo_profiler_new (void)
     return UFO_PROFILER (g_object_new (UFO_TYPE_PROFILER, NULL));
 }
 
+static void
+_ufo_profiler_call (UfoProfiler    *profiler,
+                    gpointer        command_queue,
+                    gpointer        kernel,
+                    guint           work_dim,
+                    const gsize    *global_work_size,
+                    const gsize    *local_work_size,
+                    gboolean        block)
+{
+    UfoProfilerPrivate *priv;
+    cl_int              cl_err;
+    cl_event            event;
+
+    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    priv = profiler->priv;
+
+    if (priv->trace) {
+        struct EventRow row;
+
+        cl_err = clEnqueueNDRangeKernel (command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, &event);
+
+        row.event = event;
+        row.kernel = kernel;
+        row.queue = command_queue;
+        g_array_append_val (priv->event_array, row);
+    }
+    else {
+        cl_err = clEnqueueNDRangeKernel (command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, &event);
+    }
+
+    UFO_RESOURCES_CHECK_CLERR (cl_err);
+
+    if (block) {
+        /* Wait for the kernel to finish */
+        UFO_RESOURCES_CHECK_CLERR (clWaitForEvents (1, &event));
+        /* Let the tracing handle the event if enabled */
+        if (!priv->trace) {
+            UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
+        }
+    }
+}
+
 /**
  * ufo_profiler_call:
  * @profiler: A #UfoProfiler object.
@@ -118,28 +160,34 @@ ufo_profiler_call (UfoProfiler    *profiler,
                    const gsize    *global_work_size,
                    const gsize    *local_work_size)
 {
-    UfoProfilerPrivate *priv;
-    cl_int              cl_err;
+    _ufo_profiler_call (profiler, command_queue, kernel, work_dim, global_work_size, local_work_size, FALSE);
+}
 
-    g_return_if_fail (UFO_IS_PROFILER (profiler));
-    priv = profiler->priv;
-
-    if (priv->trace) {
-        cl_event event;
-        struct EventRow row;
-
-        cl_err = clEnqueueNDRangeKernel (command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, &event);
-
-        row.event = event;
-        row.kernel = kernel;
-        row.queue = command_queue;
-        g_array_append_val (priv->event_array, row);
-    }
-    else {
-        cl_err = clEnqueueNDRangeKernel (command_queue, kernel, work_dim, NULL, global_work_size, local_work_size, 0, NULL, NULL);
-    }
-
-    UFO_RESOURCES_CHECK_CLERR (cl_err);
+/**
+ * ufo_profiler_call_blocking:
+ * @profiler: A #UfoProfiler object.
+ * @command_queue: A %cl_command_queue
+ * @kernel: A %cl_kernel
+ * @work_dim: Number of working dimensions.
+ * @global_work_size: Sizes of global dimensions. The array must have at least
+ *      @work_dim entries.
+ * @local_work_size: Sizes of local work group dimensions. The array must have
+ *      at least @work_dim entries.
+ *
+ * Execute the @kernel using the command queue and execution parameters and wait
+ * for the kernel to finish. The event associated with the
+ * clEnqueueNDRangeKernel() call is recorded and may be used for profiling
+ * purposes later on.
+ */
+void
+ufo_profiler_call_blocking (UfoProfiler    *profiler,
+                            gpointer        command_queue,
+                            gpointer        kernel,
+                            guint           work_dim,
+                            const gsize    *global_work_size,
+                            const gsize    *local_work_size)
+{
+    _ufo_profiler_call (profiler, command_queue, kernel, work_dim, global_work_size, local_work_size, TRUE);
 }
 
 /**
