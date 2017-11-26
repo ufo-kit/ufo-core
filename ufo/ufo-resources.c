@@ -33,6 +33,7 @@
 #include <ufo/ufo-gpu-node.h>
 #include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-enums.h>
+#include "ufo-priv.h"
 #include "compat.h"
 
 /**
@@ -536,32 +537,13 @@ opt_append_include_paths (GString *str,
     g_list_foreach (priv->paths, (GFunc) append_include_path, str);
 }
 
-static gchar *
-escape_device_name (gchar *name)
-{
-    gchar *tmp = name;
-
-    while (*tmp) {
-        gchar c = *tmp;
-
-        if (c == ' ' || c == '(' || c == ')' || c == '-' || c == '@' || c == '.')
-            *tmp = '_';
-        else
-            *tmp = g_ascii_toupper (c);
-
-        tmp++;
-    }
-
-    return name;
-}
-
 static void
 opt_append_device_options (GString *str,
                            UfoResourcesPrivate *priv,
                            guint device_index)
 {
     g_assert (device_index < priv->n_devices);
-    g_string_append_printf (str, " -DDEVICE_%s", escape_device_name (priv->device_names[device_index]));
+    g_string_append_printf (str, " -DDEVICE_%s", ufo_escape_device_name (priv->device_names[device_index]));
 }
 
 static void

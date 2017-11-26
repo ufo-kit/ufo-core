@@ -3,7 +3,8 @@
 
 #include <glib.h>
 
-void ufo_write_profile_events   (GList *nodes);
-void ufo_write_opencl_events    (GList *nodes);
+void    ufo_write_profile_events    (GList *nodes);
+void    ufo_write_opencl_events     (GList *nodes);
+gchar * ufo_escape_device_name      (gchar *name);
 
 #endif

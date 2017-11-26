@@ -25,6 +25,7 @@
 #include <string.h>
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-gpu-node.h>
+#include "ufo-priv.h"
 
 G_DEFINE_TYPE (UfoGpuNode, ufo_gpu_node, UFO_TYPE_NODE)
 
@@ -97,8 +98,8 @@ ufo_gpu_node_get_info (UfoGpuNode *node,
 #define READ_ULONG(d) \
     { \
         cl_ulong ulong_value; \
-        g_value_init (value, G_TYPE_ULONG); \
         UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, d, sizeof (cl_ulong), &ulong_value, NULL)); \
+        g_value_init (value, G_TYPE_ULONG); \
         g_value_set_ulong (value, ulong_value); \
     }
 
@@ -119,11 +120,25 @@ ufo_gpu_node_get_info (UfoGpuNode *node,
             {
                 size_t size;
 
-                g_value_init (value, G_TYPE_ULONG);
                 UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof (size_t), &size, NULL));
+                g_value_init (value, G_TYPE_ULONG);
                 g_value_set_ulong (value, (cl_ulong) size);
             }
             break;
+
+        case UFO_GPU_NODE_INFO_NAME:
+            {
+                size_t size;
+                gchar *name;
+
+                UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_NAME, 0, NULL, &size));
+                name = g_malloc0 (size);
+                UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_NAME, size, name, NULL));
+
+                name = ufo_escape_device_name (name);
+                g_value_init (value, G_TYPE_STRING);
+                g_value_take_string (value, name);
+            }
     }
 
     return value;

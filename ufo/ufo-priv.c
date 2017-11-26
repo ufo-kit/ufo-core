@@ -165,3 +165,22 @@ ufo_write_profile_events (GList *nodes)
     g_list_foreach (sorted, (GFunc) g_free, NULL);
     g_list_free (sorted);
 }
+
+gchar *
+ufo_escape_device_name (gchar *name)
+{
+    gchar *tmp = name;
+
+    while (*tmp) {
+        gchar c = *tmp;
+
+        if (c == ' ' || c == '(' || c == ')' || c == '-' || c == '@' || c == '.')
+            *tmp = '_';
+        else
+            *tmp = g_ascii_toupper (c);
+
+        tmp++;
+    }
+
+    return name;
+}
