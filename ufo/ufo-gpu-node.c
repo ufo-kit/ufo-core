@@ -89,38 +89,43 @@ ufo_gpu_node_get_info (UfoGpuNode *node,
 {
     UfoGpuNodePrivate *priv;
     GValue *value;
-    cl_ulong ulong_value;
 
     priv = UFO_GPU_NODE_GET_PRIVATE (node);
     value = g_new0 (GValue, 1);
     memset (value, 0, sizeof (GValue));
 
-    g_value_init (value, G_TYPE_ULONG);
+#define READ_ULONG(d) \
+    { \
+        cl_ulong ulong_value; \
+        g_value_init (value, G_TYPE_ULONG); \
+        UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, d, sizeof (cl_ulong), &ulong_value, NULL)); \
+        g_value_set_ulong (value, ulong_value); \
+    }
 
     switch (info) {
         case UFO_GPU_NODE_INFO_GLOBAL_MEM_SIZE:
-            UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
+            READ_ULONG (CL_DEVICE_GLOBAL_MEM_SIZE);
             break;
 
         case UFO_GPU_NODE_INFO_MAX_MEM_ALLOC_SIZE:
-            UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
+            READ_ULONG (CL_DEVICE_GLOBAL_MEM_SIZE);
             break;
 
         case UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE:
-            UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof (cl_ulong), &ulong_value, NULL));
+            READ_ULONG (CL_DEVICE_GLOBAL_MEM_SIZE);
             break;
 
         case UFO_GPU_NODE_INFO_MAX_WORK_GROUP_SIZE:
             {
                 size_t size;
 
+                g_value_init (value, G_TYPE_ULONG);
                 UFO_RESOURCES_CHECK_CLERR (clGetDeviceInfo (priv->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof (size_t), &size, NULL));
-                ulong_value = (cl_ulong) size;
+                g_value_set_ulong (value, (cl_ulong) size);
             }
             break;
     }
 
-    g_value_set_ulong (value, ulong_value);
     return value;
 }
 
