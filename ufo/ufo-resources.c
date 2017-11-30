@@ -1151,8 +1151,10 @@ ufo_resources_finalize (GObject *object)
 
     g_hash_table_destroy (priv->programs);
 
-    for (guint i = 0; i < priv->n_devices; i++)
-        g_free (priv->device_names[i]);
+    if (priv->device_names != NULL) {
+        for (guint i = 0; i < priv->n_devices; i++)
+            g_free (priv->device_names[i]);
+    }
 
     if (priv->context) {
         g_debug ("FREE context=%p", (gpointer) priv->context);
