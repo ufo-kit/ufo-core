@@ -742,11 +742,15 @@ add_nodes_from_json (UfoTaskGraph *self,
 
         g_list_for (elements, it) {
             UfoTaskNode *new_node = create_node_from_json (it->data, priv->manager, priv->prop_sets, error);
-            if(new_node != NULL) {
-                const char *name = ufo_task_node_get_identifier(new_node);
+
+            if (new_node != NULL) {
+                const char *name = ufo_task_node_get_identifier (new_node);
 
                 if (g_hash_table_lookup (priv->json_nodes, name) != NULL) {
-                    g_error ("Duplicate name `%s' found", name);
+                    g_object_unref (new_node);
+                    g_set_error (error, UFO_TASK_GRAPH_ERROR, UFO_TASK_GRAPH_ERROR_JSON_KEY,
+                                 "Duplicate name `%s' found", name);
+                    return;
                 }
 
                 g_hash_table_insert (priv->json_nodes, g_strdup (name), new_node);
