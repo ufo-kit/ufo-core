@@ -116,16 +116,11 @@ read_json (UfoTaskGraph *graph,
 
     switch (location) {
         case JSON_FILE:
-            json_parser_load_from_file (json_parser,
-                                        data,
-                                        &tmp_error);
+            json_parser_load_from_file (json_parser, data, &tmp_error);
             break;
 
         case JSON_DATA:
-            json_parser_load_from_data (json_parser,
-                                        data,
-                                        (gssize) strlen (data),
-                                        &tmp_error);
+            json_parser_load_from_data (json_parser, data, (gssize) strlen (data), &tmp_error);
             break;
     }
 
@@ -167,10 +162,7 @@ ufo_task_graph_read_from_file (UfoTaskGraph *graph,
                                const gchar *filename,
                                GError **error)
 {
-    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) &&
-                      UFO_IS_PLUGIN_MANAGER (manager) &&
-                      (filename != NULL));
-
+    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) && UFO_IS_PLUGIN_MANAGER (manager) && (filename != NULL));
     read_json (graph, manager, JSON_FILE, filename, error);
 }
 
@@ -189,10 +181,7 @@ ufo_task_graph_read_from_data (UfoTaskGraph *graph,
                                const gchar *json,
                                GError **error)
 {
-    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) &&
-                      UFO_IS_PLUGIN_MANAGER (manager) &&
-                      (json != NULL));
-
+    g_return_if_fail (UFO_IS_TASK_GRAPH (graph) && UFO_IS_PLUGIN_MANAGER (manager) && (json != NULL));
     read_json (graph, manager, JSON_DATA, json, error);
 }
 
@@ -1106,12 +1095,8 @@ ufo_task_graph_init (UfoTaskGraph *self)
 
     priv->manager = NULL;
     priv->remote_tasks = NULL;
-
-    priv->json_nodes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                              g_free, NULL);
-
-    priv->prop_sets = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                             g_free, (GDestroyNotify) json_object_unref);
+    priv->json_nodes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    priv->prop_sets = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) json_object_unref);
     priv->index = 0;
     priv->total = 1;
 }
