@@ -846,9 +846,57 @@ create_node_from_json (JsonNode *json_node,
 
         if (JSON_NODE_HOLDS_VALUE (node)) {
             GValue val = {0,};
+
             json_node_get_value (node, &val);
-            g_object_set_property (G_OBJECT(ret_node), key, &val);
+            g_object_set_property (G_OBJECT (ret_node), key, &val);
             g_value_unset (&val);
+        }
+        else if (JSON_NODE_HOLDS_ARRAY (node)) {
+            GParamSpec *pspec;
+            GParamSpecValueArray *vapspec;
+            JsonArray *json_array;
+            GValueArray *value_array;
+            GList *values;
+            GList *it;
+            GValue value_array_val = {0, };
+
+            pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (ret_node), key);
+
+            if (pspec->value_type != G_TYPE_VALUE_ARRAY) {
+                g_set_error (error, UFO_TASK_GRAPH_ERROR, UFO_TASK_GRAPH_ERROR_JSON_KEY,
+                             "`%s' is not an array", (const gchar *) key);
+                return NULL;
+            }
+
+            vapspec = (GParamSpecValueArray *) pspec;
+            json_array = json_node_get_array (node);
+            values = json_array_get_elements (json_array);
+            value_array = g_value_array_new (g_list_length (values));
+
+            g_list_for (values, it) {
+                GValue val = {0, };
+                GValue target_val = {0, };
+
+                json_node_get_value ((JsonNode *) it->data, &val);
+
+                /*
+                 * We explicitly transform the value unconditionally to the
+                 * target type because the type system is pretty strict and it
+                 * is not possible to set a float property with a double value.
+                 */
+                g_value_init (&target_val, vapspec->element_spec->value_type);
+                g_value_transform (&val, &target_val);
+                g_value_array_append (value_array, &target_val);
+                g_value_unset (&target_val);
+                g_value_unset (&val);
+            }
+
+            g_value_init (&value_array_val, G_TYPE_VALUE_ARRAY);
+            g_value_set_boxed (&value_array_val, value_array);
+            g_object_set_property (G_OBJECT (ret_node), key, &value_array_val);
+            g_value_unset (&value_array_val);
+            g_list_free (values);
+            g_value_array_free (value_array);
         }
         else if (JSON_NODE_HOLDS_OBJECT (node)) {
             JsonObject *node_object = json_node_get_object (node);
@@ -863,7 +911,7 @@ create_node_from_json (JsonNode *json_node,
             }
         }
         else {
-            g_warning ("`%s' is neither a primitive value nor an object!", (char*)key);
+            g_warning ("`%s' is neither a primitive value, array or object", (const gchar *) key);
         }
     }
 
