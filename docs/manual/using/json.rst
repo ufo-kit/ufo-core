@@ -93,30 +93,6 @@ To connect the nodes defined in the `Example nodes array`_ all you have to do is
 
 Note, that the names specify the name of the node, not the plugin.
 
-Property sets
-=============
-
-To avoid to list the same properties for different filters over and over again,
-properties can be pre-defined with a singular top-level ``prop-sets`` object.
-Each key is a name that can be referenced in filter nodes using the
-``prop-refs`` array. The values are ordinary ``property`` mappings::
-
-    {
-        "prop-sets" : {
-            "foo-prop": {
-                "path": "/home/user/path/to/projections/*.tif", 
-                "count": 300
-            } 
-        },
-        "nodes" : [
-            {
-                "plugin": "reader",
-                "name": "reader",
-                "prop-refs": ["foo-prop"]
-            }
-        ]
-    }
-
 
 Loading and Saving the Graph
 ============================
