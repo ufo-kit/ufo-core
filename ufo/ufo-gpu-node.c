@@ -109,11 +109,11 @@ ufo_gpu_node_get_info (UfoGpuNode *node,
             break;
 
         case UFO_GPU_NODE_INFO_MAX_MEM_ALLOC_SIZE:
-            READ_ULONG (CL_DEVICE_GLOBAL_MEM_SIZE);
+            READ_ULONG (CL_DEVICE_MAX_MEM_ALLOC_SIZE);
             break;
 
         case UFO_GPU_NODE_INFO_LOCAL_MEM_SIZE:
-            READ_ULONG (CL_DEVICE_GLOBAL_MEM_SIZE);
+            READ_ULONG (CL_DEVICE_LOCAL_MEM_SIZE);
             break;
 
         case UFO_GPU_NODE_INFO_MAX_WORK_GROUP_SIZE:
