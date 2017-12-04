@@ -201,7 +201,7 @@ look like this::
     graph = Ufo.TaskGraph()
     scheduler = Ufo.Scheduler()
 
-    graph.read_from_json(manager, "some-graph.json")
+    graph.read_from_file(manager, "some-graph.json")
     scheduler.run(graph)
 
 Similarly, constructing the graph by hand maps one-to-one to the Python object
@@ -209,7 +209,7 @@ and keyword system::
 
     from gi.repository import Ufo
 
-    graph = Ufo.Graph()
+    graph = Ufo.TaskGraph()
     manager = Ufo.PluginManager()
     scheduler = Ufo.Scheduler()
 
