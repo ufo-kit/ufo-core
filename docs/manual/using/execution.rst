@@ -38,7 +38,7 @@ going to chrome://tracing and loading the JSON files.
 Broadcasting results
 ====================
 
-.. highlight:: c
+.. highlight:: python
 
 Connecting a task output to multiple consumers will in most cases cause
 undefined results because some data is processed differently than others. A
