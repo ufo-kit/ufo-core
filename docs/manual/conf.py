@@ -31,7 +31,11 @@ copyright = u'%s, UFO Development Team a Collaboration of KIT, SCI and TPU' % ti
 version = get_version()
 release = version
 
-extensions = ['sphinx.ext.pngmath']
+extensions = [
+    'sphinx.ext.imgmath',
+    'sphinx_tabs.tabs',
+]
+
 templates_path = ['_templates']
 
 master_doc = 'index'
@@ -41,9 +45,12 @@ source_encoding = 'utf-8'
 primary_domain = 'c'
 
 add_function_parentheses = True
-pygments_style = 'default'
+pygments_style = 'sphinx'
 
-html_theme = 'default'
+import sphinx_rtd_theme
+
+html_theme = 'sphinx_rtd_theme'
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_logo = "_static/ufo-logo.png"
 html_static_path = ['_static']
 html_use_smartypants = True
