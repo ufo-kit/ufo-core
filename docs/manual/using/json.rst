@@ -19,8 +19,6 @@ The configuration of a filter setup is stored in a JSON-encoded text file with a
 
     { "nodes": [], "edges": [] }
 
-The root object may also define several ``prop-set`` s for further reference.
-
 
 Nodes array
 ===========
@@ -50,8 +48,6 @@ translates to ::
 
     { "path": "/home/user/data/*.tif", "count": 5 }
 
-Instead of defining recurring properties for each filter, you can also use
-pre-defined `Property sets`_.
 
 Example nodes array
 -------------------
