@@ -7,7 +7,7 @@ Developing new task filters
 .. default-domain:: c
 
 UFO filters are simple shared objects that expose their ``GType`` and implement
-the :type:`UfoFilter` class.
+the ``UfoFilter`` class.
 
 
 Writing a task in C
@@ -276,7 +276,7 @@ implement this, we have to define a condition function that checks if a
 
 As the filter installed the properties it also knows which type it is and which
 ``g_value_get_*()`` function to call. Now, we wait until this conditions holds
-using :c:func:`ufo_filter_wait_until` ::
+using ``ufo_filter_wait_until`` ::
 
     /* Somewhere in ufo_filter_process() */
     ufo_filter_wait_until(self, properties[PROP_CENTER_OF_ROTATION],
@@ -284,7 +284,7 @@ using :c:func:`ufo_filter_wait_until` ::
 
 .. warning::
 
-    :c:func:`ufo_filter_wait_until` might block indefinitely when the
+    ``ufo_filter_wait_until`` might block indefinitely when the
     condition function never returns ``TRUE``.
 
 .. seealso:: :ref:`faq-synchronize-properties`
