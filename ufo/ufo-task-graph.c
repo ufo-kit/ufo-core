@@ -448,7 +448,6 @@ ufo_task_graph_expand (UfoTaskGraph *graph,
         GList *it;
 
         g_debug ("INFO Found node with multiple inputs, going to prune it");
-
         it = g_list_first (path);
 
         while (it->data != common->data) {
@@ -458,7 +457,8 @@ ufo_task_graph_expand (UfoTaskGraph *graph,
             it = jt;
         }
 
-        path = it;
+        /* remove the common node as well */
+        path = g_list_remove_link (path, it);
         g_list_free (common);
     }
 
