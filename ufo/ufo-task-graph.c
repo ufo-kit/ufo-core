@@ -435,7 +435,6 @@ ufo_task_graph_expand (UfoTaskGraph *graph,
     g_return_if_fail (UFO_IS_TASK_GRAPH (graph));
 
     path = ufo_graph_find_longest_path (UFO_GRAPH (graph), (UfoFilterPredicate) is_gpu_task, NULL);
-
     common = nodes_with_common_ancestries (graph, path);
 
     if (g_list_length (common) > 1) {
@@ -450,17 +449,16 @@ ufo_task_graph_expand (UfoTaskGraph *graph,
 
         g_debug ("INFO Found node with multiple inputs, going to prune it");
 
-        g_list_for (path, it) {
-            if (ufo_graph_get_num_predecessors (UFO_GRAPH (graph), UFO_NODE (it->data)) > 1) {
-                GList *predecessor;
+        it = g_list_first (path);
 
-                predecessor = g_list_previous (it);
+        while (it->data != common->data) {
+            GList *jt = g_list_next (it);
 
-                if (predecessor != NULL)
-                    path = g_list_remove_link (path, predecessor);
-            }
+            path = g_list_remove_link (path, it);
+            it = jt;
         }
 
+        path = it;
         g_list_free (common);
     }
 
