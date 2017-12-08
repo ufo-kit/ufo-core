@@ -105,18 +105,22 @@ lib_dep = declare_dependency(
     dependencies: deps + [m_dep]
 )
 
-gnome.generate_gir(lib,
-    namespace: 'Ufo',
-    nsversion: '@0@.0'.format(version_major),
-    sources: sources + headers,
-    install: true,
-    includes: [
-      'GLib-2.0',
-      'GObject-2.0',
-      'GModule-2.0',
-      'Json-1.0',
-    ],
-)
+gir = find_program('g-ir-scanner', required: false)
+
+if gir.found() and get_option('introspection')
+    gnome.generate_gir(lib,
+        namespace: 'Ufo',
+        nsversion: '@0@.0'.format(version_major),
+        sources: sources + headers,
+        install: true,
+        includes: [
+          'GLib-2.0',
+          'GObject-2.0',
+          'GModule-2.0',
+          'Json-1.0',
+        ],
+    )
+endif
 
 pkg = import('pkgconfig')
 

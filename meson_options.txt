@@ -1,3 +1,7 @@
 option('gtk_doc',
     type: 'boolean', value: false,
-    description: 'Whether to generate API references for Ufo')
+    description: 'Build API references (requires gtk-doc)')
+
+option('introspection',
+    type: 'boolean', value: true,
+    description: 'Build introspection data (requires gobject-introspection')
