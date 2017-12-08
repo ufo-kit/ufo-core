@@ -1,6 +1,6 @@
 project('ufo', 'c',
     version: '0.14.0',
-    default_options: ['c_std=c99'],
+    default_options: ['c_std=gnu99'],
 )
 
 version = meson.project_version()
