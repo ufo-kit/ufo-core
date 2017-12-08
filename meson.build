@@ -22,11 +22,15 @@ gtk_doc_dep = dependency('gtk-doc', required: false)
 python_dep = dependency('python', required: false)
 zmq_dep = dependency('libzmq', required: false)
 
-if not cc.has_header('CL/cl.h')
-    error('Cannot find CL/cl.h')
-endif
+opencl_dep = dependency('OpenCL', required: false)
 
-opencl_dep = declare_dependency(dependencies: cc.find_library('OpenCL'))
+if not opencl_dep.found()
+    if not cc.has_header('CL/cl.h')
+        error('Cannot find CL/cl.h')
+    endif
+
+    opencl_dep = declare_dependency(dependencies: cc.find_library('OpenCL'))
+endif
 
 deps = [
     glib_dep,
