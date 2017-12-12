@@ -592,16 +592,8 @@ ufo_task_graph_is_alright (UfoTaskGraph *graph,
                 combined_modes |= ufo_task_get_mode (UFO_TASK (jt->data));
 
             if ((combined_modes & UFO_TASK_MODE_PROCESSOR) && (combined_modes & UFO_TASK_MODE_REDUCTOR)) {
-#if 0
-                g_set_error (error, UFO_TASK_GRAPH_ERROR, UFO_TASK_GRAPH_ERROR_BAD_INPUTS,
-                             "`%s' receives both processor and reductor inputs which may deadlock.",
-                             ufo_task_node_get_plugin_name (UFO_TASK_NODE (it->data)));
-                g_list_free (predecessors);
-                g_list_free (nodes);
-                return FALSE;
-#endif
-                g_warning ("`%s' receives both processor and reductor inputs which may deadlock.",
-                           ufo_task_node_get_plugin_name (UFO_TASK_NODE (it->data)));
+                g_debug ("`%s' receives both processor and reductor inputs which may deadlock.",
+                         ufo_task_node_get_plugin_name (UFO_TASK_NODE (it->data)));
             }
         }
 
