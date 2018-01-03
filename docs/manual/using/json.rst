@@ -39,8 +39,8 @@ To configure the filter, the ``properties`` field can be used. This is an object
 that maps string keys specifying the actual filter property to the value.
 Therefore, the Python code to set a property ::
 
-    reader = graph.get_filter('reader')
-    reader.set_properties(path='/home/user/data/*.tif', count=5)
+    read = graph.get_filter('read')
+    read.set_properties(path='/home/user/data/*.tif', count=5)
 
 .. highlight:: javascript
 
@@ -56,13 +56,13 @@ An example node array looks like this::
 
     "nodes" : [
         {
-            "plugin": "reader",
-            "name": "reader",
+            "plugin": "read",
+            "name": "read",
             "properties" : { "path": "/home/user/data/*.tif", "count": 5 }
         },
         {
-            "plugin": "writer",
-            "name": "writer"
+            "plugin": "write",
+            "name": "write"
         }
     ]
 
@@ -82,8 +82,8 @@ To connect the nodes defined in the `Example nodes array`_ all you have to do is
 
     "edges" : [
         { 
-            "from": {"name": "reader"},
-            "to": {"name": "writer", "input": 2}
+            "from": {"name": "read"},
+            "to": {"name": "write", "input": 2}
         } 
     ]
 
@@ -101,14 +101,14 @@ saving the graph. In Python this would simply be::
 
     from gi.repository import Ufo
 
-    g1 = Ufo.Graph()
+    g1 = Ufo.TaskGraph()
 
     # set up the filters using graph.get_filter() and filter.connect_to()
 
     g1.run()
     g1.save_to_json('graph.json')
 
-    g2 = Ufo.Graph()
+    g2 = Ufo.TaskGraph()
     g2.load_from_json('graph.json')
     g2.run()
 
