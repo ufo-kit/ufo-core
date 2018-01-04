@@ -5,10 +5,46 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.15.0
+==============
+
+Released on January 4th 2018.
+
+Enhancements:
+
+- Manual and API documentation has been much improved
+- Passing -Dintrospection=false to meson disables introspection data
+- An error is generated if duplicate node names exist in JSON
+- Added ufo_profiler_call_blocking to wait for execution
+- Added ufo_resources_get_kernel_from_source_with_opts
+- Added an NVIDIA Dockerfile example
+- The deadlock warning has been turned into a debug message
+- The scheduler returns early if no OpenCL platform is found
+- Fix #135: added UFO_GPU_NODE_INFO_NAME
+
+Fixes:
+
+- UFO is compiled with gnu99 now to avoid GLOB_TILDE complaints
+- Fixed wrong references and highlighting in the manual
+- if UFO_DEVICE_TYPE=cpu is set, no GPUs are used
+- Fix #142: fixed multi input and GPU processing
+- Fix #142: prune graph correctly for multiple GPU
+- Fix #137: support JSON array properties
+- Fix #133: output build flag string for each device
+- Fix #132: do not segfault on unknown properties
+- Fix #126: abort execution without resources
+- Fix #129: allocate enough memory for index array
+- Fix #125: build and install manpages with meson
+
+Breaks:
+
+- Property sets have been removed from the JSON specification
+
+
 Version 0.14.0
 ==============
 
-Release on September 5th 2017.
+Released on September 5th 2017.
 
 Enhancements:
 
