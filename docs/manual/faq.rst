@@ -30,6 +30,15 @@ If this is not working, the library is neither installed into ``/usr/lib`` nor
 on 64-bit systems.
 
 
+How are kernel files loaded?
+----------------------------
+
+In a similar way as plugins. However, OpenCL kernel files are not architecture
+specific and are installed to ``${PREFIX}/share/ufo``. Additional search paths
+can be added at run-time through the :envvar:`UFO_KERNEL_PATH` environment
+variable.
+
+
 Usage
 =====
 
@@ -42,27 +51,6 @@ Because the UFO core system is unable to locate the filters. By default it looks
 into ``${LIBDIR}/ufo``. If you don't want to install the filters system-wide,
 you can tell the system to try other paths as well by appending paths to the
 ``UFO_PLUGIN_PATH`` :ref:`environment variable <using-env>`.
-
-
-Can I split a linear data stream?
----------------------------------
-
-The output data stream of a node can be split by setting the
-``UFO_SEND_SEQUENTIAL`` mode and adjusting the number of expecting data items on
-each connected node::
-
-    from gi.repository import Ufo
-
-    out_node.set_send_pattern(Ufo.SendPattern.SEQUENTIAL)
-    in1_node.set_num_expected(0, 5)  # expect five items on the first input
-    in2_node.set_num_expected(0, -1) # expect all items
-
-    g = Ufo.TaskGraph()
-    g.connect_nodes(out_node, in1_node)
-    g.connect_nodes(out_node, in2_node)
-
-The connection order matters here! If it would be reversed, ``in2_node`` would
-receive all items whereas ``in1_node`` wouldn't receive anything.
 
 
 How can I control the debug output from libufo?
