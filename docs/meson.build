@@ -1,15 +1,9 @@
 a2x = find_program(['a2x', 'a2x.py'], required: false)
 
 ignore_headers = [
-    'ufo-mpi-messenger.h',
     'ufo-priv.h',
     'ufo-two-way-queue.h',
-    'zmq-shim.h',
 ]
-
-if not zmq_dep.found()
-    ignore_headers += ['ufo-zmq-messenger.h']
-endif
 
 manpage_names = [
     'ufo-launch.1',
@@ -17,7 +11,6 @@ manpage_names = [
     'ufo-query.1',
     'ufo-prof.1',
     'ufo-runjson.1',
-    'ufod.1',
 ]
 
 if a2x.found()

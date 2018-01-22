@@ -6,11 +6,6 @@ sources = [
     'test-profiler.c',
 ]
 
-if zmq_dep.found()
-    sources += ['test-zmq-messenger.c']
-endif
-
-
 test('all tests',
     executable('test-suite',
         sources: sources + [enums_h],

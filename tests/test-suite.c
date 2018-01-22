@@ -21,10 +21,6 @@
 #include "test-suite.h"
 #include "config.h"
 
-#ifdef WITH_MPI
-#include <mpi.h>
-#endif
-
 static void
 ignore_log (const gchar     *domain,
             GLogLevelFlags   flags,
@@ -50,21 +46,7 @@ int main(int argc, char *argv[])
     test_add_profiler ();
     test_add_node ();
 
-#ifdef WITH_MPI
-    int provided;
-    MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-    test_add_mpi_remote_node ();
-#endif
-
-#ifdef WITH_ZMQ
-    test_add_zmq_messenger ();
-#endif
-
     g_test_run();
-
-#ifdef WITH_MPI
-    MPI_Finalize ();
-#endif
 
     return 0;
 }

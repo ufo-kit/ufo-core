@@ -53,7 +53,6 @@ if (A2X)
             ufo-query.1
             ufo-prof.1
             ufo-runjson.1
-            ufod.1
             )
 
         set(MAN_FILES)

@@ -10,10 +10,6 @@ set(TEST_SRCS
 
 set(SUITE_BIN "test-suite")
 
-if (WITH_ZMQ)
-    list(APPEND TEST_SRCS test-zmq-messenger.c)
-endif ()
-
 add_executable(${SUITE_BIN} ${TEST_SRCS})
 
 target_link_libraries(${SUITE_BIN} ufo m ${UFOCORE_DEPS})

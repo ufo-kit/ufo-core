@@ -9,7 +9,6 @@ set(ufocore_SRCS
     ufo-buffer.c
     ufo-copyable-iface.c
     ufo-cpu-node.c
-    ufo-daemon.c
     ufo-dummy-task.c
     ufo-fixed-scheduler.c
     ufo-gpu-node.c
@@ -18,15 +17,12 @@ set(ufocore_SRCS
     ufo-group-scheduler.c
     ufo-input-task.c
     ufo-local-scheduler.c
-    ufo-messenger-iface.c
     ufo-method-iface.c
     ufo-node.c
     ufo-output-task.c
     ufo-plugin-manager.c
     ufo-profiler.c
     ufo-processor.c
-    ufo-remote-node.c
-    ufo-remote-task.c
     ufo-resources.c
     ufo-scheduler.c
     ufo-task-iface.c
@@ -44,7 +40,6 @@ set(ufocore_HDRS
     ufo-buffer.h
     ufo-copyable-iface.h
     ufo-cpu-node.h
-    ufo-daemon.h
     ufo-dummy-task.h
     ufo-fixed-scheduler.h
     ufo-gpu-node.h
@@ -53,15 +48,12 @@ set(ufocore_HDRS
     ufo-group-scheduler.h
     ufo-input-task.h
     ufo-local-scheduler.h
-    ufo-messenger-iface.h
     ufo-method-iface.h
     ufo-node.h
     ufo-output-task.h
     ufo-plugin-manager.h
     ufo-profiler.h
     ufo-processor.h
-    ufo-remote-node.h
-    ufo-remote-task.h
     ufo-resources.h
     ufo-scheduler.h
     ufo-task-iface.h
@@ -79,11 +71,6 @@ add_definitions(-DUFO_COMPILATION)
 if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_definitions(-DG_DISABLE_ASSERT)
 endif()
-
-if (WITH_ZMQ)
-    list(APPEND ufocore_SRCS ufo-zmq-messenger.c)
-    list(APPEND ufocore_HDRS ufo-zmq-messenger.h)
-endif ()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -206,7 +193,6 @@ if(GTK_DOC_FOUND)
         set(docs_out "${docs_dir}/reference")
         set(docs_xml_in "${CMAKE_CURRENT_SOURCE_DIR}/../docs/Ufo-docs.xml")
         set(docs_xml_out "${docs_out}/Ufo-docs.xml")
-        set(docs_ignore_headers "ufo-zmq-messenger.h" "ufo-mpi-messenger.h")
 
         set(GTK_DOC_CFLAGS)
         set(GTK_DOC_LDFLAGS)

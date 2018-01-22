@@ -32,8 +32,6 @@
 #include <string.h>
 
 #include <ufo/ufo-buffer.h>
-#include <ufo/ufo-remote-node.h>
-#include <ufo/ufo-remote-task.h>
 #include <ufo/ufo-resources.h>
 #include <ufo/ufo-scheduler.h>
 #include <ufo/ufo-task-node.h>
@@ -67,7 +65,6 @@ typedef struct {
 
 
 struct _UfoSchedulerPrivate {
-    UfoRemoteMode    mode;
     gboolean ran;
 };
 
@@ -151,72 +148,6 @@ release_inputs (TaskLocalData *tld,
     }
 }
 
-static gboolean
-any (gboolean *values,
-     guint n_values)
-{
-    gboolean result = FALSE;
-
-    for (guint i = 0; i < n_values; i++)
-        result = result || values[i];
-
-    return result;
-}
-
-static void
-run_remote_task (TaskLocalData *tld)
-{
-    UfoRemoteNode *remote;
-    guint n_remote_gpus;
-    gboolean *alive;
-    gboolean active = TRUE;
-
-    remote = UFO_REMOTE_NODE (ufo_task_node_get_proc_node (UFO_TASK_NODE (tld->task)));
-    n_remote_gpus = ufo_remote_node_get_num_gpus (remote);
-    alive = g_new0 (gboolean, n_remote_gpus);
-
-    /*
-     * We launch a new thread for each incoming input data set because then we
-     * can send as many items as we have remote GPUs available without waiting
-     * for processing to stop.
-     */
-    while (active) {
-        for (guint i = 0; i < n_remote_gpus; i++) {
-            UfoBuffer *input;
-
-            if (get_inputs (tld, &input)) {
-                ufo_remote_node_send_inputs (remote, &input);
-                release_inputs (tld, &input);
-                alive[i] = TRUE;
-            }
-            else {
-                alive[i] = FALSE;
-            }
-        }
-
-        for (guint i = 0; i < n_remote_gpus; i++) {
-            UfoGroup *group;
-            UfoBuffer *output;
-            UfoRequisition requisition;
-
-            if (!alive[i])
-                continue;
-
-            ufo_remote_node_get_requisition (remote, &requisition);
-            group = ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task));
-            output = ufo_group_pop_output_buffer (group, &requisition);
-            ufo_remote_node_get_result (remote, output);
-            ufo_group_push_output_buffer (group, output);
-        }
-
-        active = any (alive, n_remote_gpus);
-    }
-
-    g_free (alive);
-    ufo_group_finish (ufo_task_node_get_out_group (UFO_TASK_NODE (tld->task)));
-    ufo_remote_node_terminate (remote);
-}
-
 static gpointer
 run_task (TaskLocalData *tld)
 {
@@ -231,11 +162,6 @@ run_task (TaskLocalData *tld)
     node = UFO_TASK_NODE (tld->task);
     active = TRUE;
     output = NULL;
-
-    if (UFO_IS_REMOTE_TASK (tld->task)) {
-        run_remote_task (tld);
-        return NULL;
-    }
 
     /* mode without CPU/GPU flag */
     mode = tld->mode & UFO_TASK_MODE_TYPE_MASK;
@@ -548,35 +474,6 @@ correct_connections (UfoTaskGraph *graph,
 }
 
 static void
-replicate_task_graph (UfoTaskGraph *graph,
-                      UfoResources *resources)
-{
-    GList *remotes;
-    GList *it;
-    guint n_graphs;
-    guint idx = 1;
-
-    remotes = ufo_resources_get_remote_nodes (resources);
-    n_graphs = g_list_length (remotes) + 1;
-
-    g_list_for (remotes, it) {
-        UfoRemoteNode *node;
-        gchar *json;
-
-        /* Set partition idx for the remote task graph */
-        ufo_task_graph_set_partition (graph, idx++, n_graphs);
-        json = ufo_task_graph_get_json_data (graph, NULL);
-        node = UFO_REMOTE_NODE (it->data);
-        ufo_remote_node_send_json (node, UFO_REMOTE_MODE_REPLICATE, json);
-        g_free (json);
-    }
-
-    /* Set partition index for the local task graph */
-    ufo_task_graph_set_partition (graph, 0, n_graphs);
-    g_list_free (remotes);
-}
-
-static void
 propagate_partition (UfoTaskGraph *graph)
 {
     GList *nodes;
@@ -628,14 +525,9 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
 
     gpu_nodes = ufo_resources_get_gpu_nodes (resources);
 
-    if (priv->mode == UFO_REMOTE_MODE_REPLICATE)
-        replicate_task_graph (graph, resources);
-
     if (expand) {
-        gboolean expand_remote = priv->mode == UFO_REMOTE_MODE_STREAM;
-
         if (!priv->ran)
-            ufo_task_graph_expand (graph, resources, g_list_length (gpu_nodes), expand_remote);
+            ufo_task_graph_expand (graph, resources, g_list_length (gpu_nodes));
         else
             g_debug ("Task graph already expanded, skipping.");
     }
@@ -712,6 +604,5 @@ ufo_scheduler_init (UfoScheduler *scheduler)
     UfoSchedulerPrivate *priv;
 
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
-    priv->mode = UFO_REMOTE_MODE_STREAM;
     priv->ran = FALSE;
 }

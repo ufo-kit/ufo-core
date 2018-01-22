@@ -20,7 +20,6 @@ gmodule_dep = dependency('gmodule-2.0', version: '>= 2.28')
 json_dep = dependency('json-glib-1.0', version: '>= 0.10.0')
 gtk_doc_dep = dependency('gtk-doc', required: false)
 python_dep = dependency('python', required: false)
-zmq_dep = dependency('libzmq', required: false)
 
 opencl_dep = dependency('OpenCL', required: false)
 
@@ -40,7 +39,6 @@ deps = [
     json_dep,
     opencl_dep,
     python_dep,
-    zmq_dep,
 ]
 
 include_dir = include_directories('.')
@@ -55,7 +53,6 @@ conf.set_quoted('UFO_PLUGIN_DIR', plugindir)
 conf.set_quoted('UFO_KERNEL_DIR', kerneldir)
 conf.set_quoted('UFO_VERSION', version)
 conf.set('WITH_PYTHON', python_dep.found())
-conf.set('WITH_ZMQ', zmq_dep.found())
 
 configure_file(
     input: 'config.h.meson.in',

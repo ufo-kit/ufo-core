@@ -146,7 +146,6 @@ gpointer         ufo_resources_get_context              (UfoResources   *resourc
 GList          * ufo_resources_get_cmd_queues           (UfoResources   *resources);
 GList          * ufo_resources_get_devices              (UfoResources   *resources);
 GList          * ufo_resources_get_gpu_nodes            (UfoResources   *resources);
-GList          * ufo_resources_get_remote_nodes         (UfoResources   *resources);
 const gchar    * ufo_resources_clerr                    (int             error);
 GType            ufo_resources_get_type                 (void);
 GQuark           ufo_resources_error_quark              (void);

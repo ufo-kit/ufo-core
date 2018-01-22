@@ -22,10 +22,8 @@
 #include <json-glib/json-glib.h>
 #include <ufo/ufo-task-graph.h>
 #include <ufo/ufo-task-node.h>
-#include <ufo/ufo-remote-node.h>
 #include <ufo/ufo-input-task.h>
 #include <ufo/ufo-dummy-task.h>
-#include <ufo/ufo-remote-task.h>
 #include "compat.h"
 
 /**
@@ -45,7 +43,6 @@ G_DEFINE_TYPE (UfoTaskGraph, ufo_task_graph, UFO_TYPE_GRAPH)
 struct _UfoTaskGraphPrivate {
     UfoPluginManager *manager;
     GHashTable *json_nodes;
-    GList *remote_tasks;
     guint index;
     guint total;
 };
@@ -319,85 +316,6 @@ is_gpu_task (UfoTask *task, gpointer user_data)
     return ufo_task_uses_gpu (task);
 }
 
-static UfoTaskNode *
-build_remote_graph (UfoTaskGraph *remote_graph,
-                    GList *first,
-                    GList *last)
-{
-    UfoTaskNode *node = NULL;
-    UfoTaskNode *predecessor = NULL;
-
-    for (GList *it = g_list_next (first); it != last && it != NULL; it = g_list_next (it)) {
-        node = UFO_TASK_NODE (it->data);
-
-        if (predecessor != NULL)
-            ufo_task_graph_connect_nodes (remote_graph, predecessor, node);
-
-        predecessor = node;
-    }
-
-    g_assert (node != NULL);
-    return node;
-}
-
-static void
-create_remote_tasks (UfoTaskGraph *task_graph,
-                     UfoTaskGraph *remote_graph,
-                     UfoTaskNode *first,
-                     UfoTaskNode *last,
-                     UfoRemoteNode *remote)
-{
-    UfoTaskGraphPrivate *priv;
-    UfoTaskNode *task;
-    gchar *json;
-
-    json = ufo_task_graph_get_json_data (remote_graph, NULL);
-    priv = task_graph->priv;
-    ufo_remote_node_send_json (remote, UFO_REMOTE_MODE_STREAM, json);
-
-    task = UFO_TASK_NODE (ufo_remote_task_new ());
-    priv->remote_tasks = g_list_append (priv->remote_tasks, task);
-    ufo_task_node_set_proc_node (task, UFO_NODE (remote));
-
-    ufo_task_graph_connect_nodes (task_graph, first, task);
-    ufo_task_graph_connect_nodes (task_graph, task, last);
-
-    g_debug ("remote: connected %s -> [remote] -> %s",
-             ufo_task_node_get_identifier (first),
-             ufo_task_node_get_identifier (last));
-
-    g_free (json);
-}
-
-static void
-expand_remotes (UfoTaskGraph *task_graph,
-                GList *remotes,
-                GList *path)
-{
-    UfoTaskGraph *remote_graph;
-    UfoTaskNode *node;
-    GList *first;
-    GList *last;
-    GList *it;
-
-    first = g_list_first (path);
-    last = g_list_last (path);
-
-    remote_graph = UFO_TASK_GRAPH (ufo_task_graph_new ());
-    node = build_remote_graph (remote_graph, first, last);
-
-    if (ufo_graph_get_num_nodes (UFO_GRAPH (remote_graph)) == 0) {
-        ufo_task_graph_connect_nodes (remote_graph, UFO_TASK_NODE (ufo_dummy_task_new ()), node);
-    }
-
-    g_list_for (remotes, it) {
-        create_remote_tasks (task_graph, remote_graph,
-                             first->data, last->data, it->data);
-    }
-
-    g_object_unref (remote_graph);
-}
-
 static GList *
 nodes_with_common_ancestries (UfoTaskGraph *graph, GList *path)
 {
@@ -417,7 +335,6 @@ nodes_with_common_ancestries (UfoTaskGraph *graph, GList *path)
  * @graph: A #UfoTaskGraph
  * @resources: A #UfoResources objects
  * @n_gpus: Number of GPUs to expand the graph for
- * @expand_remote: %TRUE if remote nodes should be inserted
  *
  * Expands @graph in a way that most of the resources in @graph can be occupied.
  * In the simple pipeline case, the longest possible GPU paths are duplicated as
@@ -426,8 +343,7 @@ nodes_with_common_ancestries (UfoTaskGraph *graph, GList *path)
 void
 ufo_task_graph_expand (UfoTaskGraph *graph,
                        UfoResources *resources,
-                       guint n_gpus,
-                       gboolean expand_remote)
+                       guint n_gpus)
 {
     GList *path;
     GList *common;
@@ -486,21 +402,6 @@ ufo_task_graph_expand (UfoTaskGraph *graph,
         g_list_free (predecessors);
         g_list_free (successors);
 
-        if (expand_remote) {
-            GList *remotes;
-            guint n_remotes;
-
-            remotes = ufo_resources_get_remote_nodes (resources);
-            n_remotes = g_list_length (remotes);
-
-            if (n_remotes > 0) {
-                g_debug ("INFO Expand for %i remote nodes", n_remotes);
-                expand_remotes (graph, remotes, path);
-            }
-
-            g_list_free (remotes);
-        }
-
         g_debug ("INFO Expand for %i GPU nodes", n_gpus);
 
         for (guint i = 1; i < n_gpus; i++)
@@ -532,7 +433,6 @@ map_proc_node (UfoGraph *graph,
     UfoNode *proc_node;
     GList *successors;
     GList *it;
-    guint n_gpus;
 
     proc_node = UFO_NODE (g_list_nth_data (gpu_nodes, proc_index));
 
@@ -545,15 +445,10 @@ map_proc_node (UfoGraph *graph,
         ufo_task_node_set_proc_node (UFO_TASK_NODE (node), proc_node);
     }
 
-    n_gpus = g_list_length (gpu_nodes);
     successors = ufo_graph_get_successors (graph, node);
 
-    g_list_for (successors, it) {
+    g_list_for (successors, it)
         map_proc_node (graph, UFO_NODE (it->data), proc_index, gpu_nodes);
-
-        if (!UFO_IS_REMOTE_TASK (UFO_NODE (it->data)))
-            proc_index = n_gpus > 0 ? (proc_index + 1) % n_gpus : 0;
-    }
 
     g_list_free (successors);
 }
@@ -977,7 +872,6 @@ create_full_json_from_task_node (UfoTaskNode *task_node)
     node_object = json_object_new ();
     plugin_name = ufo_task_node_get_plugin_name (task_node);
 
-    /* plugin_name can be NULL for task graphs expanded with remote nodes */
     if (plugin_name == NULL)
         return NULL;
 
@@ -1060,10 +954,6 @@ ufo_task_graph_dispose (GObject *object)
         priv->manager = NULL;
     }
 
-    g_list_foreach (priv->remote_tasks, (GFunc) g_object_unref, NULL);
-    g_list_free (priv->remote_tasks);
-    priv->remote_tasks = NULL;
-
     nodes = g_hash_table_get_values (priv->json_nodes);
     g_list_foreach (nodes, (GFunc) g_object_unref, NULL);
     g_list_free (nodes);
@@ -1102,7 +992,6 @@ ufo_task_graph_init (UfoTaskGraph *self)
     self->priv = priv = UFO_TASK_GRAPH_GET_PRIVATE (self);
 
     priv->manager = NULL;
-    priv->remote_tasks = NULL;
     priv->json_nodes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     priv->index = 0;
     priv->total = 1;

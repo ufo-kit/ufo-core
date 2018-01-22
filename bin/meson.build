@@ -1,7 +1,8 @@
-progs = ['ufo-launch',
-         'ufo-query',
-         'ufo-runjson',
-         'ufod']
+progs = [
+    'ufo-launch',
+    'ufo-query',
+    'ufo-runjson',
+]
 
 foreach prog: progs
     sources = [

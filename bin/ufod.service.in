@@ -1,5 +1,0 @@
-[Unit]
-Description=Remote node daemon for UFO
-
-[Service]
-ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/ufod --listen tcp://127.0.0.1:5000

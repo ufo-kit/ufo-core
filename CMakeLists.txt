@@ -55,11 +55,9 @@ endif ()
 #{{{ Dependencies
 set(PKG_GLIB2_MIN_REQUIRED "2.30")
 set(PKG_JSON_GLIB_MIN_REQUIRED "0.10.0")
-set(PKG_ZMQ_MIN_REQUIRED "2.1")
 
 find_package(OpenCL REQUIRED)
 find_package(PkgConfig REQUIRED)
-find_package(MPI)
 
 pkg_check_modules(GLIB2 glib-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GOBJECT2 gobject-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
@@ -67,7 +65,6 @@ pkg_check_modules(GMODULE2 gmodule-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GTHREAD2 gthread-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GIO2 gio-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0>=${PKG_JSON_GLIB_MIN_REQUIRED} REQUIRED)
-pkg_check_modules(ZMQ libzmq>=${PKG_ZMQ_MIN_REQUIRED})
 pkg_check_modules(PYTHON python)
 
 set(UFOCORE_DEPS
@@ -88,26 +85,6 @@ if (PYTHON_FOUND)
         list(APPEND UFOCORE_DEPS ${PYTHON_LIBRARIES})
     endif ()
 endif()
-
-if (MPI_C_FOUND)
-    option(WITH_MPI "Build with MPI support" OFF)
-
-    if (WITH_MPI)
-        set(CMAKE_C_COMPILER ${MPI_C_COMPILER})
-        include_directories(${MPI_C_INCLUDE_PATH})
-        list(APPEND UFOCORE_DEPS ${MPI_C_LIBRARIES})
-    endif ()
-endif ()
-
-if (ZMQ_FOUND)
-    option(WITH_ZMQ "Build with ZMQ support" ON)
-
-    if (WITH_ZMQ)
-        link_directories(${ZMQ_LIBRARY_DIRS})
-        include_directories(${ZMQ_INCLUDE_DIRS})
-        list(APPEND UFOCORE_DEPS ${ZMQ_LIBRARIES})
-    endif ()
-endif ()
 
 #{{{ Link dirs of dependencies
 link_directories(
