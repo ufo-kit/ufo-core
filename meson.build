@@ -1,5 +1,5 @@
 project('ufo', 'c',
-    version: '0.15.0',
+    version: '0.15.1',
     default_options: ['c_std=gnu99'],
 )
 
