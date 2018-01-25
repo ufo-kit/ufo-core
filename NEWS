@@ -5,6 +5,13 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.15.1
+==============
+
+This is bugfix release that fixes #143 which causes segfaults with certain task
+graph conditions.
+
+
 Version 0.15.0
 ==============
 
