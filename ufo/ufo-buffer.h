@@ -127,6 +127,8 @@ gsize       ufo_buffer_get_size             (UfoBuffer      *buffer);
 void        ufo_buffer_copy                 (UfoBuffer      *src,
                                              UfoBuffer      *dst);
 UfoBuffer  *ufo_buffer_dup                  (UfoBuffer      *buffer);
+void        ufo_buffer_swap_data            (UfoBuffer      *src,
+                                             UfoBuffer      *dst);
 void        ufo_buffer_set_host_array       (UfoBuffer      *buffer,
                                              gpointer        array,
                                              gboolean        free_data);

@@ -103,8 +103,8 @@ struct _UfoBufferPrivate {
     cl_context          context;
     cl_command_queue    last_queue;
     gsize               size;           /* size of buffer in bytes */
-    UfoBufferLocation      location;
-    UfoBufferLocation      last_location;
+    UfoBufferLocation   location;
+    UfoBufferLocation   last_location;
     GHashTable         *metadata;
     GList              *sub_device_arrays;
 };
@@ -617,6 +617,67 @@ ufo_buffer_dup (UfoBuffer *buffer)
     ufo_buffer_get_requisition (buffer, &requisition);
     copy = ufo_buffer_new (&requisition, buffer->priv->context);
     return copy;
+}
+
+/**
+ * ufo_buffer_swap_data:
+ * @src: Buffer to receive data from @dst
+ * @dst: Buffer to receive data from @src
+ *
+ * Swap the *content* of the two buffers if possible (i.e. data resides on the
+ * same memory type) or copy from @src to @dst otherwise.
+ *
+ * Since: 0.16
+ */
+void
+ufo_buffer_swap_data (UfoBuffer *src,
+                      UfoBuffer *dst)
+{
+    GHashTable *tmp_meta;
+
+    if (src->priv->location != dst->priv->location) {
+        ufo_buffer_copy (src, dst);
+        return;
+    }
+
+    tmp_meta = src->priv->metadata;
+    src->priv->metadata = dst->priv->metadata;
+    dst->priv->metadata = tmp_meta;
+
+    switch (src->priv->location) {
+        case UFO_BUFFER_LOCATION_HOST:
+            {
+                gfloat *tmp;
+
+                tmp = src->priv->host_array;
+                src->priv->host_array = dst->priv->host_array;
+                dst->priv->host_array = tmp;
+            }
+            break;
+
+        case UFO_BUFFER_LOCATION_DEVICE:
+            {
+                cl_mem tmp;
+
+                tmp = src->priv->device_array;
+                src->priv->device_array = dst->priv->device_array;
+                dst->priv->device_array = tmp;
+            }
+            break;
+
+        case UFO_BUFFER_LOCATION_DEVICE_IMAGE:
+            {
+                cl_mem tmp;
+
+                tmp = src->priv->device_image;
+                src->priv->device_image = dst->priv->device_image;
+                dst->priv->device_image = tmp;
+            }
+            break;
+
+        case UFO_BUFFER_LOCATION_INVALID:
+            break;
+    }
 }
 
 /**
