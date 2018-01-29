@@ -25,13 +25,7 @@
 #include <unistd.h>
 #include <ufo/ufo.h>
 
-#ifdef WITH_MPI
-#include <mpi.h>
-#include <ufo/ufo-mpi-messenger.h>
-#endif
-
 typedef struct {
-    gchar **addresses;
     gchar *scheduler;
     gboolean trace;
     gboolean timestamps;
@@ -50,26 +44,6 @@ handle_error (const gchar *prefix, GError *error, UfoGraph *graph)
     }
 }
 
-static GValueArray *
-string_array_to_value_array (gchar **array)
-{
-    GValueArray *result = NULL;
-
-    if (array == NULL)
-        return NULL;
-
-    result = g_value_array_new (0);
-
-    for (guint i = 0; array[i] != NULL; i++) {
-        GValue *tmp = (GValue *) g_malloc0 (sizeof (GValue));
-        g_value_init (tmp, G_TYPE_STRING);
-        g_value_set_string (tmp, array[i]);
-        result = g_value_array_append (result, tmp);
-    }
-
-    return result;
-}
-
 static void
 progress_update (gpointer user)
 {
@@ -86,7 +60,6 @@ execute_json (const gchar *filename,
     UfoPluginManager *manager;
     GList *leaves;
     UfoResources *resources = NULL;
-    GValueArray *address_list = NULL;
     GError *error = NULL;
     gboolean have_tty;
 
@@ -138,15 +111,6 @@ execute_json (const gchar *filename,
                   "timestamps", options->timestamps,
                   NULL);
 
-    address_list = string_array_to_value_array (options->addresses);
-
-    if (address_list) {
-        resources = UFO_RESOURCES (ufo_resources_new (NULL));
-        g_object_set (G_OBJECT (resources), "remotes", address_list, NULL);
-        g_value_array_free (address_list);
-        ufo_base_scheduler_set_resources (scheduler, resources);
-    }
-
     ufo_base_scheduler_run (scheduler, task_graph, &error);
     handle_error ("Executing", error, UFO_GRAPH (task_graph));
 
@@ -170,69 +134,12 @@ execute_json (const gchar *filename,
         g_object_unref (resources);
 }
 
-#ifdef WITH_MPI
-
-static void
-mpi_terminate_processes (gint global_size)
-{
-    for (int i = 1; i < global_size; i++) {
-        gchar *addr = g_strdup_printf ("%d", i);
-        UfoMessage *poisonpill = ufo_message_new (UFO_MESSAGE_TERMINATE, 0);
-        UfoMessenger *msger = UFO_MESSENGER (ufo_mpi_messenger_new ());
-        ufo_mpi_messenger_connect (msger, addr, UFO_MESSENGER_CLIENT);
-        g_debug ("sending poisonpill to %s", addr);
-        ufo_messenger_send_blocking (msger, poisonpill, NULL);
-        ufo_message_free (poisonpill);
-        ufo_messenger_disconnect (msger);
-    }
-}
-
-static gchar**
-mpi_build_addresses (gint global_size)
-{
-    /* build addresses by MPI_COMM_WORLD size, exclude rank 0 but
-       have room for NULL termination */
-    gchar **addresses = g_malloc (sizeof (gchar *) * global_size);
-    for (int i = 1; i < global_size; i++) {
-        addresses[i - 1] = g_strdup_printf ("%d", i);
-    }
-    addresses[global_size - 1] = NULL;
-
-    return addresses;
-}
-
-static void
-mpi_init (int *argc, char *argv[], gint *rank, gint *global_size)
-{
-    gint provided;
-    MPI_Init_thread (argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-
-    MPI_Comm_rank (MPI_COMM_WORLD, rank);
-    MPI_Comm_size (MPI_COMM_WORLD, global_size);
-
-    if (*global_size == 1) {
-        g_critical ("Warning: running MPI instance but found only single process");
-        exit (0);
-    }
-
-#ifdef DEBUG
-    // get us some time to attach a gdb session to the pids
-    g_debug ("Process PID %d ranked %d of %d  - ready for attach\n",
-             getpid(), rank, *global_size - 1);
-
-    sleep (3);
-#endif
-}
-
-#endif
-
 int main(int argc, char *argv[])
 {
     GOptionContext *context;
     GError *error = NULL;
 
     static Options options = {
-        .addresses = NULL,
         .scheduler = NULL,
         .trace = FALSE,
         .timestamps = FALSE,
@@ -245,7 +152,6 @@ int main(int argc, char *argv[])
         { "trace",     't', 0, G_OPTION_ARG_NONE, &options.trace, "enable tracing", NULL },
         { "scheduler", 's', 0, G_OPTION_ARG_STRING, &options.scheduler, "selecting a scheduler",
           "dynamic|fixed"},
-        { "address",   'a', 0, G_OPTION_ARG_STRING_ARRAY, &options.addresses, "Address of remote server running `ufod'", NULL },
         { "timestamps",  0, 0, G_OPTION_ARG_NONE, &options.timestamps, "enable timestamps", NULL },
         { "quiet",     'q', 0, G_OPTION_ARG_NONE, &options.quiet, "be quiet", NULL },
         { "quieter",     0, 0, G_OPTION_ARG_NONE, &options.quieter, "be quieter", NULL },
@@ -279,33 +185,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-#ifdef WITH_MPI
-    gint rank, size;
-    mpi_init (&argc, argv, &rank, &size);
-
-    if (rank == 0) {
-        addresses = mpi_build_addresses (size);
-    }
-    else {
-        gchar *addr = g_strdup_printf("%d", rank);
-        UfoDaemon *daemon = ufo_daemon_new (addr);
-        ufo_daemon_start (daemon);
-        ufo_daemon_wait_finish (daemon);
-        MPI_Finalize ();
-        exit(EXIT_SUCCESS);
-    }
-#endif
-
     execute_json (argv[argc-1], &options);
 
-#ifdef WITH_MPI
-    if (rank == 0) {
-        mpi_terminate_processes (size);
-        MPI_Finalize ();
-    }
-#endif
-
-    g_strfreev (options.addresses);
     g_option_context_free (context);
 
     return 0;

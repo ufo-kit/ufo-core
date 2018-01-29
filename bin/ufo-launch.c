@@ -28,7 +28,6 @@
 #include "config.h"
 
 
-
 static gboolean
 str_to_boolean (const gchar *s)
 {
@@ -486,26 +485,6 @@ progress_update (gpointer user)
     g_print ("\33[2K\r%i items processed ...", ++n);
 }
 
-static GValueArray *
-string_array_to_value_array (gchar **array)
-{
-    GValueArray *result = NULL;
-
-    if (array == NULL)
-        return NULL;
-
-    result = g_value_array_new (0);
-
-    for (guint i = 0; array[i] != NULL; i++) {
-        GValue *tmp = (GValue *) g_malloc0 (sizeof (GValue));
-        g_value_init (tmp, G_TYPE_STRING);
-        g_value_set_string (tmp, array[i]);
-        result = g_value_array_append (result, tmp);
-    }
-
-    return result;
-}
-
 int
 main(int argc, char* argv[])
 {
@@ -520,7 +499,6 @@ main(int argc, char* argv[])
     GOptionContext *context;
     gboolean have_tty;
     UfoResources *resources = NULL;
-    GValueArray *address_list = NULL;
     GError *error = NULL;
 
     static gboolean quiet = FALSE;
@@ -528,12 +506,10 @@ main(int argc, char* argv[])
     static gboolean trace = FALSE;
     static gboolean version = FALSE;
     static gboolean timestamps = FALSE;
-    static gchar **addresses = NULL;
     static gchar *dump = NULL;
 
     static GOptionEntry entries[] = {
         { "trace",   't', 0, G_OPTION_ARG_NONE, &trace, "enable tracing", NULL },
-        { "address", 'a', 0, G_OPTION_ARG_STRING_ARRAY, &addresses, "Address of remote server running `ufod'", NULL },
         { "dump",    'd', 0, G_OPTION_ARG_STRING, &dump, "Dump to JSON file", NULL },
         { "timestamps",0, 0, G_OPTION_ARG_NONE, &timestamps, "generate timestamps", NULL },
         { "quiet",   'q', 0, G_OPTION_ARG_NONE, &quiet, "be quiet", NULL },
@@ -599,15 +575,6 @@ main(int argc, char* argv[])
                   "timestamps", timestamps,
                   NULL);
 
-    address_list = string_array_to_value_array (addresses);
-
-    if (address_list) {
-        resources = UFO_RESOURCES (ufo_resources_new (NULL));
-        g_object_set (G_OBJECT (resources), "remotes", address_list, NULL);
-        g_value_array_free (address_list);
-        ufo_base_scheduler_set_resources (sched, resources);
-    }
-
     if (!dump)
         ufo_base_scheduler_run (sched, graph, &error);
 
@@ -646,7 +613,6 @@ main(int argc, char* argv[])
     g_object_unref (graph);
     g_object_unref (sched);
     g_object_unref (pm);
-    g_strfreev (addresses);
     g_option_context_free (context);
 
     return 0;
