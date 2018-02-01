@@ -33,7 +33,6 @@ release = version
 
 extensions = [
     'sphinx.ext.imgmath',
-    'sphinx_tabs.tabs',
 ]
 
 templates_path = ['_templates']
