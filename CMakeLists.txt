@@ -67,6 +67,9 @@ pkg_check_modules(GIO2 gio-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0>=${PKG_JSON_GLIB_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(PYTHON python)
 
+set(GLIB_VERSION_MIN_REQUIRED "GLIB_VERSION_2_38")
+set(GLIB_VERSION_MAX_ALLOWED "GLIB_VERSION_2_38")
+
 set(UFOCORE_DEPS
     m
     ${OpenCL_LIBRARIES}
