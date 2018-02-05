@@ -53,7 +53,7 @@ if (WITH_DEPRECATED_OPENCL_1_1_API)
 endif ()
 #}}}
 #{{{ Dependencies
-set(PKG_GLIB2_MIN_REQUIRED "2.30")
+set(PKG_GLIB2_MIN_REQUIRED "2.38")
 set(PKG_JSON_GLIB_MIN_REQUIRED "0.10.0")
 
 find_package(OpenCL REQUIRED)
