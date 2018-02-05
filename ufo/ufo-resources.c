@@ -34,7 +34,6 @@
 #include "ufo-gpu-node.h"
 #include "ufo-enums.h"
 #include "ufo-priv.h"
-#include "compat.h"
 
 /**
  * SECTION:ufo-resources

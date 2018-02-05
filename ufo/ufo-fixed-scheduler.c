@@ -39,7 +39,6 @@
 #include "ufo-task-iface.h"
 #include "ufo-two-way-queue.h"
 #include "ufo-priv.h"
-#include "compat.h"
 
 /**
  * SECTION:ufo-fixed-scheduler

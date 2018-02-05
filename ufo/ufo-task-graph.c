@@ -27,7 +27,7 @@
 #include "ufo-task-node.h"
 #include "ufo-input-task.h"
 #include "ufo-dummy-task.h"
-#include "compat.h"
+#include "ufo-priv.h"
 
 /**
  * SECTION:ufo-task-graph

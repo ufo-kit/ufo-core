@@ -19,8 +19,8 @@
 
 #include "config.h"
 
-#include <ufo/ufo.h>
-#include "ufo/compat.h"
+#include "ufo/ufo.h"
+#include "ufo/ufo-priv.h"
 
 
 static gboolean list = FALSE;

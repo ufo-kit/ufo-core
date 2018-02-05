@@ -26,7 +26,7 @@
 #include "ufo-task-node.h"
 #include "ufo-dummy-task.h"
 #include "ufo-copy-task.h"
-#include "compat.h"
+#include "ufo-priv.h"
 
 /**
  * SECTION:ufo-plugin-manager

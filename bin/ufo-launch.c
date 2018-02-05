@@ -24,8 +24,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #include "ufo/ufo.h"
-#include "ufo/compat.h"
+#include "ufo/ufo-priv.h"
 
 static gboolean
 str_to_boolean (const gchar *s)

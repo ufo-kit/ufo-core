@@ -33,7 +33,7 @@
 
 #include "ufo-input-task.h"
 #include "ufo-task-iface.h"
-#include "compat.h"
+#include "ufo-priv.h"
 
 /**
  * SECTION:ufo-input-task

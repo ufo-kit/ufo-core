@@ -33,8 +33,6 @@
 #include "ufo-task-node.h"
 #include "ufo-task-iface.h"
 #include "ufo-priv.h"
-#include "compat.h"
-
 
 /**
  * SECTION:ufo-base-scheduler

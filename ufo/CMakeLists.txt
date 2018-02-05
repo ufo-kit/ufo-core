@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.6)
 
 #{{{ sources
 set(ufocore_SRCS
-    compat.c
     ufo-priv.c
     ufo-base-scheduler.c
     ufo-copy-task.c

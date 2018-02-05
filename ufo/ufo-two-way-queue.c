@@ -20,7 +20,7 @@
 #include "config.h"
 
 #include "ufo-two-way-queue.h"
-#include "compat.h"
+#include "ufo-priv.h"
 
 
 struct _UfoTwoWayQueue {

@@ -5,7 +5,6 @@
 #include "ufo-priv.h"
 #include "ufo-profiler.h"
 #include "ufo-task-node.h"
-#include "compat.h"
 
 
 typedef struct {

@@ -1,5 +1,4 @@
 sources = [
-    'compat.c',
     'ufo-base-scheduler.c',
     'ufo-basic-ops.c',
     'ufo-buffer.c',

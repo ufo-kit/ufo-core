@@ -23,7 +23,7 @@
 
 #include "ufo-node.h"
 #include "ufo-graph.h"
-#include "compat.h"
+#include "ufo-priv.h"
 
 /**
  * SECTION:ufo-graph
