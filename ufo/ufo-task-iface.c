@@ -125,6 +125,9 @@ emit_signal (gpointer instance, guint signal_id, GQuark detail)
 #ifdef WITH_PYTHON
         PyGILState_Release (state);
     }
+    else {
+        g_signal_emit (instance, signal_id, detail, G_TYPE_NONE);
+    }
 #endif
 }
 
