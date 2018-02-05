@@ -16,7 +16,12 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "config.h"
+
+#include <gio/gio.h>
+#include <stdio.h>
+#include <string.h>
 
 #ifdef WITH_PYTHON
 #include <Python.h>
@@ -27,16 +32,13 @@
 #else
 #include <CL/cl.h>
 #endif
-#include <gio/gio.h>
-#include <stdio.h>
-#include <string.h>
 
-#include <ufo/ufo-buffer.h>
-#include <ufo/ufo-resources.h>
-#include <ufo/ufo-group-scheduler.h>
-#include <ufo/ufo-task-node.h>
-#include <ufo/ufo-task-iface.h>
-#include <ufo/ufo-two-way-queue.h>
+#include "ufo-buffer.h"
+#include "ufo-resources.h"
+#include "ufo-group-scheduler.h"
+#include "ufo-task-node.h"
+#include "ufo-task-iface.h"
+#include "ufo-two-way-queue.h"
 #include "ufo-priv.h"
 #include "compat.h"
 

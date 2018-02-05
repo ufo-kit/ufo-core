@@ -18,12 +18,14 @@
  */
 
 #include "config.h"
+
 #include <gmodule.h>
 #include <glob.h>
-#include <ufo/ufo-plugin-manager.h>
-#include <ufo/ufo-task-node.h>
-#include <ufo/ufo-dummy-task.h>
-#include <ufo/ufo-copy-task.h>
+
+#include "ufo-plugin-manager.h"
+#include "ufo-task-node.h"
+#include "ufo-dummy-task.h"
+#include "ufo-copy-task.h"
 #include "compat.h"
 
 /**

@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "config.h"
 
 #ifdef WITH_PYTHON
@@ -27,10 +28,11 @@
 #else
 #include <CL/cl.h>
 #endif
-#include <gmodule.h>
-#include <ufo/ufo-copy-task.h>
-#include <ufo/ufo-task-iface.h>
 
+#include <gmodule.h>
+
+#include "ufo-copy-task.h"
+#include "ufo-task-iface.h"
 #include "compat.h"
 
 /**

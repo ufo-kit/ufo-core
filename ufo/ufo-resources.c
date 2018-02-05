@@ -23,15 +23,16 @@
 #include <gio/gio.h>
 #include <stdio.h>
 #include <string.h>
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
 #endif
 
-#include <ufo/ufo-resources.h>
-#include <ufo/ufo-gpu-node.h>
-#include <ufo/ufo-enums.h>
+#include "ufo-resources.h"
+#include "ufo-gpu-node.h"
+#include "ufo-enums.h"
 #include "ufo-priv.h"
 #include "compat.h"
 

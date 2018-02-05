@@ -18,6 +18,10 @@
  */
 #include "config.h"
 
+#include <gio/gio.h>
+#include <stdio.h>
+#include <string.h>
+
 #ifdef WITH_PYTHON
 #include <Python.h>
 #endif
@@ -27,16 +31,13 @@
 #else
 #include <CL/cl.h>
 #endif
-#include <gio/gio.h>
-#include <stdio.h>
-#include <string.h>
 
-#include <ufo/ufo-buffer.h>
-#include <ufo/ufo-fixed-scheduler.h>
-#include <ufo/ufo-resources.h>
-#include <ufo/ufo-task-node.h>
-#include <ufo/ufo-task-iface.h>
-#include <ufo/ufo-two-way-queue.h>
+#include "ufo-buffer.h"
+#include "ufo-fixed-scheduler.h"
+#include "ufo-resources.h"
+#include "ufo-task-node.h"
+#include "ufo-task-iface.h"
+#include "ufo-two-way-queue.h"
 #include "ufo-priv.h"
 #include "compat.h"
 

@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include <gmodule.h>
+
 #ifdef WITH_PYTHON
 #include <Python.h>
 #endif
@@ -28,10 +30,9 @@
 #else
 #include <CL/cl.h>
 #endif
-#include <gmodule.h>
-#include <ufo/ufo-input-task.h>
-#include <ufo/ufo-task-iface.h>
 
+#include "ufo-input-task.h"
+#include "ufo-task-iface.h"
 #include "compat.h"
 
 /**

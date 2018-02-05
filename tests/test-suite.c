@@ -17,9 +17,10 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <glib-object.h>
 #include "test-suite.h"
-#include "config.h"
 
 static void
 ignore_log (const gchar     *domain,

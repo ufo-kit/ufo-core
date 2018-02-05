@@ -18,8 +18,12 @@
  */
 
 #define _GNU_SOURCE
+
+#include "config.h"
+
 #include <sched.h>
-#include <ufo/ufo-cpu-node.h>
+
+#include "ufo-cpu-node.h"
 
 G_DEFINE_TYPE (UfoCpuNode, ufo_cpu_node, UFO_TYPE_NODE)
 

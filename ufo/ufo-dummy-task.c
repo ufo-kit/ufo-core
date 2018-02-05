@@ -17,14 +17,17 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <gmodule.h>
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
 #endif
 
-#include <ufo/ufo-dummy-task.h>
+#include "ufo-dummy-task.h"
 
 /**
  * SECTION:ufo-dummy-task

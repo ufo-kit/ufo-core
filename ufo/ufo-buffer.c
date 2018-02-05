@@ -17,15 +17,18 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <string.h>
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
 #endif
 
-#include <ufo/ufo-buffer.h>
-#include <ufo/ufo-resources.h>
+#include "ufo/ufo-buffer.h"
+#include "ufo/ufo-resources.h"
 #include "compat.h"
 
 /**

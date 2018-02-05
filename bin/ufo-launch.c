@@ -19,14 +19,13 @@
 
 #define _POSIX_C_SOURCE     1
 
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <ufo/ufo.h>
+#include "ufo/ufo.h"
 #include "ufo/compat.h"
-
-#include "config.h"
-
 
 static gboolean
 str_to_boolean (const gchar *s)

@@ -17,7 +17,9 @@
 * License along with this library. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config.h"
 #include "ufo-copyable-iface.h"
+
 #define MAX_INHERITANCE_DEPTH 100
 
 typedef UfoCopyableIface UfoCopyableInterface;

@@ -17,7 +17,9 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ufo/ufo-two-way-queue.h>
+#include "config.h"
+
+#include "ufo-two-way-queue.h"
 #include "compat.h"
 
 

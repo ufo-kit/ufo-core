@@ -3,3 +3,5 @@
 #mesondefine UFO_PLUGIN_DIR
 #mesondefine UFO_KERNEL_DIR
 #mesondefine UFO_VERSION
+#mesondefine GLIB_VERSION_MIN_REQUIRED
+#mesondefine GLIB_VERSION_MAX_ALLOWED

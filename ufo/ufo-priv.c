@@ -1,8 +1,11 @@
+#include "config.h"
+
 #include <stdio.h>
+
 #include "ufo-priv.h"
-#include "ufo/compat.h"
-#include "ufo/ufo-profiler.h"
-#include "ufo/ufo-task-node.h"
+#include "ufo-profiler.h"
+#include "ufo-task-node.h"
+#include "compat.h"
 
 
 typedef struct {

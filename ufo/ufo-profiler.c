@@ -17,16 +17,19 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
+#include <gmodule.h>
+#include <glob.h>
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
 #endif
-#include <gmodule.h>
-#include <glob.h>
 
-#include <ufo/ufo-profiler.h>
-#include <ufo/ufo-resources.h>
+#include "ufo-profiler.h"
+#include "ufo-resources.h"
 
 /**
  * SECTION:ufo-profiler

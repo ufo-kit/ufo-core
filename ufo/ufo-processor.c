@@ -17,15 +17,17 @@
 * License along with this library. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ufo-processor.h"
-#include "ufo-copyable-iface.h"
-#include <ufo/ufo-profiler.h>
+#include "config.h"
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
 #endif
+
+#include "ufo-profiler.h"
+#include "ufo-processor.h"
+#include "ufo-copyable-iface.h"
 
 static void ufo_copyable_interface_init (UfoCopyableIface *iface);
 

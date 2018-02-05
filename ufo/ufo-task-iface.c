@@ -17,8 +17,14 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ufo/ufo-task-iface.h>
-#include <ufo/ufo-task-node.h>
+#include "config.h"
+
+#ifdef WITH_PYTHON
+#include <Python.h>
+#endif
+
+#include "ufo-task-iface.h"
+#include "ufo-task-node.h"
 
 /**
  * SECTION:ufo-task-iface

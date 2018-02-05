@@ -17,13 +17,16 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <json-glib/json-glib.h>
-#include <ufo/ufo-task-graph.h>
-#include <ufo/ufo-task-node.h>
-#include <ufo/ufo-input-task.h>
-#include <ufo/ufo-dummy-task.h>
+
+#include "ufo-task-graph.h"
+#include "ufo-task-node.h"
+#include "ufo-input-task.h"
+#include "ufo-dummy-task.h"
 #include "compat.h"
 
 /**

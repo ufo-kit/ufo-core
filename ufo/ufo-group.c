@@ -17,14 +17,17 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
 #endif
-#include <ufo/ufo-group.h>
-#include <ufo/ufo-task-node.h>
-#include <ufo/ufo-two-way-queue.h>
+
+#include "ufo-group.h"
+#include "ufo-task-node.h"
+#include "ufo-two-way-queue.h"
 
 G_DEFINE_TYPE (UfoGroup, ufo_group, G_TYPE_OBJECT)
 

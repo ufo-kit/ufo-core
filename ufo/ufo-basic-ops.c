@@ -17,14 +17,18 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
+#include <math.h>
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
 #endif
 
-#include <math.h>
-#include <ufo/ufo-basic-ops.h>
+#include "ufo-basic-ops.h"
+
 #define OPS_FILENAME "ufo-basic-ops.cl"
 
 static cl_event

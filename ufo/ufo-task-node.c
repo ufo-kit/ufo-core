@@ -17,9 +17,12 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #define _GNU_SOURCE
 #include <sched.h>
-#include <ufo/ufo-task-node.h>
+
+#include "ufo-task-node.h"
 
 /**
  * SECTION:ufo-task-node

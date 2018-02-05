@@ -17,9 +17,12 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <stdio.h>
-#include <ufo/ufo-node.h>
-#include <ufo/ufo-graph.h>
+
+#include "ufo-node.h"
+#include "ufo-graph.h"
 #include "compat.h"
 
 /**

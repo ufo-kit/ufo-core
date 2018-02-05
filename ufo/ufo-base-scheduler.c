@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "config.h"
 
 #ifdef WITH_PYTHON
@@ -28,9 +29,9 @@
 #include <CL/cl.h>
 #endif
 
-#include <ufo/ufo-base-scheduler.h>
-#include <ufo/ufo-task-node.h>
-#include <ufo/ufo-task-iface.h>
+#include "ufo-base-scheduler.h"
+#include "ufo-task-node.h"
+#include "ufo-task-iface.h"
 #include "ufo-priv.h"
 #include "compat.h"
 
