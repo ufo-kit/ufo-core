@@ -58,7 +58,7 @@ G_DEFINE_TYPE (UfoLocalScheduler, ufo_local_scheduler, UFO_TYPE_BASE_SCHEDULER)
 
 typedef struct {
     GQueue *queue;
-    GMutex *lock;
+    GMutex lock;
 } ProcessorPool;
 
 typedef struct {
@@ -96,7 +96,7 @@ ufo_pp_new (GList *init)
 
     pp = g_malloc0 (sizeof (ProcessorPool));
     pp->queue = g_queue_new ();
-    pp->lock = g_mutex_new ();
+    g_mutex_init (&pp->lock);
 
     g_list_for (init, jt) {
         g_queue_push_tail (pp->queue, jt->data);
@@ -109,7 +109,7 @@ static void
 ufo_pp_destroy (ProcessorPool *pp)
 {
     g_queue_free (pp->queue);
-    g_mutex_free (pp->lock);
+    g_mutex_clear (&pp->lock);
 }
 
 static gpointer
@@ -117,10 +117,10 @@ ufo_pp_next (ProcessorPool *pp)
 {
     gpointer data;
 
-    g_mutex_lock (pp->lock);
+    g_mutex_lock (&pp->lock);
     data = g_queue_pop_head (pp->queue);
     g_queue_push_tail (pp->queue, data);
-    g_mutex_unlock (pp->lock);
+    g_mutex_unlock (&pp->lock);
     return data;
 }
 
@@ -378,7 +378,7 @@ ufo_local_scheduler_run (UfoBaseScheduler *scheduler,
     g_list_for (local_data, it) {
         GThread *thread;
 
-        thread = g_thread_create ((GThreadFunc) run_local, it->data, TRUE, error);
+        thread = g_thread_new (NULL, (GThreadFunc) run_local, it->data);
         threads = g_list_append (threads, thread);
     }
 

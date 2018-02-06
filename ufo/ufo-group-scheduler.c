@@ -478,7 +478,7 @@ ufo_group_scheduler_run (UfoBaseScheduler *scheduler,
         }
 
         /* Run this group */
-        thread = g_thread_create ((GThreadFunc) run_group, group, TRUE, error);
+        thread = g_thread_new (NULL, (GThreadFunc) run_group, group);
         threads = g_list_append (threads, thread);
     }
 

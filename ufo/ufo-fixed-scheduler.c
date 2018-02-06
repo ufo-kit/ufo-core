@@ -544,7 +544,7 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
         tdata->task = UFO_TASK (it->data);
         tdata->connections = pdata->connections;
         tdata->context = ufo_resources_get_context (resources);
-        thread = g_thread_create ((GThreadFunc) run_local, tdata, TRUE, error);
+        thread = g_thread_new (NULL, (GThreadFunc) run_local, tdata);
         threads = g_list_append (threads, thread);
     }
 

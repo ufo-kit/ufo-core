@@ -555,7 +555,7 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
 
     /* Spawn threads */
     for (guint i = 0; i < n_nodes; i++) {
-        threads[i] = g_thread_create ((GThreadFunc) run_task, tlds[i], TRUE, error);
+        threads[i] = g_thread_new (NULL, (GThreadFunc) run_task, tlds[i]);
 
         if (error && (*error != NULL))
             return;
