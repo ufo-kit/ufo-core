@@ -270,18 +270,18 @@ try_consume_assignment (Environment *env, UfoTaskNode *task)
 
     pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (task), key->str->str);
 
-    if (pspec != NULL && pspec->value_type == G_TYPE_VALUE_ARRAY) {
-        GParamSpecValueArray *vapspec;
-        GValueArray *array;
-        GValue array_value = { 0, };
+    if (pspec != NULL && pspec->value_type == G_TYPE_ARRAY) {
+        GArray *array;
         Token *next;
+        guint index = 0;
+        GValue boxed = G_VALUE_INIT;
 
-        vapspec = (GParamSpecValueArray *) pspec;
-        array = g_value_array_new (8);
+        g_value_init (&boxed, G_TYPE_ARRAY);
+        g_object_get_property (G_OBJECT (task), key->str->str, &boxed);
+        array = g_value_get_boxed (&boxed);
 
         do {
             GValue from_value = { 0, };
-            GValue to_value = { 0, };
 
             value = consume (env);
 
@@ -291,15 +291,11 @@ try_consume_assignment (Environment *env, UfoTaskNode *task)
             next = consume (env);
 
             g_value_init (&from_value, G_TYPE_STRING);
-            g_value_init (&to_value, vapspec->element_spec->value_type);
             g_value_set_string (&from_value, value->str->str);
-            g_value_transform (&from_value, &to_value);
-            g_value_array_append (array, &to_value);
-        } while (next->type == COMMA);
+            g_value_transform (&from_value, (GValue *) &g_array_index (array, GValue, index++));
+        } while (next->type == COMMA && index < array->len);
 
-        g_value_init (&array_value, G_TYPE_VALUE_ARRAY);
-        g_value_set_boxed (&array_value, array);
-        g_object_set_property (G_OBJECT (task), key->str->str, &array_value);
+        g_object_set_property (G_OBJECT (task), key->str->str, &boxed);
     }
     else {
         value = consume (env);
