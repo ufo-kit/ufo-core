@@ -436,6 +436,7 @@ map_proc_node (UfoGraph *graph,
     UfoNode *proc_node;
     GList *successors;
     GList *it;
+    guint n_gpus;
 
     proc_node = UFO_NODE (g_list_nth_data (gpu_nodes, proc_index));
 
@@ -448,10 +449,13 @@ map_proc_node (UfoGraph *graph,
         ufo_task_node_set_proc_node (UFO_TASK_NODE (node), proc_node);
     }
 
+    n_gpus = g_list_length (gpu_nodes);
     successors = ufo_graph_get_successors (graph, node);
 
-    g_list_for (successors, it)
+    g_list_for (successors, it) {
         map_proc_node (graph, UFO_NODE (it->data), proc_index, gpu_nodes);
+        proc_index = n_gpus > 0 ? (proc_index + 1) % n_gpus : 0;
+    }
 
     g_list_free (successors);
 }
