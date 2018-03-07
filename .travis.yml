@@ -16,5 +16,5 @@ before_script:
   - meson build-meson
 
 script:
-  - cd build-cmake && make && ./tests/test-suite -p /no-opencl
-  - cd ../build-meson && ninja && ./tests/test-suite -p /no-opencl
+  - cd build-cmake && make && ./tests/unit/test-suite -p /no-opencl
+  - cd ../build-meson && ninja && ./tests/unit/test-suite -p /no-opencl
