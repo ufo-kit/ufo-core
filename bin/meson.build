@@ -1,5 +1,4 @@
 progs = [
-    'ufo-launch',
     'ufo-query',
     'ufo-runjson',
 ]
@@ -18,6 +17,14 @@ foreach prog: progs
         install: true
     )
 endforeach
+
+ufo_launch = executable('ufo-launch',
+    sources: ['ufo-launch.c', enums_h],
+    include_directories: include_dir,
+    dependencies: deps,
+    link_with: lib,
+    install: true
+)
 
 template_dir = join_paths(get_option('prefix'), get_option('datadir'), 'ufo', 'templates')
 mkfilter = configuration_data()

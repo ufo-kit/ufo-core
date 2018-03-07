@@ -304,7 +304,7 @@ try_consume_assignment (Environment *env, UfoTaskNode *task)
     else {
         value = consume (env);
 
-        if (value == NULL || key->type != STRING)
+        if (value == NULL || value->type != STRING)
             return FALSE;
 
         set_property (task, key->str->str, value->str->str);
