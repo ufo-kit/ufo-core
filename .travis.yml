@@ -6,7 +6,7 @@ install:
   - sudo unzip ninja-linux.zip -d /usr/local/bin
   - sudo chmod 755 /usr/local/bin/ninja
   - sudo apt-get install -y --force-yes gobject-introspection gir1.2-glib-2.0 gir1.2-json-1.0 opencl-headers ocl-icd-opencl-dev libjson-glib-dev libpython-dev python3-pip libgirepository1.0-dev
-  - sudo pip3 install meson
+  - sudo pip3 install meson==0.44
 
 before_script:
   - mkdir build-cmake
