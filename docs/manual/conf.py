@@ -46,10 +46,14 @@ primary_domain = 'c'
 add_function_parentheses = True
 pygments_style = 'sphinx'
 
-import sphinx_rtd_theme
+try:
+    import sphinx_rtd_theme
 
-html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    html_theme = 'sphinx_rtd_theme'
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+except ImportError:
+    pass
+
 html_logo = "_static/ufo-logo.png"
 html_static_path = ['_static']
 html_use_smartypants = True
