@@ -377,7 +377,6 @@ ufo_task_graph_expand (UfoTaskGraph *graph,
         }
 
         /* remove the common node as well */
-        g_object_unref (it->data);
         path = g_list_remove_link (path, it);
         g_list_free (common);
     }
@@ -385,9 +384,6 @@ ufo_task_graph_expand (UfoTaskGraph *graph,
     if (path != NULL && g_list_length (path) > 0) {
         GList *predecessors;
         GList *successors;
-
-        if (g_list_length (path) > 1)
-            g_object_unref (UFO_NODE (g_list_last (path)->data));
 
         /* Add predecessor and successor nodes to path */
         predecessors = ufo_graph_get_predecessors (UFO_GRAPH (graph),
