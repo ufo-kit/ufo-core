@@ -110,6 +110,11 @@ typedef enum {
     UFO_BUFFER_LOCATION_INVALID
 } UfoBufferLocation;
 
+typedef enum {
+    UFO_BUFFER_LAYOUT_REAL = 0,
+    UFO_BUFFER_LAYOUT_COMPLEX_INTERLEAVED
+} UfoBufferLayout;
+
 UfoBuffer*  ufo_buffer_new                  (UfoRequisition *requisition,
                                              gpointer        context);
 UfoBuffer*  ufo_buffer_new_with_size        (GList          *dims,
@@ -153,6 +158,10 @@ gpointer    ufo_buffer_get_device_array_with_offset
 UfoBufferLocation
             ufo_buffer_get_location         (UfoBuffer      *buffer);
 void        ufo_buffer_discard_location     (UfoBuffer      *buffer);
+void        ufo_buffer_set_layout           (UfoBuffer      *buffer,
+                                             UfoBufferLayout layout);
+UfoBufferLayout
+            ufo_buffer_get_layout           (UfoBuffer      *buffer);
 void        ufo_buffer_convert              (UfoBuffer      *buffer,
                                              UfoBufferDepth  depth);
 void        ufo_buffer_convert_from_data    (UfoBuffer      *buffer,

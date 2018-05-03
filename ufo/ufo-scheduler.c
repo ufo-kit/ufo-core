@@ -198,6 +198,8 @@ run_task (TaskLocalData *tld)
 
         switch (mode) {
             case UFO_TASK_MODE_PROCESSOR:
+                ufo_buffer_set_layout (output, ufo_buffer_get_layout (inputs[0]));
+                /* fall through */
             case UFO_TASK_MODE_SINK:
                 active = ufo_task_process (tld->task, inputs, output, &requisition);
                 break;

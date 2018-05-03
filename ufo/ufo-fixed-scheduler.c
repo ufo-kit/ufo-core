@@ -273,6 +273,7 @@ process_loop (TaskData *data)
                 for (guint i = 0; i < n_inputs; i++)
                     ufo_buffer_copy_metadata (inputs[i], output);
 
+                ufo_buffer_set_layout (output, ufo_buffer_get_layout (inputs[0]));
                 active = ufo_task_process (data->task, inputs, output, &requisition);
 
                 if (!active)

@@ -86,6 +86,15 @@
  * Location of the backed data memory.
  */
 
+/**
+ * UfoBufferLayout:
+ * @UFO_BUFFER_LAYOUT_REAL: Float values are real numbers
+ * @UFO_BUFFER_LAYOUT_COMPLEX_INTERLEAVED: Two adjacent float values make up a
+ *  complex value
+ *
+ * Layout of the backed data memory.
+ */
+
 G_DEFINE_TYPE(UfoBuffer, ufo_buffer, G_TYPE_OBJECT)
 
 #define UFO_BUFFER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), UFO_TYPE_BUFFER, UfoBufferPrivate))
@@ -108,6 +117,7 @@ struct _UfoBufferPrivate {
     gsize               size;           /* size of buffer in bytes */
     UfoBufferLocation   location;
     UfoBufferLocation   last_location;
+    UfoBufferLayout     layout;
     GHashTable         *metadata;
     GList              *sub_device_arrays;
 };
@@ -274,6 +284,7 @@ ufo_buffer_new (UfoRequisition *requisition,
     priv->context = context;
 
     priv->size = compute_required_size (requisition);
+    priv->layout = UFO_BUFFER_LAYOUT_REAL;
     copy_requisition (requisition, &priv->requisition);
 
     return buffer;
@@ -1155,6 +1166,32 @@ ufo_buffer_discard_location (UfoBuffer *buffer)
 {
     g_return_if_fail (UFO_IS_BUFFER (buffer));
     buffer->priv->location = buffer->priv->last_location;
+}
+
+/**
+ * ufo_buffer_get_layout:
+ * @buffer: A #UfoBuffer
+ *
+ * Return current layout of @buffer.
+ */
+UfoBufferLayout
+ufo_buffer_get_layout (UfoBuffer *buffer)
+{
+    return buffer->priv->layout;
+}
+
+/**
+ * ufo_buffer_set_layout:
+ * @buffer: A #UfoBuffer
+ * @layout: Layout of the currently residing data
+ *
+ * Set layout of the buffer.
+ */
+void
+ufo_buffer_set_layout (UfoBuffer *buffer, UfoBufferLayout layout)
+{
+    g_return_if_fail (UFO_IS_BUFFER (buffer));
+    buffer->priv->layout = layout;
 }
 
 static void
