@@ -6,8 +6,10 @@ import time
 import threading
 import Queue as queue
 import numpy as np
-from gi.repository import GObject, Ufo
+import gi
 from .numpy import asarray, empty_like
+gi.require_version('Ufo', '0.0')
+from gi.repository import GObject, Ufo
 
 
 Ufo.Scheduler()
