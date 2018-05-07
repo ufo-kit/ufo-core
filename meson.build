@@ -52,9 +52,12 @@ conf = configuration_data()
 conf.set_quoted('UFO_PLUGIN_DIR', plugindir)
 conf.set_quoted('UFO_KERNEL_DIR', kerneldir)
 conf.set_quoted('UFO_VERSION', version)
-conf.set10('WITH_PYTHON', python_dep.found())
 conf.set('GLIB_VERSION_MIN_REQUIRED', 'GLIB_VERSION_2_38')
 conf.set('GLIB_VERSION_MAX_ALLOWED', 'GLIB_VERSION_2_38')
+
+if python_dep.found()
+  conf.set('WITH_PYTHON', true)
+endif
 
 configure_file(
     input: 'config.h.meson.in',
