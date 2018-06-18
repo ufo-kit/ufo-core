@@ -63,6 +63,7 @@ struct _UfoOutputTaskClass {
 };
 
 UfoNode   * ufo_output_task_new                     (guint n_dims);
+void        ufo_output_task_stop                    (UfoOutputTask *task);
 void        ufo_output_task_get_output_requisition  (UfoOutputTask *task,
                                                      UfoRequisition *requisition);
 UfoBuffer * ufo_output_task_get_output_buffer       (UfoOutputTask *task);
