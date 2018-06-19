@@ -724,7 +724,7 @@ ufo_resources_get_kernel (UfoResources *resources,
 
     g_return_val_if_fail (UFO_IS_RESOURCES (resources) && (filename != NULL), NULL);
 
-    kernel = NULL;
+    result = NULL;
     buffer = NULL;
     priv = resources->priv;
     path = lookup_kernel_path (priv, filename);
