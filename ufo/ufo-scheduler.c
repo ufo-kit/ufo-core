@@ -156,23 +156,23 @@ run_task (TaskLocalData *tld)
     UfoBuffer *output;
     UfoTaskNode *node;
     UfoTaskMode mode;
+    UfoGroup *group;
     UfoRequisition requisition;
     gboolean produces;
     gboolean active;
+    GError *error;
 
     node = UFO_TASK_NODE (tld->task);
     active = TRUE;
     output = NULL;
+    error = NULL;
 
     /* mode without CPU/GPU flag */
     mode = tld->mode & UFO_TASK_MODE_TYPE_MASK;
     produces = mode != UFO_TASK_MODE_SINK;
+    group = ufo_task_node_get_out_group (node);
 
     while (active) {
-        UfoGroup *group;
-
-        group = ufo_task_node_get_out_group (node);
-
         /* Get input buffers */
         active = get_inputs (tld, inputs);
 
@@ -182,7 +182,10 @@ run_task (TaskLocalData *tld)
         }
 
         /* Get output buffers */
-        ufo_task_get_requisition (tld->task, inputs, &requisition);
+        ufo_task_get_requisition (tld->task, inputs, &requisition, &error);
+
+        if (error != NULL)
+            break;
 
         if (produces) {
             output = ufo_group_pop_output_buffer (group, &requisition);
@@ -258,7 +261,15 @@ run_task (TaskLocalData *tld)
             ufo_group_finish (group);
     }
 
-    return NULL;
+    if (error) {
+        /* flush outstanding input data */
+        while (get_inputs (tld, inputs))
+            release_inputs (tld, inputs);
+
+        ufo_group_finish (group);
+    }
+
+    return error;
 }
 
 static void
@@ -495,10 +506,16 @@ propagate_partition (UfoTaskGraph *graph)
 }
 
 static void
-join_threads (GThread **threads, guint n_threads)
+join_threads (GThread **threads, guint n_threads, GError **error)
 {
-    for (guint i = 0; i < n_threads; i++)
-        g_thread_join (threads[i]);
+    GError *tmp_error = NULL;
+
+    for (guint i = 0; i < n_threads; i++) {
+        tmp_error = g_thread_join (threads[i]);
+
+        if (tmp_error)
+            g_propagate_error (error, tmp_error);
+    }
 }
 
 static void
@@ -568,16 +585,16 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
         PyGILState_STATE state = PyGILState_Ensure ();
         Py_BEGIN_ALLOW_THREADS
 
-        join_threads (threads, n_nodes);
+        join_threads (threads, n_nodes, error);
 
         Py_END_ALLOW_THREADS
         PyGILState_Release (state);
     }
     else {
-        join_threads (threads, n_nodes);
+        join_threads (threads, n_nodes, error);
     }
 #else
-    join_threads (threads, n_nodes);
+    join_threads (threads, n_nodes, error);
 #endif
 
     /* Cleanup */

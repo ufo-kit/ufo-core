@@ -43,7 +43,8 @@ typedef struct _UfoTask         UfoTask;
 typedef struct _UfoTaskIface    UfoTaskIface;
 
 typedef enum {
-    UFO_TASK_ERROR_SETUP
+    UFO_TASK_ERROR_SETUP,
+    UFO_TASK_ERROR_GET_REQUISITION,
 } UfoTaskError;
 
 /**
@@ -99,7 +100,8 @@ struct _UfoTaskIface {
             (*get_mode)                 (UfoTask        *task);
     void    (*get_requisition)          (UfoTask        *task,
                                          UfoBuffer     **inputs,
-                                         UfoRequisition *requisition);
+                                         UfoRequisition *requisition,
+                                         GError        **error);
     void    (*set_json_object_property) (UfoTask        *task,
                                          const gchar    *prop_name,
                                          JsonObject     *object);
@@ -122,7 +124,8 @@ UfoTaskMode
         ufo_task_get_mode           (UfoTask        *task);
 void    ufo_task_get_requisition    (UfoTask        *task,
                                      UfoBuffer     **inputs,
-                                     UfoRequisition *requisition);
+                                     UfoRequisition *requisition,
+                                     GError        **error);
 void    ufo_task_set_json_object_property
                                     (UfoTask        *task,
                                      const gchar    *prop_name,

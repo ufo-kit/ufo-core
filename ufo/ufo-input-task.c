@@ -159,7 +159,8 @@ ufo_input_task_get_mode (UfoTask *task)
 static void
 ufo_input_task_get_requisition (UfoTask *task,
                                 UfoBuffer **none,
-                                UfoRequisition *requisition)
+                                UfoRequisition *requisition,
+                                GError **error)
 {
     UfoInputTaskPrivate *priv;
 

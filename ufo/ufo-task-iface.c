@@ -54,6 +54,8 @@ static guint signals[LAST_SIGNAL] = { 0 };
 /**
  * UfoTaskError:
  * @UFO_TASK_ERROR_SETUP: Error during setup of a task.
+ * @UFO_TASK_ERROR_GET_REQUISITION: Error while trying to get the size of a
+ *  buffer.
  */
 GQuark
 ufo_task_error_quark ()
@@ -80,9 +82,10 @@ ufo_task_setup (UfoTask *task,
 void
 ufo_task_get_requisition (UfoTask *task,
                           UfoBuffer **inputs,
-                          UfoRequisition *requisition)
+                          UfoRequisition *requisition,
+                          GError **error)
 {
-    UFO_TASK_GET_IFACE (task)->get_requisition (task, inputs, requisition);
+    UFO_TASK_GET_IFACE (task)->get_requisition (task, inputs, requisition, error);
 }
 
 guint
@@ -207,7 +210,8 @@ ufo_task_setup_real (UfoTask *task,
 static void
 ufo_task_get_requisition_real (UfoTask *task,
                                UfoBuffer **inputs,
-                               UfoRequisition *requisition)
+                               UfoRequisition *requisition,
+                               GError **error)
 {
     warn_unimplemented (task, "get_allocation");
 }

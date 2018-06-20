@@ -333,6 +333,7 @@ run_group (TaskGroup *group)
     gboolean shared;
     gboolean active = TRUE;
     GList *current = NULL;  /* current task */
+    GError *error = NULL;
 
     /* We should use get_structure to assert constraints ... */
     n_inputs = g_list_length (group->parents);
@@ -357,7 +358,7 @@ run_group (TaskGroup *group)
         task = UFO_TASK (current->data);
 
         /* Ask current task about size requirements */
-        ufo_task_get_requisition (task, inputs, &requisition);
+        ufo_task_get_requisition (task, inputs, &requisition, &error);
 
         /* Insert output buffers as longs as capacity is not filled */
         if (!group->is_leaf) {
@@ -417,7 +418,7 @@ run_group (TaskGroup *group)
     if (!group->is_leaf)
         ufo_two_way_queue_producer_push (group->queue, POISON_PILL);
 
-    return NULL;
+    return error;
 }
 
 static void

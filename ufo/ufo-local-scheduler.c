@@ -166,15 +166,13 @@ run_local (TaskLocal *local)
     UfoTask *task;
     UfoTaskMode mode;
     UfoTaskMode pu_mode;
-/*     gboolean shared; */
+    GError *error = NULL;
     gboolean active = TRUE;
 
     task = local->task;
     inputs = g_new0 (UfoBuffer *, local->n_inputs);
     mode = ufo_task_get_mode (task) & UFO_TASK_MODE_TYPE_MASK;
     pu_mode = ufo_task_get_mode (task) & UFO_TASK_MODE_PROCESSOR_MASK;
-/*     shared = ufo_task_get_mode (task) & UFO_TASK_MODE_SHARE_DATA; */
-/*  */
     output = NULL;
     requisition.n_dims = 0;
 
@@ -189,7 +187,7 @@ run_local (TaskLocal *local)
         /* profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (task)); */
 
         /* Ask current task about size requirements */
-        ufo_task_get_requisition (task, inputs, &requisition);
+        ufo_task_get_requisition (task, inputs, &requisition, &error);
 
         /* Insert output buffers as longs as capacity is not filled */
         if (!local->is_leaf) {
@@ -245,7 +243,7 @@ run_local (TaskLocal *local)
     if (!local->is_leaf)
         ufo_two_way_queue_producer_push (local->output, POISON_PILL);
 
-    return NULL;
+    return error;
 }
 
 static void

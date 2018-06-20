@@ -204,12 +204,13 @@ finish_successors (GList *out_queues)
 }
 
 static void
-generate_loop (TaskData *data)
+generate_loop (TaskData *data, GError **error)
 {
     UfoRequisition requisition;
     UfoBuffer *output;
     GList *out_queues;
     GList *it;
+    GError *tmp_error = NULL;
     gboolean active = TRUE;
 
     out_queues = get_output_queue_list (data);
@@ -218,7 +219,13 @@ generate_loop (TaskData *data)
         g_list_for (out_queues, it) {
             UfoTwoWayQueue *out_queue = (UfoTwoWayQueue *) it->data;
 
-            ufo_task_get_requisition (data->task, NULL, &requisition);
+            ufo_task_get_requisition (data->task, NULL, &requisition, &tmp_error);
+
+            if (tmp_error) {
+                active = FALSE;
+                break;
+            }
+
             output = pop_output_data (out_queue, &requisition, data->context);
             active = ufo_task_generate (data->task, output, &requisition);
 
@@ -229,12 +236,15 @@ generate_loop (TaskData *data)
         }
     }
 
+    if (tmp_error)
+        g_propagate_error (error, tmp_error);
+
     finish_successors (out_queues);
     g_list_free (out_queues);
 }
 
 static void
-process_loop (TaskData *data)
+process_loop (TaskData *data, GError **error)
 {
     UfoRequisition requisition;
     UfoBuffer **inputs;
@@ -244,6 +254,7 @@ process_loop (TaskData *data)
     GList *out_queues;
     GList *it;
     guint n_inputs;
+    GError *tmp_error = NULL;
     gboolean active = TRUE;
     gboolean is_sink;
 
@@ -259,7 +270,10 @@ process_loop (TaskData *data)
         if (!active)
             break;
 
-        ufo_task_get_requisition (data->task, inputs, &requisition);
+        ufo_task_get_requisition (data->task, inputs, &requisition, &tmp_error);
+
+        if (tmp_error)
+            break;
 
         if (is_sink) {
             active = ufo_task_process (data->task, inputs, NULL, &requisition);
@@ -286,6 +300,14 @@ process_loop (TaskData *data)
         release_input_data (in_queues, inputs, n_inputs);
     }
 
+    if (tmp_error) {
+        /* flush outstanding input data */
+        while (pop_input_data (in_queues, finished, inputs, n_inputs))
+            release_input_data (in_queues, inputs, n_inputs);
+
+        g_propagate_error (error, tmp_error);
+    }
+
     finish_successors (out_queues);
 
     g_free (in_queues);
@@ -295,7 +317,7 @@ process_loop (TaskData *data)
 }
 
 static void
-reduce_loop (TaskData *data)
+reduce_loop (TaskData *data, GError **error)
 {
     UfoRequisition requisition;
     UfoTwoWayQueue **in_queues;
@@ -327,7 +349,7 @@ reduce_loop (TaskData *data)
     if (!pop_input_data (in_queues, finished, inputs, n_inputs))
         return;
 
-    ufo_task_get_requisition (data->task, inputs, &requisition);
+    ufo_task_get_requisition (data->task, inputs, &requisition, error);
 
     /* Get the scratchpad output buffers from all successors */
     for (guint i = 0; i < n_outputs; i++) {
@@ -378,21 +400,22 @@ static gpointer
 run_local (TaskData *data)
 {
     UfoTaskMode mode;
+    GError *error = NULL;
 
     mode = ufo_task_get_mode (data->task) & UFO_TASK_MODE_TYPE_MASK;
 
     switch (mode) {
         case UFO_TASK_MODE_GENERATOR:
-            generate_loop (data);
+            generate_loop (data, &error);
             break;
 
         case UFO_TASK_MODE_PROCESSOR:
         case UFO_TASK_MODE_SINK:
-            process_loop (data);
+            process_loop (data, &error);
             break;
 
         case UFO_TASK_MODE_REDUCTOR:
-            reduce_loop (data);
+            reduce_loop (data, &error);
             break;
 
         default:
@@ -402,16 +425,20 @@ run_local (TaskData *data)
     /* We can release "data" here, because we do not store it when creating it */
     g_free (data);
 
-    return NULL;
+    return error;
 }
 
 static void
-join_threads (GList *threads)
+join_threads (GList *threads, GError **error)
 {
     GList *it;
+    GError *tmp_error = NULL;
 
     g_list_for (threads, it) {
-        g_thread_join (it->data);
+        tmp_error = g_thread_join (it->data);
+
+        if (tmp_error)
+            g_propagate_error (error, tmp_error);
     }
 }
 
@@ -554,16 +581,16 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
         PyGILState_STATE state = PyGILState_Ensure ();
         Py_BEGIN_ALLOW_THREADS
 
-        join_threads (threads);
+        join_threads (threads, error);
 
         Py_END_ALLOW_THREADS
         PyGILState_Release (state);
     }
     else {
-        join_threads (threads);
+        join_threads (threads, error);
     }
 #else
-    join_threads (threads);
+    join_threads (threads, error);
 #endif
 
     g_list_for (pdata->queues, it) {
