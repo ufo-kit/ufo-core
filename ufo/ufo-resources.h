@@ -86,9 +86,11 @@ typedef enum {
  * Returns: %TRUE if no error occurred, %FALSE otherwise.
  */
 #define UFO_RESOURCES_CHECK_AND_SET(error, g_error_loc) { \
-    if ((error) != CL_SUCCESS) \
+    cl_int tmp_error = error; \
+    if ((tmp_error) != CL_SUCCESS) \
         g_set_error (g_error_loc, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_GENERAL, \
-                     "OpenCL Error: %s", ufo_resources_clerr((error))); }
+                     "OpenCL Error: %s", ufo_resources_clerr((tmp_error))); \
+  }
 /**
  * UFO_RESOURCES_CHECK_SET_AND_RETURN:
  * @error: OpenCL error code
@@ -99,10 +101,12 @@ typedef enum {
  * Returns: %TRUE if no error occurred, %FALSE otherwise.
  */
 #define UFO_RESOURCES_CHECK_SET_AND_RETURN(error, g_error_loc) { \
-    if ((error) != CL_SUCCESS) { \
+      cl_int tmp_error = error; \
+      if (tmp_error != CL_SUCCESS) { \
         g_set_error (g_error_loc, UFO_RESOURCES_ERROR, UFO_RESOURCES_ERROR_GENERAL, \
-                     "OpenCL Error <%s:%i>: %s", __FILE__, __LINE__, ufo_resources_clerr((error))); } \
+                     "OpenCL Error <%s:%i>: %s", __FILE__, __LINE__, ufo_resources_clerr((tmp_error))); \
         return; \
+        } \
     }
 
 /**
