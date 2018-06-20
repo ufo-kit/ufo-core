@@ -263,8 +263,10 @@ run_task (TaskLocalData *tld)
 
     if (error) {
         /* flush outstanding input data */
-        while (get_inputs (tld, inputs))
-            release_inputs (tld, inputs);
+        if (mode != UFO_TASK_MODE_GENERATOR) {
+            while (get_inputs (tld, inputs))
+                release_inputs (tld, inputs);
+        }
 
         ufo_group_finish (group);
     }
