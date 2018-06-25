@@ -44,6 +44,7 @@ struct _UfoOutputTaskPrivate {
     guint n_dims;
     guint n_copies;
     GList *copies;
+    gboolean active;
 };
 
 static void ufo_task_interface_init (UfoTaskIface *iface);
@@ -69,6 +70,13 @@ ufo_output_task_new (guint n_dims)
 
     task->priv->n_dims = n_dims;
     return UFO_NODE (task);
+}
+
+void
+ufo_output_task_stop (UfoOutputTask *task)
+{
+    g_return_if_fail (UFO_IS_OUTPUT_TASK (task));
+    task->priv->active = FALSE;
 }
 
 void
@@ -134,6 +142,9 @@ ufo_output_task_setup (UfoTask *task,
                        UfoResources *resources,
                        GError **error)
 {
+    UfoOutputTaskPrivate *priv;
+    priv = UFO_OUTPUT_TASK_GET_PRIVATE (task);
+    priv->active = TRUE;
 }
 
 static void
@@ -191,7 +202,7 @@ ufo_output_task_process (UfoTask *task,
 
     ufo_buffer_copy (outputs[0], copy);
     g_async_queue_push (priv->out_queue, copy);
-    return TRUE;
+    return priv->active;
 }
 
 static void
