@@ -442,14 +442,13 @@ join_threads (GList *threads, GError **error)
 {
     GList *it;
     GError *tmp_error = NULL;
-    gboolean propagated = FALSE;
 
     g_list_for (threads, it) {
         tmp_error = g_thread_join (it->data);
 
-        if (tmp_error && !propagated) {
+        if (tmp_error) {
+            g_clear_error (error);
             g_propagate_error (error, tmp_error);
-            propagated = TRUE;
         }
     }
 }
