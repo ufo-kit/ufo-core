@@ -49,12 +49,12 @@ struct _UfoInputTaskPrivate {
     GAsyncQueue *in_queue;
     GAsyncQueue *out_queue;
     UfoTaskMode mode;
-    gboolean active;
     guint n_inputs;
     UfoBuffer *input;
 };
 
 static void ufo_task_interface_init (UfoTaskIface *iface);
+static UfoBuffer *POISON_PILL = (UfoBuffer *) 0x1;
 
 G_DEFINE_TYPE_WITH_CODE (UfoInputTask, ufo_input_task, UFO_TYPE_TASK_NODE,
                          G_IMPLEMENT_INTERFACE (UFO_TYPE_TASK,
@@ -77,7 +77,7 @@ void
 ufo_input_task_stop (UfoInputTask *task)
 {
     g_return_if_fail (UFO_IS_INPUT_TASK (task));
-    task->priv->active = FALSE;
+    g_async_queue_push (task->priv->in_queue, POISON_PILL);
 }
 
 void
@@ -132,9 +132,6 @@ ufo_input_task_setup (UfoTask *task,
                       UfoResources *resources,
                       GError **error)
 {
-    UfoInputTaskPrivate *priv;
-    priv = UFO_INPUT_TASK_GET_PRIVATE (task);
-    priv->active = TRUE;
 }
 
 static guint
@@ -167,20 +164,14 @@ ufo_input_task_get_requisition (UfoTask *task,
     priv = UFO_INPUT_TASK_GET_PRIVATE (task);
 
     /* Pop input here but release later in ufo_input_task_generate */
-    if (priv->active) {
-        priv->input = NULL;
+    priv->input = g_async_queue_pop (priv->in_queue);
 
-        while (priv->active && priv->input == NULL)
-            priv->input = g_async_queue_timeout_pop (priv->in_queue, G_USEC_PER_SEC / 10);
-
-        if (priv->input == NULL)
-            return;
-
-        ufo_buffer_get_requisition (priv->input, requisition);
-    }
-    else {
+    if (priv->input == POISON_PILL) {
         requisition->n_dims = 1;
         requisition->dims[0] = 1;
+    }
+    else {
+        ufo_buffer_get_requisition (priv->input, requisition);
     }
 }
 
@@ -194,7 +185,7 @@ ufo_input_task_generate (UfoTask *task,
     g_return_val_if_fail (UFO_IS_INPUT_TASK (task), FALSE);
     priv = UFO_INPUT_TASK_GET_PRIVATE (task);
 
-    if (!priv->active && priv->input == NULL)
+    if (priv->input == POISON_PILL)
         return FALSE;
 
     ufo_buffer_discard_location (output);
@@ -202,7 +193,6 @@ ufo_input_task_generate (UfoTask *task,
 
     /* input was popped in ufo_input_task_get_requisition */
     g_async_queue_push (priv->out_queue, priv->input);
-    priv->input = NULL;
 
     return TRUE;
 }
@@ -244,6 +234,7 @@ ufo_input_task_init (UfoInputTask *task)
     task->priv = UFO_INPUT_TASK_GET_PRIVATE (task);
     ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "input-task");
 
+    task->priv->input = NULL;
     task->priv->in_queue = g_async_queue_new ();
     task->priv->out_queue = g_async_queue_new ();
 }
