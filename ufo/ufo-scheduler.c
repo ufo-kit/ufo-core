@@ -515,8 +515,10 @@ join_threads (GThread **threads, guint n_threads, GError **error)
     for (guint i = 0; i < n_threads; i++) {
         tmp_error = g_thread_join (threads[i]);
 
-        if (tmp_error)
+        if (tmp_error) {
+            g_clear_error (error);
             g_propagate_error (error, tmp_error);
+        }
     }
 }
 
