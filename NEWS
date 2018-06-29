@@ -5,6 +5,36 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.16
+============
+
+Enhancements:
+
+- OutputTask signals end via "inputs-stopped" signal
+- InputTask: Improve performance
+- Add ufo_buffer_set/get_layout and pass through
+
+Fixes:
+
+- Better error propagation
+- Fix #116: allow _get_requisition to report errors
+- Fix #130: add ufo_buffer_swap_data interface
+- Fix #143: invalid object dereference
+- Fix #145: remove sphinx-tabs dependency
+- Fix #146: multi GPU expansion broke
+- Fix #147: do correct comparison
+- Fix #148: re-write longest path algorithm
+- Fix #154: add UFO_RESOURCES_CHECK_SET_AND_RETURN
+
+Breaks:
+
+- Remove _with_opts functions
+- Retire ufo_graph_{{shallow_}copy|subgraph,flatten}
+- Raise GLib version to 2.38
+- Remove address options from CLI tools
+- Remove daemon and messenger API
+
+
 Version 0.15.2
 ==============
 
