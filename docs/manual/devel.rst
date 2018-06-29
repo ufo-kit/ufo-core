@@ -168,6 +168,25 @@ task.
     and re-build any internal data structures off of these parameters.
 
 
+Actions performed after inputs have stopped
+-------------------------------------------
+
+.. highlight:: c
+
+Every filter can listen to the ``inputs_stopped`` signal which is emitted when
+no more input data will come. By registering a callback function for this
+signal, your filter can execute cleanup actions which need to be done prior to
+filter destruction. This is typically useful when tasks are referenced in a
+multithreaded application from an outside environment, like Python. It could
+happen that an outside thread waits for a task to do something with an input,
+but if that input never comes, the outside thread might block forever. For
+instance, this might happen when ``ufo_output_task_get_output_buffer`` of the
+``OutputTask`` is called. Thus, the task listens to the ``inputs_stopped``
+signal and stops blocking the outside caller when it arrives. If you need to
+execute such cleanup actions, call ``g_signal_connect (self, "inputs_stopped",
+(GCallback) your_callback_func, NULL)`` in the ``init`` function of your task.
+
+
 Additional source files
 -----------------------
 

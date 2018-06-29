@@ -349,8 +349,10 @@ run_group (TaskGroup *group)
         /* Fetch data from parent groups */
         active = pop_input_data (group->parents, inputs);
 
-        if (!active)
+        if (!active) {
+            ufo_task_inputs_stopped_callback (task);
             break;
+        }
 
         /* Choose next task of the group */
         current = schedule_next (group, current);
@@ -401,6 +403,9 @@ run_group (TaskGroup *group)
                 active = ufo_task_process (task, inputs, output, &requisition);
                 release_input_data (group->parents, inputs);
                 active = pop_input_data (group->parents, inputs);
+                if (!active) {
+                    ufo_task_inputs_stopped_callback (task);
+                }
             } while (active);
 
             /* Generate and forward as long as reductor produces data */

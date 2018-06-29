@@ -46,6 +46,7 @@ G_DEFINE_INTERFACE (UfoTask, ufo_task, G_TYPE_OBJECT)
 enum {
     PROCESSED,
     GENERATED,
+    INPUTS_STOPPED,
     LAST_SIGNAL
 };
 
@@ -172,6 +173,12 @@ ufo_task_generate (UfoTask *task,
     return result;
 }
 
+void
+ufo_task_inputs_stopped_callback (UfoTask *task)
+{
+    emit_signal (task, signals[INPUTS_STOPPED], 0);
+}
+
 gboolean
 ufo_task_uses_gpu (UfoTask *task)
 {
@@ -279,6 +286,13 @@ ufo_task_default_init (UfoTaskInterface *iface)
 
     signals[GENERATED] =
         g_signal_new ("generated",
+                      G_TYPE_FROM_INTERFACE (iface),
+                      G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                      0,
+                      NULL, NULL, g_cclosure_marshal_VOID__VOID,
+                      G_TYPE_NONE, 0);
+    signals[INPUTS_STOPPED] =
+        g_signal_new ("inputs_stopped",
                       G_TYPE_FROM_INTERFACE (iface),
                       G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
                       0,

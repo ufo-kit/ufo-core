@@ -180,8 +180,10 @@ run_local (TaskLocal *local)
         /* Fetch data from parent locals */
         active = pop_input_data (local, inputs);
 
-        if (!active)
+        if (!active) {
+            ufo_task_inputs_stopped_callback (task);
             break;
+        }
 
         /* Choose next task of the local */
         /* profiler = ufo_task_node_get_profiler (UFO_TASK_NODE (task)); */
@@ -226,6 +228,9 @@ run_local (TaskLocal *local)
                 active = ufo_task_process (task, inputs, output, &requisition);
                 release_input_data (local, inputs);
                 active = pop_input_data (local, inputs);
+                if (!active) {
+                    ufo_task_inputs_stopped_callback (task);
+                }
             } while (active);
 
             /* Generate and forward as long as reductor produces data */

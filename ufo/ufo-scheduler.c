@@ -177,6 +177,7 @@ run_task (TaskLocalData *tld)
         active = get_inputs (tld, inputs);
 
         if (!active) {
+            ufo_task_inputs_stopped_callback (tld->task);
             ufo_group_finish (group);
             break;
         }
@@ -216,6 +217,9 @@ run_task (TaskLocalData *tld)
 
                         release_inputs (tld, inputs);
                         active = get_inputs (tld, inputs);
+                        if (!active) {
+                            ufo_task_inputs_stopped_callback (tld->task);
+                        }
                         go_on = go_on && active;
                     } while (go_on);
 

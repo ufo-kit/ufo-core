@@ -267,8 +267,10 @@ process_loop (TaskData *data, GError **error)
     while (active) {
         active = pop_input_data (in_queues, finished, inputs, n_inputs);
 
-        if (!active)
+        if (!active) {
+            ufo_task_inputs_stopped_callback (data->task);
             break;
+        }
 
         ufo_task_get_requisition (data->task, inputs, &requisition, &tmp_error);
 
@@ -347,8 +349,10 @@ reduce_loop (TaskData *data, GError **error)
     }
 
     /* Read first input item */
-    if (!pop_input_data (in_queues, finished, inputs, n_inputs))
+    if (!pop_input_data (in_queues, finished, inputs, n_inputs)) {
+        ufo_task_inputs_stopped_callback (data->task);
         return;
+    }
 
     ufo_task_get_requisition (data->task, inputs, &requisition, &tmp_error);
 
@@ -376,6 +380,9 @@ reduce_loop (TaskData *data, GError **error)
                     go_on = ufo_task_process (data->task, inputs, outputs[i], &requisition);
                     release_input_data (in_queues, inputs, n_inputs);
                     active = pop_input_data (in_queues, finished, inputs, n_inputs);
+                    if (!active) {
+                        ufo_task_inputs_stopped_callback (data->task);
+                    }
                     go_on = go_on && active;
                 }
             } while (go_on);

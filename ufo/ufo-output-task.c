@@ -61,6 +61,7 @@ enum {
 };
 
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
+static UfoBuffer *POISON_PILL = (UfoBuffer *) 0x1;
 
 UfoNode *
 ufo_output_task_new (guint n_dims)
@@ -85,6 +86,20 @@ ufo_output_task_get_output_requisition (UfoOutputTask *task,
     g_async_queue_push (priv->out_queue, buffer);
 }
 
+static UfoBuffer *
+pop_output_buffer (GAsyncQueue *out_queue)
+{
+    UfoBuffer *buffer;
+
+    buffer = g_async_queue_pop (out_queue);
+    if (buffer == POISON_PILL) {
+        /* We cannot push NULL to the queue, so use a poison pill */
+        buffer = NULL;
+    }
+
+    return buffer;
+}
+
 /**
  * ufo_output_task_get_output_buffer:
  * @task: A #UfoInputTask
@@ -97,6 +112,7 @@ ufo_output_task_get_output_requisition (UfoOutputTask *task,
 UfoBuffer *
 ufo_output_task_get_output_buffer (UfoOutputTask *task)
 {
+    UfoOutputTaskPrivate *priv = UFO_OUTPUT_TASK_GET_PRIVATE (task);
     UfoBuffer *buffer;
 
     g_return_val_if_fail (UFO_IS_OUTPUT_TASK (task), NULL);
@@ -106,16 +122,16 @@ ufo_output_task_get_output_buffer (UfoOutputTask *task)
         PyGILState_STATE state = PyGILState_Ensure ();
         Py_BEGIN_ALLOW_THREADS
 
-        buffer = g_async_queue_pop (task->priv->out_queue);
+        buffer = pop_output_buffer (priv->out_queue);
 
         Py_END_ALLOW_THREADS
         PyGILState_Release (state);
     }
     else {
-        buffer = g_async_queue_pop (task->priv->out_queue);
+        buffer = pop_output_buffer (priv->out_queue);
     }
 #else
-    buffer = g_async_queue_pop (task->priv->out_queue);
+    buffer = pop_output_buffer (priv->out_queue);
 #endif
 
     return buffer;
@@ -192,6 +208,13 @@ ufo_output_task_process (UfoTask *task,
     ufo_buffer_copy (outputs[0], copy);
     g_async_queue_push (priv->out_queue, copy);
     return TRUE;
+}
+
+static void
+ufo_output_task_inputs_stopped_callback_real (UfoTask *task)
+{
+    UfoOutputTaskPrivate *priv = UFO_OUTPUT_TASK_GET_PRIVATE (task);
+    g_async_queue_push (priv->out_queue, POISON_PILL);
 }
 
 static void
@@ -290,6 +313,7 @@ ufo_output_task_init (UfoOutputTask *task)
     task->priv->n_copies = 0;
     task->priv->copies = NULL;
     task->priv->n_dims = 2;
+    g_signal_connect (task, "inputs_stopped", (GCallback) ufo_output_task_inputs_stopped_callback_real, NULL);
 
     ufo_task_node_set_plugin_name (UFO_TASK_NODE (task), "output-task");
 }
