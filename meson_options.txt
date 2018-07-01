@@ -4,4 +4,8 @@ option('gtk_doc',
 
 option('introspection',
     type: 'boolean', value: true,
-    description: 'Build introspection data (requires gobject-introspection')
+    description: 'Build introspection data (requires gobject-introspection)')
+
+option('bashcompletiondir',
+    type: 'string',
+    description: 'directory for bash complection scripts ["no" disables]')

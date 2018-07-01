@@ -43,8 +43,10 @@ deps = [
 
 include_dir = include_directories('.')
 
-plugindir = '@0@/@1@/ufo'.format(get_option('prefix'), get_option('libdir'))
-kerneldir = '@0@/@1@/ufo'.format(get_option('prefix'), get_option('datadir'))
+prefixdir = get_option('prefix')
+datadir = '@0@/@1@'.format(prefixdir, get_option('datadir'))
+plugindir = '@0@/@1@/ufo'.format(prefixdir, get_option('libdir'))
+kerneldir = '@0@/ufo'.format(datadir)
 header_dir = 'ufo-@0@'.format(version_major)
 header_subdir = '@0@/ufo'.format(header_dir)
 
