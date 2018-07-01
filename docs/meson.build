@@ -29,7 +29,7 @@ if a2x.found()
             input: source,
             output: manpage,
             install: true,
-            install_dir: get_option('mandir'),
+            install_dir: join_paths(get_option('mandir'), 'man1'),
         )
     endforeach
 else
