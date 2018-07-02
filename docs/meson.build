@@ -48,3 +48,5 @@ if gtk_doc_dep.found() and get_option('gtk_doc')
         install: true,
     )
 endif
+
+subdir('manual')
