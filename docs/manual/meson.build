@@ -22,6 +22,7 @@ sphinx = find_program('sphinx-build', required: false)
 if sphinx.found()
     command = [
         sphinx.path(),
+        '-q',
         '-b', 'html',
         meson.current_source_dir(),
         meson.current_build_dir(),
