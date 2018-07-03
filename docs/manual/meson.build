@@ -34,6 +34,8 @@ if sphinx.found()
         input: sources,
         output: 'index.html',
     )
+
+    install_subdir(meson.current_build_dir(), install_dir: docdir)
 else
     message('sphinx not found, cannot generate manual.')
 endif

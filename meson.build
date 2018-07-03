@@ -47,6 +47,7 @@ include_dir = include_directories('.')
 
 prefixdir = get_option('prefix')
 datadir = join_paths(prefixdir, get_option('datadir'))
+docdir = join_paths(datadir, 'doc', 'ufo')
 plugindir = join_paths(prefixdir, get_option('libdir'), 'ufo')
 kerneldir = join_paths(datadir, 'ufo')
 header_dir = 'ufo-@0@'.format(version_major)
