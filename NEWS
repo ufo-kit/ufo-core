@@ -48,8 +48,8 @@ This is bugfix release that fixes #143 which causes segfaults with certain task
 graph conditions.
 
 
-Version 0.15.0
-==============
+Version 0.15
+============
 
 Released on January 4th 2018.
 
@@ -84,8 +84,8 @@ Breaks:
 - Property sets have been removed from the JSON specification
 
 
-Version 0.14.0
-==============
+Version 0.14
+============
 
 Released on September 5th 2017.
 
@@ -115,8 +115,8 @@ Breaks:
   build at the moment.
 
 
-Version 0.13.0
-==============
+Version 0.13
+============
 
 Released on January 25th 2017.
 
@@ -147,8 +147,8 @@ Bugfix release released on November 28th 2016.
 - Enable _FORTIFY_SOURCE feature flag
 
 
-Version 0.12.0
-==============
+Version 0.12
+============
 
 Released on November 24th 2016.
 
