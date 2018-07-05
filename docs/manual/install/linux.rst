@@ -119,8 +119,8 @@ Additionally the following packages are recommended for some of the plugins::
     $ [zypper|yum] install libtiff-devel
 
 
-Building ufo-core
------------------
+Building ufo-core with CMake
+----------------------------
 
 Change into another empty `build` directory and issue the following commands to
 configure ::
@@ -153,6 +153,28 @@ If everything went well, you can install the library with ::
   $ make install
 
 .. seealso:: :ref:`faq-linker-cant-find-libufo`
+
+
+Building ufo-core with meson
+----------------------------
+
+Configure the build with ``meson`` by changing into the root source directory
+and type ::
+
+  $ meson build
+
+You can change the location of GNU installation directories during this step or
+later with the ``meson configure`` tool ::
+
+  $ meson build --prefix=/usr
+  $ cd build && meson configure -Dprefix=/usr/local
+
+Build, test and install everything with ::
+
+  $ cd build
+  $ ninja
+  $ ninja test
+  $ ninja install
 
 
 Building ufo-filters
