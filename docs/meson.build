@@ -10,6 +10,7 @@ if gtk_doc_dep.found() and get_option('gtk_doc')
         gobject_typesfile: 'Ufo.types',
         src_dir: join_paths(meson.source_root(), 'ufo'),
         scan_args: [
+          '--rebuild-types',
           '--ignore-headers=' + ' '.join(ignore_headers),
         ],
         install: true,
