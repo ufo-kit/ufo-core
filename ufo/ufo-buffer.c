@@ -66,6 +66,7 @@
  * UfoBufferDepth:
  * @UFO_BUFFER_DEPTH_INVALID: default for unknown/unset values
  * @UFO_BUFFER_DEPTH_8U: 8 bit unsigned
+ * @UFO_BUFFER_DEPTH_12U: 12 bit unsigned
  * @UFO_BUFFER_DEPTH_16U: 16 bit unsigned
  * @UFO_BUFFER_DEPTH_16S: 16 bit signed
  * @UFO_BUFFER_DEPTH_32S: 32 bit signed
@@ -1214,6 +1215,31 @@ convert_data (UfoBufferPrivate *priv,
 
         for (gint i = (n_pixels - 1); i >= 0; i--)
             dst[i] = ((gfloat) src[i]);
+    }
+    else if (depth == UFO_BUFFER_DEPTH_12U) {
+        gint j;
+        guchar first, second, third;
+        const guchar *src = (const guchar *) data;
+
+        if (n_pixels % 2) {
+            /* If there is an odd number of pixels we take care of the last two
+             * bytes forming the last pixel and process the rest in the loop. */
+            first = src[3 * n_pixels / 2 - 1];
+            second = src[3 * n_pixels / 2];
+            dst[n_pixels - 1] = (gfloat) ((first << 4) | ((second & 0xF0) >> 4));
+            n_pixels -= 1;
+        }
+
+        for (gint i = (n_pixels - 2); i >= 0; i -= 2) {
+            j = 3 * i / 2;
+            first = src[j];
+            second = src[j + 1];
+            third = src[j + 2];
+            /* First pixel: shift first byte by 4 and add the upper half of the second byte */
+            dst[i] = (gfloat) ((first << 4) | ((second & 0xF0) >> 4));
+            /* Second pixel: shift second byte by 8 and add the lower half of the second byte */
+            dst[i + 1] = (gfloat) (((second & 0x0F) << 8) | third);
+        }
     }
     else if (depth == UFO_BUFFER_DEPTH_16U) {
         const guint16 *src = (const guint16 *) data;
