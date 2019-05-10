@@ -26,3 +26,10 @@ More information can be found at various locations:
 ## License
 
 Both ufo-core and ufo-filters are licensed under LGPL 3.
+
+
+## Citation
+
+If you use this software for publishing your data, we kindly ask to cite the article below.
+
+Vogelgesang, Matthias, et al. "Real-time image-content-based beamline control for smart 4D X-ray imaging." Journal of synchrotron radiation 23.5 (2016): 1254-1263.
