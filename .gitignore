@@ -37,6 +37,7 @@ ufo-runjson
 Makefile
 
 *.pyc
+*.swp
 python/dist
 python/ufo.egg-info
 /.project
