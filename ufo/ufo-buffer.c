@@ -1568,7 +1568,7 @@ ufo_buffer_init (UfoBuffer *buffer)
     priv->location = UFO_BUFFER_LOCATION_INVALID;
     priv->last_location = UFO_BUFFER_LOCATION_INVALID;
     priv->requisition.n_dims = 0;
-    priv->metadata = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    priv->metadata = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
     priv->sub_device_arrays = NULL;
 }
 
