@@ -28,6 +28,7 @@
 #include <ufo/ufo-group.h>
 #include <ufo/ufo-profiler.h>
 
+
 G_BEGIN_DECLS
 
 #define UFO_TYPE_TASK_NODE             (ufo_task_node_get_type())

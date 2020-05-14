@@ -22,6 +22,7 @@
 #include <gio/gio.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 
 #ifdef WITH_PYTHON
 #include <Python.h>
@@ -303,15 +304,14 @@ check_target_connections (UfoTaskGraph *graph,
 {
     GList *predecessors;
     GList *it;
-    guint16 connection_bitmap;
-    guint16 mask;
+    bboolen connections[UFO_MAX_INPUT_NODES];
     gboolean result = TRUE;
 
     if (n_inputs == 0)
         return TRUE;
 
     predecessors = ufo_graph_get_predecessors (UFO_GRAPH (graph), target);
-    connection_bitmap = 0;
+
 
     /* Check all edges and enable bit number for edge label */
     g_list_for (predecessors, it) {
@@ -321,14 +321,20 @@ check_target_connections (UfoTaskGraph *graph,
         label = ufo_graph_get_edge_label (UFO_GRAPH (graph),
                                           UFO_NODE (it->data), target);
         input = GPOINTER_TO_INT (label);
-        g_assert (input >= 0 && input < 16);
-        connection_bitmap |= 1 << input;
+        g_assert (input >= 0 && input < UFO_MAX_INPUT_NODES);
+        connections[input] = TRUE;
     }
 
-    mask = (1 << n_inputs) - 1;
+
+
+    gbool all_inputs_connected = TRUE;
+    for(int i = 0; i < n_inputs; ++i){
+        if(connections[input] == FALSE)
+            all_inputs_connected = FALSE;
+    }
 
     /* Check if mask matches what we have */
-    if ((mask & connection_bitmap) != mask) {
+    if (!all_inputs_connected) {
         g_set_error (error, UFO_SCHEDULER_ERROR, UFO_SCHEDULER_ERROR_SETUP,
                      "Not all inputs of `%s' are connected",
                      ufo_task_node_get_plugin_name (UFO_TASK_NODE (target)));
