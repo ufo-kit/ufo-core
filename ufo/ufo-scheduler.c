@@ -321,7 +321,7 @@ check_target_connections (UfoTaskGraph *graph,
         label = ufo_graph_get_edge_label (UFO_GRAPH (graph),
                                           UFO_NODE (it->data), target);
         input = GPOINTER_TO_INT (label);
-        g_assert (input >= 0 && input < 16);
+        g_assert (input >= 0 && input < 64); //TODO: make variable/define
         connection_bitmap |= 1 << input;
     }
 
