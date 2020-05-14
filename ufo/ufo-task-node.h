@@ -28,7 +28,7 @@
 #include <ufo/ufo-group.h>
 #include <ufo/ufo-profiler.h>
 
-#define MAX_INPUT_NODES 16
+#define MAX_INPUT_NODES 64
 
 G_BEGIN_DECLS
 
