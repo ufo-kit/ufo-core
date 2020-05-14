@@ -22,6 +22,7 @@
 #include <gio/gio.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 
 #ifdef WITH_PYTHON
 #include <Python.h>
@@ -321,6 +322,7 @@ check_target_connections (UfoTaskGraph *graph,
         label = ufo_graph_get_edge_label (UFO_GRAPH (graph),
                                           UFO_NODE (it->data), target);
         input = GPOINTER_TO_INT (label);
+        printf("input %i\n", input);
         g_assert (input >= 0 && input < 64); //TODO: make variable/define
         connection_bitmap |= 1 << input;
     }
