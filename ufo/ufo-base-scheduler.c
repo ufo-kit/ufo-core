@@ -71,6 +71,7 @@ enum {
     PROP_ENABLE_TRACING,
     PROP_TIMESTAMPS,
     PROP_TIME,
+    PROP_MAX_INPUT_NODES,
     N_PROPERTIES,
 };
 
@@ -299,6 +300,10 @@ ufo_base_scheduler_get_property (GObject *object,
             g_value_set_double (value, priv->time);
             break;
 
+        case PROP_MAX_INPUT_NODES:
+            g_value_set_uint(value, UFO_MAX_INPUT_NODES);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -405,6 +410,13 @@ ufo_base_scheduler_class_init (UfoBaseSchedulerClass *klass)
                              "Finished execution time in seconds",
                               0.0, G_MAXDOUBLE, 0.0,
                               G_PARAM_READABLE);
+
+    properties[PROP_MAX_INPUT_NODES] =
+        g_param_spec_uint("max_input_nodes",
+                          "Maximum inputs per task",
+                          "Maximum inputs per task",
+                          1, G_MAXUINT, UFO_MAX_INPUT_NODES,
+                          G_PARAM_READABLE);
 
     for (guint i = PROP_0 + 1; i < N_PROPERTIES; i++)
         g_object_class_install_property (oclass, i, properties[i]);
