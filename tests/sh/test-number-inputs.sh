@@ -1,5 +1,39 @@
 #!/bin/bash
 
+
+ufo-launch [dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256 , \
+	    dummy-data number=100 width=256 height=256] ! opencl filename=test-number-inputs.cl kernel=test_inputs32 ! write filename=test64.tif
+
 ufo-launch [dummy-data number=100 width=256 height=256 , \
 	    dummy-data number=100 width=256 height=256 , \
 	    dummy-data number=100 width=256 height=256 , \
@@ -63,5 +97,5 @@ ufo-launch [dummy-data number=100 width=256 height=256 , \
 	    dummy-data number=100 width=256 height=256 , \
 	    dummy-data number=100 width=256 height=256 , \
 	    dummy-data number=100 width=256 height=256 , \
-	    dummy-data number=100 width=256 height=256] ! opencl filename=test-number-inputs.cl kernel=test_number_inputs dimensions=2 ! write filename=test.tif
+	    dummy-data number=100 width=256 height=256] ! opencl filename=test-number-inputs.cl kernel=test_inputs64 ! write filename=test64.tif
 exit 0
