@@ -304,8 +304,8 @@ check_target_connections (UfoTaskGraph *graph,
 {
     GList *predecessors;
     GList *it;
-    guint16 connection_bitmap;
-    guint16 mask;
+    guint64 connection_bitmap;
+    guint64 mask;
     gboolean result = TRUE;
 
     if (n_inputs == 0)
