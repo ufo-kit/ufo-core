@@ -49,9 +49,9 @@ struct _UfoTaskNodePrivate {
     UfoNode         *proc_node;
     UfoGroup        *out_group;
     UfoProfiler     *profiler;
-    GList           *in_groups[16];
-    GList           *current[16];
-    gint             n_expected[16];
+    GList           *in_groups[MAX_INPUT_NODES];
+    GList           *current[MAX_INPUT_NODES];
+    gint             n_expected[MAX_INPUT_NODES];
     guint            index;
     guint            total;
     guint            num_processed;
@@ -197,7 +197,7 @@ ufo_task_node_reset (UfoTaskNode *node)
     priv->out_group = NULL;
     priv->proc_node = NULL;
 
-    for (guint i = 0; i < 16; i++) {
+    for (guint i = 0; i < MAX_INPUT_NODES; i++) {
         g_list_free (priv->in_groups[i]);
         priv->in_groups[i] = NULL;
     }
@@ -219,7 +219,7 @@ ufo_task_node_get_current_in_group (UfoTaskNode *node,
                                     guint pos)
 {
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), NULL);
-    g_assert (pos < 16);
+    g_assert (pos < MAX_INPUT_NODES);
     g_assert (node->priv->current[pos] != NULL);
     return UFO_GROUP (node->priv->current[pos]->data);
 }
@@ -433,7 +433,7 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv->num_processed = 0;
     self->priv->profiler = ufo_profiler_new ();
 
-    for (guint i = 0; i < 16; i++) {
+    for (guint i = 0; i < MAX_INPUT_NODES; i++) {
         self->priv->in_groups[i] = NULL;
         self->priv->current[i] = NULL;
         self->priv->n_expected[i] = -1;

@@ -28,6 +28,8 @@
 #include <ufo/ufo-group.h>
 #include <ufo/ufo-profiler.h>
 
+#define MAX_INPUT_NODES 16
+
 G_BEGIN_DECLS
 
 #define UFO_TYPE_TASK_NODE             (ufo_task_node_get_type())
