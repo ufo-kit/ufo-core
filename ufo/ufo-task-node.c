@@ -133,7 +133,7 @@ ufo_task_node_set_num_expected (UfoTaskNode *node,
                                 gint n_expected)
 {
     g_return_if_fail (UFO_IS_TASK_NODE (node));
-    g_return_if_fail (pos < 16);
+    g_return_if_fail (pos < NUMBER_INPUT_TASKS);
     node->priv->n_expected[pos] = n_expected;
 }
 
@@ -142,7 +142,7 @@ ufo_task_node_get_num_expected (UfoTaskNode *node,
                                 guint pos)
 {
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), 0);
-    g_return_val_if_fail (pos < 16, 0);
+    g_return_val_if_fail (pos < NUMBER_INPUT_TASKS, 0);
     return node->priv->n_expected[pos];
 }
 
