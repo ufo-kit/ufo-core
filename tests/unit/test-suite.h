@@ -24,5 +24,6 @@ void test_add_buffer (void);
 void test_add_graph (void);
 void test_add_node (void);
 void test_add_profiler (void);
+void test_add_max_input_nodes(void);
 
 #endif

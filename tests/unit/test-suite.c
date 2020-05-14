@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
     test_add_graph ();
     test_add_profiler ();
     test_add_node ();
+    test_add_max_input_nodes();
 
     g_test_run();
 

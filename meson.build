@@ -1,4 +1,4 @@
-project('ufo', 'c',
+project('ufo', ['c', 'cpp'],
     version: '0.16.0',
     default_options: ['c_std=gnu99'],
 )
