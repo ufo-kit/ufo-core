@@ -1,0 +1,5 @@
+kernel void test_number_inputs (global float *a0, global float *a1, global float *a2, global float *a3, global float *a4, global float *a5, global float *a6, global float *a7, global float *a8, global float *a9, global float *a10, global float *a11, global float *a12, global float *a13, global float *a14, global float *a15, global float *a16, global float *a17, global float *a18, global float *a19, global float *a20, global float *a21, global float *a22, global float *a23, global float *a24, global float *a25, global float *a26, global float *a27, global float *a28, global float *a29, global float *a30, global float *result)
+{
+    size_t idx = get_global_id (1) * get_global_size (0) + get_global_id (0);
+    result[idx] = a0[idx] + a1[idx] + a2[idx] + a3[idx] + a4[idx] + a5[idx] + a6[idx] + a7[idx] + a8[idx] + a9[idx]+ a10[idx] + a11[idx] + a12[idx] + a13[idx] + a14[idx] + a15[idx] + a16[idx] + a17[idx] + a18[idx] + a19[idx] + a20[idx] + a21[idx] + a22[idx] + a23[idx] + a24[idx] + a25[idx] + a26[idx] + a27[idx] + a28[idx] + a29[idx] + a30[idx];
+}
