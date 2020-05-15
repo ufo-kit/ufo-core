@@ -114,7 +114,8 @@ GList      *ufo_graph_find_longest_path     (UfoGraph       *graph,
                                              UfoFilterPredicate pred,
                                              gpointer        user_data);
 void        ufo_graph_expand                (UfoGraph       *graph,
-                                             GList          *path);
+                                             GList          *path,
+                                             GError         **error);
 void        ufo_graph_dump_dot              (UfoGraph       *graph,
                                              const gchar    *filename);
 GType       ufo_graph_get_type              (void);

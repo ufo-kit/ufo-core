@@ -92,7 +92,8 @@ void         ufo_task_graph_map                 (UfoTaskGraph       *graph,
                                                  GList              *gpu_nodes);
 void         ufo_task_graph_expand              (UfoTaskGraph       *graph,
                                                  UfoResources       *resources,
-                                                 guint               n_gpus);
+                                                 guint               n_gpus,
+                                                 GError             **error);
 void         ufo_task_graph_connect_nodes       (UfoTaskGraph       *graph,
                                                  UfoTaskNode        *n1,
                                                  UfoTaskNode        *n2);

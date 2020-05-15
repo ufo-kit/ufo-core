@@ -45,6 +45,7 @@ typedef struct _UfoTaskIface    UfoTaskIface;
 typedef enum {
     UFO_TASK_ERROR_SETUP,
     UFO_TASK_ERROR_GET_REQUISITION,
+    UFO_TASK_ERROR_COPY,
 } UfoTaskError;
 
 /**

@@ -56,6 +56,7 @@ static guint signals[LAST_SIGNAL] = { 0 };
  * UfoTaskError:
  * @UFO_TASK_ERROR_SETUP: Error during setup of a task.
  * @UFO_TASK_ERROR_GET_REQUISITION: Error while trying to get the size of a
+ * @UFO_TASK_ERROR_COPY: Error during copying of a task.
  *  buffer.
  */
 GQuark
