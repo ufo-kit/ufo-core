@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #include "ufo-node.h"
+#include "ufo-task-node.h"
 #include "ufo-graph.h"
 #include "ufo-priv.h"
 
@@ -476,19 +477,21 @@ ufo_graph_get_num_successors (UfoGraph *graph,
  * ufo_graph_expand:
  * @graph: A #UfoGraph
  * @path: (element-type UfoNode): A path of nodes.
+ * @error: error to pass on
  *
  * Duplicate nodes between head and tail of path and insert at the exact the
  * position of where path started and ended.
  */
 void
 ufo_graph_expand (UfoGraph *graph,
-                  GList *path)
+                  GList *path,
+                  GError **error)
 {
     GList *head;
     GList *tail;
     UfoNode *orig;
     UfoNode *current;
-    GError *error = NULL;
+    GError *tmp_error = NULL;
 
     g_return_if_fail (UFO_IS_GRAPH (graph));
 
@@ -515,7 +518,12 @@ ufo_graph_expand (UfoGraph *graph,
          * cannot be reliably associated
          */
         if (ufo_graph_get_num_predecessors (graph, next) <= 1) {
-            copy = ufo_node_copy (next, &error);
+            copy = ufo_node_copy (next, &tmp_error);
+            if (tmp_error != NULL) {
+                g_propagate_prefixed_error (error, tmp_error,
+                                            "%s: ", ufo_task_node_get_plugin_name (UFO_TASK_NODE (next)));
+                return;
+            }
             label = ufo_graph_get_edge_label (graph, orig, next);
             ufo_graph_connect_nodes (graph, current, copy, label);
             graph->priv->copies = g_list_append (graph->priv->copies, copy);

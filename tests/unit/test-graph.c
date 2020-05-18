@@ -247,7 +247,7 @@ test_expansion (Fixture *fixture, gconstpointer data)
     path = g_list_append (path, fixture->target1);
     path = g_list_append (path, fixture->target2);
 
-    ufo_graph_expand (fixture->sequence, path);
+    ufo_graph_expand (fixture->sequence, path, NULL);
     g_list_free (path);
 
     successors = ufo_graph_get_successors (fixture->sequence, fixture->root);

@@ -554,10 +554,15 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     gpu_nodes = ufo_resources_get_gpu_nodes (resources);
 
     if (expand) {
-        if (!priv->ran)
-            ufo_task_graph_expand (graph, resources, g_list_length (gpu_nodes));
-        else
+        if (!priv->ran) {
+            ufo_task_graph_expand (graph, resources, g_list_length (gpu_nodes), error);
+            if (error && (*error != NULL)) {
+                return;
+            }
+        }
+        else {
             g_debug ("Task graph already expanded, skipping.");
+        }
     }
 
     propagate_partition (graph);

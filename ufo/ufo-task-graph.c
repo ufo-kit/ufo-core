@@ -338,6 +338,7 @@ nodes_with_common_ancestries (UfoTaskGraph *graph, GList *path)
  * @graph: A #UfoTaskGraph
  * @resources: A #UfoResources objects
  * @n_gpus: Number of GPUs to expand the graph for
+ * @error: error to pass on
  *
  * Expands @graph in a way that most of the resources in @graph can be occupied.
  * In the simple pipeline case, the longest possible GPU paths are duplicated as
@@ -346,10 +347,12 @@ nodes_with_common_ancestries (UfoTaskGraph *graph, GList *path)
 void
 ufo_task_graph_expand (UfoTaskGraph *graph,
                        UfoResources *resources,
-                       guint n_gpus)
+                       guint n_gpus,
+                       GError **error)
 {
     GList *path;
     GList *common;
+    GError *tmp_error = NULL;
 
     g_return_if_fail (UFO_IS_TASK_GRAPH (graph));
 
@@ -403,8 +406,13 @@ ufo_task_graph_expand (UfoTaskGraph *graph,
 
         g_debug ("INFO Expand for %i GPU nodes", n_gpus);
 
-        for (guint i = 1; i < n_gpus; i++)
-            ufo_graph_expand (UFO_GRAPH (graph), path);
+        for (guint i = 1; i < n_gpus; i++) {
+            ufo_graph_expand (UFO_GRAPH (graph), path, &tmp_error);
+            if (tmp_error != NULL) {
+                g_propagate_error (error, tmp_error);
+                break;
+            }
+        }
     }
 
     g_list_free (path);
