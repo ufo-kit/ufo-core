@@ -19,8 +19,14 @@ gobject_dep = dependency('gobject-2.0', version: '>= 2.38')
 gmodule_dep = dependency('gmodule-2.0', version: '>= 2.38')
 json_dep = dependency('json-glib-1.0', version: '>= 0.10.0')
 gtk_doc_dep = dependency('gtk-doc', required: false)
-python_dep = dependency('python', required: false)
-python3_dep = dependency('python3', required: false)
+# Python3.8 requires python3-embed
+python_dep = dependency('python3-embed', required: false)
+if not python_dep.found()
+  python_dep = dependency('python3', required: false)
+endif
+if not python_dep.found()
+  python_dep = dependency('python', required: false)
+endif
 
 opencl_dep = dependency('OpenCL', required: false)
 
@@ -40,7 +46,6 @@ deps = [
     json_dep,
     opencl_dep,
     python_dep,
-    python3_dep,
 ]
 
 include_dir = include_directories('.')
@@ -60,7 +65,7 @@ conf.set_quoted('UFO_VERSION', version)
 conf.set('GLIB_VERSION_MIN_REQUIRED', 'GLIB_VERSION_2_38')
 conf.set('GLIB_VERSION_MAX_ALLOWED', 'GLIB_VERSION_2_38')
 
-if python_dep.found() or python3_dep.found()
+if python_dep.found()
   conf.set('WITH_PYTHON', true)
 endif
 
