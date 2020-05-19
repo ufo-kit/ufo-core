@@ -139,6 +139,36 @@ static PyMethodDef exported_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
+/* Module initialization Python 3 */
+static struct PyModuleDef ufomodule = {
+    PyModuleDef_HEAD_INIT,
+    "ufo",
+    "ufo buffer to numpy array and vice versa",
+    -1,
+    exported_methods
+};
+
+PyMODINIT_FUNC
+PyInit__ufo(void)
+{
+    PyObject *module = PyModule_Create (&ufomodule);
+    if (module == NULL) {
+        return NULL;
+    }
+
+    import_array();
+
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+
+    return module;
+}
+
+#else
+/* Module initialization Python 2 */
+
 PyMODINIT_FUNC
 init_ufo(void)
 {
@@ -150,3 +180,5 @@ init_ufo(void)
     import_array();
     pygobject_init (-1, -1, -1);
 }
+
+#endif
