@@ -38,6 +38,7 @@ Makefile
 
 *.pyc
 *.swp
+python/install_manifest.txt
 python/dist
 python/ufo.egg-info
 /.project
