@@ -65,7 +65,7 @@ pkg_check_modules(GMODULE2 gmodule-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GTHREAD2 gthread-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(GIO2 gio-2.0>=${PKG_GLIB2_MIN_REQUIRED} REQUIRED)
 pkg_check_modules(JSON_GLIB json-glib-1.0>=${PKG_JSON_GLIB_MIN_REQUIRED} REQUIRED)
-pkg_check_modules(PYTHON python)
+pkg_check_modules(PYTHON python3-embed)
 
 set(GLIB_VERSION_MIN_REQUIRED "GLIB_VERSION_2_38")
 set(GLIB_VERSION_MAX_ALLOWED "GLIB_VERSION_2_38")
@@ -79,6 +79,14 @@ set(UFOCORE_DEPS
     ${GTHREAD2_LIBRARIES}
     ${GIO2_LIBRARIES}
     ${JSON_GLIB_LIBRARIES})
+
+
+if (NOT PYTHON_FOUND)
+    pkg_check_modules(PYTHON python3)
+    if (NOT PYTHON_FOUND)
+        pkg_check_modules(PYTHON python)
+    endif ()
+endif ()
 
 if (PYTHON_FOUND)
     option(WITH_PYTHON "Enable Python multithreading support" ON)
