@@ -1,10 +1,10 @@
-from __future__ import absolute_import
+
 
 import sys
 import re
 import time
 import threading
-import Queue as queue
+import queue
 import numpy as np
 import gi
 from .numpy import asarray, empty_like
