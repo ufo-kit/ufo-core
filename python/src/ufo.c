@@ -22,7 +22,7 @@ asarray (PyObject *self, PyObject *args)
 
     npy_intp np_dim_size[req.n_dims];
 
-    for (int i = 0; i < req.n_dims; i++)
+    for (unsigned int i = 0; i < req.n_dims; i++)
         np_dim_size[i] = req.dims[req.n_dims - 1 - i];
 
     np_array = PyArray_NewFromDescr (&PyArray_Type, PyArray_DescrFromType (NPY_FLOAT32),
@@ -38,7 +38,7 @@ resize_buffer (UfoBuffer *buffer, guint np_ndims, npy_intp *np_dim_size)
 
     req.n_dims = np_ndims;
 
-    for (int i = 0; i < np_ndims; i++)
+    for (unsigned int i = 0; i < np_ndims; i++)
         req.dims[i] = np_dim_size[np_ndims - 1 - i];
 
     ufo_buffer_resize (buffer, &req);
@@ -92,9 +92,9 @@ fromarray_inplace (PyObject *self, PyObject *args)
     np_ndims = PyArray_NDIM (np_array);
     np_dims = PyArray_DIMS (np_array);
 
-    if (req.n_dims == np_ndims) {
+    if (((int) req.n_dims) == np_ndims) {
         for (int i = 0; i < np_ndims; i++) {
-            if (req.dims[i] != np_dims[np_ndims - 1 - i]) {
+            if (req.dims[i] != ((unsigned long int) np_dims[np_ndims - 1 - i])) {
                 resize_buffer (buffer, req.n_dims, np_dims);
                 break;
             }
