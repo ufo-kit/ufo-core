@@ -168,4 +168,4 @@ class Importer(object):
         return TaskLoader(self.env, task_name)
 
 
-sys.meta_path = [Importer()]
+sys.meta_path += [Importer()]
