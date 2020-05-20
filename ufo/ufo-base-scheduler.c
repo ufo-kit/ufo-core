@@ -137,7 +137,10 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
         enable_tracing (graph);
 
 #ifdef WITH_PYTHON
-    PyEval_InitThreads();
+    Py_Initialize();
+    if (PY_MAJOR_VERSION == 2 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)) {
+        PyEval_InitThreads();
+    }
 #endif
 
     timer = g_timer_new ();
