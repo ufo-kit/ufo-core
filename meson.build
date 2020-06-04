@@ -64,6 +64,7 @@ conf.set_quoted('UFO_KERNEL_DIR', kerneldir)
 conf.set_quoted('UFO_VERSION', version)
 conf.set('GLIB_VERSION_MIN_REQUIRED', 'GLIB_VERSION_2_38')
 conf.set('GLIB_VERSION_MAX_ALLOWED', 'GLIB_VERSION_2_38')
+conf.set('CL_TARGET_OPENCL_VERSION', '120')
 
 if python_dep.found()
   conf.set('WITH_PYTHON', true)
