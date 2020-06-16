@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 """
 This file generates GObject file templates that a filter author can use, to
@@ -49,7 +49,7 @@ def generate_file(args, env, suffix='h'):
     with open(filename, 'w') as f:
         f.writelines(res)
         f.close()
-        print "Wrote %s" % filename
+        print("Wrote %s" % filename)
 
 
 if __name__ == '__main__':
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     try:
         args = parser.parse_args()
     except argparse.ArgumentTypeError as err:
-        print err
+        print(err)
         sys.exit(1)
 
     template_dir = '@CMAKE_INSTALL_TEMPLATEDIR@'
@@ -89,5 +89,5 @@ the generated files into core/filters and adapt the CMakeLists.txt file. You \
 should only add the filter sources to ${ufo_SRCS} if all build dependencies are \
 met for your particular plugin.  Good luck!"
 
-    print ""
-    print textwrap.fill(message)
+    print("")
+    print(textwrap.fill(message))

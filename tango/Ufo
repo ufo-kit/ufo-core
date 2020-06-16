@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import time
@@ -24,7 +24,7 @@ class UfoProcess(multiprocessing.Process):
         self.server, self.client = multiprocessing.Pipe(duplex=True)
 
     def log(self, s):
-        print("Process-{}: {}".format(self.pid, s))
+        print(("Process-{}: {}".format(self.pid, s)))
 
     def run(self):
         from gi.repository import GLib
@@ -106,9 +106,7 @@ class ContinuousProcess(UfoProcess):
                 self.server.send(0)
 
 
-class Process(Device):
-    __metaclass__ = DeviceMeta
-
+class Process(Device, metaclass=DeviceMeta):
     jobs = attribute(label="Jobs", dtype=[int],
                     display_level=DispLevel.OPERATOR,
                     access=AttrWriteType.READ,
@@ -126,7 +124,7 @@ class Process(Device):
         self.set_state(DevState.ON)
 
     def read_jobs(self):
-        return [job_id for job_id, job in self._jobs.items() if job.is_alive()]
+        return [job_id for job_id, job in list(self._jobs.items()) if job.is_alive()]
 
     def read_json(self):
         return self._json
