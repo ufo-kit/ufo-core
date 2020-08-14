@@ -70,11 +70,13 @@ struct _UfoBaseSchedulerClass {
     GObjectClass parent_class;
 
     void (*run) (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, GError **error);
+    void (*abort) (UfoBaseScheduler *scheduler);
 };
 
 void            ufo_base_scheduler_run              (UfoBaseScheduler   *scheduler,
                                                      UfoTaskGraph       *task_graph,
                                                      GError            **error);
+void            ufo_base_scheduler_abort            (UfoBaseScheduler   *scheduler);
 void            ufo_base_scheduler_set_resources    (UfoBaseScheduler   *scheduler,
                                                      UfoResources       *resources);
 UfoResources   *ufo_base_scheduler_get_resources    (UfoBaseScheduler   *scheduler,

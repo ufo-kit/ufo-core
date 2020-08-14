@@ -62,11 +62,13 @@ typedef struct {
     gboolean        *finished;
     gboolean         strict;
     gboolean         timestamps;
+    UfoBaseScheduler    *scheduler;
 } TaskLocalData;
 
 
 struct _UfoSchedulerPrivate {
     gboolean ran;
+    gboolean aborted;
 };
 
 
@@ -152,6 +154,7 @@ release_inputs (TaskLocalData *tld,
 static gpointer
 run_task (TaskLocalData *tld)
 {
+    UfoSchedulerPrivate *priv;
     UfoBuffer *inputs[tld->n_inputs];
     UfoBuffer *output;
     UfoTaskNode *node;
@@ -162,6 +165,7 @@ run_task (TaskLocalData *tld)
     gboolean active;
     GError *error;
 
+    priv = UFO_SCHEDULER_GET_PRIVATE (tld->scheduler);
     node = UFO_TASK_NODE (tld->task);
     active = TRUE;
     output = NULL;
@@ -174,7 +178,7 @@ run_task (TaskLocalData *tld)
 
     while (active) {
         /* Get input buffers */
-        active = get_inputs (tld, inputs);
+        active = get_inputs (tld, inputs) && !priv->aborted;
 
         if (!active) {
             ufo_task_inputs_stopped_callback (tld->task);
@@ -220,11 +224,11 @@ run_task (TaskLocalData *tld)
                         if (!active) {
                             ufo_task_inputs_stopped_callback (tld->task);
                         }
-                        go_on = go_on && active;
+                        go_on = go_on && active && !priv->aborted;
                     } while (go_on);
 
                     do {
-                        go_on = ufo_task_generate (tld->task, output, &requisition);
+                        go_on = ufo_task_generate (tld->task, output, &requisition) && !priv->aborted;
 
                         if (go_on) {
                             ufo_group_push_output_buffer (group, output);
@@ -374,6 +378,7 @@ setup_tasks (UfoBaseScheduler *scheduler,
         node = g_list_nth_data (nodes, i);
         tld = g_new0 (TaskLocalData, 1);
         tld->task = UFO_TASK (node);
+        tld->scheduler = scheduler;
         tlds[i] = tld;
 
         ufo_task_setup (tld->task, resources, error);
@@ -542,6 +547,7 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
     gboolean expand;
 
     priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
+    priv->aborted = FALSE;
 
     g_object_get (scheduler, "expand", &expand, NULL);
 
@@ -621,12 +627,21 @@ ufo_scheduler_run (UfoBaseScheduler *scheduler,
 }
 
 static void
+ufo_scheduler_abort (UfoBaseScheduler *scheduler)
+{
+    UfoSchedulerPrivate *priv;
+    priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
+    priv->aborted = TRUE;
+}
+
+static void
 ufo_scheduler_class_init (UfoSchedulerClass *klass)
 {
     UfoBaseSchedulerClass *sclass;
 
     sclass = UFO_BASE_SCHEDULER_CLASS (klass);
     sclass->run = ufo_scheduler_run;
+    sclass->abort = ufo_scheduler_abort;
 
     g_type_class_add_private (klass, sizeof (UfoSchedulerPrivate));
 }
@@ -638,4 +653,5 @@ ufo_scheduler_init (UfoScheduler *scheduler)
 
     scheduler->priv = priv = UFO_SCHEDULER_GET_PRIVATE (scheduler);
     priv->ran = FALSE;
+    priv->aborted = FALSE;
 }
