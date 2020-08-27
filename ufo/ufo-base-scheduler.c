@@ -153,6 +153,28 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
     g_timer_destroy (timer);
 }
 
+void
+ufo_base_scheduler_abort (UfoBaseScheduler *scheduler)
+{
+    UfoBaseSchedulerClass *klass;
+
+    g_return_if_fail (UFO_IS_BASE_SCHEDULER (scheduler));
+
+    klass = UFO_BASE_SCHEDULER_GET_CLASS (scheduler);
+
+    g_return_if_fail (klass != NULL && klass->run != NULL);
+
+
+#ifdef WITH_PYTHON
+    Py_Initialize();
+    if (PY_MAJOR_VERSION == 2 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)) {
+        PyEval_InitThreads();
+    }
+#endif
+
+    (*klass->abort)(scheduler);
+}
+
 /**
  * ufo_base_scheduler_set_resources:
  * @scheduler: A #UfoBaseScheduler object

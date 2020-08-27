@@ -71,7 +71,12 @@ typedef struct {
     UfoTask *task;
     GList *connections;
     cl_context context;
+    UfoBaseScheduler    *scheduler;
 } TaskData;
+
+struct _UfoFixedSchedulerPrivate {
+    gboolean aborted;
+};
 
 enum {
     PROP_0,
@@ -206,6 +211,7 @@ finish_successors (GList *out_queues)
 static void
 generate_loop (TaskData *data, GError **error)
 {
+    UfoFixedSchedulerPrivate *priv;
     UfoRequisition requisition;
     UfoBuffer *output;
     GList *out_queues;
@@ -213,6 +219,7 @@ generate_loop (TaskData *data, GError **error)
     GError *tmp_error = NULL;
     gboolean active = TRUE;
 
+    priv = UFO_FIXED_SCHEDULER_GET_PRIVATE (data->scheduler);
     out_queues = get_output_queue_list (data);
 
     while (active) {
@@ -227,7 +234,7 @@ generate_loop (TaskData *data, GError **error)
             }
 
             output = pop_output_data (out_queue, &requisition, data->context);
-            active = ufo_task_generate (data->task, output, &requisition);
+            active = ufo_task_generate (data->task, output, &requisition) && !priv->aborted;
 
             if (!active)
                 break;
@@ -246,6 +253,7 @@ generate_loop (TaskData *data, GError **error)
 static void
 process_loop (TaskData *data, GError **error)
 {
+    UfoFixedSchedulerPrivate *priv;
     UfoRequisition requisition;
     UfoBuffer **inputs;
     UfoBuffer *output;
@@ -258,6 +266,7 @@ process_loop (TaskData *data, GError **error)
     gboolean active = TRUE;
     gboolean is_sink;
 
+    priv = UFO_FIXED_SCHEDULER_GET_PRIVATE (data->scheduler);
     in_queues = get_input_queues (data, &n_inputs);
     out_queues = get_output_queue_list (data);
     inputs = g_new0 (UfoBuffer *, n_inputs);
@@ -265,7 +274,7 @@ process_loop (TaskData *data, GError **error)
     is_sink = g_list_length (out_queues) == 0;
 
     while (active) {
-        active = pop_input_data (in_queues, finished, inputs, n_inputs);
+        active = pop_input_data (in_queues, finished, inputs, n_inputs) && !priv->aborted;
 
         if (!active) {
             ufo_task_inputs_stopped_callback (data->task);
@@ -321,6 +330,7 @@ process_loop (TaskData *data, GError **error)
 static void
 reduce_loop (TaskData *data, GError **error)
 {
+    UfoFixedSchedulerPrivate *priv;
     UfoRequisition requisition;
     UfoTwoWayQueue **in_queues;
     UfoTwoWayQueue **output_queues;
@@ -334,6 +344,7 @@ reduce_loop (TaskData *data, GError **error)
     guint n_outputs;
     gboolean active = TRUE;
 
+    priv = UFO_FIXED_SCHEDULER_GET_PRIVATE (data->scheduler);
     in_queues = get_input_queues (data, &n_inputs);
     out_queues = get_output_queue_list (data);
     inputs = g_new0 (UfoBuffer *, n_inputs);
@@ -383,14 +394,14 @@ reduce_loop (TaskData *data, GError **error)
                     if (!active) {
                         ufo_task_inputs_stopped_callback (data->task);
                     }
-                    go_on = go_on && active;
+                    go_on = go_on && active && !priv->aborted;
                 }
             } while (go_on);
 
             /* Generate all outputs */
             do {
                 for (guint i = 0; i < n_outputs; i++) {
-                    go_on = ufo_task_generate (data->task, outputs[i], &requisition);
+                    go_on = ufo_task_generate (data->task, outputs[i], &requisition) && !priv->aborted;
 
                     if (go_on) {
                         ufo_two_way_queue_producer_push (output_queues[i], outputs[i]);
@@ -559,13 +570,15 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
                          UfoTaskGraph *task_graph,
                          GError **error)
 {
+    UfoFixedSchedulerPrivate *priv;
     UfoResources *resources;
     ProcessData *pdata;
     GList *threads;
     GList *it;
     GError *tmp_error = NULL;
 
-    g_return_if_fail (UFO_IS_FIXED_SCHEDULER (scheduler));
+    priv = UFO_FIXED_SCHEDULER_GET_PRIVATE (scheduler);
+    priv->aborted = FALSE;
 
     resources = ufo_base_scheduler_get_resources (scheduler, error);
 
@@ -590,6 +603,7 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
         tdata->task = UFO_TASK (it->data);
         tdata->connections = pdata->connections;
         tdata->context = ufo_resources_get_context (resources);
+        tdata->scheduler = scheduler;
         thread = g_thread_new (NULL, (GThreadFunc) run_local, tdata);
         threads = g_list_append (threads, thread);
     }
@@ -629,16 +643,28 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
 }
 
 static void
+ufo_fixed_scheduler_abort (UfoBaseScheduler *scheduler)
+{
+    UfoFixedSchedulerPrivate *priv;
+    priv = UFO_FIXED_SCHEDULER_GET_PRIVATE (scheduler);
+    priv->aborted = TRUE;
+}
+
+static void
 ufo_fixed_scheduler_class_init (UfoFixedSchedulerClass *klass)
 {
     UfoBaseSchedulerClass *sclass;
 
     sclass = UFO_BASE_SCHEDULER_CLASS (klass);
     sclass->run = ufo_fixed_scheduler_run;
+    sclass->abort = ufo_fixed_scheduler_abort;
+
+    g_type_class_add_private (klass, sizeof (UfoFixedSchedulerPrivate));
 }
 
 static void
 ufo_fixed_scheduler_init (UfoFixedScheduler *scheduler)
 {
     scheduler->priv = UFO_FIXED_SCHEDULER_GET_PRIVATE (scheduler);
+    scheduler->priv->aborted = FALSE;
 }
