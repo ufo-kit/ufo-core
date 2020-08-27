@@ -337,7 +337,7 @@ ufo_plugin_manager_get_task (UfoPluginManager *manager, const gchar *name, GErro
     if (!g_strcmp0 (name, "[copy]"))
         return UFO_TASK_NODE (ufo_copy_task_new ());
 
-    gchar *module_name = ufo_transform_string ("libufofilter%s.so", name, NULL);
+    gchar *module_name = g_strdup_printf ("libufofilter%s.so", name);
     gchar *func_name = ufo_transform_string ("ufo_%s_task_new", name, "_");
     node = UFO_TASK_NODE (ufo_plugin_manager_get_plugin (manager, func_name, module_name, error));
 
@@ -402,7 +402,7 @@ GList *
 ufo_plugin_manager_get_all_task_names (UfoPluginManager *manager)
 {
     g_return_val_if_fail (UFO_IS_PLUGIN_MANAGER (manager), NULL);
-    GRegex *regex = g_regex_new ("libufofilter(\\w+).so", 0, 0, NULL);
+    GRegex *regex = g_regex_new ("libufofilter([\\-A-Za-z0-9]+).so", 0, 0, NULL);
 
     GList *result = ufo_plugin_get_all_plugin_names(manager, regex, "libufofilter*.so");
 
