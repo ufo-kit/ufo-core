@@ -157,6 +157,9 @@ PyInit__ufo(void)
         return NULL;
     }
 
+    if (!pygobject_init(-1, -1, -1)) {
+        return NULL;
+    }
     import_array();
 
     if (PyErr_Occurred()) {
