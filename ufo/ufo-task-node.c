@@ -49,9 +49,11 @@ struct _UfoTaskNodePrivate {
     UfoNode         *proc_node;
     UfoGroup        *out_group;
     UfoProfiler     *profiler;
-    GList           *in_groups[MAX_INPUT_NODES];
-    GList           *current[MAX_INPUT_NODES];
-    gint             n_expected[MAX_INPUT_NODES];
+
+    GList           *in_groups[UFO_MAX_INPUT_NODES];
+    GList           *current[UFO_MAX_INPUT_NODES];
+    gint             n_expected[UFO_MAX_INPUT_NODES];
+
     guint            index;
     guint            total;
     guint            num_processed;
@@ -133,7 +135,9 @@ ufo_task_node_set_num_expected (UfoTaskNode *node,
                                 gint n_expected)
 {
     g_return_if_fail (UFO_IS_TASK_NODE (node));
-    g_return_if_fail (pos < MAX_INPUT_NODES);
+
+    g_return_if_fail (pos < UFO_MAX_INPUT_NODES);
+
     node->priv->n_expected[pos] = n_expected;
 }
 
@@ -142,7 +146,9 @@ ufo_task_node_get_num_expected (UfoTaskNode *node,
                                 guint pos)
 {
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), 0);
-    g_return_val_if_fail (pos < MAX_INPUT_NODES, 0);
+
+    g_return_val_if_fail (pos < UFO_MAX_INPUT_NODES, 0);
+
     return node->priv->n_expected[pos];
 }
 
@@ -197,7 +203,8 @@ ufo_task_node_reset (UfoTaskNode *node)
     priv->out_group = NULL;
     priv->proc_node = NULL;
 
-    for (guint i = 0; i < MAX_INPUT_NODES; i++) {
+
+    for (guint i = 0; i < UFO_MAX_INPUT_NODES; i++) {
         g_list_free (priv->in_groups[i]);
         priv->in_groups[i] = NULL;
     }
@@ -219,7 +226,9 @@ ufo_task_node_get_current_in_group (UfoTaskNode *node,
                                     guint pos)
 {
     g_return_val_if_fail (UFO_IS_TASK_NODE (node), NULL);
-    g_assert (pos < MAX_INPUT_NODES);
+
+    g_assert (pos < UFO_MAX_INPUT_NODES);
+
     g_assert (node->priv->current[pos] != NULL);
     return UFO_GROUP (node->priv->current[pos]->data);
 }
@@ -329,7 +338,7 @@ ufo_task_node_copy (UfoNode *node,
 
     copy->priv->pattern = orig->priv->pattern;
 
-    for (guint i = 0; i < 16; i++)
+    for (guint i = 0; i < UFO_MAX_INPUT_NODES; i++)
         copy->priv->n_expected[i] = orig->priv->n_expected[i];
 
     ufo_task_node_set_plugin_name (copy, orig->priv->plugin);
@@ -433,7 +442,8 @@ ufo_task_node_init (UfoTaskNode *self)
     self->priv->num_processed = 0;
     self->priv->profiler = ufo_profiler_new ();
 
-    for (guint i = 0; i < MAX_INPUT_NODES; i++) {
+
+    for (guint i = 0; i < UFO_MAX_INPUT_NODES; i++) {
         self->priv->in_groups[i] = NULL;
         self->priv->current[i] = NULL;
         self->priv->n_expected[i] = -1;
