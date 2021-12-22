@@ -72,39 +72,39 @@ vendors. However, our CMake build facility is in most cases intelligent enough
 to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
 
 
-Ubuntu/Debian
-~~~~~~~~~~~~~
+Ubuntu/Debian (Tested on Ubuntu 20.04.3 LTS)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 On Debian or Debian-based system the following packages are required to build
 ufo-core::
 
-    $ sudo apt-get install build-essential cmake libglib2.0-dev libjson-glib-dev
+    $ sudo apt install build-essential cmake libglib2.0-dev libjson-glib-dev
 
 You will also need an OpenCL ICD loader. To simply get the build running, you
 can install ::
 
-    $ sudo apt-get install ocl-icd-opencl-dev
+    $ sudo apt install ocl-icd-opencl-dev
 
 Generating the introspection files for interfacing with third-party languages
 such as Python you must install ::
 
-    $ sudo apt-get install gobject-introspection libgirepository1.0-dev
+    $ sudo apt install gobject-introspection libgirepository1.0-dev
 
 and advised to install ::
 
-    $ sudo apt-get install python-dev
+    $ sudo apt install python3-dev
 
 To use the ``ufo-mkfilter`` script you also need the jinja2 Python package::
 
-    $ sudo apt-get install python-jinja2
+    $ sudo apt install python3-jinja2
 
 Building the reference documentation and the Sphinx manual requires::
 
-    $ sudo apt-get install gtk-doc-tools python-sphinx
+    $ sudo apt install gtk-doc-tools python3-sphinx
 
 Additionally the following packages are recommended for some of the plugins::
 
-    $ sudo apt-get install libtiff5-dev
+    $ sudo apt install libtiff5-dev
 
 
 openSUSE and CentOS7
@@ -196,9 +196,9 @@ Python support
 ufo-core has GObject introspection to let third-party languages interface with
 the library. To build the support files you need the GObject introspection
 scanner ``g-ir-scanner`` and compiler ``g-ir-compiler`` which you can get on
-openSUSE via ::
+Ubuntu via ::
 
-    $ zypper install gobject-introspection-devel python-gobject2
+    $ apt install python-gi-dev
 
 In the ``python/`` subdirectory of the source distribution, additional Python
 modules to interface more easily with the framework is provided. To install the
