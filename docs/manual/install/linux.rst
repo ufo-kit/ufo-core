@@ -80,6 +80,15 @@ ufo-core::
 
     $ apt install build-essential cmake libglib2.0-dev libjson-glib-dev
 
+In case you want to use UFO with NVIDIA cards, you need to install the driver
+and CUDA. It also makes sense to change the
+`/lib/systemd/system/nvidia-persistenced.service` persistence option from
+`--no-persistence-mode` to `--persistence-mode`. This will speed up the
+initialization of the cards. CUDA installation (package versions may of course
+quickly change) ::
+
+    $ apt install nvidia-driver-460 nvidia-utils-460 nvidia-cuda-toolkit
+
 You will also need an OpenCL ICD loader. To simply get the build running, you
 can install ::
 
