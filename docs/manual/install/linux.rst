@@ -78,33 +78,33 @@ Ubuntu/Debian (Tested on Ubuntu 20.04.3 LTS)
 On Debian or Debian-based system the following packages are required to build
 ufo-core::
 
-    $ sudo apt install build-essential cmake libglib2.0-dev libjson-glib-dev
+    $ apt install build-essential cmake libglib2.0-dev libjson-glib-dev
 
 You will also need an OpenCL ICD loader. To simply get the build running, you
 can install ::
 
-    $ sudo apt install ocl-icd-opencl-dev
+    $ apt install ocl-icd-opencl-dev
 
 Generating the introspection files for interfacing with third-party languages
 such as Python you must install ::
 
-    $ sudo apt install gobject-introspection libgirepository1.0-dev
+    $ apt install gobject-introspection libgirepository1.0-dev
 
 and advised to install ::
 
-    $ sudo apt install python3-dev
+    $ apt install python3-dev
 
 To use the ``ufo-mkfilter`` script you also need the jinja2 Python package::
 
-    $ sudo apt install python3-jinja2
+    $ apt install python3-jinja2
 
 Building the reference documentation and the Sphinx manual requires::
 
-    $ sudo apt install gtk-doc-tools python3-sphinx
+    $ apt install gtk-doc-tools python3-sphinx
 
 Additionally the following packages are recommended for some of the plugins::
 
-    $ sudo apt install libtiff5-dev
+    $ apt install libtiff5-dev
 
 
 openSUSE and CentOS7
