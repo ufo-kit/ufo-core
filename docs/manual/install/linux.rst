@@ -78,7 +78,7 @@ Ubuntu/Debian (Tested on Ubuntu 20.04.3 LTS)
 On Debian or Debian-based system the following packages are required to build
 ufo-core::
 
-    $ apt install build-essential cmake libglib2.0-dev libjson-glib-dev
+    $ apt install build-essential cmake meson libglib2.0-dev libjson-glib-dev
 
 In case you want to use UFO with NVIDIA cards, you need to install the driver
 and CUDA. It also makes sense to change the
