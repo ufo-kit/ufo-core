@@ -65,3 +65,4 @@ RUN cd /ufo-core && meson build --libdir=lib -Dbashcompletiondir=$HOME/.local/sh
 RUN cd /ufo-core/python && python3 setup.py install
 RUN cd /ufo-filters && meson build --libdir=lib -Dcontrib_filters=True && cd build && ninja install
 RUN cd /tofu && pip3 install -r requirements-flow.txt && pip3 install -r requirements-flow.txt && python3 setup.py install
+RUN rm -rf /ufo-core /ufo-filters /tofu
