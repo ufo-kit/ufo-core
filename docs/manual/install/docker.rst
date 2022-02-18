@@ -37,6 +37,12 @@ Run the image in a new Docker container using::
 Usage on NVIDIA
 ===============
 
-Install nvidia-docker and run::
+Install `nvidia-container-runtime
+<https://nvidia.github.io/nvidia-container-runtime/>`_ and run::
 
-    $ nvidia-docker run -it ufo
+    $ docker run --rm -it --gpus all ufo
+
+If you want to use the graphical user interfaces run::
+
+    $ sudo xhost +local:username
+    $ docker run --rm -it --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY ufo
