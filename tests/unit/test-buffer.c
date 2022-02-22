@@ -40,7 +40,7 @@ setup (Fixture *fixture, gconstpointer data)
         .dims[0] = 8,
     };
 
-    fixture->buffer = ufo_buffer_new (&requisition, NULL);
+    fixture->buffer = ufo_buffer_new (&requisition, NULL, 0, 0);
     fixture->data8 = data8;
     fixture->data16 = data16;
     fixture->n_data = 8;
@@ -154,7 +154,7 @@ test_copy_metadata (Fixture *fixture,
         .dims[1] = 8,
     };
 
-    copy = ufo_buffer_new (&requisition, NULL);
+    copy = ufo_buffer_new (&requisition, NULL, 0, 0);
 
     g_value_init (&value, G_TYPE_INT);
     g_value_set_int (&value, -123);

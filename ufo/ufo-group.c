@@ -43,6 +43,8 @@ struct _UfoGroupPrivate {
     UfoSendPattern   pattern;
     guint            current;
     cl_context       context;
+    cl_uint          channel_order_2d;
+    cl_uint          channel_order_3d;
     GList           *buffers;
 };
 
@@ -65,6 +67,8 @@ enum {
 UfoGroup *
 ufo_group_new (GList *targets,
                gpointer context,
+               unsigned int channel_order_2d,
+               unsigned int channel_order_3d,
                UfoSendPattern pattern)
 {
     UfoGroup *group;
@@ -80,6 +84,8 @@ ufo_group_new (GList *targets,
     priv->pattern = pattern;
     priv->current = 0;
     priv->context = context;
+    priv->channel_order_2d = channel_order_2d;
+    priv->channel_order_3d = channel_order_3d;
     priv->n_received = 0;
 
     for (guint i = 0; i < priv->n_targets; i++)
@@ -103,7 +109,7 @@ pop_or_alloc_buffer (UfoGroupPrivate *priv,
     UfoBuffer *buffer;
 
     if (ufo_two_way_queue_get_capacity (priv->queues[pos]) < (priv->n_targets + 1)) {
-        buffer = ufo_buffer_new (requisition, priv->context);
+        buffer = ufo_buffer_new (requisition, priv->context, priv->channel_order_2d, priv->channel_order_3d);
         priv->buffers = g_list_append (priv->buffers, buffer);
         ufo_two_way_queue_insert (priv->queues[pos], buffer);
     }

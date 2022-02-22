@@ -71,6 +71,8 @@ typedef struct {
     UfoTask *task;
     GList *connections;
     cl_context context;
+    cl_channel_order channel_order_2d;
+    cl_channel_order channel_order_3d;
     UfoBaseScheduler    *scheduler;
 } TaskData;
 
@@ -145,12 +147,13 @@ release_input_data (UfoTwoWayQueue **in_queues, UfoBuffer **inputs, guint n_inpu
 }
 
 static UfoBuffer *
-pop_output_data (UfoTwoWayQueue *queue, UfoRequisition *requisition, cl_context context)
+pop_output_data (UfoTwoWayQueue *queue, UfoRequisition *requisition, cl_context context,
+                 cl_channel_order channel_order_2d, cl_channel_order channel_order_3d)
 {
     UfoBuffer *buffer;
 
     if (ufo_two_way_queue_get_capacity (queue) < 2) {
-        buffer = ufo_buffer_new (requisition, context);
+        buffer = ufo_buffer_new (requisition, context, channel_order_2d, channel_order_3d);
         ufo_two_way_queue_insert (queue, buffer);
     }
 
@@ -233,7 +236,7 @@ generate_loop (TaskData *data, GError **error)
                 break;
             }
 
-            output = pop_output_data (out_queue, &requisition, data->context);
+            output = pop_output_data (out_queue, &requisition, data->context, data->channel_order_2d, data->channel_order_3d);
             active = ufo_task_generate (data->task, output, &requisition) && !priv->aborted;
 
             if (!active)
@@ -293,7 +296,7 @@ process_loop (TaskData *data, GError **error)
             g_list_for (out_queues, it) {
                 UfoTwoWayQueue *out_queue = (UfoTwoWayQueue *) it->data;
 
-                output = pop_output_data (out_queue, &requisition, data->context);
+                output = pop_output_data (out_queue, &requisition, data->context, data->channel_order_2d, data->channel_order_3d);
 
                 for (guint i = 0; i < n_inputs; i++)
                     ufo_buffer_copy_metadata (inputs[i], output);
@@ -376,7 +379,7 @@ reduce_loop (TaskData *data, GError **error)
     } else {
         /* Get the scratchpad output buffers from all successors */
         for (guint i = 0; i < n_outputs; i++) {
-            outputs[i] = pop_output_data (output_queues[i], &requisition, data->context);
+            outputs[i] = pop_output_data (output_queues[i], &requisition, data->context, data->channel_order_2d, data->channel_order_3d);
         }
 
         do {
@@ -603,6 +606,8 @@ ufo_fixed_scheduler_run (UfoBaseScheduler *scheduler,
         tdata->task = UFO_TASK (it->data);
         tdata->connections = pdata->connections;
         tdata->context = ufo_resources_get_context (resources);
+        tdata->channel_order_2d = ufo_resources_get_channel_order_2d (resources);
+        tdata->channel_order_3d = ufo_resources_get_channel_order_3d (resources);
         tdata->scheduler = scheduler;
         thread = g_thread_new (NULL, (GThreadFunc) run_local, tdata);
         threads = g_list_append (threads, thread);

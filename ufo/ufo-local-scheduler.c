@@ -63,6 +63,8 @@ typedef struct {
 
 typedef struct {
     gpointer context;
+    cl_channel_order channel_order_2d;
+    cl_channel_order channel_order_3d;
     ProcessorPool *pp;
     UfoTask *task;
     UfoTwoWayQueue **inputs;
@@ -196,7 +198,7 @@ run_local (TaskLocal *local)
             if (ufo_two_way_queue_get_capacity (local->output) < 2) {
                 UfoBuffer *buffer;
 
-                buffer = ufo_buffer_new (&requisition, local->context);
+                buffer = ufo_buffer_new (&requisition, local->context, local->channel_order_2d, local->channel_order_3d);
                 ufo_two_way_queue_insert (local->output, buffer);
             }
 
@@ -292,6 +294,8 @@ setup_tasks (UfoGraph *graph,
         data->pp = pp;
         data->n_inputs = ufo_task_get_num_inputs (task);
         data->context = ufo_resources_get_context (resources);
+        data->channel_order_2d = ufo_resources_get_channel_order_2d (resources);
+        data->channel_order_3d = ufo_resources_get_channel_order_3d (resources);
 
         g_hash_table_insert (local, node, data);
         successors = ufo_graph_get_successors (graph, UFO_NODE (task));

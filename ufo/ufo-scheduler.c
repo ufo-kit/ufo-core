@@ -419,6 +419,8 @@ setup_groups (UfoBaseScheduler *scheduler,
     GList *nodes;
     GList *it;
     cl_context context;
+    cl_channel_order channel_order_2d;
+    cl_channel_order channel_order_3d;
 
     groups = NULL;
     nodes = ufo_graph_get_nodes (UFO_GRAPH (task_graph));
@@ -428,6 +430,8 @@ setup_groups (UfoBaseScheduler *scheduler,
         return NULL;
 
     context = ufo_resources_get_context (resources);
+    channel_order_2d = ufo_resources_get_channel_order_2d (resources);
+    channel_order_3d = ufo_resources_get_channel_order_3d (resources);
 
     g_list_for (nodes, it) {
         GList *successors;
@@ -440,7 +444,7 @@ setup_groups (UfoBaseScheduler *scheduler,
         successors = ufo_graph_get_successors (UFO_GRAPH (task_graph), node);
         pattern = ufo_task_node_get_send_pattern (UFO_TASK_NODE (node));
 
-        group = ufo_group_new (successors, context, pattern);
+        group = ufo_group_new (successors, context, channel_order_2d, channel_order_3d, pattern);
         groups = g_list_append (groups, group);
         ufo_task_node_set_out_group (UFO_TASK_NODE (node), group);
 

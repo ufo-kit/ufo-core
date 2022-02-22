@@ -61,6 +61,8 @@ typedef struct {
     GList *tasks;
     gboolean is_leaf;
     gpointer context;
+    cl_channel_order channel_order_2d;
+    cl_channel_order channel_order_3d;
     UfoTwoWayQueue *queue;
     enum {
         TASK_GROUP_ROUND_ROBIN,
@@ -164,6 +166,8 @@ build_task_groups (UfoBaseScheduler *scheduler, UfoTaskGraph *graph, UfoResource
         task = UFO_NODE (it->data);
         group = g_new0 (TaskGroup, 1);
         group->context = ufo_resources_get_context (resources);
+        group->channel_order_2d = ufo_resources_get_channel_order_2d (resources);
+        group->channel_order_3d = ufo_resources_get_channel_order_3d (resources);
         group->parents = NULL;
         group->tasks = g_list_append (NULL, it->data);
         group->queue = ufo_two_way_queue_new (NULL);
@@ -367,7 +371,7 @@ run_group (TaskGroup *group)
             if (ufo_two_way_queue_get_capacity (group->queue) < 2) {
                 UfoBuffer *buffer;
 
-                buffer = ufo_buffer_new (&requisition, group->context);
+                buffer = ufo_buffer_new (&requisition, group->context, group->channel_order_2d, group->channel_order_3d);
                 ufo_two_way_queue_insert (group->queue, buffer);
             }
 

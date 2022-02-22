@@ -153,6 +153,8 @@ gchar          * ufo_resources_get_kernel_source        (UfoResources   *resourc
                                                          const gchar    *filename,
                                                          GError        **error);
 gpointer         ufo_resources_get_context              (UfoResources   *resources);
+unsigned int     ufo_resources_get_channel_order_2d     (UfoResources   *resources);
+unsigned int     ufo_resources_get_channel_order_3d     (UfoResources   *resources);
 GList          * ufo_resources_get_cmd_queues           (UfoResources   *resources);
 GList          * ufo_resources_get_devices              (UfoResources   *resources);
 GList          * ufo_resources_get_gpu_nodes            (UfoResources   *resources);

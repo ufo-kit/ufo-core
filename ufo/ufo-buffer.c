@@ -109,6 +109,8 @@ enum {
 
 struct _UfoBufferPrivate {
     UfoRequisition      requisition;
+    cl_channel_order    channel_order_2d;
+    cl_channel_order    channel_order_3d;
     gfloat             *host_array;
     gboolean            free;
     cl_mem              device_array;
@@ -239,7 +241,6 @@ alloc_device_image (UfoBufferPrivate *priv)
     if (priv->device_image != NULL)
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_image));
 
-    format.image_channel_order = CL_INTENSITY;
     format.image_channel_data_type = CL_FLOAT;
 
     flags = CL_MEM_READ_WRITE;
@@ -248,10 +249,12 @@ alloc_device_image (UfoBufferPrivate *priv)
     depth = priv->requisition.dims[2];
 
     if (priv->requisition.n_dims == 2) {
+        format.image_channel_order = priv->channel_order_2d;
         mem = clCreateImage2D (priv->context, flags, &format, width, height, 0, NULL, &err);
         g_debug ("ALOC %p [size=%3.2f MB, type=2D image]", (gpointer) mem, width * height * 4 / 1024. / 1024.);
     }
     else if (priv->requisition.n_dims == 3) {
+        format.image_channel_order = priv->channel_order_3d;
         mem = clCreateImage3D (priv->context, flags, &format, width, height, depth, 0, 0, NULL, &err);
         g_debug ("ALOC %p [size=%3.2f MB, type=3D image]", (gpointer) mem, width * height * depth * 4 / 1024. / 1024.);
     }
@@ -266,6 +269,8 @@ alloc_device_image (UfoBufferPrivate *priv)
  * ufo_buffer_new:
  * @requisition: (in): size requisition
  * @context: (in) (allow-none): cl_context to use for creating the device array
+ * @channel_order_2d: cl_channel_order to use for CL_MEM_OBJECT_IMAGE2D image type
+ * @channel_order_3d: cl_channel_order to use for CL_MEM_OBJECT_IMAGE3D image type
  *
  * Create a new #UfoBuffer.
  *
@@ -273,7 +278,9 @@ alloc_device_image (UfoBufferPrivate *priv)
  */
 UfoBuffer *
 ufo_buffer_new (UfoRequisition *requisition,
-                gpointer context)
+                gpointer context,
+                unsigned int channel_order_2d,
+                unsigned int channel_order_3d)
 {
     UfoBuffer *buffer;
     UfoBufferPrivate *priv;
@@ -287,6 +294,8 @@ ufo_buffer_new (UfoRequisition *requisition,
     priv->size = compute_required_size (requisition);
     priv->layout = UFO_BUFFER_LAYOUT_REAL;
     copy_requisition (requisition, &priv->requisition);
+    priv->channel_order_2d = channel_order_2d;
+    priv->channel_order_3d = channel_order_3d;
 
     return buffer;
 }
@@ -295,6 +304,8 @@ ufo_buffer_new (UfoRequisition *requisition,
  * ufo_buffer_new_with_size:
  * @dims: (element-type guint): size requisition
  * @context: (allow-none): cl_context to use for creating the device array
+ * @channel_order_2d: cl_channel_order to use for CL_MEM_OBJECT_IMAGE2D image type
+ * @channel_order_3d: cl_channel_order to use for CL_MEM_OBJECT_IMAGE3D image type
  *
  * Create a new #UfoBuffer with a list of dimensions.
  *
@@ -302,7 +313,9 @@ ufo_buffer_new (UfoRequisition *requisition,
  */
 UfoBuffer *
 ufo_buffer_new_with_size (GList *dims,
-                          gpointer context)
+                          gpointer context,
+                          unsigned int channel_order_2d,
+                          unsigned int channel_order_3d)
 {
     UfoRequisition req;
 
@@ -312,7 +325,7 @@ ufo_buffer_new_with_size (GList *dims,
     for (guint i = 0; i < req.n_dims; i++)
         req.dims[i] = (gsize) g_list_nth_data (dims, i);
 
-    return ufo_buffer_new (&req, context);
+    return ufo_buffer_new (&req, context, channel_order_2d, channel_order_3d);
 }
 
 /**
@@ -320,13 +333,17 @@ ufo_buffer_new_with_size (GList *dims,
  * @requisition: size requisition
  * @data: Pointer to host memory that will be used by
  * @context: OpenCL context for this buffer
+ * @channel_order_2d: cl_channel_order to use for CL_MEM_OBJECT_IMAGE2D image type
+ * @channel_order_3d: cl_channel_order to use for CL_MEM_OBJECT_IMAGE3D image type
  *
  * Create a new buffer using existing host memory.
  */
 UfoBuffer *
 ufo_buffer_new_with_data (UfoRequisition *requisition,
                           gpointer data,
-                          gpointer context)
+                          gpointer context,
+                          unsigned int channel_order_2d,
+                          unsigned int channel_order_3d)
 {
     UfoBuffer *buffer;
     UfoBufferPrivate *priv;
@@ -334,7 +351,7 @@ ufo_buffer_new_with_data (UfoRequisition *requisition,
     g_return_val_if_fail ((requisition->n_dims <= UFO_BUFFER_MAX_NDIMS) &&
                           (requisition->n_dims > 0), NULL);
 
-    buffer = ufo_buffer_new (requisition, context);
+    buffer = ufo_buffer_new (requisition, context, channel_order_2d, channel_order_3d);
     priv = buffer->priv;
 
     priv->free = FALSE;
@@ -630,7 +647,7 @@ ufo_buffer_dup (UfoBuffer *buffer)
     UfoRequisition requisition;
 
     ufo_buffer_get_requisition (buffer, &requisition);
-    copy = ufo_buffer_new (&requisition, buffer->priv->context);
+    copy = ufo_buffer_new (&requisition, buffer->priv->context, buffer->priv->channel_order_2d, buffer->priv->channel_order_3d);
     return copy;
 }
 

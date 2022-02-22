@@ -117,12 +117,18 @@ typedef enum {
 } UfoBufferLayout;
 
 UfoBuffer*  ufo_buffer_new                  (UfoRequisition *requisition,
-                                             gpointer        context);
+                                             gpointer        context,
+                                             unsigned int channel_order_2d,
+                                             unsigned int channel_order_3d);
 UfoBuffer*  ufo_buffer_new_with_size        (GList          *dims,
-                                             gpointer        context);
+                                             gpointer        context,
+                                             unsigned int channel_order_2d,
+                                             unsigned int channel_order_3d);
 UfoBuffer*  ufo_buffer_new_with_data        (UfoRequisition *requisition,
                                              gpointer        data,
-                                             gpointer        context);
+                                             gpointer        context,
+                                             unsigned int channel_order_2d,
+                                             unsigned int channel_order_3d);
 void        ufo_buffer_resize               (UfoBuffer      *buffer,
                                              UfoRequisition *requisition);
 gint        ufo_buffer_cmp_dimensions       (UfoBuffer      *buffer,

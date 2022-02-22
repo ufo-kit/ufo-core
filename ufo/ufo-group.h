@@ -82,6 +82,8 @@ struct _UfoGroupClass {
 
 UfoGroup  * ufo_group_new                   (GList          *targets,
                                              gpointer        context,
+                                             unsigned int channel_order_2d,
+                                             unsigned int channel_order_3d,
                                              UfoSendPattern  pattern);
 guint       ufo_group_get_num_targets       (UfoGroup       *group);
 void        ufo_group_set_num_expected      (UfoGroup       *group,

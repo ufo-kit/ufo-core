@@ -80,6 +80,8 @@ struct _UfoResourcesPrivate {
 
     cl_platform_id   platform;
     cl_context       context;
+    cl_channel_order channel_order_2d;  /* Supported channel order for CL_MEM_OBJECT_IMAGE2D type and CL_FLOAT image_channel_data_type */
+    cl_channel_order channel_order_3d;  /* Supported channel order for CL_MEM_OBJECT_IMAGE3D type and CL_FLOAT image_channel_data_type */
     cl_uint          n_devices;         /* Number of OpenCL devices per platform id */
     cl_device_id     *devices;          /* Array of OpenCL devices per platform id */
     gchar           **device_names;     /* Array of names for each device */
@@ -411,6 +413,61 @@ get_device_type_from_env (void)
     return type;
 }
 
+static cl_channel_order
+get_image_channel_order (cl_context context,
+                         cl_mem_object_type image_type)
+{
+    cl_uint num_image_formats;
+    cl_image_format *image_formats;
+    cl_channel_order channel_order = 0;
+
+    UFO_RESOURCES_CHECK_CLERR (
+            clGetSupportedImageFormats (
+                context,
+                CL_MEM_READ_WRITE,
+                image_type,
+                0,
+                NULL,
+                &num_image_formats
+            )
+    );
+
+    image_formats = g_malloc0 (num_image_formats * sizeof (cl_image_format));
+
+    UFO_RESOURCES_CHECK_CLERR (
+            clGetSupportedImageFormats (
+                context,
+                CL_MEM_READ_WRITE,
+                image_type,
+                num_image_formats,
+                image_formats,
+                NULL
+            )
+    );
+
+    for (cl_uint i = 0; i < num_image_formats; i++) {
+        if (image_formats[i].image_channel_data_type == CL_FLOAT) {
+            if (image_formats[i].image_channel_order == CL_R) {
+                /* The best one, stop */
+                channel_order = CL_R;
+                break;
+            }
+            if (image_formats[i].image_channel_order == CL_LUMINANCE && channel_order != CL_R) {
+                /* Second best one, continue searching for CL_R */
+                channel_order = CL_LUMINANCE;
+            }
+            if (image_formats[i].image_channel_order == CL_INTENSITY && channel_order == 0) {
+                /* Last resort */
+                channel_order = CL_INTENSITY;
+            }
+        }
+    }
+
+    g_free (image_formats);
+
+    return channel_order;
+}
+
 static gboolean
 initialize_opencl (UfoResourcesPrivate *priv)
 {
@@ -467,6 +524,12 @@ initialize_opencl (UfoResourcesPrivate *priv)
     if (errcode != CL_SUCCESS)
         return FALSE;
 
+    priv->channel_order_2d = get_image_channel_order (priv->context, CL_MEM_OBJECT_IMAGE2D);
+    g_debug ("INFO Image channel order for CL_MEM_OBJECT_IMAGE2D: %s",
+             priv->channel_order_2d == CL_R ? "CL_R" : priv->channel_order_2d == CL_LUMINANCE ? "CL_LUMINANCE" : "CL_INTENSITY");
+    priv->channel_order_3d = get_image_channel_order (priv->context, CL_MEM_OBJECT_IMAGE3D);
+    g_debug ("INFO Image channel order for CL_MEM_OBJECT_IMAGE3D: %s",
+             priv->channel_order_2d == CL_R ? "CL_R" : priv->channel_order_2d == CL_LUMINANCE ? "CL_LUMINANCE" : "CL_INTENSITY");
     priv->gpu_nodes = NULL;
     priv->device_names = g_malloc0 (priv->n_devices * sizeof (gchar *));
 
@@ -905,6 +968,39 @@ ufo_resources_get_context (UfoResources *resources)
 {
     g_return_val_if_fail (UFO_IS_RESOURCES (resources), NULL);
     return resources->priv->context;
+}
+
+
+/**
+ * ufo_resources_get_channel_order_2d: (skip)
+ * @resources: A #UfoResources
+ *
+ * Returns the cl_channel_order which can be used in combination with CL_FLOAT
+ * cl_channel_data_type and CL_MEM_OBJECT_IMAGE2D image type.
+ *
+ * Return value: cl_channel_order.
+ */
+unsigned int
+ufo_resources_get_channel_order_2d (UfoResources *resources)
+{
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources), 0);
+    return resources->priv->channel_order_2d;
+}
+
+/**
+ * ufo_resources_get_channel_order_3d: (skip)
+ * @resources: A #UfoResources
+ *
+ * Returns the cl_channel_order which can be used in combination with CL_FLOAT
+ * cl_channel_data_type and CL_MEM_OBJECT_IMAGE3D image type.
+ *
+ * Return value: cl_channel_order.
+ */
+unsigned int
+ufo_resources_get_channel_order_3d (UfoResources *resources)
+{
+    g_return_val_if_fail (UFO_IS_RESOURCES (resources), 0);
+    return resources->priv->channel_order_3d;
 }
 
 /**
