@@ -114,6 +114,8 @@ struct _UfoBufferPrivate {
     cl_mem              device_array;
     cl_mem              device_image;
     cl_context          context;
+    cl_channel_order    channel_order_2d;  /* Supported channel order for CL_MEM_OBJECT_IMAGE2D type and CL_FLOAT image_channel_data_type */
+    cl_channel_order    channel_order_3d;  /* Supported channel order for CL_MEM_OBJECT_IMAGE3D type and CL_FLOAT image_channel_data_type */
     cl_command_queue    last_queue;
     gsize               size;           /* size of buffer in bytes */
     UfoBufferLocation   location;
@@ -179,6 +181,68 @@ alloc_device_array (UfoBufferPrivate *priv)
     priv->device_array = mem;
 }
 
+static cl_channel_order
+get_image_channel_order (cl_context context,
+                         cl_mem_object_type image_type)
+{
+    cl_uint num_image_formats;
+    cl_image_format *image_formats;
+    cl_channel_order channel_order = 0;
+
+    UFO_RESOURCES_CHECK_CLERR (
+            clGetSupportedImageFormats (
+                context,
+                CL_MEM_READ_WRITE,
+                image_type,
+                0,
+                NULL,
+                &num_image_formats
+            )
+    );
+
+    image_formats = g_malloc0 (num_image_formats * sizeof (cl_image_format));
+
+    UFO_RESOURCES_CHECK_CLERR (
+            clGetSupportedImageFormats (
+                context,
+                CL_MEM_READ_WRITE,
+                image_type,
+                num_image_formats,
+                image_formats,
+                NULL
+            )
+    );
+
+    for (cl_uint i = 0; i < num_image_formats; i++) {
+        if (image_formats[i].image_channel_data_type == CL_FLOAT) {
+            if (image_formats[i].image_channel_order == CL_R) {
+                /* The best one, stop */
+                channel_order = CL_R;
+                break;
+            }
+            if (image_formats[i].image_channel_order == CL_LUMINANCE && channel_order != CL_R) {
+                /* Second best one, continue searching for CL_R */
+                channel_order = CL_LUMINANCE;
+            }
+            if (image_formats[i].image_channel_order == CL_INTENSITY && channel_order == 0) {
+                /* Last resort */
+                channel_order = CL_INTENSITY;
+            }
+        }
+    }
+
+    g_free (image_formats);
+
+    if (channel_order == 0) {
+        g_error ("No supported channel order found for CL_FLOAT image type");
+    }
+    g_debug ("INFO Image channel order for image type %s: %s",
+             image_type == CL_MEM_OBJECT_IMAGE2D ? "CL_MEM_OBJECT_IMAGE2D" : "CL_MEM_OBJECT_IMAGE3D",
+             channel_order == CL_R ? "CL_R" : channel_order == CL_LUMINANCE ? "CL_LUMINANCE" : "CL_INTENSITY");
+
+    return channel_order;
+}
+
 #if 0
 static void
 alloc_device_image (UfoBufferPrivate *priv)
@@ -239,7 +303,6 @@ alloc_device_image (UfoBufferPrivate *priv)
     if (priv->device_image != NULL)
         UFO_RESOURCES_CHECK_CLERR (clReleaseMemObject (priv->device_image));
 
-    format.image_channel_order = CL_INTENSITY;
     format.image_channel_data_type = CL_FLOAT;
 
     flags = CL_MEM_READ_WRITE;
@@ -248,10 +311,18 @@ alloc_device_image (UfoBufferPrivate *priv)
     depth = priv->requisition.dims[2];
 
     if (priv->requisition.n_dims == 2) {
+        if (!priv->channel_order_2d) {
+            priv->channel_order_2d = get_image_channel_order (priv->context, CL_MEM_OBJECT_IMAGE2D);
+        }
+        format.image_channel_order = priv->channel_order_2d;
         mem = clCreateImage2D (priv->context, flags, &format, width, height, 0, NULL, &err);
         g_debug ("ALOC %p [size=%3.2f MB, type=2D image]", (gpointer) mem, width * height * 4 / 1024. / 1024.);
     }
     else if (priv->requisition.n_dims == 3) {
+        if (!priv->channel_order_3d) {
+            priv->channel_order_3d = get_image_channel_order (priv->context, CL_MEM_OBJECT_IMAGE3D);
+        }
+        format.image_channel_order = priv->channel_order_3d;
         mem = clCreateImage3D (priv->context, flags, &format, width, height, depth, 0, 0, NULL, &err);
         g_debug ("ALOC %p [size=%3.2f MB, type=3D image]", (gpointer) mem, width * height * depth * 4 / 1024. / 1024.);
     }
