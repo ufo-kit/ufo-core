@@ -8,6 +8,18 @@ Before, proceeding have a look at the `Docker documentation
 <https://docs.docker.com/engine/installation>`_ and install Docker on your
 system.
 
+
+==================
+Rady-to-use Images
+==================
+
+You can pull the following images from the `ufo-kit
+<https://hub.docker.com/r/tfarago/ufo-kit/>`_ repository on dockerhub without
+the need of `Build`_\ing them::
+
+    docker pull tfarago/ufo-kit:ufo-nvidia-ubuntu-20.04
+    docker pull tfarago/ufo-kit:ufo-intel-ubuntu-20.04
+
 =====
 Build
 =====
@@ -38,30 +50,38 @@ Usage on NVIDIA
 ===============
 
 Install `nvidia-container-runtime
-<https://nvidia.github.io/nvidia-container-runtime/>`_ and run::
+<https://nvidia.github.io/nvidia-container-runtime/>`_ and then pull the image::
 
-    $ docker run --rm -it --gpus all ufo
+    $ docker pull tfarago/ufo-kit:ufo-nvidia-ubuntu-20.04
+
+and run::
+
+    $ docker run --rm -it --gpus all tfarago/ufo-kit:ufo-nvidia-ubuntu-20.04
 
 If you want to use the graphical user interfaces (GUIs) run::
 
     $ sudo xhost +local:username
-    $ docker run --rm -it --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY ufo
+    $ docker run --rm -it --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY tfarago/ufo-kit:ufo-nvidia-ubuntu-20.04
 
 
 ===============
 Usage on Intel
 ===============
 
-Supposed you have Ubuntu 20.04, first install the OpenCL runtime (should be
-similar for other distributions)::
+First install the OpenCL runtime (Ubuntu-specific but it should be similar for
+other distributions)::
 
     $ sudo apt-get install intel-opencl-icd
 
-As above, run one of the following::
+then pull the image::
 
-    $ docker run --rm -it --device /dev/dri:/dev/dri all ufo
+    $ docker pull tfarago/ufo-kit:ufo-intel-ubuntu-20.04
 
-or for GUI support::
+and run the following::
+
+    $ docker run --rm -it --device /dev/dri:/dev/dri tfarago/ufo-kit:ufo-intel-ubuntu-20.04
+
+or this for GUI support::
 
     $ sudo xhost +local:username
-    $ docker run --rm -it --device /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY ufo
+    $ docker run --rm -it --device /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY tfarago/ufo-kit:ufo-intel-ubuntu-20.04
