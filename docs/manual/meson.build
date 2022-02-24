@@ -9,6 +9,7 @@ sources = [
     'install/index.rst',
     'install/linux.rst',
     'install/mac.rst',
+    'install/windows.rst',
     'using/api.rst',
     'using/env.rst',
     'using/execution.rst',

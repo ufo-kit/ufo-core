@@ -42,7 +42,26 @@ Install `nvidia-container-runtime
 
     $ docker run --rm -it --gpus all ufo
 
-If you want to use the graphical user interfaces run::
+If you want to use the graphical user interfaces (GUIs) run::
 
     $ sudo xhost +local:username
     $ docker run --rm -it --gpus all -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY ufo
+
+
+===============
+Usage on Intel
+===============
+
+Supposed you have Ubuntu 20.04, first install the OpenCL runtime (should be
+similar for other distributions)::
+
+    $ sudo apt-get install intel-opencl-icd
+
+As above, run one of the following::
+
+    $ docker run --rm -it --device /dev/dri:/dev/dri all ufo
+
+or for GUI support::
+
+    $ sudo xhost +local:username
+    $ docker run --rm -it --device /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY ufo
