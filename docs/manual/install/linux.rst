@@ -72,6 +72,8 @@ vendors. However, our CMake build facility is in most cases intelligent enough
 to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
 
 
+.. _ubuntu20.04:
+
 Ubuntu/Debian (Tested on Ubuntu 20.04.3 LTS)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
