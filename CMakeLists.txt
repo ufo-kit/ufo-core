@@ -8,7 +8,7 @@ if (POLICY CMP0054)
 cmake_policy(SET CMP0054 OLD)
 endif ()
 
-project(ufo C)
+project(ufo)
 
 set(TARNAME "libufo")
 
@@ -47,6 +47,7 @@ endif()
 #{{{ Options
 option(WITH_TESTS "Build test suite" ON)
 option(WITH_DEPRECATED_OPENCL_1_1_API "Build with deprecated OpenCL 1.1 API" ON)
+set(UFO_MAX_INPUT_NODES "64" CACHE STRING "Maximum number of allowed input nodes for a task")
 
 if (WITH_DEPRECATED_OPENCL_1_1_API)
     add_definitions ("-DCL_USE_DEPRECATED_OPENCL_1_1_APIS")

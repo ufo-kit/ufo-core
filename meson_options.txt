@@ -9,3 +9,7 @@ option('introspection',
 option('bashcompletiondir',
     type: 'string',
     description: 'directory for bash complection scripts ["no" disables]')
+
+option('ufo_max_input_nodes',
+    type: 'integer', value: 64,
+    description: 'Maximum number of allowed input nodes for a task')

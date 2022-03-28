@@ -6,6 +6,7 @@ set(TEST_SRCS
     test-graph.c
     test-node.c
     test-profiler.c
+    test-max-input-nodes.cpp
     )
 
 set(SUITE_BIN "test-suite")
