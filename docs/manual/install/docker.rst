@@ -15,7 +15,11 @@ Rady-to-use Images
 
 You can pull the following images from the `ufo-kit
 <https://hub.docker.com/r/tfarago/ufo-kit/>`_ repository on dockerhub without
-the need of `Build`_\ing them::
+the need of `Build`_\ing them. They contain the complete software stack including
+`ufo-core <https://github.com/ufo-kit/ufo-core>`_,
+`ufo-filters <https://github.com/ufo-kit/ufo-filters>`_,
+`tofu <https://github.com/ufo-kit/tofu>`_ and their dependencies (except NVIDIA driver), so after the
+installation you can start using all the available tools, including GUIs::
 
     docker pull tfarago/ufo-kit:ufo-nvidia-ubuntu-20.04
     docker pull tfarago/ufo-kit:ufo-intel-ubuntu-20.04
