@@ -22,7 +22,7 @@ gtk_doc_dep = dependency('gtk-doc', required: false)
 
 pymod = import('python')
 python = pymod.find_installation(get_option('python'))
-python_dep = python.dependency(required: false)
+python_dep = python.dependency(required: false, embed: true)
 
 opencl_dep = dependency('OpenCL', required: false)
 
