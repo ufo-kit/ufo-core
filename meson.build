@@ -19,14 +19,10 @@ gobject_dep = dependency('gobject-2.0', version: '>= 2.38')
 gmodule_dep = dependency('gmodule-2.0', version: '>= 2.38')
 json_dep = dependency('json-glib-1.0', version: '>= 0.10.0')
 gtk_doc_dep = dependency('gtk-doc', required: false)
-# Python3.8 requires python3-embed
-python_dep = dependency('python3-embed', required: false)
-if not python_dep.found()
-  python_dep = dependency('python3', required: false)
-endif
-if not python_dep.found()
-  python_dep = dependency('python', required: false)
-endif
+
+pymod = import('python')
+python = pymod.find_installation(get_option('python'))
+python_dep = python.dependency(required: false)
 
 opencl_dep = dependency('OpenCL', required: false)
 
