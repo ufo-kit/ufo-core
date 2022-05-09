@@ -45,7 +45,7 @@ endif()
 
 #}}}
 #{{{ Options
-option(WITH_TESTS "Build test suite" ON)
+option(WITH_TESTS "Build test suite" OFF)
 option(WITH_DEPRECATED_OPENCL_1_1_API "Build with deprecated OpenCL 1.1 API" ON)
 set(UFO_MAX_INPUT_NODES "64" CACHE STRING "Maximum number of allowed input nodes for a task")
 
