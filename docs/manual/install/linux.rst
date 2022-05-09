@@ -185,8 +185,13 @@ Build, test and install everything with ::
 
   $ cd build
   $ ninja
-  $ ninja test
   $ ninja install
+
+Building and running the tests ::
+
+  $ cd build
+  $ ninja configure -Dwith_tests=true
+  $ ninja test
 
 
 Building ufo-filters
