@@ -29,7 +29,7 @@ Fixes:
 Breaks:
 
 - Remove _with_opts functions
-- Retire ufo_graph_{{shallow_}copy|subgraph,flatten}
+- Retire `ufo_graph_{{shallow_}copy|subgraph,flatten}`
 - Raise GLib version to 2.38
 - Remove address options from CLI tools
 - Remove daemon and messenger API
