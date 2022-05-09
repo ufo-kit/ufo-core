@@ -13,5 +13,6 @@ test('unit tests',
         include_directories: include_dir,
         dependencies: deps,
         link_with: lib,
+        override_options : ['cpp_std=c++11']
     )
 )
