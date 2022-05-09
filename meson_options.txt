@@ -13,3 +13,8 @@ option('bashcompletiondir',
 option('ufo_max_input_nodes',
     type: 'integer', value: 64,
     description: 'Maximum number of allowed input nodes for a task')
+
+option('python',
+    type : 'string',
+    value : 'python3',
+    description : 'Name of python executable')
