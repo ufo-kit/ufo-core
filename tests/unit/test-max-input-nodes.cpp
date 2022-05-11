@@ -136,6 +136,7 @@ static void test_max_inputs() {
             test_n_inputs(i);
         }
         catch (const std::exception& e){
+            std::cout << "This test requires ufo-filters." << std::endl;
             std::cout << e.what() << std::endl;
             g_assert(false);
         }

@@ -13,6 +13,10 @@ set(SUITE_BIN "test-suite")
 
 add_executable(${SUITE_BIN} ${TEST_SRCS})
 
+set_property(TARGET ${SUITE_BIN} PROPERTY CXX_STANDARD 11)
+set_property(TARGET ${SUITE_BIN} PROPERTY CXX_STANDARD_REQUIRED ON)
+
+
 target_link_libraries(${SUITE_BIN} ufo m ${UFOCORE_DEPS})
 
 add_test(${SUITE_BIN} ${SUITE_BIN})

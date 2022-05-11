@@ -155,16 +155,17 @@ the documentation using ::
 
   $ make
 
-You should now run some basic tests with ::
-
-  $ make test
-
 If everything went well, you can install the library with ::
 
   $ make install
 
 .. seealso:: :ref:`faq-linker-cant-find-libufo`
 
+
+To run and build the tests do ::
+
+  $ cmake -DWITH_TESTS=ON <path-to-ufo>
+  $ make test
 
 Building ufo-core with meson
 ----------------------------
@@ -184,8 +185,13 @@ Build, test and install everything with ::
 
   $ cd build
   $ ninja
-  $ ninja test
   $ ninja install
+
+Building and running the tests ::
+
+  $ cd build
+  $ ninja configure -Dwith_tests=true
+  $ ninja test
 
 
 Building ufo-filters

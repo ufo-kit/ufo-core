@@ -14,6 +14,10 @@ option('ufo_max_input_nodes',
     type: 'integer', value: 64,
     description: 'Maximum number of allowed input nodes for a task')
 
+option('with_tests',
+    type: 'boolean', value: false,
+    description: 'Specifies if tests are build.')
+
 option('python',
     type : 'string',
     value : 'python3',
