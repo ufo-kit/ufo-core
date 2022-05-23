@@ -22,3 +22,14 @@ option('python',
     type : 'string',
     value : 'python3',
     description : 'Name of python executable')
+
+option('oclfft', type: 'boolean', value: true,
+    description: 'Build Apple OpenCL FFT')
+
+option('contrib_filters', type: 'boolean', value: false,
+    description: 'Build contributed filters')
+
+option('lamino_backproject_burst_mode',
+    type: 'combo',
+    choices: ['1', '2', '4', '8', '16'],
+    value: '16')

@@ -89,7 +89,8 @@ lib = library('ufo',
 lib_dep = declare_dependency(
     link_with: lib,
     include_directories: include_dir,
-    dependencies: deps + [m_dep]
+    dependencies: deps + [m_dep],
+    sources: [enums_h],
 )
 
 gir = find_program('g-ir-scanner', required: false)

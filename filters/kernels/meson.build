@@ -53,7 +53,7 @@ kernel_files = [
 ]
 
 install_data(kernel_files,
-    install_dir: kernel_install_dir,
+    install_dir: kerneldir,
 )
 
 # generate kernels for lamino_backproject
@@ -83,7 +83,7 @@ if python.found()
             input: ['tools/make_burst_kernels.py', template_name],
             output: output_name,
             install: true,
-            install_dir: kernel_install_dir
+            install_dir: kerneldir
         )
     endforeach
 endif
