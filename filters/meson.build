@@ -133,6 +133,12 @@ configure_file(
     configuration: conf,
 )
 
+deps = [
+  lib_dep, # from ufo_core
+  opencl_dep,
+  m_dep,
+]
+
 # standard plugins
 
 foreach plugin: plugins
@@ -141,7 +147,7 @@ foreach plugin: plugins
         dependencies: deps,
         name_prefix: 'libufofilter',
         install: true,
-        install_dir: plugin_install_dir,
+        install_dir: plugindir,
     )
 endforeach
 
@@ -158,7 +164,7 @@ shared_module('general-backproject',
     dependencies: deps,
     name_prefix: 'libufofilter',
     install: true,
-    install_dir: plugin_install_dir,
+    install_dir: plugindir,
 )
 
 shared_module('cone-beam-projection-weight',
@@ -170,7 +176,7 @@ shared_module('cone-beam-projection-weight',
     dependencies: deps,
     name_prefix: 'libufofilter',
     install: true,
-    install_dir: plugin_install_dir,
+    install_dir: plugindir,
 )
 
 # non local means
@@ -184,7 +190,7 @@ shared_module('non-local-means',
     dependencies: deps,
     name_prefix: 'libufofilter',
     install: true,
-    install_dir: plugin_install_dir,
+    install_dir: plugindir,
 )
 
 # find large spots
@@ -198,7 +204,7 @@ shared_module('find-large-spots',
     dependencies: deps,
     name_prefix: 'libufofilter',
     install: true,
-    install_dir: plugin_install_dir,
+    install_dir: plugindir,
 )
 
 # fft plugins
@@ -206,7 +212,7 @@ shared_module('find-large-spots',
 have_clfft = clfft_dep.found()
 with_oclfft = get_option('oclfft')
 
-if have_clfft or with_oclfft
+if have_clfft
     fft_deps = deps
 
     if clfft_dep.found()
@@ -227,22 +233,20 @@ if have_clfft or with_oclfft
             name_prefix: 'libufofilter',
             link_with: common_fft,
             install: true,
-            install_dir: plugin_install_dir,
+            install_dir: plugindir,
         )
     endforeach
 endif
 
 # lamino plugin
 
-python = find_program('python', required: false)
-
-if python.found()
+if python_dep.found()
     shared_module('lamino-backproject',
         sources: ['ufo-lamino-backproject-task.c'],
         dependencies: deps,
         name_prefix: 'libufofilter',
         install: true,
-        install_dir: plugin_install_dir,
+        install_dir: plugindir,
     )
 else
     message('Python not found, cannot generate kernels for lamino_backproject')
@@ -279,7 +283,7 @@ shared_module('read',
     dependencies: read_deps,
     name_prefix: 'libufofilter',
     install: true,
-    install_dir: plugin_install_dir,
+    install_dir: plugindir,
 )
 
 shared_module('write',
@@ -287,7 +291,7 @@ shared_module('write',
     dependencies: write_deps,
     name_prefix: 'libufofilter',
     install: true,
-    install_dir: plugin_install_dir,
+    install_dir: plugindir,
 )
 
 # camera
@@ -298,7 +302,7 @@ if uca_dep.found()
         dependencies: deps + [uca_dep],
         name_prefix: 'libufofilter',
         install: true,
-        install_dir: plugin_install_dir,
+        install_dir: plugindir,
     )
 endif
 
@@ -310,7 +314,7 @@ if opencv_dep.found()
         dependencies: deps + [opencv_dep],
         name_prefix: 'libufofilter',
         install: true,
-        install_dir: plugin_install_dir,
+        install_dir: plugindir,
     )
 endif
 
@@ -321,7 +325,7 @@ if pangocairo_dep.found()
         dependencies: deps + [pangocairo_dep],
         name_prefix: 'libufofilter',
         install: true,
-        install_dir: plugin_install_dir,
+        install_dir: plugindir,
     )
 endif
 
@@ -332,7 +336,7 @@ if clblast_dep.found()
         dependencies: deps + [clblast_dep],
         name_prefix: 'libufofilter',
         install: true,
-        install_dir: plugin_install_dir,
+        install_dir: plugindir,
     )
 endif
 
@@ -346,7 +350,7 @@ if zmq_dep.found() and json_dep.found()
             dependencies: deps + [zmq_dep, json_dep],
             name_prefix: 'libufofilter',
             install: true,
-            install_dir: plugin_install_dir,
+            install_dir: plugindir,
         )
     endforeach
 endif
