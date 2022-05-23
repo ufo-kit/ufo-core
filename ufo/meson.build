@@ -68,10 +68,14 @@ enums = gnome.mkenums('ufo-enums',
     install_dir: '@0@/@1@'.format(get_option('includedir'), header_subdir),
 )
 
-enums_c = enums[0]
-enums_h = enums[1]
+enums_dep = declare_dependency(
+    sources : enums
+)
 
-sources += [enums_c, enums_h]
+#enums_c = enums[0]
+#enums_h = enums[1]
+
+#sources += [enums_c, enums_h]
 
 m_dep = declare_dependency(
     dependencies: cc.find_library('m')
@@ -79,7 +83,7 @@ m_dep = declare_dependency(
 
 lib = library('ufo',
     sources: sources,
-    dependencies: deps + [m_dep],
+    dependencies: deps + [m_dep, enums_dep],
     version: version,
     soversion: version_major,
     include_directories: include_dir,
@@ -89,7 +93,7 @@ lib = library('ufo',
 lib_dep = declare_dependency(
     link_with: lib,
     include_directories: include_dir,
-    dependencies: deps + [m_dep]
+    dependencies: deps + [m_dep, enums_dep]
 )
 
 gir = find_program('g-ir-scanner', required: false)

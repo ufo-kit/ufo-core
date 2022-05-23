@@ -6,22 +6,21 @@ progs = [
 foreach prog: progs
     sources = [
         '@0@.c'.format(prog),
-        enums_h
     ]
 
     executable(prog,
         sources: sources,
         include_directories: include_dir,
-        dependencies: deps,
+        dependencies: deps + [enums_dep],
         link_with: lib,
         install: true
     )
 endforeach
 
 ufo_launch = executable('ufo-launch',
-    sources: ['ufo-launch.c', enums_h],
+    sources: ['ufo-launch.c'],
     include_directories: include_dir,
-    dependencies: deps,
+    dependencies: deps + [enums_dep],
     link_with: lib,
     install: true
 )
