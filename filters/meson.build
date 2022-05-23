@@ -118,6 +118,7 @@ clblast_dep = dependency('clblast', required: false)
 clfft_dep = dependency('clFFT', required: false)
 zmq_dep = dependency('libzmq', required: false)
 json_dep = dependency('json-glib-1.0', version: '>=1.1.0', required: false)
+omp_dep = dependency('openmp', required : false)
 
 conf = configuration_data()
 conf.set('HAVE_AMD', clfft_dep.found())
@@ -136,6 +137,7 @@ configure_file(
 deps = [
   lib_dep, # from ufo_core
   opencl_dep,
+  omp_dep,
   m_dep,
 ]
 
