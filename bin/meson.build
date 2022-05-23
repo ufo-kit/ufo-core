@@ -11,8 +11,7 @@ foreach prog: progs
     executable(prog,
         sources: sources,
         include_directories: include_dir,
-        dependencies: deps + [enums_dep],
-        link_with: lib,
+        dependencies: deps + [lib_dep],
         install: true
     )
 endforeach
@@ -20,8 +19,7 @@ endforeach
 ufo_launch = executable('ufo-launch',
     sources: ['ufo-launch.c'],
     include_directories: include_dir,
-    dependencies: deps + [enums_dep],
-    link_with: lib,
+    dependencies: deps + [lib_dep],
     install: true
 )
 
