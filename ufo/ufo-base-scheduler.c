@@ -137,13 +137,6 @@ ufo_base_scheduler_run (UfoBaseScheduler *scheduler,
     if (scheduler->priv->trace)
         enable_tracing (graph);
 
-#ifdef WITH_PYTHON
-    Py_Initialize();
-    if (PY_MAJOR_VERSION == 2 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)) {
-        PyEval_InitThreads();
-    }
-#endif
-
     timer = g_timer_new ();
     (*klass->run)(scheduler, graph, error);
     scheduler->priv->time = g_timer_elapsed (timer, NULL);
@@ -164,14 +157,6 @@ ufo_base_scheduler_abort (UfoBaseScheduler *scheduler)
     klass = UFO_BASE_SCHEDULER_GET_CLASS (scheduler);
 
     g_return_if_fail (klass != NULL && klass->run != NULL);
-
-
-#ifdef WITH_PYTHON
-    Py_Initialize();
-    if (PY_MAJOR_VERSION == 2 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)) {
-        PyEval_InitThreads();
-    }
-#endif
 
     (*klass->abort)(scheduler);
 }
