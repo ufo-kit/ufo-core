@@ -1,0 +1,14 @@
+[project]
+name = 'ufo'
+authors = [
+  { name = 'Matthias Vogelgesang', email = 'matthias.vogelgesang@kit.edu'},
+]
+requires_python = '>=3.7'
+version = '1.1.0'
+
+[project.urls]
+homepage = 'http://ufo.kit.edu'
+
+[build-system]
+requires = ['meson', 'ninja', 'meson-python', 'numpy']
+build-backend = 'mesonpy'
