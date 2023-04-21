@@ -892,7 +892,7 @@ ufo_resources_get_kernel_source (UfoResources   *resources,
 
 
 /**
- * ufo_resources_get_context: (skip)
+ * ufo_resources_get_context:
  * @resources: A #UfoResources
  *
  * Returns the OpenCL context object that is used by the resource resources. This
