@@ -14,6 +14,8 @@ Python-based projects and accompanying. The
 small programs for offline reconstruction of tomographic data using the UFO
 framework.
 
+If you want to stay updated, subscribe to our [newsletter](mailto:sympa@lists.kit.edu?subject=subscribe%20ufo%20YourFirstName%20YourLastName). Simply leave the body of the e-mail empty and in the subject change ``YourFirstName YourLastName`` accordingly.
+
 ## Further information
 
 More information can be found at various locations:
