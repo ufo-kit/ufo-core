@@ -111,7 +111,7 @@ To use the ``ufo-mkfilter`` script you also need the jinja2 Python package::
 
 Building the reference documentation and the Sphinx manual requires::
 
-    $ apt install gtk-doc-tools python3-sphinx
+    $ apt install gtk-doc-tools python3-sphinx sphinxcontrib-bibtex sphinx_rtd_theme
 
 Additionally the following packages are recommended for some of the plugins::
 
