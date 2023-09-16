@@ -1,0 +1,13 @@
+        pixel.x = mad(voxel.x, cosines{1}, mad(voxel.y, sines{1}, x_center_current));
+        pixel.y = mad(tmp_x, sines{1}, mad(tmp_y, cosines{1}, tmp));
+        rotate ();
+        result {2}= read_imagef (projection_{0}, sampler, pixel).x;
+%nl
+        float x_center_current = mad((float) idz, x_center.y, x_center.x);
+        voxel.x = mad((float) idx, x_region.y, x_region.x);
+        voxel.y = mad((float) idy, y_region.y, y_region.x);
+        tmp = mad(z_region.x, sin_lamino, y_center);
+        tmp_x = voxel.x * cos_lamino;
+        tmp_y = -voxel.y * cos_lamino;
+
+{}

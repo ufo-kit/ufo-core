@@ -1,0 +1,7 @@
+#cmakedefine HAVE_OCLFFT
+#cmakedefine HAVE_AMD
+#cmakedefine HAVE_TIFF
+#cmakedefine HAVE_JPEG
+#cmakedefine WITH_HDF5
+#define BURST   ${BP_BURST}
+#define CL_TARGET_OPENCL_VERSION    ${CL_TARGET_OPENCL_VERSION}
