@@ -24,7 +24,7 @@
 #error "Only <ufo/ufo.h> can be included directly."
 #endif
 
-#include <json-glib/json-glib.h>
+// #include <json-glib/json-glib.h>
 #include <ufo/ufo-buffer.h>
 #include <ufo/ufo-resources.h>
 
@@ -103,9 +103,9 @@ struct _UfoTaskIface {
                                          UfoBuffer     **inputs,
                                          UfoRequisition *requisition,
                                          GError        **error);
-    void    (*set_json_object_property) (UfoTask        *task,
-                                         const gchar    *prop_name,
-                                         JsonObject     *object);
+    // void    (*set_json_object_property) (UfoTask        *task,
+    //                                      const gchar    *prop_name,
+    //                                      JsonObject     *object);
     gboolean (*process)                 (UfoTask        *task,
                                          UfoBuffer     **inputs,
                                          UfoBuffer      *output,
@@ -127,10 +127,10 @@ void    ufo_task_get_requisition    (UfoTask        *task,
                                      UfoBuffer     **inputs,
                                      UfoRequisition *requisition,
                                      GError        **error);
-void    ufo_task_set_json_object_property
-                                    (UfoTask        *task,
-                                     const gchar    *prop_name,
-                                     JsonObject     *object);
+// void    ufo_task_set_json_object_property
+//                                     (UfoTask        *task,
+//                                      const gchar    *prop_name,
+//                                      JsonObject     *object);
 gboolean ufo_task_process           (UfoTask        *task,
                                      UfoBuffer     **inputs,
                                      UfoBuffer      *output,

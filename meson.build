@@ -17,7 +17,6 @@ glib_dep = dependency('glib-2.0', version: '>= 2.38')
 gio_dep = dependency('gio-2.0', version: '>= 2.38')
 gobject_dep = dependency('gobject-2.0', version: '>= 2.38')
 gmodule_dep = dependency('gmodule-2.0', version: '>= 2.38')
-json_dep = dependency('json-glib-1.0', version: '>= 0.10.0')
 gtk_doc_dep = dependency('gtk-doc', required: false)
 
 pymod = import('python')
@@ -39,7 +38,6 @@ deps = [
     gio_dep,
     gobject_dep,
     gmodule_dep,
-    json_dep,
     opencl_dep,
     python_dep,
 ]

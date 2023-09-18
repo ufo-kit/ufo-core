@@ -597,12 +597,12 @@ main(int argc, char* argv[])
         g_object_unref (resources);
     }
 
-    if (dump) {
-        ufo_task_graph_save_to_json (graph, dump, &error);
-
-        if (error != NULL)
-            g_printerr ("Error dumping task graph: %s\n", error->message);
-    }
+    /* if (dump) { */
+    /*     ufo_task_graph_save_to_json (graph, dump, &error); */
+    /*  */
+    /*     if (error != NULL) */
+    /*         g_printerr ("Error dumping task graph: %s\n", error->message); */
+    /* } */
 
     g_list_for (nodes, it)
         g_object_unref (G_OBJECT (it->data));

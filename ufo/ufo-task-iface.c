@@ -109,13 +109,13 @@ ufo_task_get_mode (UfoTask *task)
     return UFO_TASK_GET_IFACE (task)->get_mode (task);
 }
 
-void
-ufo_task_set_json_object_property (UfoTask *task,
-                                   const gchar *prop_name,
-                                   JsonObject *object)
-{
-    UFO_TASK_GET_IFACE (task)->set_json_object_property (task, prop_name, object);
-}
+/* void */
+/* ufo_task_set_json_object_property (UfoTask *task, */
+/*                                    const gchar *prop_name, */
+/*                                    JsonObject *object) */
+/* { */
+/*     UFO_TASK_GET_IFACE (task)->set_json_object_property (task, prop_name, object); */
+/* } */
 
 static void
 emit_signal (gpointer instance, guint signal_id, GQuark detail)
@@ -199,13 +199,13 @@ warn_unimplemented (UfoTask *task,
     g_warning ("%s: `%s' not implemented", G_OBJECT_TYPE_NAME (task), func);
 }
 
-static void
-ufo_task_set_json_object_property_real (UfoTask *task,
-                                        const gchar *prop_name,
-                                        JsonObject *object)
-{
-    warn_unimplemented (task, "set_json_object_property");
-}
+/* static void */
+/* ufo_task_set_json_object_property_real (UfoTask *task, */
+/*                                         const gchar *prop_name, */
+/*                                         JsonObject *object) */
+/* { */
+/*     warn_unimplemented (task, "set_json_object_property"); */
+/* } */
 
 static void
 ufo_task_setup_real (UfoTask *task,
@@ -273,7 +273,7 @@ ufo_task_default_init (UfoTaskInterface *iface)
     iface->get_num_inputs = ufo_task_get_num_inputs_real;
     iface->get_num_dimensions = ufo_task_get_num_dimensions_real;
     iface->get_mode = ufo_task_get_mode_real;
-    iface->set_json_object_property = ufo_task_set_json_object_property_real;
+    /* iface->set_json_object_property = ufo_task_set_json_object_property_real; */
     iface->process = ufo_task_process_real;
     iface->generate = ufo_task_generate_real;
 

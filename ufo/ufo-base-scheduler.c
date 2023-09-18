@@ -18,6 +18,8 @@
  */
 
 #include "config.h"
+#include <gio/gio.h>
+
 
 #ifdef WITH_PYTHON
 #include <Python.h>

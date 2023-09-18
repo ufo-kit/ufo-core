@@ -104,7 +104,6 @@ if gir.found() and get_option('introspection')
           'GLib-2.0',
           'GObject-2.0',
           'GModule-2.0',
-          'Json-1.0',
         ],
     )
 endif
@@ -121,7 +120,6 @@ pkg.generate(
         'gobject-2.0',
         'gmodule-2.0',
         'gio-2.0',
-        'json-glib-1.0',
     ],
     variables: [
         'plugindir=${libdir}/ufo',
