@@ -358,6 +358,7 @@ ufo_buffer_new (UfoRequisition *requisition,
     priv->size = compute_required_size (requisition);
     priv->layout = UFO_BUFFER_LAYOUT_REAL;
     copy_requisition (requisition, &priv->requisition);
+    g_debug ("NEW buffer %p", (gpointer) buffer);
 
     return buffer;
 }
@@ -1612,6 +1613,7 @@ ufo_buffer_finalize (GObject *gobject)
     free_cl_mem (&priv->device_image);
 
     g_hash_table_destroy (priv->metadata);
+    g_debug ("FREE buffer %p", (gpointer) gobject);
 
     G_OBJECT_CLASS(ufo_buffer_parent_class)->finalize(gobject);
 }
