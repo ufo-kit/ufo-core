@@ -5,6 +5,34 @@ Changelog
 Here you can see the full list of changes between each ufo-core release.
 
 
+Version 0.17
+============
+
+Fixes:
+
+- #163: outline installation with meson
+- #162: check for Python 3 dev files as well
+- #160: build Sphinx manual with meson
+
+Pull requests:
+
+- #189 from llohse/python-meson
+- #183 from ufo-kit/tests-optional
+- #185 from llohse/mesonpython2
+- #184 from llohse/newsfix
+- #169 from ufo-kit/allow_more_input_nodes
+- #178 from ufo-kit/docker
+- #179 from ufo-kit/channel_order
+- #176 from ufo-kit/abort
+- #175 from ufo-kit/non-dash-task-names
+- #174 from ufo-kit/config
+- #173 from ufo-kit/python3-remains
+- #172 from ufo-kit/fix-opencl-version-warning
+- #171 from ufo-kit/python3
+- #170 from ufo-kit/propagate-expand-errors
+- #166 from ufo-kit/add-12bit-support
+
+
 Version 0.16
 ============
 
