@@ -72,9 +72,9 @@ vendors. However, our CMake build facility is in most cases intelligent enough
 to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
 
 
-.. _ubuntu20.04:
+.. _ubuntu24.04:
 
-Ubuntu/Debian (Tested on Ubuntu 20.04.3 LTS)
+Ubuntu/Debian (Tested on Ubuntu 24.04.2 LTS)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 On Debian or Debian-based system the following packages are required to build
@@ -87,9 +87,9 @@ and CUDA. It also makes sense to change the
 `/lib/systemd/system/nvidia-persistenced.service` persistence option from
 `--no-persistence-mode` to `--persistence-mode`. This will speed up the
 initialization of the cards. CUDA installation (package versions may of course
-quickly change) ::
+quickly change (indicated by *XYZ*)) ::
 
-    $ apt install nvidia-driver-460 nvidia-utils-460 nvidia-cuda-toolkit
+    $ apt install nvidia-driver-XYZ nvidia-utils-XYZ nvidia-cuda-toolkit
 
 You will also need an OpenCL ICD loader. To simply get the build running, you
 can install ::
@@ -99,7 +99,7 @@ can install ::
 Generating the introspection files for interfacing with third-party languages
 such as Python you must install ::
 
-    $ apt install gobject-introspection libgirepository1.0-dev
+    $ apt install gobject-introspection libgirepository1.0-dev python3-gi-cairo python-gi-dev
 
 and advised to install ::
 
@@ -111,7 +111,8 @@ To use the ``ufo-mkfilter`` script you also need the jinja2 Python package::
 
 Building the reference documentation and the Sphinx manual requires::
 
-    $ apt install gtk-doc-tools python3-sphinx sphinxcontrib-bibtex sphinx_rtd_theme
+    $ apt install gtk-doc-tools python3-sphinx
+    $ pip install sphinxcontrib-bibtex sphinx_rtd_theme
 
 Additionally the following packages are recommended for some of the plugins::
 

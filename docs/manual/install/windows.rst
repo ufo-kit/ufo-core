@@ -9,7 +9,7 @@ follow `Intel's documentation`_ for detailed installation procedure. Long story
 short, you need to install WSL2 and Ubuntu 20.04 from Microsoft Store, then the
 Intel `driver`_ *inside Windows* and then `OpenCL runtime`_ *inside Ubuntu 20.04
 running in the WSL*. After that, follow the normal installation procedure
-(without the nvidia packages) described in :ref:`ubuntu20.04`.
+(without the nvidia packages) described in :ref:`ubuntu24.04`.
 
 
 .. _Intel's documentation: https://www.intel.com/content/www/us/en/artificial-intelligence/harness-the-power-of-intel-igpu-on-your-machine.html
