@@ -1,0 +1,6 @@
+#define rotate()    pixel.x -= x_center.x; \
+                    pixel.y -= y_center; \
+                    pixel.x = pixel.x * cos_roll + pixel.y * sin_roll; \
+                    pixel.y = -pixel.x * sin_roll + pixel.y * cos_roll; \
+                    pixel.x += x_center.x; \
+                    pixel.y += y_center;

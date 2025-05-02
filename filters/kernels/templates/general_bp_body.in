@@ -1,0 +1,33 @@
+{
+    int idx = get_global_id (0);
+    int idy = get_global_id (1);
+    int idz = get_global_id (2);
+    cfloat3 voxel_0, voxel, detector_normal;
+    cfloat project_tmp, coeff, detector_offset, tmp_transformation;
+    rtype result = 0.0;
+    %tmpl%
+
+    if (idx < real_size.x && idy < real_size.y && idz < real_size.z) {
+        voxel_0.x = mad((cfloat) idx, x_region.y, x_region.x);
+        voxel_0.y = mad((cfloat) idy, y_region.y, y_region.x);
+        voxel_0.z = slice_z_position;
+
+        // assign z-coordinate to the chosen parameter i.e. param = region[idz];
+        %tmpl%
+
+        // Start rotation angle independent transformations and temporary assignments
+        %tmpl%
+        // End rotation angle independent transformations and temporary assignments
+
+        // Start rotation angle dependent transformation, pixel fetch and slice weighing
+        %tmpl%
+        // End rotation angle dependent transformation, pixel fetch and slice weighing
+
+        if (iteration) {
+            volume[idz * real_size.x * real_size.y + idy * real_size.x + idx] += %tmpl%;
+        } else {
+            volume[idz * real_size.x * real_size.y + idy * real_size.x + idx] = %tmpl%;
+        }
+    }
+}
+
