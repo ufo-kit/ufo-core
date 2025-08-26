@@ -18,7 +18,6 @@ gio_dep = dependency('gio-2.0', version: '>= 2.38')
 gobject_dep = dependency('gobject-2.0', version: '>= 2.38')
 gmodule_dep = dependency('gmodule-2.0', version: '>= 2.38')
 json_dep = dependency('json-glib-1.0', version: '>= 0.10.0')
-gtk_doc_dep = dependency('gtk-doc', required: false)
 
 pymod = import('python')
 python = pymod.find_installation(get_option('python'))
@@ -80,7 +79,14 @@ add_global_arguments('-DGLIB_DISABLE_DEPRECATION_WARNINGS', language: 'c')
 
 subdir('ufo')
 subdir('bin')
-subdir('docs')
+
+if get_option('gtk_doc')
+  gtk_doc_dep = dependency('gtk-doc', required: false)
+  if gtk_doc_dep.found()
+    subdir('docs')
+  endif
+endif
+
 if get_option('with_tests')
     subdir('tests')
 endif
