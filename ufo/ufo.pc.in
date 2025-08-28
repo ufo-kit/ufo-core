@@ -9,7 +9,7 @@ kerneldir=${prefix}/@CMAKE_INSTALL_KERNELDIR@
 
 Name: @UFO_NAME@
 Description: @UFO_DESCRIPTION_SUMMARY@
-Version: @UFO_VERSION@
+Version: @UFO_ABI_VERSION@
 Libs: -L${libdir} -lufo
 Cflags: -I${includedir}
 Requires: glib-2.0 gobject-2.0 gmodule-2.0 gio-2.0 json-glib-1.0

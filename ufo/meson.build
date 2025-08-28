@@ -81,7 +81,7 @@ lib = library('ufo',
     sources: sources,
     dependencies: deps + [m_dep],
     version: version,
-    soversion: version_major,
+    soversion: abi_version,
     include_directories: include_dir,
     install: true,
 )
@@ -97,7 +97,7 @@ gir = find_program('g-ir-scanner', required: false)
 if gir.found() and get_option('introspection')
     gnome.generate_gir(lib,
         namespace: 'Ufo',
-        nsversion: '@0@.0'.format(version_major),
+        nsversion: abi_version,
         sources: sources + headers,
         install: true,
         includes: [
@@ -113,7 +113,7 @@ pkg = import('pkgconfig')
 
 pkg.generate(
     libraries: [lib],
-    version: version,
+    version: abi_version,
     name: 'ufo',
     description: 'Library for unified scientific camera access',
     requires: [
