@@ -9,6 +9,9 @@ version_major = components[0]
 version_minor = components[1]
 version_patch = components[2]
 
+# abi_version is introduced to manage ABI changes.
+abi_version = '1.0'
+
 cc = meson.get_compiler('c')
 
 gnome = import('gnome')
