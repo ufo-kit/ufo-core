@@ -121,13 +121,13 @@ typedef enum {
 } UfoProfilerTimer;
 
 UfoProfiler *ufo_profiler_new           (void);
-void         ufo_profiler_call          (UfoProfiler        *profiler,
+gint         ufo_profiler_call          (UfoProfiler        *profiler,
                                          gpointer            command_queue,
                                          gpointer            kernel,
                                          guint               work_dim,
                                          const gsize        *global_work_size,
                                          const gsize        *local_work_size);
-void         ufo_profiler_call_blocking (UfoProfiler        *profiler,
+gint         ufo_profiler_call_blocking (UfoProfiler        *profiler,
                                          gpointer            command_queue,
                                          gpointer            kernel,
                                          guint               work_dim,
