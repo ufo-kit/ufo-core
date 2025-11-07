@@ -69,8 +69,8 @@ def analyse(fp, name_fmt_func, name_header):
         name = name.encode('utf-8')
         print(('{} {}'.format(name, make_bars(begins[task], ends[task], total, term_width - 11))))
 
-    print(("\n {: <16} | {: >4} | {: >12} | {: >12} | {: >5}".format(name_header, '#', 'Total (ms)', 'Mean (ms)', '%')))
-    print(('-' * (16 + 4 + 12 + 12 + 9 + 10)))
+    print(("\n {: <24} | {: >4} | {: >12} | {: >12} | {: >5}".format(name_header, '#', 'Total (ms)', 'Mean (ms)', '%')))
+    print(('-' * (24 + 4 + 12 + 12 + 9 + 10)))
 
     for task, tt in ((task, times[task]) for task in tasks):
         name = name_fmt_func(task)
@@ -78,7 +78,7 @@ def analyse(fp, name_fmt_func, name_header):
         mean_time = np.mean(tt) / 1000.0
         num_events = len(tt)
         percentage = float(np.sum(tt)) / total * 100
-        fmt = ' {: <16} | {: >4} | {: >12.4f} | {: >12.4f} | {: >3.2f}'
+        fmt = ' {: <24} | {: >4} | {: >12.4f} | {: >12.4f} | {: >3.2f}'
         print((fmt.format(name, num_events, total_time, mean_time, percentage)))
 
 
