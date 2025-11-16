@@ -21,7 +21,10 @@ set(UFO_VERSION_MAJOR "0")
 set(UFO_VERSION_MINOR "17")
 set(UFO_VERSION_PATCH "0")
 set(UFO_VERSION "${UFO_VERSION_MAJOR}.${UFO_VERSION_MINOR}.${UFO_VERSION_PATCH}")
-set(UFO_GIR_VERSION "${UFO_VERSION_MAJOR}.0")
+
+# UFO_ABI_VERSION is introduced to manage ABI changes.
+set(UFO_ABI_VERSION "1.0")
+set(UFO_GIR_VERSION "${UFO_ABI_VERSION}")
 #}}}
 #{{{ CMake
 enable_testing()
