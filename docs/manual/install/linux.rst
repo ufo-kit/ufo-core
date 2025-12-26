@@ -72,9 +72,9 @@ vendors. However, our CMake build facility is in most cases intelligent enough
 to find header files and libraries for NVIDIA CUDA and AMD APP SDKs.
 
 
-.. _ubuntu20.04:
+.. _ubuntu22.04:
 
-Ubuntu/Debian (Tested on Ubuntu 20.04.3 LTS)
+Ubuntu/Debian (Tested on Ubuntu 22.04.3 LTS)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 On Debian or Debian-based system the following packages are required to build
@@ -89,7 +89,7 @@ and CUDA. It also makes sense to change the
 initialization of the cards. CUDA installation (package versions may of course
 quickly change) ::
 
-    $ apt install nvidia-driver-460 nvidia-utils-460 nvidia-cuda-toolkit
+    $ apt install nvidia-driver-550 nvidia-utils-550 nvidia-cuda-toolkit
 
 You will also need an OpenCL ICD loader. To simply get the build running, you
 can install ::
@@ -103,7 +103,7 @@ such as Python you must install ::
 
 and advised to install ::
 
-    $ apt install python3-dev
+    $ apt install python3-dev python3-pip
 
 To use the ``ufo-mkfilter`` script you also need the jinja2 Python package::
 
@@ -111,7 +111,8 @@ To use the ``ufo-mkfilter`` script you also need the jinja2 Python package::
 
 Building the reference documentation and the Sphinx manual requires::
 
-    $ apt install gtk-doc-tools python3-sphinx sphinxcontrib-bibtex sphinx_rtd_theme
+    $ apt install gtk-doc-tools python3-sphinx python3-sphinxcontrib.bibtex 
+    $ pip install sphinx_rtd_theme
 
 Additionally the following packages are recommended for some of the plugins::
 
@@ -161,7 +162,6 @@ If everything went well, you can install the library with ::
 
 .. seealso:: :ref:`faq-linker-cant-find-libufo`
 
-
 To run and build the tests do ::
 
   $ cmake -DWITH_TESTS=ON <path-to-ufo>
@@ -198,13 +198,20 @@ Building ufo-filters
 --------------------
 
 Once ufo-core is installed you can build the filter suite in a pretty similar
-way ::
+way using cmake ::
 
     $ mkdir -p build/ufo-filters
     $ cd build/ufo-filters
     $ cmake <path-to-ufo-filters> -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib64
     $ make
     $ make install
+
+or using meson ::
+
+  $ meson build --libdir=/usr/local/lib -Dcontrib_filters=True
+  $ cd build
+  $ ninja
+  $ ninja install
 
 
 Python support
@@ -221,6 +228,67 @@ In the ``python/`` subdirectory of the source distribution, additional Python
 modules to interface more easily with the framework is provided. To install the
 NumPy module and the high-level interface run ::
 
-    $ cd python/ && python setup install
+    $ cd python/ && python3 setup install
+
+
+Post-install Steps
+------------------
+
+To install the ufo-tofu software stack with their full capabilities it is required to set some
+environment variables to resolve package dependencies. We need to make sure that ``pkg-config``
+package in available and there are mainly three environment variables to take care. To set these
+environment variables correctly we may refer to the install logs for meson or cmake. For meson
+this log is generally available in the ``BUILD_DIR/meson-logs/install-logs.txt``.
+
+In the install logs we need to specifically look at
+
+* line that gives us the location of the ``ufo.pc`` file for the pkg-config reference.
+* line that gives us the location of the ``Ufo-<version>.typelib`` file of gi-repository.
+
+e.g., ::
+
+   $HOME/.local/lib/x86_64-linux-gnu/pkgconfig/ufo.pc
+   $HOME/.local/lib/x86_64-linux-gnu/girepository-1.0/Ufo-0.0.typelib
+
+We need to use these information to set the following environment variables in the manner depicted
+in the following examples ::
+
+  $ export export PKG_CONFIG_PATH=$HOME/.local/lib/x86_64-linux-gnu/pkgconfig
+  $ export GI_TYPELIB_PATH=$HOME/.local/lib/x86_64-linux-gnu/girepository-1.0
+  $ export LD_LIBRARY_PATH=$HOME/.local/lib/x86_64-linux-gnu
+
+This example assumes that while installing the ufo we specified ``$HOME/.local`` as the install
+prefix e.g., ::
+
+  $ meson build --prefix=~/.local
+  $ cd build && meson configure -Dprefix=~/.local
+
+In absence of these environment variables set correctly we are likely to have the following error
+while using ufo-tofu software stack from command line ::
+
+  ValueError: Namespace Ufo not available
+
+In this situation one way to verify that the required environment variables are correctly set is to
+query ``pkg-config`` for the package name ``ufo`` ::
+
+  $ pkg-config --validate ufo
+
+which is like to to yield the following message ::
+
+  Package ufo was not found in the pkg-config search path.
+  Perhaps you should add the directory containing `ufo.pc'
+  to the PKG_CONFIG_PATH environment variable
+  No package 'ufo' found
+
+One can also try to look up the package ufo in the list of packages ::
+
+  $ pkg-config --list-all
+
+which will list down all system packages, which are accounted for and ufo must be in the list for
+ufo-tofu software stack to function properly. Once the packages are correctly set ufo should appear
+in the list of packages and validation should not yield any error.
+
+It is possible to install ufo-tofu software stack with full capabilities inside container images and
+for that setting these environment variables correctly is crucial.
 
 Refer to the README for additional information.
