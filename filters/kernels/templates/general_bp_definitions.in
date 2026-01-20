@@ -1,0 +1,3 @@
+#define rotate_x(trig, point) ((cfloat3)(((point).x), mad ((trig).y, (point).y, - ((trig).x * (point).z)), mad ((trig).x, (point).y, ((trig).y * (point).z))))
+#define rotate_y(trig, point) ((cfloat3)(mad ((trig).y, (point).x, ((trig).x * (point).z)), ((point).y), mad (-(trig).x, (point).x, ((trig).y * (point).z))))
+#define rotate_z(trig, point) ((cfloat3)(mad ((trig).y, (point).x, - ((trig).x * (point).y)), mad ((trig).x, (point).x, ((trig).y * (point).y)), ((point).z)))

@@ -90,3 +90,4 @@ endif
 if get_option('with_tests')
     subdir('tests')
 endif
+subdir('filters')

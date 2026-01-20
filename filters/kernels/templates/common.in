@@ -1,0 +1,57 @@
+/*
+ * Copyright (C) 2015-2016 Karlsruhe Institute of Technology
+ *
+ * This file is part of Ufo.
+ *
+ * This library is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+kernel void backproject_burst_{0} (
+{1}
+                                    global float *volume,
+                                    const sampler_t sampler,
+                                    const int3 real_size,
+                                    const float2 x_center,
+                                    const float y_center,
+                                    const float2 x_region,
+                                    const float2 y_region,
+                                    const float2 z_region,
+                                    const float2 lamino_region,
+                                    const float2 roll_region,
+                                    float sin_lamino,
+                                    float cos_lamino,
+                                    const float{2} sines,
+                                    const float{2} cosines,
+                                    const float norm_factor,
+                                    float sin_roll,
+                                    float cos_roll,
+                                    const int cumulate)
+{{
+    int idx = get_global_id (0);
+    int idy = get_global_id (1);
+    int idz = get_global_id (2);
+    float result, tmp, tmp_x, tmp_y;
+    float2 pixel;
+    float3 voxel;
+
+    if (idx < real_size.x && idy < real_size.y && idz < real_size.z) {{
+{3}
+
+        if (cumulate) {{
+            volume[idz * real_size.x * real_size.y + idy * real_size.x + idx] += result * norm_factor;
+        }} else {{
+            volume[idz * real_size.x * real_size.y + idy * real_size.x + idx] = result * norm_factor;
+        }}
+    }}
+}}
