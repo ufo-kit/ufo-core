@@ -1,0 +1,33 @@
+# .readthedocs.yml
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+# Required
+version: 2
+
+build:
+  os: ubuntu-24.04
+  apt_packages:
+    - gobject-introspection
+    - libgirepository1.0-dev
+    - python3-gi-cairo
+    - python-gi-dev
+  tools:
+    python: "3.12"
+
+# Build documentation in the docs/ directory with Sphinx
+sphinx:
+  configuration: docs/manual/conf.py
+
+# Build documentation with MkDocs
+#mkdocs:
+#  configuration: mkdocs.yml
+
+# Optionally build your docs in additional formats such as PDF
+# formats:
+#   - pdf
+
+# Optionally set the version of Python and requirements required to build your docs
+python:
+  install:
+    - requirements: docs/manual/requirements.txt
