@@ -30,6 +30,19 @@ both the core framework and the filters install::
     $ apt install libufo-bin libufo-dev ufo-filters
 
 
+Using packages with tofu/concert
+================================
+
+If you want to use `tofu <https://github.com/ufo-kit/tofu>`_ or `concert
+<https://github.com/ufo-kit/concert>`_, you should still get the `ufo-core
+<https://github.com/ufo-kit/ufo-core>`_ repository and install the python bindings
+in the ``python/`` subdirectory::
+
+    $ git clone https://github.com/ufo-kit/ufo-core
+    $ cd ufo-core/python
+    $ pip install .
+
+
 Installing from source
 ======================
 

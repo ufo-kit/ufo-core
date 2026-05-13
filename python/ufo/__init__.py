@@ -8,7 +8,6 @@ import queue
 import numpy as np
 import gi
 from .numpy import asarray, empty_like
-gi.require_version('Ufo', '0.0')
 from gi.repository import GObject, Ufo
 
 
