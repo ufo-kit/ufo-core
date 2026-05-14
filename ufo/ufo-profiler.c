@@ -98,7 +98,7 @@ ufo_profiler_new (void)
     return UFO_PROFILER (g_object_new (UFO_TYPE_PROFILER, NULL));
 }
 
-static void
+static gint
 _ufo_profiler_call (UfoProfiler    *profiler,
                     gpointer        command_queue,
                     gpointer        kernel,
@@ -111,7 +111,7 @@ _ufo_profiler_call (UfoProfiler    *profiler,
     cl_int              cl_err;
     cl_event            event;
 
-    g_return_if_fail (UFO_IS_PROFILER (profiler));
+    g_return_val_if_fail (UFO_IS_PROFILER (profiler), CL_INVALID_VALUE);
     priv = profiler->priv;
 
     if (priv->trace) {
@@ -138,6 +138,8 @@ _ufo_profiler_call (UfoProfiler    *profiler,
             UFO_RESOURCES_CHECK_CLERR (clReleaseEvent (event));
         }
     }
+
+    return cl_err;
 }
 
 /**
@@ -155,7 +157,7 @@ _ufo_profiler_call (UfoProfiler    *profiler,
  * event associated with the clEnqueueNDRangeKernel() call is recorded and may
  * be used for profiling purposes later on.
  */
-void
+gint
 ufo_profiler_call (UfoProfiler    *profiler,
                    gpointer        command_queue,
                    gpointer        kernel,
@@ -163,7 +165,7 @@ ufo_profiler_call (UfoProfiler    *profiler,
                    const gsize    *global_work_size,
                    const gsize    *local_work_size)
 {
-    _ufo_profiler_call (profiler, command_queue, kernel, work_dim, global_work_size, local_work_size, FALSE);
+    return _ufo_profiler_call (profiler, command_queue, kernel, work_dim, global_work_size, local_work_size, FALSE);
 }
 
 /**
@@ -182,7 +184,7 @@ ufo_profiler_call (UfoProfiler    *profiler,
  * clEnqueueNDRangeKernel() call is recorded and may be used for profiling
  * purposes later on.
  */
-void
+gint
 ufo_profiler_call_blocking (UfoProfiler    *profiler,
                             gpointer        command_queue,
                             gpointer        kernel,
@@ -190,7 +192,7 @@ ufo_profiler_call_blocking (UfoProfiler    *profiler,
                             const gsize    *global_work_size,
                             const gsize    *local_work_size)
 {
-    _ufo_profiler_call (profiler, command_queue, kernel, work_dim, global_work_size, local_work_size, TRUE);
+    return _ufo_profiler_call (profiler, command_queue, kernel, work_dim, global_work_size, local_work_size, TRUE);
 }
 
 /**
